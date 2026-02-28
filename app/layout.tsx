@@ -15,13 +15,9 @@ import { ProfileProvider } from "@/contexts/ProfileContext";
 import { TourProvider } from "@/contexts/TourContext";
 import { MenuStateProvider } from "@/contexts/MenuStateContext";
 import { HeartcoinBalanceProvider } from "@/providers/HeartcoinBalanceProvider";
-import HeartCoinCelebration from "@/components/HeartCoinCelebration";
-import ElementCardCelebration from "@/components/ElementCardCelebration";
-import MerchCelebration from "@/components/MerchCelebration";
-import CardCelebration from "@/components/CardCelebration";
-import BadgeCelebrationController from "@/components/BadgeCelebrationController";
 import GlobalKeyboardHandler from "@/components/GlobalKeyboardHandler";
-import GeoOnLogin from "@/components/GeoOnLogin";
+// Defer heavy, non-critical UI to improve LCP/INP
+import DeferredAppChrome from "@/components/DeferredAppChrome";
 import { PlanetRewardsProvider } from "@/components/PlanetRewardsProvider";
 
 export const metadata: Metadata = {
@@ -96,8 +92,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preload" as="image" href="/elements/spotify.webp" />
         <link rel="preload" as="image" href="/elements/apple.webp" />
         {/* Preload cockpit frame and light beam base so they render instantly */}
-        <link rel="preload" as="image" href="/cockpit/cockpit.webp?v=2" />
-        <link rel="preload" as="image" href="/cockpit/lightbeam-base.webp?v=2" />
+        {/**
+         * Avoid preloading decorative cockpit images to keep bandwidth for critical content.
+         * These are injected after first paint via DeferredAppChrome.
+         */}
         {/* Wheel video preload removed - video files may not exist; SteeringWheelOverlay handles graceful fallback */}
       </head>
       <body className="font-sans bg-[#020016]">
@@ -106,7 +104,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <HeartcoinBalanceProvider>
             <AudioProvider>
               <GlobalKeyboardHandler />
-              <GeoOnLogin />
               <MenuStateProvider>
                 <TourProvider>
                   <PlanetRewardsProvider>
@@ -120,11 +117,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <WhatShouldWeCallYouModal />
             <WhatElementAreYouModal />
             {children}
-            <CardCelebration />
-            <HeartCoinCelebration />
-            <ElementCardCelebration />
-            <MerchCelebration />
-            <BadgeCelebrationController />
+            {/**
+             * Mount non-critical modals/celebrations and geolocation lazily after first paint.
+             * This reduces main-thread work before the first input.
+             */}
+            <DeferredAppChrome />
                   </PlanetRewardsProvider>
                 </TourProvider>
               </MenuStateProvider>

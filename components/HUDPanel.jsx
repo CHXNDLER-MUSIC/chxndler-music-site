@@ -2868,6 +2868,9 @@ const HUDPanel = React.memo(function HUDPanel({
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
+                            // Ensure other popovers are closed so Apple/Spotify displays don't linger
+                            try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
+                            try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
                             try { sfx.play('join-aliens', 0.9); } catch {}
                             // For channel URLs (homepage), always open directly - can't embed channels
                             if (isYouTubeProfile) {

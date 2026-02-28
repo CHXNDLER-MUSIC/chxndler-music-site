@@ -170,6 +170,18 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [wheelPlain, setWheelPlain] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
 
+  // Defer decorative, fixed backgrounds until after first paint/idle.
+  const [decorReady, setDecorReady] = useState(false);
+  useEffect(() => {
+    const ric = (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function')
+      ? window.requestIdleCallback
+      : null;
+    let cancelled = false;
+    const start = () => { if (!cancelled) setDecorReady(true); };
+    if (ric) ric(start); else setTimeout(start, 400);
+    return () => { cancelled = true; };
+  }, []);
+
   // Hard guard: ensure main player is fully silent on first load
   // Prevents any accidental playback (e.g., previously primed states) on opening page
   React.useEffect(() => {
@@ -2257,12 +2269,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         {showDimmingOverlay && (
           <div className="pointer-events-none absolute inset-0 bg-black/60 backdrop-blur-sm z-[40]" />
         )}
-        {/* Ensure cockpit frame preloads immediately alongside lightbeam base */}
-        <div 
-          className="fixed z-20 pointer-events-none cockpit-bg"
-          style={{ top: 0, left: 0, right: 0, bottom: 0 }}
-          aria-hidden="true" 
-        />
+        {/* Defer decorative cockpit frame until after hydration to avoid competing for LCP */}
         {/* Steering wheel video disabled - video files don't exist in /public/cockpit/ */}
         {/* Re-enable when wheel_transparent.mp4/.webm or wheel_less_transparent.webm are added */}
       </main>
@@ -2852,27 +2859,31 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       />
 
 
-      <div 
-        className="fixed z-20 pointer-events-none cockpit-bg"
-        style={{ top: 0, left: 0, right: 0, bottom: 0 }}
-        aria-hidden="true" 
-      />
+      {decorReady && (
+        <div 
+          className="fixed z-20 pointer-events-none cockpit-bg"
+          style={{ top: 0, left: 0, right: 0, bottom: 0 }}
+          aria-hidden="true" 
+        />
+      )}
       
-      <div 
-        className="fixed z-[100] pointer-events-none lightbeam-base-bg"
-        style={{
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          // Always keep the light beam base PNG visible, including on first page
-          opacity: 1,
-          transition: 'opacity 400ms ease-in-out',
-          // Dynamically anchor PNG under the blue button when available; otherwise fallback to CSS
-          backgroundPosition: beamBaseBgPos || undefined
-        }}
-        aria-hidden="true" 
-      />
+      {decorReady && (
+        <div 
+          className="fixed z-[100] pointer-events-none lightbeam-base-bg"
+          style={{
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            // Keep visible once mounted; initial mount is deferred to avoid taking LCP
+            opacity: 1,
+            transition: 'opacity 400ms ease-in-out',
+            // Dynamically anchor PNG under the blue button when available; otherwise fallback to CSS
+            backgroundPosition: beamBaseBgPos || undefined
+          }}
+          aria-hidden="true" 
+        />
+      )}
       
       {/* SteeringWheelOverlay inside blur wrapper so wheel gets dimmed */}
       <SteeringWheelOverlay

@@ -58,6 +58,11 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
   const hoverBtnRef = useRef(null);
   const elementFilterHoverRef = useRef(null);
   const [activeElement, setActiveElement] = useState(null);
+  // Custom scrollbar state for list
+  const [showCustomScrollbar, setShowCustomScrollbar] = useState(false);
+  const [thumbHeight, setThumbHeight] = useState(24);
+  const [thumbTop, setThumbTop] = useState(0);
+  const dragOffsetRef = useRef(0);
 
   // Supabase-backed next drop config
   const { nextDrop } = useNextDrop();
@@ -170,6 +175,24 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
     if (!open) return;
     const el = listRef.current;
     if (!el) return;
+    // Recalculate metrics on mount/open
+    const recalc = () => {
+      try {
+        const sh = el.scrollHeight || 0;
+        const ch = el.clientHeight || 0;
+        const st = el.scrollTop || 0;
+        const needs = sh > ch + 1;
+        setShowCustomScrollbar(needs);
+        if (!needs) return;
+        const minThumb = 28;
+        const th = Math.max(minThumb, Math.round((ch / sh) * ch));
+        setThumbHeight(th);
+        const maxTop = Math.max(0, ch - th);
+        const tt = sh > ch ? Math.round((st / (sh - ch)) * maxTop) : 0;
+        setThumbTop(tt);
+      } catch {}
+    };
+    recalc();
     const onScroll = () => {
       const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
       const last = lastScrollAtRef.current || 0;
@@ -177,9 +200,27 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
         lastScrollAtRef.current = now;
         try { sfx.play('scroll', 0.22); } catch {}
       }
+      // Sync thumb with native scroll
+      try {
+        const sh = el.scrollHeight || 0;
+        const ch = el.clientHeight || 0;
+        const st = el.scrollTop || 0;
+        const needs = sh > ch + 1;
+        setShowCustomScrollbar(needs);
+        if (!needs) return;
+        const minThumb = 28;
+        const th = Math.max(minThumb, Math.round((ch / sh) * ch));
+        setThumbHeight(th);
+        const maxTop = Math.max(0, ch - th);
+        const tt = sh > ch ? Math.round((st / (sh - ch)) * maxTop) : 0;
+        setThumbTop(tt);
+      } catch {}
     };
     el.addEventListener('scroll', onScroll, { passive: true });
-    return () => { try { el.removeEventListener('scroll', onScroll); } catch {} };
+    window.addEventListener('resize', recalc);
+    const ro = new ResizeObserver(recalc);
+    try { ro.observe(el); } catch {}
+    return () => { try { el.removeEventListener('scroll', onScroll); } catch {}; window.removeEventListener('resize', recalc); try { ro.disconnect(); } catch {} };
   }, [open]);
 
   // Keyboard for the closed combobox cycles songs directly
@@ -630,6 +671,105 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
           })}
           <audio ref={hoverRef} src="/audio/change-channel.mp3" preload="auto" />
           <audio ref={elementFilterHoverRef} src="/audio/change-channel.mp3" preload="auto" />
+          {/* Custom draggable scrollbar overlay */}
+          {showCustomScrollbar && (
+            <div
+              aria-hidden
+              className="dropdown-custom-scrollbar"
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 2,
+                height: '100%',
+                width: 14,
+                pointerEvents: 'none'
+              }}
+            >
+              {/* Track */}
+              <div
+                className="dropdown-scroll-track"
+                style={{
+                  position: 'absolute',
+                  top: 6,
+                  bottom: 6,
+                  right: 0,
+                  left: 0,
+                  borderRadius: 8,
+                  background: 'rgba(8,26,32,0.35)',
+                  border: '1px solid rgba(25,227,255,0.28)',
+                  boxShadow: 'inset 0 0 8px rgba(25,227,255,0.12)',
+                  pointerEvents: 'auto'
+                }}
+                onPointerDown={(e) => {
+                  // Jump to position and start dragging from there
+                  const el = listRef.current; if (!el) return;
+                  const track = e.currentTarget;
+                  try { track.setPointerCapture?.(e.pointerId); } catch {}
+                  e.preventDefault();
+                  const rect = track.getBoundingClientRect();
+                  const ch = el.clientHeight || 0;
+                  const sh = el.scrollHeight || 0;
+                  const minThumb = 28;
+                  const th = Math.max(minThumb, Math.round((ch / sh) * ch));
+                  const maxTop = Math.max(0, ch - th);
+                  let targetTop = Math.max(0, Math.min(maxTop, e.clientY - rect.top - th / 2));
+                  const ratio = maxTop > 0 ? (targetTop / maxTop) : 0;
+                  const newScroll = ratio * Math.max(1, sh - ch);
+                  try { el.scrollTop = newScroll; } catch {}
+                  setThumbHeight(th);
+                  setThumbTop(targetTop);
+                }}
+              >
+                {/* Thumb */}
+                <div
+                  role="scrollbar"
+                  aria-orientation="vertical"
+                  className="dropdown-scroll-thumb"
+                  style={{
+                    position: 'absolute',
+                    top: thumbTop,
+                    right: 2,
+                    width: 10,
+                    height: thumbHeight,
+                    borderRadius: 8,
+                    background: 'linear-gradient(180deg, rgba(25,227,255,0.9) 0%, rgba(25,227,255,0.7) 60%, rgba(25,227,255,0.45) 100%)',
+                    border: '1px solid rgba(25,227,255,0.5)',
+                    boxShadow: '0 0 10px rgba(25,227,255,0.5), 0 0 18px rgba(25,227,255,0.35), inset 0 0 8px rgba(255,255,255,0.12)',
+                    cursor: 'grab',
+                    touchAction: 'none'
+                  }}
+                  onPointerDown={(e) => {
+                    const el = listRef.current; if (!el) return;
+                    try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch {}
+                    e.preventDefault();
+                    const startY = e.clientY;
+                    dragOffsetRef.current = startY - (e.currentTarget.getBoundingClientRect().top);
+                    const onMove = (ev) => {
+                      const ch = el.clientHeight || 0;
+                      const sh = el.scrollHeight || 0;
+                      const minThumb = 28;
+                      const th = Math.max(minThumb, Math.round((ch / sh) * ch));
+                      const maxTop = Math.max(0, ch - th);
+                      const trackRect = e.currentTarget.parentElement.getBoundingClientRect();
+                      let newTop = ev.clientY - trackRect.top - dragOffsetRef.current;
+                      newTop = Math.max(0, Math.min(maxTop, newTop));
+                      const ratio = maxTop > 0 ? (newTop / maxTop) : 0;
+                      const newScroll = ratio * Math.max(1, sh - ch);
+                      try { el.scrollTop = newScroll; } catch {}
+                      setThumbHeight(th);
+                      setThumbTop(newTop);
+                    };
+                    const onUp = () => {
+                      window.removeEventListener('pointermove', onMove);
+                      window.removeEventListener('pointerup', onUp);
+                    };
+                    window.addEventListener('pointermove', onMove);
+                    window.addEventListener('pointerup', onUp, { once: true });
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>,
         document.body
       ) : null}
