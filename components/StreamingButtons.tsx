@@ -374,6 +374,9 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
                 onHoverFX={playHover}
                 onClick={() => {
                   try {
+                    // Close any inline music previews so YouTube click doesn't leave them open
+                    setShowApplePopover(false); setAmEmbedUrl(null);
+                    setShowSpotifyPopover(false); setSpEmbedUrl(null);
                     window.open(links.youtube!, '_blank', 'noopener,noreferrer');
                   } catch {
                     // Fallback if window.open fails

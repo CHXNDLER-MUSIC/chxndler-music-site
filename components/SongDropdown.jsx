@@ -397,7 +397,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                     <span className={`song-title truncate font-semibold text-[#9EEBFF] flex-1 min-w-0`}>
                       {nextDrop.title}
                     </span>
-                    {countdownStr ? (
+                    {isNextDropLocked && countdownStr ? (
                       <span className="shrink-0 flex items-center gap-2" style={{ transform: 'translateY(-1px)' }}>
                         <span style={{
                           fontSize: '11px',
@@ -407,7 +407,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                         }}>
                           {countdownStr}
                         </span>
-                        {isNextDropLocked && (
+                        {(
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                             <path d="M7 11V7a 5 5 0 0 1 10 0v4" />
@@ -424,7 +424,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                     letterSpacing: '0.05em',
                     whiteSpace: 'nowrap',
                   }}>
-                    {dropCountdown > 0 ? (
+                    {isNextDropLocked ? (
                       <>
                         <span style={{ color: '#FFFFFF' }}>Signal unlocked for </span>
                         <span style={{ color: '#F2EF1D' }}>DREAMERS</span>

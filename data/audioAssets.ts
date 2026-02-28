@@ -202,6 +202,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
   "mr-brightside": {
     src: supabaseTrackUrl("MR.BRIGHTSIDE.mp3"),
     cover: "/covers/MR. BRIGHTSIDE.webp",
+    spotify: "https://open.spotify.com/track/4CId3TUsrGauVNQ1slN6dT?si=68f958b831694cb4",
   },
   "collide": {
     src: supabaseTrackUrl("collide.mp3"),

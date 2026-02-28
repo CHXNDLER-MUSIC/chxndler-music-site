@@ -32,9 +32,13 @@ export function useSongs() {
       try {
         const [released, all] = await Promise.all([fetchReleasedSongs(), fetchSongs()]);
 
+        // Sort alphabetically by title (case-insensitive)
+        const sortByTitle = (a: SongRow, b: SongRow) =>
+          (a.title || "").localeCompare(b.title || "", undefined, { sensitivity: "base" });
+
         if (isMounted) {
-          setSongs(addElements(released));
-          setAllSongs(addElements(all));
+          setSongs(addElements([...released].sort(sortByTitle)));
+          setAllSongs(addElements([...all].sort(sortByTitle)));
           setLoading(false);
         }
       } catch (err: any) {

@@ -1295,6 +1295,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                     // Intercept default navigation to open inline popout player
                     try { e.preventDefault(); } catch {}
                     try { uiClick(); } catch {}
+                    // Ensure any Apple popover is closed before opening YouTube
+                    try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
                     // Pause site audio while video plays
                     try { const a = audioRef.current; if (a) { a.pause(); setPlaying(false); } } catch {}
                     // Build embeddable URL
@@ -2912,7 +2914,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
         /* Vertical volume popover (opens to the left of the button) */
         .volume-control { position: relative; }
-        .waveform-volume { position: absolute; }
+        /*
+          Do NOT change .waveform-volume positioning here.
+          It stays in normal flow (static) to avoid overlaying darker elements on narrow screens.
+        */
         .volume-popover {
           position: absolute;
           top: 0;

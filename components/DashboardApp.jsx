@@ -912,7 +912,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     });
 
     // Build from database songs (includes ALL songs)
-    return dbSongs.map(song => {
+    const list = dbSongs.map(song => {
       const staticData = staticMap.get(song.slug) || {};
       const element = (song.element || 'heart').toLowerCase();
       return {
@@ -928,6 +928,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         hasLyrics: staticData.hasLyrics
       };
     });
+    // Ensure alphabetical order by title for consistent UI ordering
+    return list.sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
   }, [staticHudSongs, dbSongs]);
 
   // Initialize planet songs as early as possible so the 3D system

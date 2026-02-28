@@ -376,6 +376,17 @@ export default function HoloHubMenu({
   }, [inlineUrl]);
 
   const runItem = useCallback((it: HubItem, ev?: MouseEvent) => {
+    // Always close any existing inline preview first so we don't leave
+    // a stale Apple/Spotify preview visible when clicking non-embed items (e.g. YouTube)
+    try {
+      setInlineUrl(null);
+      setInlineTitle("");
+      setInlineCompact(false);
+      setInlineHeightPx(undefined);
+      setInlineIframeHeightPx(undefined);
+      setClickedButtonId(null);
+    } catch {}
+
     // Perform the actual action
     try {
       if (typeof it.onClick === "function") {

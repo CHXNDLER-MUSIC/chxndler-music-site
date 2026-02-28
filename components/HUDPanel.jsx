@@ -3038,10 +3038,55 @@ const HUDPanel = React.memo(function HUDPanel({
                                 overflow: 'hidden',
                                 cursor: 'pointer',
                                 pointerEvents: 'auto',
-                                zIndex: 100
+                                zIndex: 100,
+                                touchAction: 'none'
                               }}
                               onMouseDown={(e) => { e.stopPropagation(); }}
-                              onPointerDown={(e) => { e.stopPropagation(); }}
+                              onPointerDown={(e) => {
+                                // Enable click-and-drag scrubbing
+                                e.preventDefault();
+                                e.stopPropagation();
+                                try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch {}
+
+                                // Resolve the active audio element and a reliable duration snapshot
+                                const resolveAudioAndDuration = () => {
+                                  let audioEl = liveAudioRef?.current;
+                                  if (!audioEl) {
+                                    try { audioEl = audioManager.getCurrentAudio?.(); } catch {}
+                                  }
+                                  if (!audioEl) {
+                                    audioEl = document.querySelector('audio[data-audio-player="1"]')
+                                      || document.querySelector('audio[src*="tracks"]');
+                                  }
+                                  let dur = liveDur;
+                                  if ((!dur || dur <= 0) && audioEl) { dur = audioEl.duration; }
+                                  if (!dur || dur <= 0) { dur = duration; }
+                                  return { audioEl, dur };
+                                };
+
+                                const { audioEl, dur } = resolveAudioAndDuration();
+                                if (!audioEl || !dur || dur <= 0) { return; }
+
+                                const el = e.currentTarget;
+                                const seekFromClientX = (clientX) => {
+                                  const rect = el.getBoundingClientRect();
+                                  const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                                  const ratio = rect.width > 0 ? (x / rect.width) : 0;
+                                  const newTime = Math.max(0, Math.min(dur, ratio * dur));
+                                  try { audioEl.currentTime = newTime; } catch {}
+                                };
+
+                                // Initial seek where the pointer went down
+                                seekFromClientX(e.clientX);
+
+                                const onMove = (ev) => seekFromClientX(ev.clientX);
+                                const onUp = () => {
+                                  window.removeEventListener('pointermove', onMove);
+                                  window.removeEventListener('pointerup', onUp);
+                                };
+                                window.addEventListener('pointermove', onMove);
+                                window.addEventListener('pointerup', onUp, { once: true });
+                              }}
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();

@@ -34,12 +34,13 @@ const ELEMENT_MAP: Record<string, string> = {
 };
 
 // Time-locked tracks: accessible early for certain tiers, public at unlockDate
+// NOTE: Do not include released songs here; UI auto-unlocks when is_released = true
 const TIME_LOCKED_TRACKS: Record<string, { unlockDate: string; earlyAccessTiers: Tier[] }> = {
-  "mr-brightside": {
-    unlockDate: "2026-02-27T12:00:00-05:00", // Feb 27, 2026 12PM EST
-    // Early access should be available to Dreamers and Lovers (and above)
-    earlyAccessTiers: ["dreamer", "lover", "guide"],
-  },
+  // Example template for future drops:
+  // "some-unreleased-slug": {
+  //   unlockDate: "2026-06-01T12:00:00-05:00",
+  //   earlyAccessTiers: ["dreamer", "lover", "guide"],
+  // },
 };
 
 /** Check if a track is currently time-locked for a given user tier */
@@ -146,6 +147,7 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
           oneLiner: `Released ${new Date(song.created_at).getFullYear()}`,
           src: asset.src,
           cover: asset.cover,
+          is_released: song.is_released,
           element: SONG_ELEMENT_MAPPING[song.slug] || 'heart',
           planet: { radius: 1, color: "#38B6FF", orbitRadius: 3, orbitSpeed: 0.5, tilt: 0.2 }
         };
@@ -163,9 +165,12 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
 
   // Handle track change from dropdown
   const handleTrackChange = useCallback(async (newTrackId: string) => {
-    // Block time-locked tracks
+    // Block time-locked tracks unless DB marks as released
     const timeLock = isTrackTimeLocked(newTrackId, profile?.tier);
-    if (timeLock.locked) return;
+    if (timeLock.locked) {
+      const target = (availableSongs as any[])?.find?.(s => s.id === newTrackId);
+      if (!target || !target.is_released) return;
+    }
 
     // Trigger visual warp: focus selected planet and hide all during effect
     try {
@@ -203,7 +208,7 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
         }
       } catch {}
     }
-  }, [audioManager, profile?.tier]);
+  }, [audioManager, profile?.tier, availableSongs]);
 
   // Handle play/pause button
   const handleTogglePlay = useCallback(() => {
@@ -269,15 +274,17 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
 
   // Prepare dropdown items for SongDropdown component - memoized
   const dropdownItems = useMemo(() =>
-    availableSongs.map(song => {
+    availableSongs.map((song: any) => {
       const timeLock = isTrackTimeLocked(song.id, profile?.tier);
+      // If DB says released, don't lock it in UI
+      const locked = !song.is_released && timeLock.locked;
       return {
         id: song.id,
         title: song.title,
         slug: song.id,
         icon: ELEMENT_MAP[song.id] || "music",
-        locked: timeLock.locked,
-        unlockDate: timeLock.unlockDate,
+        locked,
+        unlockDate: locked ? timeLock.unlockDate : undefined,
       };
     }),
     [availableSongs, profile?.tier]
