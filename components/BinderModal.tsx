@@ -1291,7 +1291,6 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
               >
                 <TiltSpinCard
                   className="relative flex items-center justify-center"
-                  style={{ width: '100%', height: '100%' }}
                   maxRotateX={10}
                   sensitivity={0.3}
                   returnDuration={400}
@@ -1306,6 +1305,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     setTimeout(() => setIsAnimatingFlip(false), 500);
                   }}
                   style={{
+                    width: '100%',
+                    height: '100%',
                     borderRadius: '24px',
                   }}
                 >

@@ -24,10 +24,8 @@ export default function AuthCallbackPage() {
   const [status, setStatus] = useState<AuthStatus>({ state: "idle" });
 
   const nextPath = useMemo(() => {
-    // Prefer explicit next param; fallback to dashboard then root
-    return (
-      searchParams.get("next") || (typeof window !== "undefined" && window.location.pathname === "/signin" ? "/dashboard" : null) || "/dashboard" || "/"
-    );
+    // Prefer explicit next param; fallback to dashboard
+    return searchParams.get("next") || "/dashboard";
   }, [searchParams]);
 
   useEffect(() => {
@@ -100,4 +98,3 @@ export default function AuthCallbackPage() {
     </main>
   );
 }
-

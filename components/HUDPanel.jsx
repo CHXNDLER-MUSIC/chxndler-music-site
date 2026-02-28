@@ -2635,7 +2635,8 @@ const HUDPanel = React.memo(function HUDPanel({
 
                   const spotifyUrl = isHome ? CHXNDLER_SPOTIFY_PROFILE : (currentSong?.spotify || CHXNDLER_SPOTIFY_PROFILE);
                   const appleUrl = isHome ? CHXNDLER_APPLE_PROFILE : (currentSong?.apple || CHXNDLER_APPLE_PROFILE);
-                  const youtubeUrl = isHome ? CHXNDLER_YOUTUBE_CHANNEL : (currentSong?.youtube || CHXNDLER_YOUTUBE_CHANNEL);
+                  // Always open channel per request
+                  const youtubeUrl = CHXNDLER_YOUTUBE_CHANNEL;
 
                   const isSpotifyProfile = isHome || !currentSong?.spotify;
                   const isAppleProfile = isHome || !currentSong?.apple;
@@ -2843,8 +2844,8 @@ const HUDPanel = React.memo(function HUDPanel({
                           data-button-id="youtube"
                           className="youtube-btn-waveform-hud"
                           style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', order: 5 }}
-                          title={isYouTubeProfile ? "Open CHXNDLER on YouTube" : `Open ${currentSong?.title || 'current track'} on YouTube`}
-                          aria-label={isYouTubeProfile ? "Open CHXNDLER on YouTube" : `Open ${currentSong?.title || 'current track'} on YouTube`}
+                          title={"Open CHXNDLER on YouTube"}
+                          aria-label={"Open CHXNDLER on YouTube"}
                           data-song={currentSong?.title || ''}
                           data-slug={currentSong?.id || ''}
                           data-id="yt"
@@ -2855,20 +2856,8 @@ const HUDPanel = React.memo(function HUDPanel({
                             try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
                             try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
                             try { sfx.play('join-aliens', 0.9); } catch {}
-                            // For channel URLs (homepage), always open directly - can't embed channels
-                            if (isYouTubeProfile) {
-                              window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
-                              return;
-                            }
-                            // For video links, try embed popover
-                            try {
-                              const { toYouTubeEmbed } = require('@/lib/youtube');
-                              const embed = toYouTubeEmbed(youtubeUrl);
-                              if (embed) { setYtEmbedUrl(embed); setShowYouTubePopover(true); }
-                              else { window.open(youtubeUrl, '_blank', 'noopener,noreferrer'); }
-                            } catch {
-                              window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
-                            }
+                            // Open channel directly; do not use inline popover
+                            window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
                           }}
                           onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                         >

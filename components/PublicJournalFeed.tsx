@@ -73,6 +73,8 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
   const spinAudioRef = useRef<HTMLAudioElement | null>(null);
   // Public profile fallbacks when denormalized fields are missing
   const [authorOverrides, setAuthorOverrides] = useState<Record<string, { name: string | null; avatar: string | null; journey: string | null }>>({});
+  // Track which entry IDs have their prompt expanded
+  const [showPromptFor, setShowPromptFor] = useState<{ [key: string]: boolean }>({});
 
   // Helper: Resolve avatar URL with correct priority order
   // 1. Current user's fresh profile (for own entries) - always use latest
@@ -827,13 +829,23 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
                 </div>
               </div>
 
-              {/* Soul Star Preview - Always visible in public view */}
+              {/* Soul Star Preview - Click to toggle prompt in public view */}
               <div
                 className="rounded-lg px-3 py-2 mb-2"
                 style={{
                   background: 'rgba(0, 0, 0, 0.3)',
                   border: `1px solid ${entryTheme.color}60`,
-                  boxShadow: `0 0 12px ${entryTheme.color}20`
+                  boxShadow: `0 0 12px ${entryTheme.color}20`,
+                  cursor: showProfileInfo[entry.entry_id] ? 'default' : 'pointer'
+                }}
+                onClick={(e) => {
+                  // Only toggle prompt when in the compact preview (not when profile info is expanded)
+                  if (showProfileInfo[entry.entry_id]) return;
+                  try { sfx.play('click', 0.4); } catch {}
+                  setShowPromptFor(prev => ({
+                    ...prev,
+                    [entry.entry_id]: !prev[entry.entry_id]
+                  }));
                 }}
               >
                 {showProfileInfo[entry.entry_id] ? (
@@ -1041,6 +1053,27 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
                     <div className="text-sm leading-relaxed text-white">
                       {entry.entry_text || "No entry text"}
                     </div>
+                    {/* Toggleable Prompt Display */}
+                    {showPromptFor[entry.entry_id] && (
+                      <div
+                        className="mt-2 rounded-md px-2 py-2"
+                        style={{
+                          background: 'rgba(0, 0, 0, 0.35)',
+                          border: `1px dashed ${entryTheme.color}60`,
+                          boxShadow: `0 0 8px ${entryTheme.color}15`
+                        }}
+                      >
+                        <div
+                          className="text-xs font-semibold uppercase mb-1"
+                          style={{ color: entryTheme.color, textShadow: `0 0 4px ${entryTheme.glow}` }}
+                        >
+                          Prompt
+                        </div>
+                        <div className="text-sm leading-relaxed text-white/90">
+                          {entry.prompt || 'No prompt available'}
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               </div>

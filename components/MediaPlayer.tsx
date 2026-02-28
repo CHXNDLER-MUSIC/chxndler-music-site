@@ -4,6 +4,7 @@ import Link from "next/link";
 import LoginModal from "@/components/LoginModal";
 import { createPortal } from "react-dom";
 import { tracks as ALL, type Track, type Song } from "@/lib/songs-consolidated";
+import { LINKS } from "@/config/cockpit";
 import { skyFor, verifyAllTrackSkies } from "@/lib/sky";
 import { DEBUG_MEDIA, dlog, dwarn, dumpAudio } from "@/lib/debug";
 import { ELEMENT_COLORS, type Element } from "@/lib/planets";
@@ -120,18 +121,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     }
   }, []);
 
-  // Compute context-aware YouTube target URL for the button
-  const youtubeButtonUrl = useMemo(() => {
-    try {
-      const slug = (cur?.slug || '').toLowerCase();
-      // Homepage (all planets visible): open channel
-      if (planetDisplayMode === 'all') return 'https://www.youtube.com/@chxndlerthealien';
-      // Specific override for MR. BRIGHTSIDE: open music video
-      if (slug === 'mr-brightside') return 'https://youtu.be/ZBU5x5plj2E';
-      // Default to track-provided YouTube URL
-      return cur?.youtube || null;
-    } catch { return cur?.youtube || null; }
-  }, [planetDisplayMode, cur?.slug, cur?.youtube]);
+  // Always open channel per request
+  const youtubeButtonUrl = useMemo(() => LINKS.youtube, []);
 
   // Load saved volume on mount and apply to audio
   useEffect(() => {
@@ -1313,61 +1304,20 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   target="_blank"
                   rel="noopener noreferrer"
                   className="youtube-link-waveform"
-                  title={planetDisplayMode === 'all' ? `Open CHXNDLER channel on YouTube` : `Open ${cur.title} on YouTube`}
-                  aria-label={planetDisplayMode === 'all' ? `Open CHXNDLER channel on YouTube` : `Open ${cur.title} on YouTube`}
+                  title={`Open CHXNDLER channel on YouTube`}
+                  aria-label={`Open CHXNDLER channel on YouTube`}
                   data-song={cur.title}
                   data-slug={cur.slug}
                   data-id="yt"
                   onClick={(e) => {
-                    // Intercept default navigation to open inline popout player
+                    // Open channel directly; do not show Apple popover or inline YouTube
                     try { e.preventDefault(); } catch {}
-                    // Ensure this click doesn't bubble to any outer handlers
                     try { e.stopPropagation(); } catch {}
                     try { uiClick(); } catch {}
-                    // Ensure any Apple popover is closed before opening YouTube
                     try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
-                    // Pause site audio while video plays
+                    try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
                     try { const a = audioRef.current; if (a) { a.pause(); setPlaying(false); } } catch {}
-                    // Build embeddable URL
-                    const toEmbed = (url: string): string | null => {
-                      try {
-                        const u = new URL(url);
-                        const host = u.hostname.replace(/^www\./, '');
-                        // Non-embeddable targets like channel pages should open in a new tab
-                        if ((host === 'youtube.com' || host === 'm.youtube.com') && u.pathname.startsWith('/@')) return null;
-                        if (host === 'youtube.com' && (u.pathname.startsWith('/channel/') || u.pathname.startsWith('/c/'))) return null;
-                        if (host === 'youtu.be') {
-                          const id = u.pathname.slice(1);
-                          if (id) return `https://www.youtube.com/embed/${id}`;
-                        }
-                        if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com' || host === 'music.youtube.com') {
-                          if (u.pathname === '/watch') {
-                            const id = u.searchParams.get('v');
-                            if (id) return `https://www.youtube.com/embed/${id}`;
-                          }
-                          if (u.pathname.startsWith('/shorts/')) {
-                            const id = u.pathname.split('/')[2];
-                            if (id) return `https://www.youtube.com/embed/${id}`;
-                          }
-                          if (u.pathname.startsWith('/embed/')) {
-                            return `https://${host}/embed/${u.pathname.split('/')[2]}`;
-                          }
-                          if (u.pathname.startsWith('/live/')) {
-                            const id = u.pathname.split('/')[2];
-                            if (id) return `https://www.youtube.com/embed/${id}`;
-                          }
-                        }
-                      } catch {}
-                      return null;
-                    };
-                    const embed = youtubeButtonUrl ? toEmbed(youtubeButtonUrl) : null;
-                    if (embed) {
-                      setYtEmbedUrl(`${embed}?autoplay=1&rel=0`);
-                      setShowYouTubePopover(true);
-                    } else {
-                      // Fallback to opening a new tab if we cannot parse embed URL
-                      try { window.open(youtubeButtonUrl || '', '_blank', 'noopener,noreferrer'); } catch {}
-                    }
+                    try { window.open(youtubeButtonUrl || '', '_blank', 'noopener,noreferrer'); } catch {}
                   }}
                   onMouseEnter={playHover}
                 >

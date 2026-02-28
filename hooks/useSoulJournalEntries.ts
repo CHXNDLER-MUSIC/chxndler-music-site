@@ -18,6 +18,7 @@ export type SoulJournalEntry = {
   entry_date: string;
   element: string;
   entry_text: string | null;
+  prompt?: string | null;
   stars_count?: number;
   // Denormalized author fields (for public feed - no profiles join needed)
   author_name?: string | null;
@@ -58,6 +59,7 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
         entry_id,
         user_id,
         entry_text,
+        prompt,
         element,
         entry_date,
         created_at,
@@ -71,6 +73,7 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
         entry_id,
         user_id,
         entry_text,
+        prompt,
         element,
         entry_date,
         created_at,
@@ -130,6 +133,7 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
           entry_date: entry.entry_date,
           element: entry.element,
           entry_text: entry.entry_text,
+          prompt: entry.prompt ?? null,
           stars_count: entry.stars_count ?? 0,
           // Denormalized author fields (always available)
           author_name: entry.author_name ?? null,
@@ -208,6 +212,7 @@ export function usePublicSoulJournalEntries() {
           entry_id,
           user_id,
           entry_text,
+          prompt,
           element,
           entry_date,
           created_at,
@@ -236,6 +241,7 @@ export function usePublicSoulJournalEntries() {
         entry_date: entry.entry_date,
         element: entry.element || 'heart',
         entry_text: entry.entry_text,
+        prompt: entry.prompt ?? null,
         stars_count: entry.stars_count ?? 0,
         author_name: entry.author_name ?? null,
         author_avatar_url: entry.author_avatar_url ?? null,

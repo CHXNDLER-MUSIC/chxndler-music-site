@@ -3082,25 +3082,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       ) : null}
 
 
-      {/* Blue HUD Panel with integrated planetarium */}
-      {mounted && showHUD && (
-        <HUDPanel 
-          showHUD={showHUD}
-          beamEnabled={beamEnabled}
-          joinAlienOpen={joinAlienOpen}
-          onNameSaved={setSavedProfileName}
-          onElementSaved={setSavedProfileElement}
-          onCloseBlueDisplay={() => { setShowHUD(false); setBeamEnabled(false); }}
-          onOpenBlueDisplay={() => handleBeamToggle('blue')}
-          beamColor={beamColor}
-          shouldOpenJournal={shouldOpenJournal}
-          onJournalOpened={() => setShouldOpenJournal(false)}
-          onJournalCompleted={handleJournalCompleted}
-          onBeamColorChange={handleBeamToggle}
-          todaysPrompt={todaysPrompt}
-          profileRefreshTrigger={profileRefreshTrigger}
-        />
-      )}
+      {null /* Removed duplicate HUDPanel to prevent double-render under blue display */}
 
 
       {/* Simple Dimming Overlay - ONLY controlled by cockpitVisible */}

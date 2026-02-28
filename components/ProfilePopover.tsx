@@ -2328,9 +2328,85 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                         style={{
                           transform: `rotateY(${merchRotation}deg)`,
                           transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+                          // Apply lock styling when viewing a color the user hasn't unlocked (or logged out)
+                          filter: (() => {
+                            const unlocked = unlockedMerchColors[selectedMerchInline.id] || [];
+                            // Recompute effective color to check lock state
+                            const getEffectiveColor = (): string | null => {
+                              if (selectedMerchColor) return selectedMerchColor;
+                              // Build all colors list
+                              const FALLBACK_COLORS: Record<string, Array<{ value: string }>> = {
+                                bracelet: [
+                                  { value: 'pink' },
+                                  { value: 'blue' },
+                                  { value: 'yellow' },
+                                ],
+                                beanie: [
+                                  { value: 'black' },
+                                  { value: 'blue' },
+                                  { value: 'pink' },
+                                ],
+                              };
+                              let allColors: any[] | null = null;
+                              if (selectedMerchInline.variant_options) {
+                                let parsed: any = selectedMerchInline.variant_options as any;
+                                if (typeof parsed === 'string') {
+                                  try { parsed = JSON.parse(parsed); } catch { parsed = null; }
+                                }
+                                if (parsed && typeof parsed === 'object') {
+                                  const dbC = (parsed as any).colors;
+                                  if (Array.isArray(dbC) && dbC.length > 0) allColors = dbC;
+                                }
+                              }
+                              if (!allColors) allColors = FALLBACK_COLORS[selectedMerchInline.slug] || null;
+                              if (allColors && allColors.length > 0) {
+                                const firstUnlocked = allColors.find((c: any) => unlocked.includes(c.value));
+                                return firstUnlocked?.value || allColors[0]?.value || null;
+                              }
+                              return null;
+                            };
+                            const color = getEffectiveColor();
+                            const isUnlocked = !!(color && unlocked.includes(color));
+                            return isUnlocked ? 'none' : 'grayscale(100%) opacity(0.6)';
+                          })(),
                         }}
                         draggable={false}
                       />
+                      {/* Locked overlay when current color is not unlocked (includes logged-out) */}
+                      {(() => {
+                        const unlocked = unlockedMerchColors[selectedMerchInline.id] || [];
+                        const getEffectiveColor = (): string | null => {
+                          if (selectedMerchColor) return selectedMerchColor;
+                          const FALLBACK_COLORS: Record<string, string[]> = {
+                            bracelet: ['pink', 'blue', 'yellow'],
+                            beanie: ['black', 'blue', 'pink'],
+                          };
+                          let all: string[] | null = null;
+                          if (selectedMerchInline.variant_options) {
+                            let parsed: any = selectedMerchInline.variant_options as any;
+                            if (typeof parsed === 'string') { try { parsed = JSON.parse(parsed); } catch { parsed = null; } }
+                            if (parsed && typeof parsed === 'object' && Array.isArray((parsed as any).colors)) {
+                              all = (parsed as any).colors.map((c: any) => c.value).filter(Boolean);
+                            }
+                          }
+                          if (!all) all = FALLBACK_COLORS[selectedMerchInline.slug] || null;
+                          if (all && all.length > 0) {
+                            const firstUnlocked = all.find((v: string) => unlocked.includes(v));
+                            return firstUnlocked || all[0] || null;
+                          }
+                          return null;
+                        };
+                        const color = getEffectiveColor();
+                        const isUnlocked = !!(color && unlocked.includes(color));
+                        if (isUnlocked) return null;
+                        return (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="px-3 py-1 rounded-md text-white text-sm font-semibold bg-black/40 border border-white/30 shadow-lg">
+                              Locked
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </TiltSpinCard>
                   </div>
                 </div>

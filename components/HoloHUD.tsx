@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { createPortal } from "react-dom";
 import type { Track } from "@/lib/songs-consolidated";
 import { POS } from "@/config/cockpit";
 import { useAudio } from "@/app/providers/AudioProvider";
@@ -30,39 +31,41 @@ export default function HoloHUD({
   const highlight = (track?.title || "").toLowerCase().includes("ocean girl") || (track?.slug === "ocean-girl");
 
   return (
-    <div className="holo-hud fixed inset-0 z-50 pointer-events-none select-none" aria-hidden={false}>
-      {/* Film grain + subtle bloom */}
-      <div className="filmgrain" aria-hidden />
+    <>
+      <div className="holo-hud fixed inset-0 z-50 pointer-events-none select-none" aria-hidden={false}>
+        {/* Film grain + subtle bloom */}
+        <div className="filmgrain" aria-hidden />
+      </div>
 
-
-
-
-
-      {/* Left of wheel: play/pause button */}
-      {!hidePlayButton && (
-        <button
-          type="button"
-          data-tour-id="music-power-button"
-          className={`play-btn ${audioManager.playing ? "on" : ""}`}
-          onClick={() => {
-            // Play flip sound when starting playback, pause sound when pausing
-            try { 
-              if (audioManager.playing) {
-                sfx.play('pause', 0.6);
-              } else {
-                sfx.play('flip', 0.6);
-              }
-            } catch {}
-            // Use unified audio provider for play/pause
-            audioManager.togglePlayPause();
-          }}
-          aria-label={audioManager.playing ? "Pause" : "Play"}
-        >
-          {audioManager.playing ? 
-            (<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>)
-            :
-            (<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden><path d="M6 4l14 8-14 8z"/></svg>)}
-        </button>
+      {/* Left of wheel: play/pause button rendered outside pointer-events:none container */}
+      {!hidePlayButton && createPortal(
+        (
+          <button
+            type="button"
+            data-tour-id="music-power-button"
+            className={`play-btn ${audioManager.playing ? "on" : ""}`}
+            style={{ pointerEvents: 'auto' }}
+            onClick={() => {
+              // Play flip sound when starting playback, pause sound when pausing
+              try { 
+                if (audioManager.playing) {
+                  sfx.play('pause', 0.6);
+                } else {
+                  sfx.play('flip', 0.6);
+                }
+              } catch {}
+              // Use unified audio provider for play/pause
+              audioManager.togglePlayPause();
+            }}
+            aria-label={audioManager.playing ? "Pause" : "Play"}
+          >
+            {audioManager.playing ? 
+              (<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>)
+              :
+              (<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden><path d="M6 4l14 8-14 8z"/></svg>)}
+          </button>
+        ),
+        typeof document !== 'undefined' ? document.body : (globalThis as any).document?.body
       )}
 
       <style jsx>{`
@@ -79,10 +82,6 @@ export default function HoloHUD({
             </svg>
           `)}'); background-size: 240px 240px; }
 
-
-
-
-
         /* Play button left of wheel */
         .play-btn{
           position:absolute;
@@ -97,10 +96,8 @@ export default function HoloHUD({
         .play-btn:hover{ transform: translateZ(0) scale(1.04); }
         .play-btn:active{ transform: scale(.98); }
         .play-btn svg{ fill:#fff; }
-        
-        
-        
       `}</style>
-    </div>
+    </>
   );
 }
+
