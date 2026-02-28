@@ -357,6 +357,8 @@ const HUDPanel = React.memo(function HUDPanel({
 
   // YouTube popout state (waveform HUD)
   const [showYouTubePopover, setShowYouTubePopover] = useState(false);
+  // Track last top-control pressed to avoid cross-triggering between YouTube and Apple
+  const lastTopControlRef = useRef('');
   const [showSpotifyPopover, setShowSpotifyPopover] = useState(false);
   const [spEmbedUrl, setSpEmbedUrl] = useState(null);
   const [ytEmbedUrl, setYtEmbedUrl] = useState('');
@@ -423,6 +425,10 @@ const HUDPanel = React.memo(function HUDPanel({
     null, // Empty slot
     null  // Empty slot
   ];
+  
+  // Keep layout-aligned: dropdown + controls + cover + track bar
+  // Single baseline so all move together when vertical space changes
+  const DROPDOWN_BOTTOM = 100; // px from HUD panel bottom
 
   // Available songs that show in dropdown (these should NOT be blurry)
   const availableSongs = [
@@ -2523,8 +2529,8 @@ const HUDPanel = React.memo(function HUDPanel({
           
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
           <div ref={coverRef} className="absolute hud-cover-pos" style={{
-            // Align flush to the right, above the player area
-            bottom: 44,
+            // Align flush to the right, synced exactly with dropdown baseline
+            bottom: (typeof DROPDOWN_BOTTOM === 'number' ? DROPDOWN_BOTTOM : 100),
             right: 0,
             width: 'auto',
             display: 'flex',
@@ -2601,8 +2607,53 @@ const HUDPanel = React.memo(function HUDPanel({
                 );
               }
               return null;
-            })()}
-            
+          })()}
+          
+          </div>
+
+          {/* Song dropdown aligned within the blue display (shares baseline) */}
+          <div className="absolute" style={{ 
+            left: inConsole ? 4 : 4,
+            bottom: (typeof DROPDOWN_BOTTOM === 'number' ? DROPDOWN_BOTTOM + 50 : 150),
+            // Reserve dynamic space to the right so the dropdown never overlaps the cover
+            right: oneLinerRight + 2, // Reduced padding to screen edge
+            maxWidth: 'none',
+            zIndex: 99999,  // Highest z-index to ensure it's above everything
+            pointerEvents: 'auto', // Explicitly enable pointer events
+            position: 'absolute', // Explicit positioning to avoid any layout conflicts
+            overflow: 'visible' // Ensure waveform can overflow below
+          }}>
+              {/* Song dropdown only (outer container removed) */}
+              <SongDropdown
+                items={resolvedSongs}
+                initialActiveId={active || resolvedSongs[0]?.id}
+                currentId={currentId}
+                onChange={(id) => {
+                  // Block time-locked tracks
+                  const item = resolvedSongs.find(s => s.id === id);
+                  if (item?.locked) return;
+
+                  // IMMEDIATELY close blue display when song is selected from dropdown
+                  onCloseBlueDisplay?.();
+
+                  setActive(id);
+
+                  // Load the selected track into the audio provider for play/pause button
+                  try {
+                    audioManager.selectTrack(id);
+                  } catch (error) {
+                    if (DEBUG_MEDIA) dwarn('HUDPanel: failed to load track into audio provider', error);
+                  }
+
+                  // Stop ambient space music when switching songs
+                  try {
+                    const ambient = document.querySelector('audio[data-ambient="1"]');
+                    if (ambient) {
+                      ambient.pause();
+                    }
+                  } catch {}
+                }}
+              />
           </div>
 
           {/* Waveform Media Player - positioned below dropdown with proper spacing */}
@@ -2611,8 +2662,8 @@ const HUDPanel = React.memo(function HUDPanel({
             right: oneLinerRight + 2, // Match dropdown right position
             // Adjust height to allow internal bottom buffer
             height: '60px',
-            // Keep player anchored within the blue display
-            bottom: 0,
+            // Anchor with the song dropdown baseline so they move together
+            bottom: Math.max(0, (typeof DROPDOWN_BOTTOM === 'number' ? DROPDOWN_BOTTOM : 100) - 80),
             overflow: 'visible'
           }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px', paddingBottom: 10, position: 'relative', overflow: 'visible' }}>
@@ -2654,7 +2705,8 @@ const HUDPanel = React.memo(function HUDPanel({
                         position: 'absolute',
                         left: 8,
                         right: 8,
-                        top: -38,
+                        // Sit just above the track bar so it follows the same baseline
+                        bottom: 28,
                         zIndex: 6,
                         borderRadius: '8px',
                         padding: '4px 2px',
@@ -2805,7 +2857,10 @@ const HUDPanel = React.memo(function HUDPanel({
                           data-song={currentSong?.title || ''}
                           data-slug={currentSong?.id || ''}
                           data-id="am"
+                          onMouseDown={(e) => { lastTopControlRef.current = 'am'; }}
                           onClick={(e) => {
+                            // Only handle if Apple was the explicit target; guard against stray YT clicks
+                            if (lastTopControlRef.current !== 'am') { e.preventDefault(); e.stopPropagation(); return; }
                             e.preventDefault();
                             e.stopPropagation();
                             try { sfx.play('join-aliens', 0.9); } catch {}
@@ -2843,7 +2898,7 @@ const HUDPanel = React.memo(function HUDPanel({
                           rel="noopener noreferrer"
                           data-button-id="youtube"
                           className="youtube-btn-waveform-hud"
-                          style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', order: 5, position: 'relative', zIndex: 20 }}
+                          style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', order: 5, position: 'relative', zIndex: 1000 }}
                           title={"Open CHXNDLER on YouTube"}
                           aria-label={"Open CHXNDLER on YouTube"}
                           data-song={currentSong?.title || ''}
@@ -2855,6 +2910,7 @@ const HUDPanel = React.memo(function HUDPanel({
                             e.stopPropagation();
                             try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
                             try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
+                            lastTopControlRef.current = 'yt';
                           }}
                           onTouchStart={(e) => {
                             // Mobile Safari: also guard on touchstart
@@ -2862,6 +2918,7 @@ const HUDPanel = React.memo(function HUDPanel({
                             e.stopPropagation();
                             try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
                             try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
+                            lastTopControlRef.current = 'yt';
                           }}
                           onClick={(e) => {
                             e.preventDefault();
@@ -3004,10 +3061,10 @@ const HUDPanel = React.memo(function HUDPanel({
                             <div
                               style={{
                                 position: 'absolute',
-                                // Keep within the blue display but extend under the cover art
+                                // Keep within the blue display and stop at the player column edge
                                 left: 0,
-                                // Pull the right edge under the cover art area, but not past display edge
-                                right: -Math.max(0, (oneLinerRight || 0) - 8),
+                                // Do not extend beneath the cover art area
+                                right: 0,
                                 // Ambient glow just above the blue display bottom
                                 bottom: 8,
                                 height: 20,
@@ -3022,10 +3079,10 @@ const HUDPanel = React.memo(function HUDPanel({
                               className="hud-enhanced-track"
                               style={{
                                 position: 'absolute',
-                                // Keep within the blue display but allow extension beneath cover art
+                                // Keep within the blue display and stop at the player column edge
                                 left: 0,
-                                // Pull the right edge under the cover art area, leaving a small gap
-                                right: -Math.max(0, (oneLinerRight || 0) - 8),
+                                // Do not extend beneath the cover art area
+                                right: 0,
                                 // Track bar just above the blue display bottom
                                 bottom: 8,
                                 height: 14,
@@ -7402,14 +7459,15 @@ const HUDPanel = React.memo(function HUDPanel({
         {/* Song selector and Media Player positioned outside content opacity container to avoid beamOnly blocking */}
         <div className="absolute" style={{ 
           left: inConsole ? 4 : 4,
-          bottom: 100, // Position above the player controls within the blue display
+          bottom: (typeof DROPDOWN_BOTTOM === 'number' ? DROPDOWN_BOTTOM : 100), // Position above the player controls within the blue display
           // Reserve dynamic space to the right so the dropdown never overlaps the cover
           right: oneLinerRight + 2, // Reduced padding to screen edge
           maxWidth: 'none',
           zIndex: 99999,  // Highest z-index to ensure it's above everything
           pointerEvents: 'auto', // Explicitly enable pointer events
           position: 'absolute', // Explicit positioning to avoid any layout conflicts
-          overflow: 'visible' // Ensure waveform can overflow below
+          overflow: 'visible', // Ensure waveform can overflow below
+          display: 'none' // Use the in-panel dropdown above instead of this outer one
         }}>
             {/* Song dropdown only (outer container removed) */}
             <SongDropdown

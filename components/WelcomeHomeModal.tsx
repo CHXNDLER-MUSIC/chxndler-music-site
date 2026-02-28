@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useLogOnChange } from "@/lib/useLogOnChange";
 import { createPortal } from "react-dom";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { supabaseBrowser as supabaseClient } from "@/lib/supabase/client";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
 
@@ -149,7 +149,8 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       const { error } = await supabaseClient.auth.signInWithOtp({
         email: cleanEmail,
         options: {
-          shouldCreateUser: true
+          shouldCreateUser: true,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -193,13 +194,15 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       setCode("");
       setJustSent(true);
       setTimeout(() => setJustSent(false), 1000);
-      setResendSeconds(30);
+      setResendSeconds(60);
     } catch (e: any) {
       // Show sanitized email in error message so users don't see invisible characters
       const errorMsg = e?.message || "Failed to send heart signal";
       const lower = errorMsg.toLowerCase();
       if (lower.includes("rate") && lower.includes("limit")) {
         setError("Too many signals from this address. Please wait ~60s and try again.");
+        setStep("verify");
+        setResendSeconds(60);
       } else if (lower.includes("invalid")) {
         setError(`Email address "${cleanEmail}" is invalid. Please check and try again.`);
       } else {
@@ -210,17 +213,8 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
     }
   }
 
-  // Auto-verify when 6 digits are entered (debounced ~150ms)
+  // Sanitize code; verification now only occurs on explicit button click
   const codeSanitized = useMemo(() => code.replace(/\D/g, "").slice(0, 6), [code]);
-  useEffect(() => {
-    if (step !== "verify") return;
-    if (codeSanitized.length !== 6) return;
-    const t = setTimeout(() => {
-      verifyCode(codeSanitized);
-    }, 150);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [codeSanitized, step]);
 
   async function verifyCode(submitted?: string) {
     const token = (submitted ?? codeSanitized).trim();
@@ -257,12 +251,24 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
     setLoading(true);
     setError(null);
     try {
-      const { error } = await supabaseClient.auth.signInWithOtp({ email });
+      const { error } = await supabaseClient.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
       if (error) throw error;
       setInfoMessage("New code sent.");
-      setResendSeconds(30);
+      setResendSeconds(60);
     } catch (e: any) {
-      setError(e?.message || "Failed to resend code");
+      const msg = e?.message || "Failed to resend code";
+      if ((msg || "").toLowerCase().includes("rate") && (msg || "").toLowerCase().includes("limit")) {
+        setError("Please wait ~60s before requesting another code.");
+        setResendSeconds(60);
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -503,7 +509,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
               }}
               disabled={loading || (step === 'request' ? email.length === 0 : (codeSanitized.length !== 6 && !justSent))}
               className="inline-flex items-center justify-center rounded-lg px-8 py-3 text-lg font-medium transition disabled:opacity-50 border"
-              style={step === 'verify' && !justSent ? {
+              style={step === 'verify' && !justSent && codeSanitized.length === 6 ? {
                 // Yellow glow for CONFIRM SIGNAL
                 background: 'rgba(242,239,29,0.08)',
                 border: '1px solid rgba(242,239,29,0.6)',
