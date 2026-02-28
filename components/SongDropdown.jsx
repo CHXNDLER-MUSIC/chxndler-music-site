@@ -563,9 +563,13 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
               lockCountdown = dd > 0 ? `${dd}d ${pad(hh)}h` : `${pad(hh)}:${pad(mm)}`;
             }
 
+            // Ensure a stable, non-empty, unique key for each row.
+            // Prefer slug/id, then title, then a deterministic index-based fallback.
+            const rowKey = (s && (s.id || s.slug || s.title)) ? String(s.id || s.slug || s.title) : `item-${i}`;
+
             return (
               <div
-                key={s.id}
+                key={rowKey}
                 role="option"
                 aria-selected={isActive}
                 aria-disabled={isLocked}

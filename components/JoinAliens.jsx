@@ -431,11 +431,11 @@ export default function JoinAliens({ visible = true } = {}) {
 
           {/* Weekly schedule */}
           <div style={{
-            marginTop: 'clamp(16px, 4vw, 28px)',
+            marginTop: 'clamp(8px, 2.2vw, 14px)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '6px',
+            gap: '2px',
           }}>
             {(() => {
               const acoustic = { label: 'MONDAY \u2022 7:00 PM EST \u2022 ACOUSTIC SIGNAL', kind: 'acoustic' };
@@ -445,7 +445,7 @@ export default function JoinAliens({ visible = true } = {}) {
               return [
                 { ...next, isNext: true },
                 { ...other, isNext: false },
-              ].map(({ label, isNext }) => (
+              ].map(({ label, isNext }, idx) => (
                 <div key={label} className={isNext ? 'next-broadcast-pulse' : ''} style={{
                   fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
                   fontSize: 'clamp(9px, 2.4vw, 12px)',
@@ -453,6 +453,8 @@ export default function JoinAliens({ visible = true } = {}) {
                   letterSpacing: '0.2em',
                   color: isNext ? '#00FFFF' : 'rgba(252, 84, 175, 0.45)',
                   textAlign: 'center',
+                  lineHeight: 1.05,
+                  marginTop: idx === 1 ? '4px' : 0,
                 }}>
                   {label}
                 </div>
@@ -467,7 +469,7 @@ export default function JoinAliens({ visible = true } = {}) {
         width: '100%',
         height: '1px',
         background: 'linear-gradient(90deg, transparent, rgba(252, 84, 175, 0.5), transparent)',
-        marginTop: '-6px',
+        marginTop: '-20px',
       }} />
 
       {/* Tip amount buttons - horizontal row below Twitch embed */}
@@ -476,7 +478,7 @@ export default function JoinAliens({ visible = true } = {}) {
           display: 'flex',
           justifyContent: 'center',
           gap: '16px',
-          padding: '10px 8px',
+          padding: '6px 8px 4px',
         }}>
           {[
             { amount: 3, showState: showPaymentOptions, setShow: setShowPaymentOptions, closeOthers: () => { setShowPaymentOptions5(false); setShowPaymentOptions10(false); } },

@@ -1314,8 +1314,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   <div
                     className="relative"
                     style={{
-                      maxHeight: '90%',
-                      maxWidth: '85%'
+                      height: '90%',
+                      width: '85%'
                     }}
                   >
                     {/* Front of card - rotates with cardRotation */}
@@ -1324,8 +1324,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       alt={selectedCard?.name || "Card"}
                       className="rounded-2xl pointer-events-none"
                       style={{
-                        maxHeight: '100%',
-                        maxWidth: '100%',
+                        height: '100%',
+                        width: '100%',
                         objectFit: 'contain',
                         backfaceVisibility: 'hidden',
                         WebkitBackfaceVisibility: 'hidden',
@@ -1351,8 +1351,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       alt="Card Back"
                       className="absolute top-0 left-0 rounded-2xl pointer-events-none"
                       style={{
-                        maxHeight: '100%',
-                        maxWidth: '100%',
+                        height: '100%',
+                        width: '100%',
                         objectFit: 'contain',
                         backfaceVisibility: 'hidden',
                         WebkitBackfaceVisibility: 'hidden',

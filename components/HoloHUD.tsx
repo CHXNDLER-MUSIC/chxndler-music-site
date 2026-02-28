@@ -46,6 +46,9 @@ export default function HoloHUD({
             className={`play-btn ${audioManager.playing ? "on" : ""}`}
             style={{ pointerEvents: 'auto' }}
             onClick={() => {
+              if (process.env.NODE_ENV !== 'production') {
+                console.log('[HUD PlayButton] click', { playing: audioManager.playing });
+              }
               // Play flip sound when starting playback, pause sound when pausing
               try { 
                 if (audioManager.playing) {
@@ -55,7 +58,11 @@ export default function HoloHUD({
                 }
               } catch {}
               // Use unified audio provider for play/pause
-              audioManager.togglePlayPause();
+              try {
+                audioManager.togglePlayPause();
+              } catch (err) {
+                console.error('[HUD PlayButton] togglePlayPause failed:', err);
+              }
             }}
             aria-label={audioManager.playing ? "Pause" : "Play"}
           >
@@ -100,4 +107,3 @@ export default function HoloHUD({
     </>
   );
 }
-

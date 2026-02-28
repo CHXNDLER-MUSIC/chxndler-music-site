@@ -6,7 +6,7 @@ import { chatService } from '@/lib/supabase/chat';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useProfile } from '@/contexts/ProfileContext';
 import { sfx } from '@/lib/sfx';
-import { getOrCreateGuestNameSync, clearGuestIdentity } from '@/lib/supabase/guest';
+import { getOrCreateGuestNameSync, getOrCreateGuestIdSync, clearGuestIdentity } from '@/lib/supabase/guest';
 // import { useLiveStatus } from '@/hooks/useLiveStatus'; // Removed since chat is always available
 import UserList from './UserList';
 import MessageList from './MessageList';
@@ -351,10 +351,11 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
       DEBUG && console.log('🔥 Identity resolved (auth):', name);
     } else {
       // ── Guest path ──
-      // Use the stable guest name from localStorage (creates if missing)
+      // Use the stable guest identity from localStorage (creates if missing)
       const guestName = getOrCreateGuestNameSync();
+      const guestId = getOrCreateGuestIdSync();
       setResolvedUserId(null);
-      setResolvedGuestId(guestName); // storing the name directly for simplicity
+      setResolvedGuestId(guestId);
       setResolvedName(guestName);
       setIsIdentityReady(true);
       DEBUG && console.log('🔥 Identity resolved (guest):', guestName);
@@ -625,6 +626,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
             message: msg.message,
             message_type: msg.is_system ? 'join' : 'message',
             created_at: msg.created_at,
+            dedupe_key: msg.dedupe_key || null,
             user_profile: {
               name: msg.username,
               element: msg.user_id === null ? 'alien' : null, // Guests (user_id=null) have alien element
@@ -838,6 +840,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
               username: displayName,
               is_system: true,
               client_nonce: crypto.randomUUID(),
+              guest_id: resolvedGuestId || null,
             }),
           });
           const result = await response.json();
@@ -994,6 +997,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
           is_system: false,
           client_nonce: client_nonce,
           dedupe_key: dedupe_key,
+          guest_id: isAuthenticated ? null : (resolvedGuestId || null),
         }),
       });
 

@@ -172,13 +172,15 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
       {songs.length === 0 && (
         <div className="text-cyan-300 p-4">No songs available</div>
       )}
-      {songs.map((s) => {
+      {songs.map((s, i) => {
         const isMain = s.id === mainId;
         const isHover = s.id === hoverId;
         const locked = s.id === 'colors-of-our-home-acoustic';
+        // Robust key fallback to avoid duplicate/empty keys
+        const rowKey = (s && (s.id || (s as any).slug || s.title)) ? String(s.id || (s as any).slug || s.title) : `song-${i}`;
         return (
           <button
-            key={s.id}
+            key={rowKey}
             role="option"
             aria-selected={isMain}
             aria-disabled={locked}

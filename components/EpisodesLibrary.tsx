@@ -19,7 +19,6 @@ const VIDEOS: Video[] = [
     title: "Heartverse 00: Welcome to the Heartverse",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
-    releaseDate: "2026-02-12T06:00:00",
     locked: true,
   },
   {

@@ -315,7 +315,16 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
 
             {/* Play/Pause Button */}
             <button
-              onClick={handleTogglePlay}
+              onClick={(e) => {
+                if (process.env.NODE_ENV !== 'production') {
+                  console.log('[UnifiedAudioPlayer] Play/Pause click', { playing: isPlaying });
+                }
+                try {
+                  handleTogglePlay();
+                } catch (err) {
+                  console.error('[UnifiedAudioPlayer] togglePlayPause failed:', err);
+                }
+              }}
               className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-[#19E3FF]/20 to-[#38B6FF]/20 border-2 border-[#19E3FF]/60 rounded-full flex items-center justify-center transition-all duration-300 hover:bg-[#19E3FF]/30 hover:border-[#19E3FF] hover:shadow-lg hover:shadow-[#19E3FF]/40 hover:scale-105"
               aria-label={isPlaying ? "Pause" : "Play"}
               style={{

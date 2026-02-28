@@ -80,6 +80,7 @@ export default function YourBook({ isOpen, onClose }) {
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          key="yourbook-modal"
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -187,6 +188,7 @@ export default function YourBook({ isOpen, onClose }) {
           <AnimatePresence>
             {enlargedCard && (
               <motion.div
+                key={`yourbook-enlarged-${enlargedCard?.id || 'card'}`}
                 className="absolute inset-0 z-10 flex items-center justify-center p-4"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

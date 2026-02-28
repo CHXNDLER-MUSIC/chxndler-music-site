@@ -264,7 +264,8 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
               }}
             />
 
-            {/* Tab Content */}
+            {/* Tab Content (scrolls if needed) */}
+            <div className="flex-1 min-h-0 overflow-y-auto pr-1">
             {activeTab === "CHXNDLER" && (
               <>
                 {/* Description */}
@@ -285,13 +286,17 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
             {activeTab === "WE BELIEVE" && (
               <>
                 {/* We Believe Content */}
-                <div 
+                <div
                   className="text-left space-y-2 pl-2"
-                  style={{ 
-                    fontSize: 20, 
-                    color: '#FFFFFF !important', 
+                  style={{
+                    /* Scale down font size on small screens to avoid overflow */
+                    fontSize: 'clamp(12px, 1.8vw, 20px)',
+                    lineHeight: 1.35,
+                    color: '#FFFFFF !important',
                     textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)',
-                    marginTop: '16px'
+                    marginTop: '16px',
+                    overflowWrap: 'anywhere',
+                    wordBreak: 'break-word',
                   }}
                 >
                   <div className="flex items-start">
@@ -449,6 +454,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                 </div>
               </>
             )}
+            </div>
           </div>
         </div>
       )}

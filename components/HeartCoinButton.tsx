@@ -4570,8 +4570,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                                     [currentMerchIndex]: { value: opt.value, image: opt.image }
                                                   }));
                                                 }}
-                                                className={`w-4 h-4 rounded-full border-2 hover:scale-110 transition-all ${
-                                                  isSelected ? 'border-[#F2EF1D] ring-2 ring-[#F2EF1D]/50' : 'border-white/50'
+                                                className={`w-4 h-4 rounded-full border-2 transition-all ${
+                                                  isSelected ? 'border-[#F2EF1D] ring-2 ring-[#F2EF1D]/50 hover:scale-110' : 'border-white/50 hover:scale-110'
                                                 }`}
                                                 style={{ backgroundColor: dotColor || '#666' }}
                                                 title={opt.label}
@@ -5934,26 +5934,37 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         };
                         const dotColor = isColor ? (colorMap[opt.value.toLowerCase()] || '#888') : null;
                         const isSelected = selected === opt.value;
+                        // In enlarged view, lock color pills only when logged out
+                        const isLocked = !profile?.id;
+                        const lockLabel = isLocked ? 'Unlock at DREAMER' : null; // tooltip hint while logged out
                         return (
                           <button
                             key={opt.value}
                             onClick={(e) => {
                               e.stopPropagation();
+                              if (isLocked) return;
                               try { sfx.play('click', 0.5); } catch {}
                               setSelectedVariants(prev => ({
                                 ...prev,
                                 [activeMerchIndex]: { value: opt.value, image: opt.image }
                               }));
                             }}
-                            className={`w-6 h-6 rounded-full border-2 hover:scale-125 transition-all ${
-                              isSelected ? 'border-[#F2EF1D] ring-2 ring-[#F2EF1D]/50 scale-110' : 'border-white/50'
+                            disabled={isLocked}
+                            aria-disabled={isLocked}
+                            className={`w-6 h-6 rounded-full border-2 transition-all ${
+                              isLocked
+                                ? 'border-white/20 cursor-not-allowed opacity-50'
+                                : isSelected
+                                  ? 'border-[#F2EF1D] ring-2 ring-[#F2EF1D]/50 scale-110 hover:scale-125'
+                                  : 'border-white/50 hover:scale-125'
                             }`}
                             style={{
                               backgroundColor: dotColor || '#666',
-                              boxShadow: isSelected ? `0 0 12px ${dotColor || '#888'}` : 'none'
+                              boxShadow: isSelected && !isLocked ? `0 0 12px ${dotColor || '#888'}` : 'none',
+                              filter: isLocked ? 'grayscale(40%)' : 'none'
                             }}
-                            title={opt.label}
-                            aria-label={`Select ${opt.label}`}
+                            title={isLocked ? `${opt.label} (${lockLabel || 'Log in to unlock'})` : opt.label}
+                            aria-label={isLocked ? `${opt.label} locked` : `Select ${opt.label}`}
                           />
                         );
                       })}

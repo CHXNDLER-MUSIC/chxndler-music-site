@@ -192,6 +192,7 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
   return (
     <AnimatePresence>
       <motion.div
+        key={`profile-modal-${user?.id || 'anon'}`}
         className="fixed inset-0 z-[120] flex items-center justify-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

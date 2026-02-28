@@ -14,6 +14,7 @@ export async function POST(req: Request) {
     const displayName = (body?.displayName ?? body?.username ?? "").toString().trim();
     const clientNonce = (body?.client_nonce ?? '').toString().trim() || null;
     const dedupeKey = (body?.dedupe_key ?? clientNonce ?? '').toString().trim() || null;
+    const guestId = (body?.guest_id ?? '').toString().trim() || null;
 
     if (!message) {
       return NextResponse.json(
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
       .from("heart_signal_messages")
       .insert({
         user_id: userId, // may be null for guests
+        guest_id: userId ? null : guestId, // set guest_id for logged-out users
         username,
         message,
         is_system: false,

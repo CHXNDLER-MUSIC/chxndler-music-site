@@ -1304,11 +1304,22 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   target="_blank"
                   rel="noopener noreferrer"
                   className="youtube-link-waveform"
+                  style={{ position: 'relative', zIndex: 10 }}
                   title={`Open CHXNDLER channel on YouTube`}
                   aria-label={`Open CHXNDLER channel on YouTube`}
                   data-song={cur.title}
                   data-slug={cur.slug}
                   data-id="yt"
+                  onMouseDown={(e) => {
+                    try { e.preventDefault(); e.stopPropagation(); } catch {}
+                    try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
+                    try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
+                  }}
+                  onTouchStart={(e) => {
+                    try { e.preventDefault(); e.stopPropagation(); } catch {}
+                    try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
+                    try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
+                  }}
                   onClick={(e) => {
                     // Open channel directly; do not show Apple popover or inline YouTube
                     try { e.preventDefault(); } catch {}

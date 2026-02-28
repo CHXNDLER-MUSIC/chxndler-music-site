@@ -359,6 +359,7 @@ export default function SignalChat({
       <AnimatePresence>
         {isVisible && (
           <motion.div
+            key="signal-chat-panel"
             initial={{ opacity: 0, scale: 0.8, x: 50, y: 50 }}
             animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, x: 50, y: 50 }}
@@ -421,7 +422,8 @@ export default function SignalChat({
 
                   return (
                     <motion.div
-                      key={msg.id || msg.client_id}
+                      // Ensure non-empty, stable key to avoid duplicate '' warnings
+                      key={`${msg.id ?? '0'}:${msg.client_id ?? '0'}:${msg.dedupe_key ?? '0'}`}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: isPending ? 0.6 : 1, y: 0 }}
                       className={`text-xs rounded p-2 ${

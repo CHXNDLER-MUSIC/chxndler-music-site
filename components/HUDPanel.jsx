@@ -2843,12 +2843,26 @@ const HUDPanel = React.memo(function HUDPanel({
                           rel="noopener noreferrer"
                           data-button-id="youtube"
                           className="youtube-btn-waveform-hud"
-                          style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', order: 5 }}
+                          style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', order: 5, position: 'relative', zIndex: 20 }}
                           title={"Open CHXNDLER on YouTube"}
                           aria-label={"Open CHXNDLER on YouTube"}
                           data-song={currentSong?.title || ''}
                           data-slug={currentSong?.id || ''}
                           data-id="yt"
+                          onMouseDown={(e) => {
+                            // Prevent any underlying handlers (like Apple) from firing on mousedown
+                            e.preventDefault();
+                            e.stopPropagation();
+                            try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
+                            try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
+                          }}
+                          onTouchStart={(e) => {
+                            // Mobile Safari: also guard on touchstart
+                            e.preventDefault();
+                            e.stopPropagation();
+                            try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
+                            try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
+                          }}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();

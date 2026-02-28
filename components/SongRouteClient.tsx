@@ -51,7 +51,8 @@ export default function SongRouteClient({ song, nextSlug }: { song: Song; nextSl
   return (
     <div style={song.theme as React.CSSProperties}>
       <AnimatePresence mode="wait">
-        <motion.div key={song.slug} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        {/* Ensure a stable, non-empty key so AnimatePresence doesn't see duplicate '' keys */}
+        <motion.div key={song?.slug || song?.title || 'song'} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           transition={{ duration: 0.35 }}>
           <Bg active />
         </motion.div>

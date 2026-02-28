@@ -3165,6 +3165,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       <AnimatePresence>
         {authError && (
           <motion.div
+            key="auth-error-banner"
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}

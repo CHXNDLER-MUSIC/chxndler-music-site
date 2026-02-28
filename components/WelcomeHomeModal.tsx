@@ -33,7 +33,12 @@ const isValidEmail = (email: string): boolean =>
 
 const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }: Props) {
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  type Step = "request" | "verify" | "success";
+  const [step, setStep] = useState<Step>("request");
+  const [code, setCode] = useState("");
+  const [justSent, setJustSent] = useState(false);
+  const [resendSeconds, setResendSeconds] = useState(30);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   
@@ -95,7 +100,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
 
   async function signInWithGoogle() {
     setError(null);
-    setMessage(null);
+    setInfoMessage(null);
     setLoading(true);
     try {
       const { error } = await supabaseClient.auth.signInWithOAuth({
@@ -119,7 +124,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
   async function signInWithEmail(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setMessage(null);
+    setInfoMessage(null);
     setLoading(true);
 
     // Sanitize and validate email before sending to Supabase
@@ -144,7 +149,6 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       const { error } = await supabaseClient.auth.signInWithOtp({
         email: cleanEmail,
         options: {
-          emailRedirectTo: getRedirectUrl(),
           shouldCreateUser: true
         },
       });
@@ -184,7 +188,12 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
         if (process.env.NODE_ENV !== "production") console.log('Audio playback failed:', audioError);
       }
 
-      setMessage("Check your email to continue");
+      // Move to verify step with temporary "SIGNAL SENT" button state
+      setStep("verify");
+      setCode("");
+      setJustSent(true);
+      setTimeout(() => setJustSent(false), 1000);
+      setResendSeconds(30);
     } catch (e: any) {
       // Show sanitized email in error message so users don't see invisible characters
       const errorMsg = e?.message || "Failed to send heart signal";
@@ -193,6 +202,64 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       } else {
         setError(errorMsg);
       }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Auto-verify when 6 digits are entered (debounced ~150ms)
+  const codeSanitized = useMemo(() => code.replace(/\D/g, "").slice(0, 6), [code]);
+  useEffect(() => {
+    if (step !== "verify") return;
+    if (codeSanitized.length !== 6) return;
+    const t = setTimeout(() => {
+      verifyCode(codeSanitized);
+    }, 150);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [codeSanitized, step]);
+
+  async function verifyCode(submitted?: string) {
+    const token = (submitted ?? codeSanitized).trim();
+    if (token.length !== 6 || !email) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabaseClient.auth.verifyOtp({
+        email,
+        token,
+        type: "email",
+      });
+      if (error) throw error;
+      setStep("success");
+      setInfoMessage(null);
+      // After success, ProfileContext should update and modal will close automatically
+    } catch (e: any) {
+      setError(e?.message || "Invalid or expired code. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Resend with cooldown
+  useEffect(() => {
+    if (step !== "verify") return;
+    if (resendSeconds <= 0) return;
+    const id = setInterval(() => setResendSeconds((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(id);
+  }, [step, resendSeconds]);
+
+  async function resendCode() {
+    if (loading || resendSeconds > 0 || !email) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabaseClient.auth.signInWithOtp({ email });
+      if (error) throw error;
+      setInfoMessage("New code sent.");
+      setResendSeconds(30);
+    } catch (e: any) {
+      setError(e?.message || "Failed to resend code");
     } finally {
       setLoading(false);
     }
@@ -246,7 +313,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
         }}
       >
         <div
-          className="welcome-hologram-container pointer-events-auto"
+          className={`welcome-hologram-container pointer-events-auto transition-all duration-500 ${step === 'success' ? 'portalActive scale-105 opacity-0' : 'opacity-100'}`}
           style={{
             width: 'min(92vw, 700px)',
             height: '100%',
@@ -347,57 +414,123 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
             {error}
           </div>
         )}
+        {infoMessage && (
+          <div className="relative mb-2 rounded-md bg-green-50/10 border border-green-200/40 p-2 text-sm text-green-200">
+            {infoMessage}
+          </div>
+        )}
 
         <div className="relative space-y-1" style={{ marginLeft: '20px' }}>
 
-          {/* Email Login Section */}
-          <form onSubmit={signInWithEmail} className="space-y-2">
-            <input
-              id="welcome-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-              disabled={loading}
-              className="block w-full rounded-md border px-3 py-3 text-lg shadow-sm focus:outline-none disabled:opacity-50"
-              style={{
-                border: '1px solid rgba(0,255,255,0.4)',
-                background: 'rgba(0,0,0,0.3)',
-                color: '#00FFFF',
-                textShadow: '0 0 4px rgba(0,255,255,0.6)',
-                backdropFilter: 'blur(4px)'
-              }}
-            />
-          </form>
+          {/* Email or Code Section (keeps layout stable) */}
+          {step === "request" ? (
+            <form onSubmit={signInWithEmail} className="space-y-2">
+              <input
+                id="welcome-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                disabled={loading}
+                className="block w-full rounded-md border px-3 py-3 text-lg shadow-sm focus:outline-none disabled:opacity-50"
+                style={{
+                  border: '1px solid rgba(0,255,255,0.4)',
+                  background: 'rgba(0,0,0,0.3)',
+                  color: '#00FFFF',
+                  textShadow: '0 0 4px rgba(0,255,255,0.6)',
+                  backdropFilter: 'blur(4px)'
+                }}
+              />
+            </form>
+          ) : (
+            <div className="space-y-2">
+              <input
+                id="welcome-code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]*"
+                maxLength={6}
+                value={codeSanitized}
+                onChange={(e) => setCode(e.target.value)}
+                onPaste={(e) => {
+                  const text = e.clipboardData.getData('text');
+                  const digits = (text || '').replace(/\D/g, '').slice(0, 6);
+                  if (digits.length === 6) {
+                    e.preventDefault();
+                    setCode(digits);
+                  }
+                }}
+                placeholder="••••••"
+                disabled={step === 'success'}
+                className="block w-full rounded-md border px-3 py-3 text-lg shadow-sm focus:outline-none disabled:opacity-50 text-center tracking-widest"
+                style={{
+                  border: '1px solid rgba(0,255,255,0.4)',
+                  background: 'rgba(0,0,0,0.3)',
+                  color: '#00FFFF',
+                  textShadow: '0 0 4px rgba(0,255,255,0.6)',
+                  backdropFilter: 'blur(4px)'
+                }}
+              />
+              <div className="flex items-center justify-between text-xs" style={{ color: '#00FFFF' }}>
+                <span>{email}</span>
+                <button
+                  type="button"
+                  onClick={resendCode}
+                  disabled={loading || resendSeconds > 0 || step !== 'verify'}
+                  className="underline disabled:no-underline disabled:opacity-50"
+                  style={{ color: '#FF69B4' }}
+                >
+                  {resendSeconds > 0 ? `Resend code in ${resendSeconds}s` : 'Resend code'}
+                </button>
+              </div>
+            </div>
+          )}
           
-          {/* Single Send Heart Signal Button */}
+          {/* Primary Button: changes by step; stays in place */}
           <div className="flex justify-center" style={{ marginTop: '12px' }}>
             <button
               onClick={() => {
-                if (email.length > 0 && !message) {
-                  signInWithEmail(new Event('submit') as any);
+                if (step === 'request') {
+                  if (email.length > 0) signInWithEmail({ preventDefault: () => {} } as any);
+                } else if (step === 'verify') {
+                  verifyCode();
                 }
               }}
-              disabled={loading || email.length === 0}
-              className="inline-flex items-center justify-center rounded-lg px-8 py-3 text-lg font-medium transition disabled:opacity-50"
-            style={message ? {
-              background: 'rgba(0,255,0,0.2)',
-              border: '1px solid rgba(0,255,0,0.6)',
-              color: '#00FF00',
-              textShadow: '0 0 8px rgba(0,255,0,0.8), 0 0 16px rgba(0,255,0,0.6), 0 0 24px rgba(0,255,0,0.4)',
-              boxShadow: '0 0 15px rgba(0,255,0,0.6), 0 0 25px rgba(0,255,0,0.4), 0 0 35px rgba(0,255,0,0.2)'
-            } : {
-              background: 'rgba(0,255,255,0.15)',
-              border: '1px solid rgba(0,255,255,0.5)',
-              color: '#00FFFF',
-              textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 16px rgba(0,255,255,0.6), 0 0 24px rgba(0,255,255,0.4)',
-              boxShadow: loading || email.length === 0
-                ? 'none' 
-                : '0 0 15px rgba(0,255,255,0.4), 0 0 25px rgba(0,255,255,0.2)'
-            }}
-          >
-            {message ? "Check your email to continue" : "Enter the Heartverse"}
+              disabled={loading || (step === 'request' ? email.length === 0 : (codeSanitized.length !== 6 && !justSent))}
+              className="inline-flex items-center justify-center rounded-lg px-8 py-3 text-lg font-medium transition disabled:opacity-50 border"
+              style={step === 'verify' && !justSent ? {
+                // Yellow glow for CONFIRM SIGNAL
+                background: 'rgba(242,239,29,0.08)',
+                border: '1px solid rgba(242,239,29,0.6)',
+                color: '#F2EF1D',
+                textShadow: '0 0 8px rgba(242,239,29,0.9), 0 0 16px rgba(242,239,29,0.6)',
+                boxShadow: '0 0 15px rgba(242,239,29,0.4), 0 0 30px rgba(242,239,29,0.2)'
+              } : step === 'verify' && justSent ? {
+                // Brief success state after sending signal
+                background: 'rgba(0,255,0,0.2)',
+                border: '1px solid rgba(0,255,0,0.6)',
+                color: '#00FF00',
+                textShadow: '0 0 8px rgba(0,255,0,0.8), 0 0 16px rgba(0,255,0,0.6), 0 0 24px rgba(0,255,0,0.4)',
+                boxShadow: '0 0 15px rgba(0,255,0,0.6), 0 0 25px rgba(0,255,0,0.4), 0 0 35px rgba(0,255,0,0.2)'
+              } : step === 'success' ? {
+                background: 'rgba(0,255,0,0.2)',
+                border: '1px solid rgba(0,255,0,0.6)',
+                color: '#00FF00',
+                textShadow: '0 0 8px rgba(0,255,0,0.8), 0 0 16px rgba(0,255,0,0.6), 0 0 24px rgba(0,255,0,0.4)'
+              } : {
+                // Default cyan style
+                background: 'rgba(0,255,255,0.15)',
+                border: '1px solid rgba(0,255,255,0.5)',
+                color: '#00FFFF',
+                textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 16px rgba(0,255,255,0.6), 0 0 24px rgba(0,255,255,0.4)',
+                boxShadow: loading || (step === 'request' && email.length === 0)
+                  ? 'none'
+                  : '0 0 15px rgba(0,255,255,0.4), 0 0 25px rgba(0,255,255,0.2)'
+              }}
+            >
+              {step === 'success' ? 'SIGNAL CONFIRMED' : step === 'verify' ? (justSent ? 'SIGNAL SENT' : 'CONFIRM SIGNAL') : 'SEND SIGNAL'}
           </button>
           </div>
         </div>

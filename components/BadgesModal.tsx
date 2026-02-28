@@ -990,6 +990,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     <AnimatePresence>
       {enlargedBadge && (
         <motion.div
+          key="enlarged-badge-modal"
           className="fixed z-[9999] flex items-center justify-center"
           style={{
             top: 'var(--profile-bar-boundary, 64px)',
