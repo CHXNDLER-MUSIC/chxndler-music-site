@@ -1800,7 +1800,6 @@ const HUDPanel = React.memo(function HUDPanel({
     setDailySoulPrompt(todaysPrompt || null);
   }, [todaysPrompt]);
 
-  const [animationTime, setAnimationTime] = useState(0);
   // Volume popover (HUD waveform controls)
   const [showHudVolumePopover, setShowHudVolumePopover] = useState(false);
   const hudVolRef = useRef(null);
@@ -2117,70 +2116,54 @@ const HUDPanel = React.memo(function HUDPanel({
     let animationId;
     let frameCount = 0;
 
-    const animate = () => {
-      setAnimationTime(Date.now());
+    const updateFromAudio = (a) => {
+      const newTime = a.currentTime;
+      const newDur = a.duration;
+      if (isFinite(newDur) && newDur > 0) {
+        setDuration(prevDur => (Math.abs(newDur - prevDur) > 0.1 ? newDur : prevDur));
+      }
+      setProgress(prevTime => (Math.abs(newTime - prevTime) > 0.01 ? newTime : prevTime));
+    };
 
-      // Find audio element - try liveAudioRef first, then search DOM
+    const findAudio = () => {
       let a = liveAudioRef.current;
       if (!a) {
         const allAudio = document.querySelectorAll('audio');
         for (const el of allAudio) {
-          if (!el.paused || el.currentTime > 0) {
-            a = el;
-            break;
-          }
+          if (!el.paused || el.currentTime > 0) { a = el; break; }
         }
-        if (!a && allAudio.length > 0) {
-          a = allAudio[0];
-        }
+        if (!a && allAudio.length > 0) a = allAudio[0];
       }
+      return a;
+    };
 
+    if (!playing) {
+      const a = findAudio();
+      if (a) updateFromAudio(a);
+      return; // Skip RAF when not playing to avoid unnecessary re-renders
+    }
+
+    const animate = () => {
+      const a = findAudio();
       if (a) {
-        const newTime = a.currentTime;
-        const newDur = a.duration;
-
-        // Update duration if it's valid (helps with initial load and track changes)
-        if (isFinite(newDur) && newDur > 0) {
-          setDuration(prevDur => {
-            if (Math.abs(newDur - prevDur) > 0.1) { // Update if difference > 100ms
-              return newDur;
-            }
-            return prevDur;
-          });
-        }
-
-        // Update progress (both playing and paused states for seek support)
-        setProgress(prevTime => {
-          if (Math.abs(newTime - prevTime) > 0.01) { // Update if difference > 10ms
-            return newTime;
-          }
-          return prevTime;
-        });
-
-        // Debug logging every 60 frames (1 second at 60fps) when playing
+        updateFromAudio(a);
         frameCount++;
         if (frameCount % 60 === 0 && DEBUG_MEDIA && !a.paused) {
           dlog('HUDPanel Animation Loop (Playing):', {
             audioType: !currentId ? 'ambient' : 'main',
-            currentTime: newTime.toFixed(2),
+            currentTime: a.currentTime.toFixed(2),
             duration: a.duration?.toFixed(2) || 'unknown',
-            progress: a.duration > 0 ? ((newTime / a.duration) * 100).toFixed(1) : 0,
-            cursor: a.duration > 0 ? `${((newTime / a.duration) * 100).toFixed(1)}%` : '0%',
+            progress: a.duration > 0 ? ((a.currentTime / a.duration) * 100).toFixed(1) : 0,
+            cursor: a.duration > 0 ? `${((a.currentTime / a.duration) * 100).toFixed(1)}%` : '0%',
             readyState: a.readyState
           });
         }
       }
-
-      // Continue animation loop
       animationId = requestAnimationFrame(animate);
     };
 
     animationId = requestAnimationFrame(animate);
-    return () => {
-      if (animationId) {
-        cancelAnimationFrame(animationId);
-      }
-    };
+    return () => { if (animationId) cancelAnimationFrame(animationId); };
   }, [playing, currentId]); // React to playing state changes and currentId changes
 
   // Progress bar click handler (unified audio)

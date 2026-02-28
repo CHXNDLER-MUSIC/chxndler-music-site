@@ -176,9 +176,10 @@ const VIDEOS: Video[] = [
   {
     id: "lsf-003",
     title: "Electric Signal 03",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    youtubeUrl: "https://youtu.be/fiw8XEdCR8g",
     type: "electric",
     releaseDate: "2026-03-07T12:00:00",
+    postDescription: "Setlist\n00:00 WELCOME ALIEN\n00:29 FEELING THIS\n02:55 ALONE\n06:22 MR. BRIGHTSIDE\n10:05 ALWAYS ON MY MIND\n13:23 ALIEN (HOUSE PARTY)\n17:49 WE'RE JUST FRIENDS",
   },
   {
     id: "lsf-004",
