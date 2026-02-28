@@ -54,7 +54,18 @@ export default function SongHUD({ title, coverSrc, element }: { title: string; c
         <div style={{ lineHeight: 1.1 }}>
           <div style={{ fontSize: 12, opacity: .8 }}>Element: {element}</div>
         </div>
-        <button onClick={playing ? pause : play} className="ml-3 px-3 py-1 rounded bg-white/10 border border-white/20">
+        <button
+          onClick={() => {
+            try {
+              const mainToggle = (window as any)?.mainPlayerToggle;
+              const main = document.querySelector<HTMLAudioElement>('audio[data-audio-player="1"]');
+              if (typeof mainToggle === 'function' && main) { mainToggle(); return; }
+            } catch {}
+            // Fallback to provider controls
+            if (playing) { try { pause(); } catch {} } else { try { play(); } catch {} }
+          }}
+          className="ml-3 px-3 py-1 rounded bg-white/10 border border-white/20"
+        >
           {playing ? 'Pause' : 'Play'}
         </button>
       </div>

@@ -346,7 +346,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabaseBrowser
         .from("profiles")
         .select(
-          "id, email, phone, name, element, journey, tier, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, total_reflections, total_listening_minutes, total_heartcoins_earned, elemental_sessions_count, community_interactions, achievements_unlocked, streams_attended, livestreams_attended, concerts_attended, cards_owned, merch_items_owned, unique_merch_items, digital_cards_owned, donations_made, heartcoins_sent, aliens_invited, card_slots"
+          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, total_reflections, total_listening_minutes, total_heartcoins_earned, elemental_sessions_count, community_interactions, achievements_unlocked, streams_attended, livestreams_attended, concerts_attended, cards_owned, merch_items_owned, unique_merch_items, digital_cards_owned, donations_made, heartcoins_sent, aliens_invited, card_slots"
         )
         .eq("id", user.id)
         .maybeSingle();
@@ -588,7 +588,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         .from("profiles")
         .update(dbUpdates)
         .eq("id", user.id)
-        .select("id, email, phone, name, element, journey, tier, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, total_reflections, total_listening_minutes, total_heartcoins_earned, elemental_sessions_count, community_interactions, achievements_unlocked, streams_attended, livestreams_attended, concerts_attended, cards_owned, merch_items_owned, unique_merch_items, digital_cards_owned, donations_made, heartcoins_sent, aliens_invited, card_slots")
+        .select("id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, total_reflections, total_listening_minutes, total_heartcoins_earned, elemental_sessions_count, community_interactions, achievements_unlocked, streams_attended, livestreams_attended, concerts_attended, cards_owned, merch_items_owned, unique_merch_items, digital_cards_owned, donations_made, heartcoins_sent, aliens_invited, card_slots")
         .maybeSingle();
 
       if (error) {

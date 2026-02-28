@@ -300,12 +300,14 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   useEffect(() => {
     const onDocDown = (e: MouseEvent | TouchEvent) => {
       const t = e.target as Node | null;
-      const inMain = !!(mainVolRef.current && t && mainVolRef.current.contains(t));
-      const inWave = !!(waveVolRef.current && t && waveVolRef.current.contains(t));
+      // Only treat clicks on the actual main volume control as inside
+      const inMainControl = !!(mainVolRef.current && t && mainVolRef.current.contains(t));
+      // For the waveform row, only the dedicated volume button should keep the popover open
+      const inWaveVolumeBtn = !!(t && (t as Element).closest?.('.waveform-volume-btn'));
       // Also check if click is inside a portalled volume-popover
       const inPopover = !!(t && (t as Element).closest?.('.volume-popover'));
-      if (!inMain && !inPopover) setShowMainVolumePopover(false);
-      if (!inWave && !inPopover) setShowWaveformVolumePopover(false);
+      if (!inMainControl && !inPopover) setShowMainVolumePopover(false);
+      if (!inWaveVolumeBtn && !inPopover) setShowWaveformVolumePopover(false);
       // Do not forcibly close the lyrics modal here.
       // The lyrics modal manages its own close behavior via SharedModal onClose/overlay.
     };
@@ -321,6 +323,14 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       document.removeEventListener('keydown', onKey);
     };
   }, []);
+
+  // If the song picker opens, collapse any open volume popovers
+  useEffect(() => {
+    if (pickerOpen) {
+      setShowMainVolumePopover(false);
+      setShowWaveformVolumePopover(false);
+    }
+  }, [pickerOpen]);
 
   // Keep popover positions in sync on resize/scroll
   useEffect(() => {
@@ -1228,7 +1238,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         {/* Song dropdown row (above waveform) */}
         <div className="song-dropdown-row">
           <button 
-            onClick={() => setPickerOpen((o)=>!o)} 
+            onClick={() => { setShowMainVolumePopover(false); setShowWaveformVolumePopover(false); setPickerOpen((o)=>!o); }} 
             className="selector-btn" 
             aria-haspopup="listbox" 
             aria-expanded={pickerOpen} 
@@ -2791,7 +2801,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           display: flex;
           order: 3 !important; /* Controls are below waveform */
           align-items: center;
-          justify-content: center; /* center row so waveform can sit directly under */
+          justify-content: flex-start; /* left-align controls to reduce left gap */
           flex-wrap: wrap; /* allow wrapping on smaller screens */
           gap: 12px;
           padding: 0;
@@ -2800,8 +2810,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           background: transparent;
           backdrop-filter: none;
           box-shadow: none;
-          margin: 0 2px;
-          transform: translateY(10px); /* nudge buttons slightly lower */
+          margin: 0 2px 0 -6px; /* slight negative left margin to tighten gap */
+          /* Nudge slightly down */
+          transform: translateY(10px);
         }
 
         .play-pause-btn {
@@ -2820,6 +2831,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           box-shadow: 
             0 4px 16px rgba(25,227,255,0.3),
             inset 0 1px 0 rgba(255,255,255,0.2);
+          /* Pull play/pause slightly further left within the row */
+          margin-left: -4px;
         }
         
         .play-pause-btn:hover {

@@ -212,15 +212,26 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
 
   // Handle play/pause button
   const handleTogglePlay = useCallback(() => {
-    // Play flip sound when starting playback, pause sound when pausing
-    try { 
+    // Prefer the main player's native toggle (same as Spacebar) to ensure
+    // we pause/resume the actual playback element when present.
+    try {
+      const mainToggle = (window as any)?.mainPlayerToggle;
+      const main = document.querySelector<HTMLAudioElement>('audio[data-audio-player="1"]');
+      if (typeof mainToggle === 'function' && main) {
+        // Let MediaPlayer handle SFX to avoid double sounds
+        mainToggle();
+        return;
+      }
+    } catch {}
+
+    // Fallback: use the provider toggle and local SFX
+    try {
       if (audioManager.playing) {
         sfx.play('pause', 0.6);
       } else {
         sfx.play('flip', 0.6);
       }
     } catch {}
-    // Use the unified audio system's togglePlayPause which handles default track loading
     audioManager.togglePlayPause();
   }, [audioManager]);
 
@@ -292,7 +303,7 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
 
   return (
     <motion.div
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[min(92vw,680px)]"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[min(98vw,1100px)]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
@@ -311,7 +322,7 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
           </div>
 
           {/* Player Controls */}
-          <div className="flex items-center justify-center gap-4 mt-2">
+          <div className="flex items-center justify-start gap-4 mt-2 -ml-2">
 
             {/* Play/Pause Button */}
             <button
@@ -343,7 +354,7 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
           </div>
 
           {/* Progress Bar - Below controls */}
-          <div className="flex items-center gap-3 mt-1">
+          <div className="flex items-center gap-2 mt-1">
             <div className="text-[#9EEBFF]/70 text-xs font-mono min-w-[3ch]">
               {formatTime(liveTime)}
             </div>
@@ -382,7 +393,7 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
                 }}
               />
             </div>
-            <div className="text-[#9EEBFF]/70 text-xs font-mono min-w-[3ch]">
+            <div className="text-[#9EEBFF]/70 text-xs font-mono">
               {formatTime(liveDuration)}
             </div>
           </div>

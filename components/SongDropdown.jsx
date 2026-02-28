@@ -140,7 +140,9 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
         const rect = listRef.current.getBoundingClientRect();
         const x = e.clientX;
         const y = e.clientY;
-        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        // Allow a small tolerance on the right edge to account for overlay/native scrollbars
+        const rightTolerance = 24; // px
+        if (x >= rect.left && x <= rect.right + rightTolerance && y >= rect.top && y <= rect.bottom) {
           return;
         }
       }
@@ -320,6 +322,11 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
           role="listbox"
           tabIndex={-1}
           onKeyDown={onListKeyDown}
+          onMouseDown={(e) => {
+            // Prevent outside-click handler from firing while interacting inside the list,
+            // including native scrollbar drags which may not target a child node.
+            e.stopPropagation();
+          }}
           ref={listRef}
           className="fixed z-[100000] overflow-y-auto overflow-x-hidden rounded-[8px] border border-[#19E3FF]/60 bg-[rgba(8,26,32,0.82)] backdrop-blur-xl shadow-[0_6px_18px_rgba(0,0,0,0.45)] holo-scrollbar"
           style={{

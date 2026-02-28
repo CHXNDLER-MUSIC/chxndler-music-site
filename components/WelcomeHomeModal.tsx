@@ -37,7 +37,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
   const [step, setStep] = useState<Step>("request");
   const [code, setCode] = useState("");
   const [justSent, setJustSent] = useState(false);
-  const [resendSeconds, setResendSeconds] = useState(30);
+  const [resendSeconds, setResendSeconds] = useState(0);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -199,9 +199,12 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       // Show sanitized email in error message so users don't see invisible characters
       const errorMsg = e?.message || "Failed to send heart signal";
       const lower = errorMsg.toLowerCase();
-      if (lower.includes("rate") && lower.includes("limit")) {
-        setError("Too many signals from this address. Please wait ~60s and try again.");
+      if ((e?.status === 429) || (lower.includes("rate") && lower.includes("limit"))) {
+        // Supabase rate limited: allow user to enter their most recent code
+        setError(null);
+        setInfoMessage("You requested a code recently. Use the latest code in your inbox or wait ~60s to request another.");
         setStep("verify");
+        setJustSent(false);
         setResendSeconds(60);
       } else if (lower.includes("invalid")) {
         setError(`Email address "${cleanEmail}" is invalid. Please check and try again.`);
@@ -230,6 +233,14 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       if (error) throw error;
       setStep("success");
       setInfoMessage(null);
+      // Trigger Heartverse warp effect to center after successful confirmation
+      try {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('planet:warp', {
+            detail: { element: 'center', isCenterPlanet: true }
+          }));
+        }
+      } catch {}
       // After success, ProfileContext should update and modal will close automatically
     } catch (e: any) {
       setError(e?.message || "Invalid or expired code. Try again.");
@@ -240,11 +251,10 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
 
   // Resend with cooldown
   useEffect(() => {
-    if (step !== "verify") return;
     if (resendSeconds <= 0) return;
     const id = setInterval(() => setResendSeconds((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(id);
-  }, [step, resendSeconds]);
+  }, [resendSeconds]);
 
   async function resendCode() {
     if (loading || resendSeconds > 0 || !email) return;
@@ -394,7 +404,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
         
         {/* Header */}
         <div 
-          className="text-center mb-3"
+          className="text-center mb-1"
           style={{ 
             color: '#00FFFF', 
             textShadow: '0 0 8px rgba(0,255,255,0.6)', 
@@ -407,7 +417,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
         
         {/* Thin yellow neon line */}
         <div 
-          className="w-full h-px mb-4"
+          className="w-full h-px mb-2"
           style={{
             background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
             boxShadow: '0 0 4px rgba(0,255,255,0.6)'
@@ -416,15 +426,15 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
 
         <p className="relative text-lg mb-2 text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 16px rgba(0,255,255,0.6), 0 0 24px rgba(0,255,255,0.4)' }}>WELCOME TO THE <span style={{ color: '#FF69B4', textShadow: '0 0 8px rgba(255,105,180,0.8), 0 0 16px rgba(255,105,180,0.6), 0 0 24px rgba(255,105,180,0.4)' }}>HEARTVERSE</span> <span style={{ color: '#FF69B4', textShadow: '0 0 8px rgba(255,105,180,0.8), 0 0 16px rgba(255,105,180,0.6), 0 0 24px rgba(255,105,180,0.4)' }}>{"<3"}</span></p>
         
-        <p className="relative text-lg mb-3 text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>Connect with other Aliens, receive early releases and access exclusive events.</p>
+        <p className="relative text-lg mb-1 text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>Connect with other Aliens, receive early releases and access exclusive events.</p>
 
         {error && (
-          <div className="relative mb-2 rounded-md bg-red-50/10 border border-red-200/40 p-2 text-sm text-red-200">
+          <div className="relative mb-1 rounded-md bg-red-50/10 border border-red-200/40 p-2 text-sm text-red-200">
             {error}
           </div>
         )}
         {infoMessage && (
-          <div className="relative mb-2 rounded-md bg-green-50/10 border border-green-200/40 p-2 text-sm text-green-200">
+          <div className="relative mb-1 rounded-md bg-green-50/10 border border-green-200/40 p-2 text-sm text-green-200">
             {infoMessage}
           </div>
         )}
@@ -433,7 +443,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
 
           {/* Email or Code Section (keeps layout stable) */}
           {step === "request" ? (
-            <form onSubmit={signInWithEmail} className="space-y-2">
+            <form onSubmit={signInWithEmail} className="space-y-1.5">
               <input
                 id="welcome-email"
                 type="email"
@@ -451,9 +461,26 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
                   backdropFilter: 'blur(4px)'
                 }}
               />
+              {resendSeconds > 0 && (
+                <div className="text-xs" style={{ color: '#00FFFF' }}>
+                  Please wait {resendSeconds}s before trying again.
+                </div>
+              )}
             </form>
           ) : (
             <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs" style={{ color: '#00FFFF' }}>
+                <span>{email}</span>
+                <button
+                  type="button"
+                  onClick={resendCode}
+                  disabled={loading || resendSeconds > 0 || step !== 'verify'}
+                  className="underline disabled:no-underline disabled:opacity-50"
+                  style={{ color: '#FF69B4' }}
+                >
+                  {resendSeconds > 0 ? `Resend code in ${resendSeconds}s` : 'Resend code'}
+                </button>
+              </div>
               <input
                 id="welcome-code"
                 type="text"
@@ -482,23 +509,11 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
                   backdropFilter: 'blur(4px)'
                 }}
               />
-              <div className="flex items-center justify-between text-xs" style={{ color: '#00FFFF' }}>
-                <span>{email}</span>
-                <button
-                  type="button"
-                  onClick={resendCode}
-                  disabled={loading || resendSeconds > 0 || step !== 'verify'}
-                  className="underline disabled:no-underline disabled:opacity-50"
-                  style={{ color: '#FF69B4' }}
-                >
-                  {resendSeconds > 0 ? `Resend code in ${resendSeconds}s` : 'Resend code'}
-                </button>
-              </div>
             </div>
           )}
           
           {/* Primary Button: changes by step; stays in place */}
-          <div className="flex justify-center" style={{ marginTop: '12px' }}>
+          <div className="flex justify-center" style={{ marginTop: '8px' }}>
             <button
               onClick={() => {
                 if (step === 'request') {
@@ -507,8 +522,8 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
                   verifyCode();
                 }
               }}
-              disabled={loading || (step === 'request' ? email.length === 0 : (codeSanitized.length !== 6 && !justSent))}
-              className="inline-flex items-center justify-center rounded-lg px-8 py-3 text-lg font-medium transition disabled:opacity-50 border"
+              disabled={loading || (step === 'request' ? (email.length === 0 || resendSeconds > 0) : (codeSanitized.length !== 6 && !justSent))}
+              className="w-full flex items-center justify-center rounded-lg px-3 py-2 text-lg font-medium transition disabled:opacity-50 border"
               style={step === 'verify' && !justSent && codeSanitized.length === 6 ? {
                 // Yellow glow for CONFIRM SIGNAL
                 background: 'rgba(242,239,29,0.08)',

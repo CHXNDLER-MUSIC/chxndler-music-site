@@ -39,7 +39,7 @@ const VIDEOS: Video[] = [
   {
     id: "hv-003",
     title: "Heartverse 03: Welcome To New York",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    youtubeUrl: "https://youtube.com/shorts/x4xhwXkx9yE?feature=share",
     type: "heartverse",
     releaseDate: "2026-03-04T19:00:00",
   },

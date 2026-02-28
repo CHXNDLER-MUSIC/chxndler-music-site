@@ -1688,6 +1688,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     },
 
     togglePlayPause: () => {
+      // If the main MediaPlayer is present, delegate to its native toggle
+      // so behavior matches Spacebar and Media keys.
+      try {
+        const main = document.querySelector<HTMLAudioElement>('audio[data-audio-player="1"]');
+        const mainToggle = (window as any)?.mainPlayerToggle;
+        if (main && typeof mainToggle === 'function') {
+          mainToggle();
+          return;
+        }
+      } catch {}
       // Prefer the main MediaPlayer element if present; fallback to provider's element
       const main = document.querySelector<HTMLAudioElement>('audio[data-audio-player="1"]');
       const a = main || audioRef.current;

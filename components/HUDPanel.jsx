@@ -2610,6 +2610,113 @@ const HUDPanel = React.memo(function HUDPanel({
               return null;
           })()}
           
+          {/* Track bar directly below the cover art container */}
+          {(() => {
+            try {
+              const a = liveAudioRef?.current;
+              // Try to find any audio element if liveAudioRef isn't set
+              let audioEl = a;
+              if (!audioEl) {
+                const allAudio = document.querySelectorAll('audio');
+                for (const el of allAudio) {
+                  if (!el.paused || el.currentTime > 0) {
+                    audioEl = el;
+                    break;
+                  }
+                }
+                if (!audioEl && allAudio.length > 0) {
+                  audioEl = allAudio[0];
+                }
+              }
+
+              // Get values from multiple sources
+              const amDur = audioManager?.duration;
+              const amTime = audioManager?.currentTime;
+              const elDur = audioEl?.duration;
+              const elTime = audioEl?.currentTime;
+
+              const liveDur = (isFinite(elDur) && elDur > 0) ? elDur
+                : (isFinite(amDur) && amDur > 0) ? amDur
+                : (isFinite(duration) && duration > 0) ? duration
+                : 0;
+              const liveTime = (isFinite(elTime) && elTime >= 0) ? elTime
+                : (isFinite(amTime) && amTime >= 0) ? amTime
+                : (isFinite(progress) && progress >= 0) ? progress
+                : 0;
+              const pct = liveDur > 0 ? Math.max(0, Math.min(100, (liveTime / liveDur) * 100)) : 0;
+
+              return (
+                <div
+                  className="hud-cover-track"
+                  title="Click or drag to seek"
+                  style={{
+                    width: '100%',
+                    height: 12,
+                    marginTop: 8,
+                    borderRadius: 9999,
+                    background: 'rgba(20,20,25,0.9)',
+                    border: '1px solid rgba(25,227,255,0.6)',
+                    boxShadow: '0 0 8px rgba(25,227,255,0.5), 0 0 16px rgba(25,227,255,0.35), inset 0 0 4px rgba(25,227,255,0.25)',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    touchAction: 'none'
+                  }}
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    try {
+                      if (e.currentTarget && typeof e.currentTarget.setPointerCapture === 'function' && e.pointerId != null) {
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                      }
+                    } catch {}
+
+                    // Resolve audio + duration snapshot
+                    const resolveAudioAndDuration = () => {
+                      let el = liveAudioRef?.current || audioManager.getCurrentAudio?.() || audioEl;
+                      if (!el) {
+                        el = document.querySelector('audio[data-audio-player="1"]') || document.querySelector('audio[src*="tracks"]');
+                      }
+                      let dur = liveDur;
+                      if ((!dur || dur <= 0) && el) dur = el.duration;
+                      if (!dur || dur <= 0) dur = duration;
+                      return { el, dur };
+                    };
+
+                    const bar = e.currentTarget;
+                    const { el, dur } = resolveAudioAndDuration();
+                    if (!el || !dur || dur <= 0) return;
+
+                    const seekFromClientX = (clientX) => {
+                      const rect = bar.getBoundingClientRect();
+                      const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                      const ratio = rect.width > 0 ? (x / rect.width) : 0;
+                      const newTime = Math.max(0, Math.min(dur, ratio * dur));
+                      try { el.currentTime = newTime; } catch {}
+                    };
+
+                    seekFromClientX(e.clientX);
+                    const onMove = (ev) => seekFromClientX(ev.clientX);
+                    const onUp = () => {
+                      window.removeEventListener('pointermove', onMove);
+                      window.removeEventListener('pointerup', onUp);
+                    };
+                    window.addEventListener('pointermove', onMove);
+                    window.addEventListener('pointerup', onUp, { once: true });
+                  }}
+                >
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${pct}%`,
+                      background: 'linear-gradient(90deg, #FC54AF 0%, #38B6FF 50%, #F2EF1D 100%)',
+                      boxShadow: '0 0 8px rgba(252,84,175,0.4), 0 0 16px rgba(56,182,255,0.3)'
+                    }}
+                  />
+                </div>
+              );
+            } catch { return null; }
+          })()}
+          
           </div>
 
           {/* Song dropdown aligned within the blue display (shares baseline) */}
@@ -2704,7 +2811,7 @@ const HUDPanel = React.memo(function HUDPanel({
                         alignItems: 'center',
                         gap: 10,
                         position: 'absolute',
-                        left: 8,
+                        left: 6,
                         right: 8,
                         // Sit just above the track bar so it follows the same baseline
                         bottom: 28,
@@ -3058,49 +3165,13 @@ const HUDPanel = React.memo(function HUDPanel({
 
                           return (
                             <>
-                            {/* Subtle ambient glow behind the track bar */}
+                            {/* Hide in-panel track bar; using cover-aligned bar instead */}
                             <div
-                              style={{
-                                position: 'absolute',
-                                // Keep within the blue display and stop at the player column edge
-                                left: 0,
-                                // Do not extend beneath the cover art area
-                                right: 0,
-                                // Ambient glow just above the blue display bottom
-                                bottom: 8,
-                                height: 20,
-                                borderRadius: 9999,
-                                background: 'radial-gradient(ellipse 100% 100%, rgba(25,227,255,0.25) 0%, rgba(25,227,255,0.1) 50%, transparent 80%)',
-                                filter: 'blur(8px)',
-                                pointerEvents: 'none',
-                                zIndex: 99
-                              }}
+                              style={{ display: 'none' }}
                             />
                             <div
                               className="hud-enhanced-track"
-                              style={{
-                                position: 'absolute',
-                                // Keep within the blue display and stop at the player column edge
-                                left: 0,
-                                // Do not extend beneath the cover art area
-                                right: 0,
-                                // Track bar just above the blue display bottom
-                                bottom: 8,
-                                height: 14,
-                                borderRadius: 9999,
-                                background: 'rgba(20,20,25,0.9)',
-                                border: '1px solid rgba(25,227,255,0.6)',
-                                boxShadow: `
-                                  0 0 8px rgba(25,227,255,0.6),
-                                  0 0 16px rgba(25,227,255,0.4),
-                                  inset 0 0 4px rgba(25,227,255,0.3)
-                                `,
-                                overflow: 'hidden',
-                                cursor: 'pointer',
-                                pointerEvents: 'auto',
-                                zIndex: 100,
-                                touchAction: 'none'
-                              }}
+                              style={{ display: 'none' }}
                               onMouseDown={(e) => { e.stopPropagation(); }}
                               onPointerDown={(e) => {
                                 // Enable click-and-drag scrubbing
