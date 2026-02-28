@@ -200,7 +200,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   onMouseEnter={() => {
                     try { sfx.play('hover', 0.3); } catch {}
                   }}
-                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all duration-200 border ${
+                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all duration-200 border whitespace-nowrap ${
                     activeTab === "WE BELIEVE"
                       ? "bg-pink-500/30 text-pink-200 border-pink-400/70"
                       : "bg-black/20 text-white/70 hover:text-white border-white/30 hover:border-white/50"
@@ -220,7 +220,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   onMouseEnter={() => {
                     try { sfx.play('hover', 0.3); } catch {}
                   }}
-                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all duration-200 border ${
+                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all duration-200 border whitespace-nowrap ${
                     activeTab === "CHXNDLER"
                       ? "bg-pink-500/30 text-pink-200 border-pink-400/70"
                       : "bg-black/20 text-white/70 hover:text-white border-white/30 hover:border-white/50"
@@ -240,7 +240,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   onMouseEnter={() => {
                     try { sfx.play('hover', 0.3); } catch {}
                   }}
-                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all duration-200 border ${
+                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all duration-200 border whitespace-nowrap ${
                     activeTab === "ELEMENTS"
                       ? "bg-pink-500/30 text-pink-200 border-pink-400/70"
                       : "bg-black/20 text-white/70 hover:text-white border-white/30 hover:border-white/50"
@@ -289,8 +289,8 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                 <div
                   className="text-left space-y-2 pl-2"
                   style={{
-                    /* Scale down font size on small screens to avoid overflow */
-                    fontSize: 'clamp(12px, 1.8vw, 20px)',
+                    /* Slightly larger while remaining responsive */
+                    fontSize: 'clamp(15px, 2.2vw, 22px)',
                     lineHeight: 1.35,
                     color: '#FFFFFF !important',
                     textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)',

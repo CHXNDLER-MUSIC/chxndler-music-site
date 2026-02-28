@@ -1931,7 +1931,8 @@ const HUDPanel = React.memo(function HUDPanel({
         const width = rect?.width || el.offsetWidth || 0;
         // Account for the negative right offset so we only reserve the area overlapping the panel
         const overflow = Math.abs(inConsole ? -8 : -16);
-        const gap = 12; // small gap so text never touches the cover
+        // Reduce reserved gap so the track bar stretches further right
+        const gap = 4; // keep a small visual buffer from the cover
         const right = Math.max(0, Math.round((width - overflow) + gap));
         setOneLinerRight(right || (inConsole ? 108 : 140));
       } catch {

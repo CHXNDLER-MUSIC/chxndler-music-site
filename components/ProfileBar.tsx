@@ -677,7 +677,10 @@ export default function ProfileBar({
               border: '1px solid rgba(255,105,180,0.55)',
               boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
               backdropFilter: 'blur(12px) saturate(140%)',
-              position: 'relative'
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 0
             }}
         >
           {/* Soft bottom glow pseudo element */}
@@ -752,7 +755,7 @@ export default function ProfileBar({
             <div className="flex bg-black/30 rounded-lg p-1">
               <button
                 onClick={() => setChxndlerActiveTab("CHXNDLER")}
-                className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
+                className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
                   chxndlerActiveTab === "CHXNDLER"
                     ? "bg-pink-500/20 text-pink-300 border border-pink-400/50"
                     : "text-white/70 hover:text-white"
@@ -766,7 +769,7 @@ export default function ProfileBar({
               </button>
               <button
                 onClick={() => setChxndlerActiveTab("WE BELIEVE")}
-                className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
+                className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
                   chxndlerActiveTab === "WE BELIEVE"
                     ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/50"
                     : "text-white/70 hover:text-white"
@@ -780,7 +783,7 @@ export default function ProfileBar({
               </button>
               <button
                 onClick={() => setChxndlerActiveTab("ELEMENTS")}
-                className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
+                className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
                   chxndlerActiveTab === "ELEMENTS"
                     ? "bg-purple-500/20 text-purple-300 border border-purple-400/50"
                     : "text-white/70 hover:text-white"
@@ -804,7 +807,8 @@ export default function ProfileBar({
             }}
           />
           
-          {/* Tab Content */}
+          {/* Tab Content (scrolls if needed) */}
+          <div className="flex-1 min-h-0 overflow-y-auto pr-1">
           {chxndlerActiveTab === "CHXNDLER" && (
             <div className="text-center px-2">
               {/* Description */}
@@ -828,7 +832,7 @@ export default function ProfileBar({
               <div 
                 className="text-left space-y-3"
                 style={{ 
-                  fontSize: 'clamp(12px, 1.6vw, 15px)',
+                  fontSize: 'clamp(15px, 2vw, 18px)',
                   lineHeight: 1.35,
                   color: '#FFFFFF !important', 
                   textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
@@ -924,6 +928,7 @@ export default function ProfileBar({
               </div>
             </div>
           )}
+          </div>
           </div>
         </div>
       )}
