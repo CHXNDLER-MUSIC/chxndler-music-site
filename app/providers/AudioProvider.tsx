@@ -1688,15 +1688,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     },
 
     togglePlayPause: () => {
-      const a = audioRef.current;
+      // Prefer the main MediaPlayer element if present; fallback to provider's element
+      const main = document.querySelector<HTMLAudioElement>('audio[data-audio-player="1"]');
+      const a = main || audioRef.current;
       if (!a) return;
 
-      // Use the browser's actual audio state (a.paused) as the source of truth
-      // instead of state.playing which can be stale in useMemo closures.
+      // Use the browser's actual audio state as truth
       const isActuallyPlaying = !a.paused;
 
-      // Also check if ANY audio element on the page is actively playing
-      // This catches cases where audio plays through a different element than audioRef
+      // Also detect any audio playing across the page
       let anyAudioPlaying = isActuallyPlaying;
       if (!anyAudioPlaying) {
         try {
@@ -1707,121 +1707,91 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         } catch {}
       }
 
-      if (process.env.NODE_ENV !== "production") console.log('🎵 togglePlayPause called - state.playing:', state.playing, 'a.paused:', a.paused, 'isActuallyPlaying:', isActuallyPlaying, 'anyAudioPlaying:', anyAudioPlaying);
+      if (process.env.NODE_ENV !== "production") console.log('🎵 togglePlayPause', {
+        statePlaying: state.playing,
+        elPaused: a.paused,
+        anyAudioPlaying
+      });
 
       if (anyAudioPlaying || state.playing) {
         if (process.env.NODE_ENV !== "production") console.log('🎵 Pausing audio');
-        // Update state immediately to provide instant UI feedback
         setState(s => ({ ...s, playing: false }));
-        // Clear any pending track to prevent auto-replay after pause
         setState(s => ({ ...s, pendingTrack: null }));
         try { a.pause(); } catch {}
-        // Pause ALL audio elements on the page to ensure nothing keeps playing
         try {
           const allAudio = document.querySelectorAll<HTMLAudioElement>('audio');
-          allAudio.forEach(audio => {
-            try { if (!audio.paused) audio.pause(); } catch {}
-          });
+          allAudio.forEach(audio => { try { if (!audio.paused) audio.pause(); } catch {} });
         } catch {}
-        // Block MediaPlayer or other subsystems from auto-resuming after we pause
         try { (window as any).__BLOCK_MAIN_AUDIO = true; } catch {}
-      } else {
-        // Check if there's a current track that should be playing
-        if (state.currentTrack) {
-          if (process.env.NODE_ENV !== "production") console.log('🎵 Current track exists, validating audio source for resume:', state.currentTrack.id);
+        return;
+      }
 
-          // Determine expected source using shared mapper with normalized slug
-          const norm = normalizeSlug(state.currentTrack.id);
-          const key = trackKeyFromSlug(norm) as TrackKey | null;
-          const expectedSource = key ? bestSourceFor(TRACKS[key]) : S(`${norm}.mp3`);
+      // Otherwise, resume playback
+      try { (window as any).__BLOCK_MAIN_AUDIO = false; } catch {}
 
-          // Only set src when there's no source at all. Do NOT reload when resuming.
-          // Some filenames contain URL-encoded characters (e.g., we%27re-just-friends),
-          // which makes naive substring checks unreliable and could cause unwanted reloads
-          // that reset currentTime to 0 on resume.
-          if (!a.src || a.src === 'null' || a.src === '') {
-            if (process.env.NODE_ENV !== "production") console.log('🎵 No audio source loaded, setting expected source:', expectedSource);
-            a.src = expectedSource;
-            try { a.load(); } catch {}
-            setState(s => ({ ...s, src: expectedSource }));
-          } else {
-            // Keep existing src to preserve currentTime on resume
-            if (process.env.NODE_ENV !== "production") console.log('🎵 Source already present; skipping reload to preserve position');
-          }
-        } else {
-          // If no track loaded, load space music as default for now
-          // Note: The existing player store sync logic will handle switching to selected songs
-          if (!a.src || a.src === 'null' || a.src === '') {
-            if (process.env.NODE_ENV !== "production") console.log('🎵 No track loaded, loading space music as default');
-            const spaceMusicSource = bestSourceFor(TRACKS.SPACE_MUSIC);
-            a.src = spaceMusicSource;
-            try { a.load(); } catch {}
-            setState(s => ({
-              ...s,
-              src: spaceMusicSource,
-              currentTrack: TRACK_INFO['space-music'] || null
-            }));
-          }
+      // If resuming on main MediaPlayer element, don't touch sources; just play
+      if (main) {
+        setState(s => ({ ...s, playing: true }));
+        void a.play().catch(err => {
+          console.error('Failed to resume main player:', err);
+          setState(s => ({ ...s, playing: false }));
+        });
+        return;
+      }
+
+      // Fallback to provider-managed element: ensure it has a source
+      if (state.currentTrack) {
+        const norm = normalizeSlug(state.currentTrack.id);
+        const key = trackKeyFromSlug(norm) as TrackKey | null;
+        const expectedSource = key ? bestSourceFor(TRACKS[key]) : S(`${norm}.mp3`);
+        if (!a.src || a.src === 'null' || a.src === '') {
+          a.src = expectedSource;
+          try { a.load(); } catch {}
+          setState(s => ({ ...s, src: expectedSource }));
         }
+      } else if (!a.src || a.src === 'null' || a.src === '') {
+        const spaceMusicSource = bestSourceFor(TRACKS.SPACE_MUSIC);
+        a.src = spaceMusicSource;
+        try { a.load(); } catch {}
+        setState(s => ({ ...s, src: spaceMusicSource, currentTrack: TRACK_INFO['space-music'] || null }));
+      }
 
-        if (process.env.NODE_ENV !== "production") console.log('🎵 Starting audio playback with src:', a.src);
-
-        // Allow MediaPlayer/main audio to play again
-        try { (window as any).__BLOCK_MAIN_AUDIO = false; } catch {}
-
-        // Check if audio is ready to play
-        if (a.readyState >= 3) {
-          // Audio is ready, play immediately
-          if (process.env.NODE_ENV !== "production") console.log('🎵 Audio ready, playing immediately');
-          setState(s => ({ ...s, playing: true }));
-          void a.play().catch((err) => {
-            console.error('Failed to toggle play audio:', err);
-            setState(s => ({ ...s, playing: false }));
+      if (a.readyState >= 3) {
+        setState(s => ({ ...s, playing: true }));
+        void a.play().catch(err => {
+          console.error('Failed to toggle play audio:', err);
+          setState(s => ({ ...s, playing: false }));
+        });
+      } else {
+        setState(s => ({ ...s, playing: true, isLoading: true }));
+        const handleCanPlay = () => {
+          setState(s => ({ ...s, isLoading: false }));
+          void a.play().catch(err => {
+            console.error('Failed to play audio after load:', err);
+            setState(s => ({ ...s, playing: false, isLoading: false }));
           });
-        } else {
-          // Audio not ready, wait for it to load
-          if (process.env.NODE_ENV !== "production") console.log('🎵 Audio not ready (readyState:', a.readyState, '), waiting for load...');
-          setState(s => ({ ...s, playing: true, isLoading: true }));
-
-          const handleCanPlay = () => {
-            if (process.env.NODE_ENV !== "production") console.log('🎵 Audio can play, starting playback');
-            setState(s => ({ ...s, isLoading: false }));
-            void a.play().catch((err) => {
-              console.error('Failed to play audio after load:', err);
+          a.removeEventListener('canplay', handleCanPlay);
+          a.removeEventListener('error', handleError);
+        };
+        const handleError = (e: Event) => {
+          console.error('🎵 Audio load error during toggle play:', e);
+          setState(s => ({ ...s, playing: false, isLoading: false }));
+          a.removeEventListener('canplay', handleCanPlay);
+          a.removeEventListener('error', handleError);
+        };
+        a.addEventListener('canplay', handleCanPlay, { once: true });
+        a.addEventListener('error', handleError, { once: true });
+        if (a.readyState === 0) { try { a.load(); } catch {} }
+        setTimeout(() => {
+          if (a.readyState < 3) {
+            a.removeEventListener('canplay', handleCanPlay);
+            a.removeEventListener('error', handleError);
+            void a.play().catch(err => {
+              console.error('Failed to play audio after timeout:', err);
               setState(s => ({ ...s, playing: false, isLoading: false }));
             });
-            a.removeEventListener('canplay', handleCanPlay);
-            a.removeEventListener('error', handleError);
-          };
-
-          const handleError = (e: Event) => {
-            console.error('🎵 Audio load error during toggle play:', e);
-            setState(s => ({ ...s, playing: false, isLoading: false }));
-            a.removeEventListener('canplay', handleCanPlay);
-            a.removeEventListener('error', handleError);
-          };
-
-          a.addEventListener('canplay', handleCanPlay, { once: true });
-          a.addEventListener('error', handleError, { once: true });
-
-          // Trigger load if needed
-          if (a.readyState === 0) {
-            try { a.load(); } catch {}
           }
-
-          // Timeout fallback
-          setTimeout(() => {
-            if (a.readyState < 3) {
-              if (process.env.NODE_ENV !== "production") console.warn('🎵 Audio load timeout, attempting to play anyway');
-              a.removeEventListener('canplay', handleCanPlay);
-              a.removeEventListener('error', handleError);
-              void a.play().catch((err) => {
-                console.error('Failed to play audio after timeout:', err);
-                setState(s => ({ ...s, playing: false, isLoading: false }));
-              });
-            }
-          }, 3000);
-        }
+        }, 3000);
       }
     },
 

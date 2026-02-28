@@ -65,95 +65,61 @@ const normalizeMessage = (msg) => {
 };
 
 /**
- * Dedupe and merge messages using Map keyed by (id ?? client_id)
- * Preserves order by created_at, handles optimistic replacement
- * GUARANTEE: All returned messages will have a valid non-empty client_id
+ * Merge/dedupe messages by id and dedupe_key; stable and order-preserving.
+ * Rules:
+ * - Prefer DB id when present
+ * - Replace an optimistic row when a row with the same dedupe_key arrives with a real id
+ * - No empty/undefined keys used for identity
  */
-const upsertMessages = (prev, incoming, options = {}) => {
-  const { replaceOptimistic = true } = options;
-  const messageMap = new Map();
+const mergeMessages = (prev, incoming) => {
+  const outMap = new Map(); // key: id or dedupe_key
 
-  // Add all previous messages to map
-  (prev || []).forEach(msg => {
-    const normalized = normalizeMessage(msg);
-    if (!normalized) return;
-    // Use client_id as primary key since normalizeMessage guarantees it's set
-    const key = normalized.client_id || normalized.id;
-    if (key && key.length > 0) {
-      messageMap.set(key, normalized);
-    } else if (DEBUG) {
-      console.warn('⚠️ upsertMessages: Skipping message with no key:', msg);
-    }
+  // Seed with previous messages
+  (prev || []).forEach((m) => {
+    const base = normalizeMessage(m) || {};
+    const k = base.id || base.dedupe_key || base.client_nonce;
+    if (!k) return;
+    outMap.set(k, base);
   });
 
-  // Process incoming messages
-  const incomingArray = Array.isArray(incoming) ? incoming : [incoming];
-  incomingArray.forEach(msg => {
-    const normalized = normalizeMessage(msg);
-    if (!normalized) return;
-    const key = normalized.client_id || normalized.id;
-    if (!key || key.length === 0) {
-      if (DEBUG) console.warn('⚠️ upsertMessages: Incoming message has no key:', msg);
+  const arr = Array.isArray(incoming) ? incoming : [incoming];
+  arr.forEach((raw) => {
+    const msg = normalizeMessage(raw) || {};
+    const hasId = !!msg.id;
+    const k = msg.id || msg.dedupe_key || msg.client_nonce;
+    if (!k) {
+      DEBUG && console.warn('⚠️ mergeMessages: incoming message has no id/dedupe_key:', raw);
       return;
     }
 
-    // Check if this replaces an optimistic message
-    if (replaceOptimistic && normalized.id && typeof normalized.id === 'string' && normalized.id.length > 0) {
-      // Look for matching optimistic message by client_nonce or content + username
-      for (const [existingKey, existingMsg] of messageMap.entries()) {
-        // Check if this is an optimistic/temp message key
-        const isOptimistic = existingKey.startsWith('temp-') || existingKey.startsWith('guest-') ||
-                            existingKey.startsWith('msg_') || existingKey.includes('_temp-') ||
-                            existingKey.includes('_guest-') || existingMsg.pending;
-        if (isOptimistic) {
-          // Match by client_nonce if available, otherwise by content + username
-          const matchByNonce = normalized.client_nonce && existingMsg.client_nonce === normalized.client_nonce;
-          const matchByContent = existingMsg.username === normalized.username && existingMsg.message === normalized.message;
-          if (matchByNonce || matchByContent) {
-            // Replace optimistic with real, preserving clientKey and client_nonce for stable React keys
-            messageMap.delete(existingKey);
-            messageMap.set(key, { ...normalized, clientKey: existingMsg.clientKey || existingMsg.client_id, client_nonce: existingMsg.client_nonce || normalized.client_nonce });
-            return;
-          }
-        }
-      }
+    // If server row with id arrives: remove any optimistic with same dedupe_key
+    if (hasId) {
+      // Remove any record under its dedupe_key
+      const dk = msg.dedupe_key || msg.client_nonce;
+      if (dk && outMap.has(dk)) outMap.delete(dk);
+      // Also remove if it was stored under previous temp/tempId/client_id
+      const optimistic = Array.from(outMap.entries())
+        .find(([_, v]) => (v.dedupe_key && v.dedupe_key === dk) || (v.client_nonce && v.client_nonce === dk));
+      if (optimistic) outMap.delete(optimistic[0]);
     }
 
-    // Also check for duplicates by DB id if the incoming message has one
-    if (normalized.id && typeof normalized.id === 'string') {
-      const dbKey = `db_${normalized.id}`;
-      if (messageMap.has(dbKey) && key !== dbKey) {
-        // Already have this message by its DB id, update it
-        messageMap.delete(dbKey);
-      }
-    }
-
-    messageMap.set(key, normalized);
+    outMap.set(k, { ...outMap.get(k), ...msg });
   });
 
-  // Convert back to array and sort by created_at
-  const result = Array.from(messageMap.values()).sort((a, b) => {
-    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-    return dateA - dateB;
+  // Sort by created_at ascending
+  const result = Array.from(outMap.values()).sort((a, b) => {
+    const aT = a?.created_at ? new Date(a.created_at).getTime() : 0;
+    const bT = b?.created_at ? new Date(b.created_at).getTime() : 0;
+    return aT - bT;
   });
 
-  // Debug logging for key issues in development
   if (DEBUG) {
-    const keys = result.map(m => m.client_id || m.id || '');
-    const keySet = new Set(keys);
-    const emptyKeys = keys.filter(k => !k || k.length === 0).length;
-    const duplicateCount = keys.length - keySet.size;
-    if (emptyKeys > 0 || duplicateCount > 0) {
-      if (process.env.NODE_ENV !== "production") {
-        console.warn(`⚠️ upsertMessages result: ${emptyKeys} empty keys, ${duplicateCount} duplicates out of ${keys.length} messages`);
-        const keyCounts = {};
-        keys.forEach(k => { keyCounts[k] = (keyCounts[k] || 0) + 1; });
-        const duplicates = Object.entries(keyCounts).filter(([_, count]) => count > 1);
-        if (duplicates.length > 0) {
-          console.warn('⚠️ Duplicate keys:', duplicates);
-        }
-      }
+    const ids = result.map(m => m.id || m.dedupe_key || m.client_nonce || '');
+    const set = new Set(ids);
+    const empty = ids.filter(k => !k).length;
+    const dups = ids.length - set.size;
+    if (empty > 0 || dups > 0) {
+      console.warn(`⚠️ mergeMessages result: ${empty} empty keys, ${dups} duplicates of ${ids.length}`);
     }
   }
 
@@ -666,8 +632,8 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
               profile_image_url: null
             }
           }));
-          // Use upsertMessages to properly dedupe and merge with any optimistic messages
-          setMessages((prev) => upsertMessages(prev, transformedMessages));
+          // Merge and dedupe by id and dedupe_key
+          setMessages((prev) => mergeMessages(prev, transformedMessages));
 
           // Load reaction counts from messages into messageReactions state
           const loadedReactions = {};
@@ -752,6 +718,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
               message: msg.message,
               message_type: msg.is_system ? 'join' : 'message',
               created_at: msg.created_at,
+              dedupe_key: msg.dedupe_key || msg.client_nonce || null,
               user_profile: {
                 name: msg.username,
                 element: isGuestMessage ? 'alien' : null,
@@ -763,7 +730,8 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
             // Dedupe: skip if a message with this id already exists in state
             setMessages(prev => {
               if (msg.id && prev.some(m => m.id === msg.id)) return prev;
-              return upsertMessages(prev, newMessage);
+              if (process.env.NODE_ENV !== "production") console.log('🛰 realtime INSERT', { id: msg.id, dedupe_key: msg.dedupe_key });
+              return mergeMessages(prev, newMessage);
             });
 
             // Play notification sound for new messages (not system messages)
@@ -954,8 +922,9 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
       profileName: profile?.name
     });
 
-    // Generate IDs for optimistic UI
-    const client_nonce = crypto.randomUUID();
+    // Generate IDs for optimistic UI and server dedupe
+    const dedupe_key = crypto.randomUUID();
+    const client_nonce = dedupe_key; // back-compat with any places still checking client_nonce
     const tempId = crypto.randomUUID();
 
     // Determine if authenticated or guest using resolved identity
@@ -967,7 +936,8 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
     const optimistic = normalizeMessage({
       id: null, // No DB id yet
       client_nonce: client_nonce,
-      client_id: client_nonce, // Keep existing dedupe behavior
+      client_id: client_nonce, // keep for stability where used
+      dedupe_key: dedupe_key,
       tempId, // For React key and matching
       clientKey: client_nonce, // For animation stability
       user_id: isAuthenticated ? resolvedUserId : null,
@@ -992,7 +962,8 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
     });
 
     // Add optimistic message to state
-    setMessages(prev => upsertMessages(prev, optimistic, { replaceOptimistic: false }));
+    if (process.env.NODE_ENV !== "production") console.log('🧪 OPTIMISTIC message', optimistic);
+    setMessages(prev => mergeMessages(prev, optimistic));
 
     // For guests, ensure they're in the users list
     if (!isAuthenticated) {
@@ -1022,11 +993,12 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
           username: finalUsername,
           is_system: false,
           client_nonce: client_nonce,
+          dedupe_key: dedupe_key,
         }),
       });
 
       const result = await response.json();
-      DEBUG && console.log('🔥 Heart-signal POST result:', result);
+      DEBUG && console.log('🧪 INSERT RESULT:', result?.message || result);
 
       if (!response.ok || !result.ok) {
         console.error('Failed to send message:', result?.error || 'Unknown error');
@@ -1046,6 +1018,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
         const realMessage = normalizeMessage({
           ...result.message,
           client_nonce: client_nonce, // Keep for matching
+          dedupe_key: result.message?.dedupe_key || dedupe_key,
           message_type: result.message.is_system ? 'join' : 'message',
           user_profile: optimistic.user_profile, // Preserve profile info
         });
@@ -1053,24 +1026,23 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
         setMessages(prev => {
           // If realtime already delivered this id (and it's not an optimistic), skip
           if (realMessage.id && prev.some(m => m.id === realMessage.id && !m.pending)) return prev;
-          // Replace optimistic message matched by client_nonce
+          // Replace optimistic message matched by dedupe_key (primary) or client_nonce
           const next = prev.map(m => {
-            if (m.client_nonce === client_nonce || m.tempId === tempId) {
+            if (m.dedupe_key === dedupe_key || m.client_nonce === client_nonce || m.tempId === tempId) {
               return { ...realMessage, status: 'sent', pending: false, tempId: m.tempId };
             }
             return m;
           });
-          // If no optimistic was found and id still absent, append
           const hasIt = next.some(m => m.id === realMessage.id);
-          return hasIt ? next : [...next, { ...realMessage, status: 'sent', pending: false }];
+          return hasIt ? next : mergeMessages(next, realMessage);
         });
       }
-      // Realtime subscription will also deliver the message, upsertMessages handles dedup
+      // Realtime subscription will also deliver the message; mergeMessages handles dedup
     } catch (error) {
       console.error('Error sending message:', error);
       // Keep the optimistic message and mark as failed
       setMessages(prev => prev.map(m => {
-        if (m.tempId === tempId || m.client_nonce === client_nonce) {
+        if (m.tempId === tempId || m.client_nonce === client_nonce || m.dedupe_key === dedupe_key) {
           return { ...m, status: 'failed', pending: false, errorMessage: 'Network error' };
         }
         return m;
@@ -1385,6 +1357,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
         <>
           {/* Backdrop */}
           <motion.div
+            key="chat-backdrop"
             className="absolute inset-0 z-[100]"
             variants={backdropVariants}
             initial="closed"
@@ -1395,6 +1368,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
 
           {/* Chat Panel */}
           <motion.div
+            key="chat-panel"
             className={`absolute z-[110] flex overflow-hidden left-0 right-0 ${isChatCollapsed ? 'bottom-0' : 'inset-0'}`}
             style={isChatCollapsed ? { top: 'auto', height: '55%' } : undefined}
             variants={panelVariants}

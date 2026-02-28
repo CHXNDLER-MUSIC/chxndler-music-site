@@ -290,7 +290,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 146.9, label: "Outro", kind: "verse" }
   ] },
   { title: "HOUSE PARTY", spotify:"https://open.spotify.com/track/0b5y0gHMf3wLYX69B8S6g4?si=75a45f33ec1f47c0", youtube:"https://www.youtube.com/watch?v=B6EyIK-gE1c" },
-  { title: "MR. BRIGHTSIDE", spotify:"https://open.spotify.com/track/4CId3TUsrGauVNQ1slN6dT?si=68f958b831694cb4", youtube:"https://youtu.be/ZBU5x5plj2E?si=DUSRMI3AlmEU0lSI", cover: "/covers/MR. BRIGHTSIDE.webp", src: "/tracks/MR.BRIGHTSIDE.mp3" },
+  { title: "MR. BRIGHTSIDE", spotify:"https://open.spotify.com/track/4CId3TUsrGauVNQ1slN6dT?si=68f958b831694cb4", youtube:"https://youtu.be/ZBU5x5plj2E", cover: "/covers/MR. BRIGHTSIDE.webp", src: "/tracks/MR.BRIGHTSIDE.mp3" },
   { title: "PARIS", spotify:"https://open.spotify.com/track/2luPTqZK9w5fJ30T4rLZut?si=9f27fb47e15941c4", apple:"https://music.apple.com/us/album/paris-single/1779879728", youtube:"https://www.youtube.com/watch?v=J2qrS9EGRw8" },
 ];
 

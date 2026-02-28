@@ -369,23 +369,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         ['--hud-offset-px' as any]: `10px`,
       }}
     >
-      {/* Static wheel.webp image - always visible, above cockpit but below START button */}
-      <img
-        src="/cockpit/wheel.webp"
-        alt=""
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: "50%",
-          transform: "translateX(-50%) scale(0.78)",
-          transformOrigin: "bottom center",
-          maxWidth: "none",
-          pointerEvents: "none",
-          // Above cockpit (z-20) but below START button (z-9999)
-          zIndex: 90,
-        }}
-      />
+      {/* Static wheel image removed to avoid requesting /cockpit/wheel.webp */}
 
       {/* Wheel video projection aligned to cockpit wheel area */}
       <div

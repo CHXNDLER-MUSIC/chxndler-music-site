@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { PlanetPositionsProvider } from './planet-positions-context';
-import { PlanetMinimapV2 } from './PlanetMinimapV2';
 import ClientPlanetScene from './planetarium/ClientPlanetScene';
 
 interface PlanetSystemV2Props {
@@ -45,9 +44,7 @@ export function PlanetSystemV2({
         />
       </div>
 
-      <div className="mt-3">
-        <PlanetMinimapV2 />
-      </div>
+      {/* Minimap removed per request */}
     </PlanetPositionsProvider>
   );
 }

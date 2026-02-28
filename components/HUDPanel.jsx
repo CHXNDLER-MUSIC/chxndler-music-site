@@ -2631,7 +2631,7 @@ const HUDPanel = React.memo(function HUDPanel({
                   // Define streaming URLs at top level to avoid closure issues
                   const CHXNDLER_SPOTIFY_PROFILE = 'https://open.spotify.com/artist/6O2eoUA8ZWY0lwjsa3E3Yo?si=7gxP4bNnQ1ax1ODrZ6RvtA';
                   const CHXNDLER_APPLE_PROFILE = 'https://music.apple.com/us/artist/chxndler/1660901437';
-                  const CHXNDLER_YOUTUBE_CHANNEL = 'https://www.youtube.com/@chxndlerthealien/videos';
+                  const CHXNDLER_YOUTUBE_CHANNEL = 'https://www.youtube.com/@chxndlerthealien';
 
                   const spotifyUrl = isHome ? CHXNDLER_SPOTIFY_PROFILE : (currentSong?.spotify || CHXNDLER_SPOTIFY_PROFILE);
                   const appleUrl = isHome ? CHXNDLER_APPLE_PROFILE : (currentSong?.apple || CHXNDLER_APPLE_PROFILE);
@@ -2888,9 +2888,22 @@ const HUDPanel = React.memo(function HUDPanel({
                           e.stopPropagation();
                         }}
                         onTouchEnd={(e) => {
-                          // Handle touch end to ensure proper button activation
+                          // Handle touch similarly to click (mobile Safari won't always fire click after preventDefault)
                           e.preventDefault();
                           e.stopPropagation();
+                          setShowApplePopover(false);
+                          setShowSpotifyPopover(false);
+                          setShowYouTubePopover(false);
+                          try { sfx.play('click', 0.4); } catch {}
+                          setShowHudVolumePopover(v => {
+                            const next = !v;
+                            if (next && hudVolBtnRef.current) {
+                              const r = hudVolBtnRef.current.getBoundingClientRect();
+                              setHudPopoverPos({ left: r.left + r.width/2, top: r.bottom + 8 });
+                            }
+                            if (!next) { try { sfx.play('close', 0.4); } catch {} }
+                            return next;
+                          });
                         }}
                         onClick={(e) => {
                           e.preventDefault();

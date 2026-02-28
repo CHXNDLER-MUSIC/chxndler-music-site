@@ -507,11 +507,14 @@ main {
   left: -12px;
   right: -12px;
   bottom: -4px;
-  background: rgba(56, 182, 255, 0.12);
-  border: 2px solid rgba(25, 227, 255, 0.6);
+  /* Clear like song dropdown container */
+  background: transparent;
+  /* Same blue border as dropdown */
+  border: 2px solid rgba(25, 227, 255, 0.8);
   border-radius: 12px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  /* No blur to keep container truly clear */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   animation: buttonRailDrift 3s ease-in-out infinite;
   z-index: -1;
 }
@@ -2255,8 +2258,7 @@ button:hover > .heart-coin-glow,
    * translucent styling rather than the darker mobile override.
    */
   .hud-card:not(.console-hud),
-  .hud-btn,
-  .hud-top-controls::before {
+  .hud-btn {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     background: rgba(10, 16, 28, 0.72) !important;
@@ -2294,6 +2296,11 @@ button:hover > .heart-coin-glow,
 
   /* Button rail drift */
   .hud-top-controls::before {
+    /* Keep the rail clear on mobile too */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: transparent !important;
+    border: 2px solid rgba(25, 227, 255, 0.8) !important;
     animation: none !important;
   }
 
@@ -2389,5 +2396,9 @@ button:hover > .heart-coin-glow,
 /* Ensure the console media player never switches to the dark fallback background
    when the viewport is narrow. Keep the original translucent HUD look. */
 .hud-card.console-hud {
-  background: rgba(0, 0, 0, 0.35) !important;
+  /* Match cover art container aesthetic: subtle cyan tint + soft rim */
+  background: rgba(6, 182, 212, 0.08) !important;
+  border: 1px solid rgba(25, 227, 255, 0.20) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }

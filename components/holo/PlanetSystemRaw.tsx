@@ -2433,7 +2433,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
 
   // Sync planets to songs from the global store for closer match to previous visuals
   const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
-  const [isMinimapVisible, setIsMinimapVisible] = React.useState(true);
+  // Hide internal minimap by default to avoid duplicate map UI
+  const [isMinimapVisible, setIsMinimapVisible] = React.useState(false);
   React.useEffect(() => playerStore.subscribe(() => setStoreSnap(playerStore.getState())), []);
   const { songs, mainId, hoverId, planetsVisible, planetDisplayMode } = storeSnap as any;
   

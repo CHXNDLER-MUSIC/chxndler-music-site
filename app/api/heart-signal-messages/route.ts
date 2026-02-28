@@ -12,6 +12,8 @@ export async function POST(req: Request) {
     const raw = (body?.message ?? body?.messageText ?? "").toString();
     const message = raw.trim();
     const displayName = (body?.displayName ?? body?.username ?? "").toString().trim();
+    const clientNonce = (body?.client_nonce ?? '').toString().trim() || null;
+    const dedupeKey = (body?.dedupe_key ?? clientNonce ?? '').toString().trim() || null;
 
     if (!message) {
       return NextResponse.json(
@@ -66,8 +68,10 @@ export async function POST(req: Request) {
         username,
         message,
         is_system: false,
+        // allow client-provided dedupe_key for optimistic reconciliation
+        dedupe_key: dedupeKey,
       })
-      .select("id, user_id, username, message, created_at, is_system")
+      .select("*")
       .single();
 
     if (error) {
@@ -102,7 +106,7 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await admin
       .from('heart_signal_messages')
-      .select('id, user_id, username, message, created_at, is_system, heart_count, water_count, lightning_count, darkness_count, alien_count')
+      .select('id, user_id, username, message, created_at, is_system, dedupe_key, heart_count, water_count, lightning_count, darkness_count, alien_count')
       .order('created_at', { ascending: false })
       .limit(limit);
 

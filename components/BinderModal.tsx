@@ -1243,13 +1243,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
         pageIndicator={!showFullCollection ? `${pageIndex + 1} / ${totalPages}` : undefined}
         compact
         fullOverlay={cardOpen && selectedCard ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md" style={{ padding: '16px 40px' }}>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md" style={{ padding: '16px 40px', overflow: 'hidden' }}>
             {/* Large card display - fills entire container */}
             <div
               className="relative flex items-center justify-center w-full h-full"
               style={{
                 maxHeight: '100%',
                 maxWidth: '100%',
+                overflow: 'hidden'
               }}
             >
               {/* Back arrow - positioned at top left */}
@@ -1308,12 +1309,12 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     borderRadius: '24px',
                   }}
                 >
-                  {/* Card container - front image determines size, back fills same space */}
+                  {/* Card container - contain within binder popout bounds */}
                   <div
                     className="relative"
                     style={{
-                      maxHeight: 'min(50vh, 75%)',
-                      maxWidth: '70%',
+                      maxHeight: '90%',
+                      maxWidth: '85%'
                     }}
                   >
                     {/* Front of card - rotates with cardRotation */}
@@ -1322,8 +1323,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       alt={selectedCard?.name || "Card"}
                       className="rounded-2xl pointer-events-none"
                       style={{
-                        width: '100%',
-                        height: '100%',
+                        maxHeight: '100%',
+                        maxWidth: '100%',
                         objectFit: 'contain',
                         backfaceVisibility: 'hidden',
                         WebkitBackfaceVisibility: 'hidden',
@@ -1349,8 +1350,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       alt="Card Back"
                       className="absolute top-0 left-0 rounded-2xl pointer-events-none"
                       style={{
-                        width: '100%',
-                        height: '100%',
+                        maxHeight: '100%',
+                        maxWidth: '100%',
                         objectFit: 'contain',
                         backfaceVisibility: 'hidden',
                         WebkitBackfaceVisibility: 'hidden',

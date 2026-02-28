@@ -12,16 +12,15 @@ import MessageReactions from './MessageReactions';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 // Stable key helper for messages. Never returns empty; guarantees uniqueness.
-// Priority: client_nonce → id → dedupe_key → user_id:created_at:index
-// client_nonce is checked FIRST so the key stays stable when an optimistic
-// message (no id yet) gets replaced by the real server message (has id).
+// Priority: id → dedupe_key → client_nonce → user_id:created_at:index
+// Aligns with DB primary UUID preference, with dedupe_key for optimistic.
 export const stableKey = (m, idx) => {
   const i = typeof idx === 'number' ? idx : 0;
   if (!m) return `fallback:${i}`;
 
-  if (m.client_nonce) return `nonce:${m.client_nonce}`;
   if (m.id) return `msg:${m.id}`;
   if (m.dedupe_key) return `dk:${m.dedupe_key}`;
+  if (m.client_nonce) return `nonce:${m.client_nonce}`;
   return `${m.user_id || 'anon'}:${m.created_at || '0'}:${i}`;
 };
 
@@ -97,6 +96,18 @@ export default function MessageList({ messages, onUserClick, loading, messageRea
         uniqueKeys: keySet.size,
         sampleKeys: keys.slice(0, 5)
       });
+    }
+
+    // Targeted logs per request: messages missing id and whose keyCandidate is ''
+    const missingId = messages.filter(m => !m?.id);
+    if (missingId.length > 0) {
+      if (process.env.NODE_ENV !== "production") console.log('🧪 Messages missing id:', missingId.map(m => ({ dedupe_key: m?.dedupe_key, client_nonce: m?.client_nonce, created_at: m?.created_at })));
+    }
+    const emptyKeyItems = messages
+      .map((m, i) => ({ m, key: stableKey(m, i) }))
+      .filter(({ key }) => key === '');
+    if (emptyKeyItems.length > 0) {
+      if (process.env.NODE_ENV !== "production") console.log('🧪 Messages producing empty key:', emptyKeyItems.map(({ m }) => ({ id: m?.id, dedupe_key: m?.dedupe_key, client_nonce: m?.client_nonce })));
     }
   }
 

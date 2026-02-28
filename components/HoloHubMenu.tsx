@@ -376,6 +376,10 @@ export default function HoloHubMenu({
   }, [inlineUrl]);
 
   const runItem = useCallback((it: HubItem, ev?: MouseEvent) => {
+    // Precompute identifiers
+    const idLower = (it.id || '').toLowerCase();
+    const hrefLower = (it.href || '').toLowerCase();
+
     // Always close any existing inline preview first so we don't leave
     // a stale Apple/Spotify preview visible when clicking non-embed items (e.g. YouTube)
     try {
@@ -391,15 +395,16 @@ export default function HoloHubMenu({
     try {
       if (typeof it.onClick === "function") {
         it.onClick();
+        return;
       } else if (it.href) {
-        const idLower = (it.id || '').toLowerCase();
-        const hrefLower = (it.href || '').toLowerCase();
         // Instagram/TikTok: open directly in a new tab (no embed/modal)
         if (idLower === 'ig' || hrefLower.includes('instagram.')) {
           try { window.open(it.href!, '_blank', 'noopener,noreferrer'); } catch {}
+          return;
         }
         else if (idLower === 'tt' || hrefLower.includes('tiktok.')) {
           try { window.open(it.href!, '_blank', 'noopener,noreferrer'); } catch {}
+          return;
         }
         // YouTube: always open channel page in new tab
         else if (
@@ -409,7 +414,17 @@ export default function HoloHubMenu({
           hrefLower.includes('youtube-nocookie.') ||
           hrefLower.includes('music.youtube.')
         ) {
+          // Ensure all inline previews remain closed, then open a new tab and stop
+          try {
+            setInlineUrl(null);
+            setInlineTitle("");
+            setInlineCompact(false);
+            setInlineHeightPx(undefined);
+            setInlineIframeHeightPx(undefined);
+            setClickedButtonId(null);
+          } catch {}
           try { window.open(it.href!, '_blank', 'noopener,noreferrer'); } catch {}
+          return;
         }
         // Spotify: prefer embedded player
         else if (idLower === 'sp' || hrefLower.includes('open.spotify.com')) {
@@ -437,6 +452,7 @@ export default function HoloHubMenu({
           } catch {
             try { window.open(it.href, '_blank', 'noopener,noreferrer'); } catch {}
           }
+          return;
         }
         // Apple Music: prefer embedded player in inline modal
         else if (
@@ -469,10 +485,12 @@ export default function HoloHubMenu({
           } catch {
             try { window.open(it.href, '_blank', 'noopener,noreferrer'); } catch {}
           }
+          return;
         }
         // Fallback: open in a new tab
         else {
           window.open(it.href, "_blank", "noopener,noreferrer");
+          return;
         }
       }
     } catch {}

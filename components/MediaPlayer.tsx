@@ -120,6 +120,19 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     }
   }, []);
 
+  // Compute context-aware YouTube target URL for the button
+  const youtubeButtonUrl = useMemo(() => {
+    try {
+      const slug = (cur?.slug || '').toLowerCase();
+      // Homepage (all planets visible): open channel
+      if (planetDisplayMode === 'all') return 'https://www.youtube.com/@chxndlerthealien';
+      // Specific override for MR. BRIGHTSIDE: open music video
+      if (slug === 'mr-brightside') return 'https://youtu.be/ZBU5x5plj2E';
+      // Default to track-provided YouTube URL
+      return cur?.youtube || null;
+    } catch { return cur?.youtube || null; }
+  }, [planetDisplayMode, cur?.slug, cur?.youtube]);
+
   // Load saved volume on mount and apply to audio
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -212,6 +225,18 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   // Get current song's element and color
   const currentElement = getTrackElement(cur);
   const currentElementColor = ELEMENT_COLORS[currentElement];
+  // Helper to tint UI like the cover art container
+  const elementRgba = (alpha: number) => {
+    try {
+      if (!currentElementColor || !currentElementColor.startsWith('#')) return `rgba(6,182,212,${alpha})`;
+      const r = parseInt(currentElementColor.slice(1,3), 16);
+      const g = parseInt(currentElementColor.slice(3,5), 16);
+      const b = parseInt(currentElementColor.slice(5,7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    } catch {
+      return `rgba(6,182,212,${alpha})`;
+    }
+  };
   // Map to NeonWaveform's allowed element set
   const neonElement: "heart" | "water" | "lightning" | "darkness" =
     (currentElement === 'heart' || currentElement === 'water' || currentElement === 'lightning' || currentElement === 'darkness')
@@ -290,11 +315,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       const inPopover = !!(t && (t as Element).closest?.('.volume-popover'));
       if (!inMain && !inPopover) setShowMainVolumePopover(false);
       if (!inWave && !inPopover) setShowWaveformVolumePopover(false);
-      // Close lyrics popover when clicking outside waveform container
-      try {
-        const wf = document.querySelector('.waveform');
-        if (wf && t && !wf.contains(t)) setLyricsOpen(false);
-      } catch {}
+      // Do not forcibly close the lyrics modal here.
+      // The lyrics modal manages its own close behavior via SharedModal onClose/overlay.
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { setShowMainVolumePopover(false); setShowWaveformVolumePopover(false); }
@@ -1235,7 +1257,12 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         </div>
 
         {/* Lyrics + YouTube + Inline volume controls - moved above waveform */}
-        <div className="waveform-volume" role="group" aria-label="Lyrics, YouTube, and Volume" ref={waveVolRef}>
+        <div
+          className="waveform-volume"
+          role="group"
+          aria-label="Lyrics, YouTube, and Volume"
+          ref={waveVolRef}
+        >
             {((cur as any)?.hasLyrics !== false) ? (
               <button
                 className="lyrics-link-waveform"
@@ -1279,21 +1306,23 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             )}
 
             <div className="yt-with-join">
-              {cur.youtube ? (
+              {youtubeButtonUrl ? (
                 <a
                   ref={ytBtnRef}
-                  href={cur.youtube}
+                  href={youtubeButtonUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="youtube-link-waveform"
-                  title={`Open ${cur.title} on YouTube`}
-                  aria-label={`Open ${cur.title} on YouTube`}
+                  title={planetDisplayMode === 'all' ? `Open CHXNDLER channel on YouTube` : `Open ${cur.title} on YouTube`}
+                  aria-label={planetDisplayMode === 'all' ? `Open CHXNDLER channel on YouTube` : `Open ${cur.title} on YouTube`}
                   data-song={cur.title}
                   data-slug={cur.slug}
                   data-id="yt"
                   onClick={(e) => {
                     // Intercept default navigation to open inline popout player
                     try { e.preventDefault(); } catch {}
+                    // Ensure this click doesn't bubble to any outer handlers
+                    try { e.stopPropagation(); } catch {}
                     try { uiClick(); } catch {}
                     // Ensure any Apple popover is closed before opening YouTube
                     try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
@@ -1304,6 +1333,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                       try {
                         const u = new URL(url);
                         const host = u.hostname.replace(/^www\./, '');
+                        // Non-embeddable targets like channel pages should open in a new tab
+                        if ((host === 'youtube.com' || host === 'm.youtube.com') && u.pathname.startsWith('/@')) return null;
+                        if (host === 'youtube.com' && (u.pathname.startsWith('/channel/') || u.pathname.startsWith('/c/'))) return null;
                         if (host === 'youtu.be') {
                           const id = u.pathname.slice(1);
                           if (id) return `https://www.youtube.com/embed/${id}`;
@@ -1328,13 +1360,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                       } catch {}
                       return null;
                     };
-                    const embed = toEmbed(cur.youtube);
+                    const embed = youtubeButtonUrl ? toEmbed(youtubeButtonUrl) : null;
                     if (embed) {
                       setYtEmbedUrl(`${embed}?autoplay=1&rel=0`);
                       setShowYouTubePopover(true);
                     } else {
                       // Fallback to opening a new tab if we cannot parse embed URL
-                      try { window.open(cur.youtube, '_blank', 'noopener,noreferrer'); } catch {}
+                      try { window.open(youtubeButtonUrl || '', '_blank', 'noopener,noreferrer'); } catch {}
                     }
                   }}
                   onMouseEnter={playHover}
@@ -1424,7 +1456,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         {/* Waveform section - moved below controls */}
         <div className="waveform-wrapper">
           <div 
-            className="waveform" 
+            className="hud-waveform" 
             aria-label="Audio waveform visualization"
             title={cur.title}
             onPointerDown={(e) => {
@@ -2313,7 +2345,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         
         /* Waveform visualization - remove dark background to avoid bleed behind controls on narrow layouts */
-        .waveform{
+        .hud-waveform{
           position: relative; /* make positioned context for absolute children */
           width: 28vw;
           height: 8vw;
@@ -2326,9 +2358,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           justify-content: center;
           background: transparent;
           border-radius: 20px;
-          backdrop-filter: blur(12px);
+          /* Reduce visual noise to prevent dark "plate" effect under compact controls */
+          backdrop-filter: none;
           overflow: visible;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+          z-index: 0;
+        }
+        /* On very small screens, further minimize any backdrop/shadow that can read as a dark slab */
+        @media (max-width: 768px) {
+          .hud-waveform { backdrop-filter: none; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); }
         }
         
         /* Spotify button - positioned next to play/pause in controls */
@@ -2626,20 +2664,24 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         
         /* Inline controls (lyrics/youtube/volume) now sit in the controls row */
         .waveform-volume {
-          position: static;
+          position: relative;
           transform: none;
           display: flex;
           align-items: center;
           justify-content: flex-start;
           white-space: nowrap;
           gap: 8px;
-          padding: 0;
-          border-radius: 10px;
-          border: none;
+          padding: 4px 6px; /* compact pill spacing */
+          border-radius: 12px;
+          /* Match song dropdown trigger: clear background + strong blue rim */
+          border: 2px solid rgba(25, 227, 255, 0.8);
           background: transparent;
-          backdrop-filter: none;
+          backdrop-filter: none; /* keep fully clear like dropdown */
+          -webkit-backdrop-filter: none;
           box-shadow: none;
-          z-index: auto;
+          /* Raise above any streaming buttons that might overlap */
+          z-index: 60;
+          isolation: isolate; /* create new stacking context to avoid backdrop bleed */
         }
         .waveform-volume-btn {
           position: relative;
@@ -2710,7 +2752,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
         
         
-        .waveform {
+        .hud-waveform {
           position: relative;
           width: 100%;
           height: 100%;
@@ -2723,11 +2765,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         
         /* Ensure white waveform lines with glow */
-        .waveform svg line {
+        .hud-waveform svg line {
           stroke: white !important;
         }
         
-        .waveform svg circle {
+        .hud-waveform svg circle {
           fill: white !important;
         }
 

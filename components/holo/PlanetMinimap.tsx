@@ -107,6 +107,8 @@ const SONG_PLANETS: SongPlanet[] = [
 ];
 
 export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onClose, onPlanetClick }: PlanetMinimapProps) {
+  // Minimap disabled per request
+  return null;
   const [isCollapsed, setIsCollapsed] = React.useState(true); // Default to collapsed when page opens
   const [selectedPlanet, setSelectedPlanet] = React.useState<string | null>(null);
   const [hoveredPlanet, setHoveredPlanet] = React.useState<string | null>(null);
