@@ -440,7 +440,7 @@ const HUDPanel = React.memo(function HUDPanel({
   
   // Keep layout-aligned: dropdown + controls + cover + track bar
   // Single baseline so all move together when vertical space changes
-  const DROPDOWN_BOTTOM = 100; // px from HUD panel bottom
+  const DROPDOWN_BOTTOM = 100; // px from HUD panel bottom (baseline for positioning)
 
   // Available songs that show in dropdown (these should NOT be blurry)
   const availableSongs = [
@@ -2834,7 +2834,8 @@ const HUDPanel = React.memo(function HUDPanel({
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
           <div ref={coverRef} className="absolute hud-cover-pos" style={{
             // Align flush to the right, synced exactly with dropdown baseline
-            bottom: (typeof DROPDOWN_BOTTOM === 'number' ? DROPDOWN_BOTTOM : 100),
+            // Move cover art 54px closer to the track bar
+            bottom: (typeof DROPDOWN_BOTTOM === 'number' ? DROPDOWN_BOTTOM - 54 : 46),
             right: 0,
             width: 'auto',
             display: 'flex',
@@ -3078,10 +3079,11 @@ const HUDPanel = React.memo(function HUDPanel({
 
           {/* Song dropdown aligned within the blue display (shares baseline) */}
           <div className="absolute" style={{ 
-            left: inConsole ? 4 : 4,
-            bottom: (typeof DROPDOWN_BOTTOM === 'number' ? DROPDOWN_BOTTOM + 50 : 150),
-            // Reserve dynamic space to the right so the dropdown never overlaps the cover
-            right: oneLinerRight + 2, // Reduced padding to screen edge
+            left: inConsole ? 1 : 1,
+            // Move dropdown down by 2px more relative to the track bar
+            bottom: (typeof DROPDOWN_BOTTOM === 'number' ? DROPDOWN_BOTTOM - 8 : 92),
+            // Reserve dynamic space to the right so the dropdown never overlaps the cover (slightly more in)
+            right: oneLinerRight + 4, // Reduced padding to screen edge
             maxWidth: 'none',
             zIndex: 99999,  // Highest z-index to ensure it's above everything
             pointerEvents: 'auto', // Explicitly enable pointer events
@@ -3162,14 +3164,16 @@ const HUDPanel = React.memo(function HUDPanel({
                         alignItems: 'center',
                         gap: 10,
                         position: 'absolute',
+                        // Keep inside blue display; nudge slightly right
                         left: 6,
-                        right: 8,
-                        // Sit just above the track bar so it follows the same baseline
-                        // Move higher to avoid accidental clicks when aiming for the track bar
-                        bottom: 44,
+                        // Nudge right edge in by 1px more
+                        right: 13,
+                        // Move controls down by 3px more
+                        bottom: -25,
                         zIndex: 6,
                         borderRadius: '8px',
-                        padding: '4px 2px',
+                        // Remove left padding so play/pause sits closer to the container edge
+                        padding: '4px 0px',
                         backgroundColor: 'transparent',
                         // Only child controls should receive pointer events; container itself should not
                         pointerEvents: 'none'
@@ -3179,7 +3183,7 @@ const HUDPanel = React.memo(function HUDPanel({
                         className="hud-play-btn-enhanced"
                         aria-label={audioManager.playing ? "Pause" : "Play"}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                        style={{ marginTop: 1, width: 36, height: 36 }}
+                        style={{ marginTop: 1, marginLeft: -6, width: 36, height: 36 }}
                         data-tour-id="music-power-button"
                       >
                         {audioManager.playing ? (

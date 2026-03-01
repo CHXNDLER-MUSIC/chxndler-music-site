@@ -278,7 +278,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       try { sfx.play('join', 0.75); } catch {}; try { const a = clickRef.current; if (a) { a.currentTime = 0; a.volume = 0.75; a.play().catch(()=>{}); } } catch {}; setOpen((v) => { const nv = !v; try { setTimeout(() => playerStore.getState().setHover(nv ? (displayItems[highlight]?.id || null) : null), 0); } catch {}; return nv; }); 
         }}
         onKeyDown={onTriggerKeyDown}
-        className="songs-trigger w-full flex items-center justify-between gap-2 px-1.5 py-1.5 rounded-[10px] border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl shadow-[0_0_18px_rgba(25,227,255,0.35)] focus:outline-none focus:ring-2 focus:ring-cyan-400 min-w-[240px]"
+        className="songs-trigger w-full flex items-center justify-between gap-2 px-1.5 py-2.5 rounded-[10px] border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl shadow-[0_0_18px_rgba(25,227,255,0.35)] focus:outline-none focus:ring-2 focus:ring-cyan-400 min-w-[240px]"
       >
         <span className="flex items-center gap-2 min-w-0">
           {(() => {
@@ -302,7 +302,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             );
           })()}
           <span
-            className="songs-label truncate text-[16px] font-semibold tracking-wide"
+            className="songs-label truncate text-[17px] font-semibold tracking-wide flex-1 min-w-0 whitespace-nowrap"
             style={!currentId ? {
               color: '#ffffff',
               // Tight, close white glow around the letters (no halo)
@@ -368,7 +368,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
               <div
                 role="option"
                 aria-disabled={isNextDropLocked}
-                className={`opt next-drop-row flex items-center gap-3 px-3 py-3 text-sm transition-all duration-200 w-full ${
+                className={`opt next-drop-row flex items-start gap-1 px-3 py-3 text-sm transition-all duration-200 w-full ${
                   isNextDropLocked
                     ? "cursor-not-allowed"
                     : "cursor-pointer text-cyan-200/90 hover:bg-cyan-400/10 hover:text-cyan-100"
@@ -387,6 +387,13 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                 }}
                 onMouseLeave={() => { /* intentionally noop; clear on close */ }}
                 onPointerDown={(e) => {
+                  // Allow native scrollbar drag when pressing in right gutter
+                  try {
+                    const lr = listRef.current?.getBoundingClientRect?.();
+                    if (lr && e.clientX >= (lr.right - 22)) {
+                      return;
+                    }
+                  } catch {}
                   if (isNextDropLocked) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -405,37 +412,11 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   e.stopPropagation();
                 }}
               >
-                {/* Left: element icon (match song rows) */}
-                <span className="shrink-0">
+                {/* Left: element icon with hint text below, constrain column width; nudge slightly left */}
+                <span className="shrink-0 flex flex-col items-start" style={{ width: 28, marginLeft: '-2px' }}>
                   <ElementIcon name={nextDropIcon} />
-                </span>
-                {/* Middle: top row with title + right countdown/lock, below hint */}
-                <span className="flex-1 min-w-0 flex flex-col">
-                  <span className="flex items-center gap-2 min-w-0">
-                    <span className={`song-title truncate font-semibold text-[#9EEBFF] flex-1 min-w-0`}>
-                      {nextDrop.title}
-                    </span>
-                    {isNextDropLocked && countdownStr ? (
-                      <span className="shrink-0 flex items-center gap-2" style={{ transform: 'translateY(-1px)' }}>
-                        <span style={{
-                          fontSize: '11px',
-                          fontFamily: "'SF Mono', 'Fira Code', monospace",
-                          color: '#FFFFFF',
-                          letterSpacing: '0.05em',
-                        }}>
-                          {countdownStr}
-                        </span>
-                        {(
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                            <path d="M7 11V7a 5 5 0 0 1 10 0v4" />
-                          </svg>
-                        )}
-                      </span>
-                    ) : null}
-                  </span>
                   <span style={{
-                    marginTop: '2px',
+                    marginTop: '6px',
                     fontSize: '9px',
                     lineHeight: 1.2,
                     fontFamily: "'SF Mono', 'Fira Code', monospace",
@@ -454,7 +435,32 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                     )}
                   </span>
                 </span>
-                {/* Right column no longer needed; countdown/lock are inline with title */}
+                {/* Middle: title block, left-aligned and closer to icon */}
+                <span className="flex-1 min-w-0 flex flex-col items-start text-left" style={{ marginLeft: '-2px' }}>
+                  <span className="flex items-center gap-1.5 min-w-0" style={{ marginTop: '-14px' }}>
+                    <span className={`song-title truncate font-semibold text-[#9EEBFF] min-w-0`}>
+                      {nextDrop.title}
+                    </span>
+                  </span>
+                  {/* Hint moved under element icon */}
+                </span>
+                {/* Right column: countdown + lock aligned to far right of entire row */}
+                {isNextDropLocked && countdownStr ? (
+                  <span className="ml-auto shrink-0 flex items-center gap-2" style={{ transform: 'translateY(-7px)' }}>
+                    <span style={{
+                      fontSize: '11px',
+                      fontFamily: "'SF Mono', 'Fira Code', monospace",
+                      color: '#FFFFFF',
+                      letterSpacing: '0.05em',
+                    }}>
+                      {countdownStr}
+                    </span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a 5 5 0 0 1 10 0v4" />
+                    </svg>
+                  </span>
+                ) : null}
               </div>
             );
           })()}
@@ -580,7 +586,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                 role="option"
                 aria-selected={isActive}
                 aria-disabled={isLocked}
-                className={`opt flex items-center gap-3 px-3 py-3 text-sm transition-all duration-200 w-full ${
+                className={`opt flex items-center gap-2 px-2 py-3 text-sm transition-all duration-200 w-full ${
                   isLocked
                     ? "cursor-not-allowed opacity-50"
                     : `cursor-pointer ${isHighlight ? "bg-cyan-400/20 text-cyan-100" : "text-cyan-200/90 hover:bg-cyan-400/10 hover:text-cyan-100"}`
@@ -596,6 +602,14 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                 // Keep last hover active to avoid rapid hide/show flicker while moving
                 onMouseLeave={() => { /* intentionally noop; clear on close */ }}
                 onPointerDown={(e) => {
+                  // If the user presses in the scrollbar gutter/overlay area, allow native drag.
+                  try {
+                    const lr = listRef.current?.getBoundingClientRect?.();
+                    if (lr && e.clientX >= (lr.right - 22)) {
+                      // Do not consume the event; let the OS/native scrollbar handle dragging
+                      return;
+                    }
+                  } catch {}
                   if (isLocked) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -625,10 +639,10 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   e.stopPropagation();
                 }}
               >
-                <span className="shrink-0">
+                <span className="shrink-0" style={{ marginLeft: '-2px' }}>
                   <ElementIcon name={s.icon} />
                 </span>
-                <span className={`song-title truncate font-semibold ${isLocked ? 'text-[#5a7a88]' : isActive ? 'text-[#CFF7FF]' : 'text-[#9EEBFF]'}`}>{s.title}</span>
+                <span className={`song-title truncate font-semibold ${isLocked ? 'text-[#5a7a88]' : isActive ? 'text-[#CFF7FF]' : 'text-[#9EEBFF]'}`} style={{ marginLeft: '-2px' }}>{s.title}</span>
                 {isLocked && (
                   <span className="ml-auto flex items-center gap-1.5 shrink-0">
                     {lockCountdown && (
@@ -757,6 +771,12 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
           filter: none;
         }
         /* Holographic scrollbar styling */
+        /* Reserve space for the native scrollbar and style it */
+        .holo-scrollbar{
+          /* Reserve a gutter so overlay scrollbars don't sit on top of content */
+          scrollbar-gutter: stable both-edges;
+          padding-right: 6px; /* small buffer to avoid overlap on macOS overlay scrollbars */
+        }
         .holo-scrollbar::-webkit-scrollbar {
           width: 16px;
           background: rgba(8, 26, 32, 0.8);

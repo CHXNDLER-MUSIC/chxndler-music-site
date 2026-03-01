@@ -3050,7 +3050,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
           
           {/* Heart Coin Balance - top left */}
-          <div className="absolute top-3 left-4 flex items-center gap-2">
+          <div className="absolute top-3 left-4 flex items-center gap-1">
             <img
               src="/elements/heart-coin.webp"
               alt="HeartCoin"
