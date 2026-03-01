@@ -161,7 +161,7 @@ const DashboardProgressBar: React.FC<DashboardProgressBarProps> = ({ className =
           }}
         />
         
-        {/* Hover indicator */}
+        {/* Hover indicator and time tooltip (below cursor) */}
         {isHovering && (
           <>
             <div 
@@ -178,7 +178,7 @@ const DashboardProgressBar: React.FC<DashboardProgressBarProps> = ({ className =
             />
             {/* Hover timestamp */}
             <div 
-              className="absolute -top-10 px-3 py-1.5 bg-black/90 text-white text-xs rounded-lg backdrop-blur-sm border border-white/20 pointer-events-none font-mono"
+              className="absolute top-6 px-3 py-1.5 bg-black/90 text-white text-xs rounded-lg backdrop-blur-sm border border-white/20 pointer-events-none font-mono"
               style={{ 
                 left: `${hoverPosition}%`,
                 transform: 'translateX(-50%)',

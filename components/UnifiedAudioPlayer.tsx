@@ -385,18 +385,32 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
 
               {/* Circular Handle - draggable seek dot */}
               <div
-                className={`absolute top-1/2 w-4 h-4 rounded-full border-2 border-white shadow-lg transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                className={`pointer-events-none absolute top-1/2 ${isDragging ? 'w-5 h-5' : 'w-4 h-4'} rounded-full bg-white border-2 border-white shadow-lg transition-opacity group-active:opacity-100 ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
                 style={{
                   left: `${Math.max(0, Math.min(100, progress * 100))}%`,
                   transform: 'translateX(-50%) translateY(-50%)',
-                  background: `radial-gradient(circle, ${BRAND_COLORS.pink}, ${BRAND_COLORS.blue})`,
                   boxShadow: `
-                    0 0 10px ${BRAND_COLORS.pink}80,
-                    0 0 18px ${BRAND_COLORS.blue}60,
-                    0 2px 6px rgba(0,0,0,0.3)
-                  `
+                    0 0 8px rgba(255,255,255,0.85),
+                    0 0 14px rgba(255,255,255,0.55),
+                    0 2px 6px rgba(0,0,0,0.25)
+                  `,
+                  zIndex: 2
                 }}
               />
+
+              {/* Time label under the handle */}
+              <div
+                className={`pointer-events-none absolute text-[10px] font-mono text-white/95 bg-black/60 rounded px-1.5 py-0.5 shadow-md transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-active:opacity-100'}`}
+                style={{
+                  left: `${Math.max(0, Math.min(100, progress * 100))}%`,
+                  top: 'calc(50% + 18px)',
+                  transform: 'translateX(-50%)',
+                  backdropFilter: 'blur(2px)',
+                  zIndex: 2
+                }}
+              >
+                {formatTime(liveTime)}
+              </div>
             </div>
             <div className="text-[#9EEBFF]/70 text-xs font-mono">
               {formatTime(liveDuration)}

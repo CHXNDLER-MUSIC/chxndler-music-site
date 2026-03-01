@@ -165,7 +165,7 @@ const SongProgressBar: React.FC<SongProgressBarProps> = ({
           }}
         />
 
-        {/* Hover circle indicator */}
+        {/* Hover circle indicator and time tooltip (below cursor) */}
         {(isHovering && !isDragging) && (
           <>
             <div 
@@ -182,7 +182,7 @@ const SongProgressBar: React.FC<SongProgressBarProps> = ({
             />
             {/* Hover timestamp */}
             <div
-              className="absolute -top-10 px-2 py-1 bg-black/80 text-white text-xs rounded backdrop-blur-sm pointer-events-none"
+              className="absolute top-6 px-2 py-1 bg-black/80 text-white text-xs rounded backdrop-blur-sm pointer-events-none"
               style={{
                 left: `${hoverPosition}%`,
                 transform: 'translateX(-50%)',

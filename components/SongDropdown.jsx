@@ -60,6 +60,14 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
   const [activeElement, setActiveElement] = useState(null);
   // Removed custom overlay scrollbar; rely on styled native scrollbar
 
+  // Manual scrollbar drag support (useful on mobile where native thumb isn't draggable)
+  const isScrollbarDragRef = useRef(false);
+  const dragStartYRef = useRef(0);
+  const dragStartThumbPosRef = useRef(0);
+  const dragTrackLenRef = useRef(0);
+  const dragMaxScrollRef = useRef(0);
+  const GUTTER_W = 22; // px region at right edge treated as scrollbar gutter
+
   // Supabase-backed next drop config
   const { nextDrop } = useNextDrop();
 
@@ -327,6 +335,115 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             // including native scrollbar drags which may not target a child node.
             e.stopPropagation();
           }}
+          onPointerDownCapture={(e) => {
+            try {
+              const el = listRef.current;
+              if (!el) return;
+              const rect = el.getBoundingClientRect();
+              // Only engage custom drag if pressing within the right gutter region
+              if (e.clientX >= rect.right - GUTTER_W) {
+                const clientH = el.clientHeight;
+                const scrollH = el.scrollHeight;
+                if (scrollH <= clientH) return; // no scroll needed
+                // Compute thumb + track metrics similar to native scrollbar
+                const minThumb = 20; // px minimum
+                const thumbH = Math.max(Math.round((clientH * clientH) / scrollH), minThumb);
+                const trackLen = Math.max(0, clientH - thumbH);
+                const maxScrollTop = Math.max(1, scrollH - clientH);
+                const currentP = (el.scrollTop * trackLen) / maxScrollTop;
+
+                isScrollbarDragRef.current = true;
+                dragStartYRef.current = e.clientY;
+                dragStartThumbPosRef.current = currentP;
+                dragTrackLenRef.current = trackLen;
+                dragMaxScrollRef.current = maxScrollTop;
+
+                const onMove = (ev) => {
+                  if (!isScrollbarDragRef.current) return;
+                  const y = (ev && (ev.touches && ev.touches[0] ? ev.touches[0].clientY : ev.clientY)) || 0;
+                  const dy = y - dragStartYRef.current;
+                  let p = dragStartThumbPosRef.current + dy;
+                  p = Math.max(0, Math.min(dragTrackLenRef.current, p));
+                  const st = (p * dragMaxScrollRef.current) / Math.max(1, dragTrackLenRef.current);
+                  try { el.scrollTop = st; } catch {}
+                  ev.preventDefault();
+                };
+                const onUp = () => {
+                  isScrollbarDragRef.current = false;
+                  try {
+                    window.removeEventListener('pointermove', onMove);
+                    window.removeEventListener('pointerup', onUp);
+                    window.removeEventListener('touchmove', onMove);
+                    window.removeEventListener('touchend', onUp);
+                  } catch {}
+                };
+                try {
+                  window.addEventListener('pointermove', onMove, { passive: false });
+                  window.addEventListener('pointerup', onUp, { passive: true });
+                  // Fallback for browsers that mainly send touch events
+                  window.addEventListener('touchmove', onMove, { passive: false });
+                  window.addEventListener('touchend', onUp, { passive: true });
+                } catch {}
+                // Prevent item click/selection and outside-close while dragging
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            } catch {}
+          }}
+          onTouchStartCapture={(e) => {
+            try {
+              const el = listRef.current;
+              if (!el) return;
+              const rect = el.getBoundingClientRect();
+              const touch = e.touches && e.touches[0];
+              if (!touch) return;
+              if (touch.clientX >= rect.right - GUTTER_W) {
+                const clientH = el.clientHeight;
+                const scrollH = el.scrollHeight;
+                if (scrollH <= clientH) return;
+                const minThumb = 20;
+                const thumbH = Math.max(Math.round((clientH * clientH) / scrollH), minThumb);
+                const trackLen = Math.max(0, clientH - thumbH);
+                const maxScrollTop = Math.max(1, scrollH - clientH);
+                const currentP = (el.scrollTop * trackLen) / maxScrollTop;
+
+                isScrollbarDragRef.current = true;
+                dragStartYRef.current = touch.clientY;
+                dragStartThumbPosRef.current = currentP;
+                dragTrackLenRef.current = trackLen;
+                dragMaxScrollRef.current = maxScrollTop;
+
+                const onMove = (ev) => {
+                  if (!isScrollbarDragRef.current) return;
+                  const y = (ev && (ev.touches && ev.touches[0] ? ev.touches[0].clientY : ev.clientY)) || 0;
+                  const dy = y - dragStartYRef.current;
+                  let p = dragStartThumbPosRef.current + dy;
+                  p = Math.max(0, Math.min(dragTrackLenRef.current, p));
+                  const st = (p * dragMaxScrollRef.current) / Math.max(1, dragTrackLenRef.current);
+                  try { el.scrollTop = st; } catch {}
+                  ev.preventDefault();
+                };
+                const onUp = () => {
+                  isScrollbarDragRef.current = false;
+                  try {
+                    window.removeEventListener('touchmove', onMove);
+                    window.removeEventListener('touchend', onUp);
+                    window.removeEventListener('pointermove', onMove);
+                    window.removeEventListener('pointerup', onUp);
+                  } catch {}
+                };
+                try {
+                  window.addEventListener('touchmove', onMove, { passive: false });
+                  window.addEventListener('touchend', onUp, { passive: true });
+                  window.addEventListener('pointermove', onMove, { passive: false });
+                  window.addEventListener('pointerup', onUp, { passive: true });
+                } catch {}
+
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            } catch {}
+          }}
           ref={listRef}
           className="fixed z-[100000] overflow-y-auto overflow-x-hidden rounded-[8px] border border-[#19E3FF]/60 bg-[rgba(8,26,32,0.82)] backdrop-blur-xl shadow-[0_6px_18px_rgba(0,0,0,0.45)] holo-scrollbar"
           style={{
@@ -337,6 +454,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             maxHeight: maxListHeight ? `${maxListHeight}px` : '200px',
             overflowY: 'auto',
             overflowX: 'hidden',
+            WebkitOverflowScrolling: 'touch',
             pointerEvents: 'auto',
             zIndex: 100000
           }}

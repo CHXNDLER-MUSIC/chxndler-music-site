@@ -158,7 +158,7 @@ const TrackProgressBar = ({
           }}
         />
         
-        {/* Hover indicator and time tooltip */}
+        {/* Hover indicator and time tooltip (below cursor) */}
         {isHovering && !isDragging && (
           <>
             <div 
@@ -170,7 +170,7 @@ const TrackProgressBar = ({
               }}
             />
             <div 
-              className="absolute -top-8 px-2 py-1 bg-black/80 text-white text-xs rounded backdrop-blur-sm pointer-events-none z-30"
+              className="absolute top-6 px-2 py-1 bg-black/80 text-white text-xs rounded backdrop-blur-sm pointer-events-none z-30"
               style={{ 
                 left: `${hoverPosition}%`,
                 transform: 'translateX(-50%)',

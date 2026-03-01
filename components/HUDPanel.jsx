@@ -2585,6 +2585,8 @@ const HUDPanel = React.memo(function HUDPanel({
                     const onMove = (ev) => seekFromClientX(ev.clientX);
                     const onUp = () => {
                       setTrackScrubPct(null);
+                      // Clear hover state on touch/mouse release to prevent lingering glow ahead of playhead
+                      setTrackHoverPct(null);
                       window.removeEventListener('pointermove', onMove);
                       window.removeEventListener('pointerup', onUp);
                     };
@@ -2647,13 +2649,13 @@ const HUDPanel = React.memo(function HUDPanel({
                             }}
                             aria-hidden
                           />
-                          {/* Cursor time preview at hovered position */}
+                          {/* Cursor time preview at hovered position (below cursor) */}
                           <div
                             style={{
                               position: 'absolute',
-                              bottom: '100%',
+                              top: '100%',
                               left: `${hoverLeft}%`,
-                              transform: 'translate(-50%, -6px)',
+                              transform: 'translate(-50%, 6px)',
                               padding: '2px 6px',
                               borderRadius: 6,
                               fontSize: 10,
@@ -2690,14 +2692,14 @@ const HUDPanel = React.memo(function HUDPanel({
                           }}
                           aria-hidden
                         />
-                        {/* Hover time preview */}
+                        {/* Hover time preview (below cursor) */}
                         {liveDur > 0 ? (
                           <div
                             style={{
                               position: 'absolute',
-                              bottom: '100%',
+                              top: '100%',
                               left: `${pct}%`,
-                              transform: 'translate(-50%, -6px)',
+                              transform: 'translate(-50%, 6px)',
                               padding: '2px 6px',
                               borderRadius: 6,
                               fontSize: 10,
@@ -2733,9 +2735,26 @@ const HUDPanel = React.memo(function HUDPanel({
                       />
                     ) : null}
 
-                    {/* Dragging cursor + time preview (always at pointer position while dragging) */}
+                    {/* Dragging cursor + time preview (below cursor, always at pointer position while dragging) */}
                     {trackScrubPct != null && liveDur > 0 ? (
                       <>
+                        {/* White circular handle at drag position */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: `${Math.max(0, Math.min(100, trackScrubPct * 100))}%`,
+                            transform: 'translate(-50%, -50%)',
+                            width: 12,
+                            height: 12,
+                            borderRadius: '9999px',
+                            background: '#FFFFFF',
+                            boxShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 14px rgba(255,255,255,0.6)',
+                            pointerEvents: 'none',
+                            zIndex: 3
+                          }}
+                          aria-hidden
+                        />
                         <div
                           style={{
                             position: 'absolute',
@@ -2753,9 +2772,9 @@ const HUDPanel = React.memo(function HUDPanel({
                         <div
                           style={{
                             position: 'absolute',
-                            bottom: '100%',
+                            top: '100%',
                             left: `${Math.max(0, Math.min(100, trackScrubPct * 100))}%`,
-                            transform: 'translate(-50%, -6px)',
+                            transform: 'translate(-50%, 6px)',
                             padding: '2px 6px',
                             borderRadius: 6,
                             fontSize: 10,
