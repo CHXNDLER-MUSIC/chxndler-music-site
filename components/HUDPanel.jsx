@@ -46,6 +46,7 @@ import SongDropdown from "@/components/SongDropdown";
 import SimpleWaveform from "@/components/SimpleWaveform";
 import WaveformVisualizer, { ELEMENT_COLORS } from "@/components/WaveformVisualizer";
 import DevErrorLogger from "@/components/DevErrorLogger";
+import { toYouTubeEmbed } from "@/lib/youtube";
 // 3D Planetarium system with Three.js
 const Pure3DPlanets = ENABLE_PLANETS
   ? dynamic(() => import("@/components/planetarium/Pure3DPlanets"), {
@@ -217,6 +218,17 @@ const HUDPanel = React.memo(function HUDPanel({
   // Audio progress tracking
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  // Hover indicator for the global HUD track bar
+  const [trackHoverPct, setTrackHoverPct] = useState(null);
+  // While scrubbing, show a dedicated cursor + time preview at the pointer
+  const [trackScrubPct, setTrackScrubPct] = useState(null);
+  // Format seconds as M:SS for time preview
+  const formatTime = (seconds) => {
+    if (!isFinite(seconds) || seconds < 0) return '0:00';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
   // Lightweight animation tick to force re-render while audio is playing
   // Ensures the HUD progress bar advances even if underlying events are throttled
   const [animTick, setAnimTick] = useState(0);
@@ -2514,18 +2526,39 @@ const HUDPanel = React.memo(function HUDPanel({
                   title="Click or drag to seek"
                   style={{
                     left: inConsole ? 4 : 4,
-                    right: oneLinerRight + 2,
-                    bottom: (typeof DROPDOWN_BOTTOM === 'number' ? DROPDOWN_BOTTOM : 100) - 2,
-                    height: 12,
+                    // Stretch the bar wider by minimizing right padding (allow under cover art)
+                    right: 4,
+                    // Move the track bar further DOWN beneath the waveform/controls block
+                    // Align relative to the waveform container bottom (DROPDOWN_BOTTOM - 80), then add extra offset
+                    bottom: Math.max(0, (typeof DROPDOWN_BOTTOM === 'number' ? (DROPDOWN_BOTTOM - 80) : (100 - 80)) - 8),
+                    height: 16,
                     borderRadius: 9999,
                     background: 'rgba(20,20,25,0.9)',
                     border: '1px solid rgba(25,227,255,0.6)',
-                    boxShadow: '0 0 8px rgba(25,227,255,0.5), 0 0 16px rgba(25,227,255,0.35), inset 0 0 4px rgba(25,227,255,0.25)',
-                    overflow: 'hidden',
+                    boxShadow: `0 0 8px rgba(25,227,255,0.5), 0 0 16px rgba(25,227,255,0.35), inset 0 0 4px rgba(25,227,255,0.25)`,
+                    overflow: 'visible',
                     cursor: 'pointer',
                     touchAction: 'none',
-                    zIndex: 8
+                    zIndex: 8,
+                    transition: 'box-shadow 120ms ease'
                   }}
+                  onMouseEnter={(e) => {
+                    try {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const x = Math.max(0, Math.min(rect.width, (e.clientX - rect.left)));
+                      const ratio = rect.width > 0 ? (x / rect.width) : 0;
+                      setTrackHoverPct(ratio);
+                    } catch { setTrackHoverPct(0); }
+                  }}
+                  onMouseMove={(e) => {
+                    try {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const x = Math.max(0, Math.min(rect.width, (e.clientX - rect.left)));
+                      const ratio = rect.width > 0 ? (x / rect.width) : 0;
+                      setTrackHoverPct(ratio);
+                    } catch {}
+                  }}
+                  onMouseLeave={() => setTrackHoverPct(null)}
                   onPointerDown={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -2543,23 +2576,203 @@ const HUDPanel = React.memo(function HUDPanel({
                       const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
                       const ratio = rect.width > 0 ? (x / rect.width) : 0;
                       const newTime = Math.max(0, Math.min(dur, ratio * dur));
+                      // Track scrub cursor position and keep hover active for visuals
+                      setTrackScrubPct(ratio);
+                      setTrackHoverPct(ratio);
                       try { el.currentTime = newTime; } catch {}
                     };
                     seekFromClientX(e.clientX);
                     const onMove = (ev) => seekFromClientX(ev.clientX);
-                    const onUp = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); };
+                    const onUp = () => {
+                      setTrackScrubPct(null);
+                      window.removeEventListener('pointermove', onMove);
+                      window.removeEventListener('pointerup', onUp);
+                    };
                     window.addEventListener('pointermove', onMove);
                     window.addEventListener('pointerup', onUp, { once: true });
                   }}
-                >
-                  <div
-                    style={{
-                      height: '100%',
-                      width: `${pct}%`,
-                      background: `linear-gradient(90deg, ${elementColor}AA 0%, ${elementColor}DD 50%, ${elementColor}AA 100%)`,
-                      boxShadow: `0 0 8px ${elementColor}66, 0 0 16px ${elementColor}44`
-                    }}
-                  />
+                  >
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${pct}%`,
+                        background: `linear-gradient(90deg, ${elementColor}AA 0%, ${elementColor}DD 50%, ${elementColor}AA 100%)`,
+                    // Use inset glow on hover so it stays within the bar
+                    boxShadow: `${trackHoverPct != null ? `inset 0 0 10px ${elementColor}AA, inset 0 0 18px ${elementColor}88` : 'none'}`,
+                    filter: trackHoverPct != null ? 'brightness(1.15) saturate(1.08)' : 'none',
+                    transition: 'box-shadow 120ms ease, filter 120ms ease'
+                  }}
+                />
+                    {(() => {
+                      // Cursor-based preview segment when hovering ahead of the playhead
+                      if (trackHoverPct == null || !(liveDur > 0)) return null;
+                      const hoverPct = Math.max(0, Math.min(1, trackHoverPct));
+                      const hoverTime = hoverPct * liveDur;
+                      const ahead = hoverTime > (isFinite(liveTime) ? liveTime : 0) + 0.01;
+                      if (!ahead) return null;
+                      // Convert hover to percent to match pct which is already percent 0..100
+                      const hoverLeft = hoverPct * 100;
+                      const playhead = pct; // pct is 0..100 percent of duration
+                      return (
+                        <>
+                          {/* Segment glow between playhead and hovered point (clipped inside bar) */}
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: 2,
+                              bottom: 2,
+                              left: `${Math.min(playhead, hoverLeft)}%`,
+                              // Subtract a tiny epsilon to prevent any AA spill beyond cursor
+                              width: `${Math.max(0, Math.abs(hoverLeft - playhead) - 0.8)}%`,
+                              borderRadius: 9999,
+                              background: `linear-gradient(90deg, ${elementColor}AA 0%, ${elementColor}44 70%, transparent 100%)`,
+                              boxShadow: `inset 0 0 6px ${elementColor}88`,
+                              pointerEvents: 'none'
+                            }}
+                            aria-hidden
+                          />
+                          {/* Vertical cursor glow line at hovered position (clipped inside bar) */}
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: 2,
+                              bottom: 2,
+                              left: `${hoverLeft}%`,
+                              width: 2,
+                              transform: 'translateX(-50%)',
+                              background: elementColor,
+                              boxShadow: 'none',
+                              borderRadius: 2,
+                              pointerEvents: 'none'
+                            }}
+                            aria-hidden
+                          />
+                          {/* Cursor time preview at hovered position */}
+                          <div
+                            style={{
+                              position: 'absolute',
+                              bottom: '100%',
+                              left: `${hoverLeft}%`,
+                              transform: 'translate(-50%, -6px)',
+                              padding: '2px 6px',
+                              borderRadius: 6,
+                              fontSize: 10,
+                              lineHeight: 1.2,
+                              color: '#fff',
+                              background: 'rgba(0,0,0,0.8)',
+                              border: '1px solid rgba(255,255,255,0.2)',
+                              whiteSpace: 'nowrap',
+                              pointerEvents: 'none',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.4)'
+                            }}
+                            aria-hidden
+                          >
+                            {formatTime(hoverTime)}
+                          </div>
+                        </>
+                      );
+                    })()}
+                    {trackHoverPct != null && trackScrubPct == null ? (
+                      <>
+                        {/* Hover glow (clipped inside bar height) */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: 2,
+                            bottom: 2,
+                            left: `${pct}%`,
+                            transform: 'translateX(-50%)',
+                            width: 56,
+                            borderRadius: 9999,
+                            pointerEvents: 'none',
+                            background: `linear-gradient(90deg, transparent 0%, ${elementColor}66 50%, transparent 100%)`,
+                            boxShadow: `inset 0 0 10px ${elementColor}66`
+                          }}
+                          aria-hidden
+                        />
+                        {/* Hover time preview */}
+                        {liveDur > 0 ? (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              bottom: '100%',
+                              left: `${pct}%`,
+                              transform: 'translate(-50%, -6px)',
+                              padding: '2px 6px',
+                              borderRadius: 6,
+                              fontSize: 10,
+                              lineHeight: 1.2,
+                              color: '#fff',
+                              background: 'rgba(0,0,0,0.8)',
+                              border: '1px solid rgba(255,255,255,0.2)',
+                              whiteSpace: 'nowrap',
+                              pointerEvents: 'none',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.4)'
+                            }}
+                            aria-hidden
+                          >
+                            {formatTime(liveTime)}
+                          </div>
+                        ) : null}
+                      </>
+                    ) : null}
+                    {trackHoverPct != null && trackScrubPct == null ? (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: `${pct}%`,
+                          transform: 'translate(-50%, -50%)',
+                          width: 12,
+                          height: 12,
+                          borderRadius: '9999px',
+                          background: '#FFFFFF',
+                          boxShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 14px rgba(255,255,255,0.6)'
+                        }}
+                        aria-hidden
+                      />
+                    ) : null}
+
+                    {/* Dragging cursor + time preview (always at pointer position while dragging) */}
+                    {trackScrubPct != null && liveDur > 0 ? (
+                      <>
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: 2,
+                            bottom: 2,
+                            left: `${Math.max(0, Math.min(100, trackScrubPct * 100))}%`,
+                            width: 2,
+                            transform: 'translateX(-50%)',
+                            background: elementColor,
+                            borderRadius: 2,
+                            pointerEvents: 'none'
+                          }}
+                          aria-hidden
+                        />
+                        <div
+                          style={{
+                            position: 'absolute',
+                            bottom: '100%',
+                            left: `${Math.max(0, Math.min(100, trackScrubPct * 100))}%`,
+                            transform: 'translate(-50%, -6px)',
+                            padding: '2px 6px',
+                            borderRadius: 6,
+                            fontSize: 10,
+                            lineHeight: 1.2,
+                            color: '#fff',
+                            background: 'rgba(0,0,0,0.8)',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            whiteSpace: 'nowrap',
+                            pointerEvents: 'none',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.4)'
+                          }}
+                          aria-hidden
+                        >
+                          {formatTime(trackScrubPct * liveDur)}
+                        </div>
+                      </>
+                    ) : null}
                 </div>
               );
             } catch { return null; }
@@ -2700,8 +2913,8 @@ const HUDPanel = React.memo(function HUDPanel({
               return null;
           })()}
           
-          {/* Track bar directly below the cover art container (hidden; using global bar below controls) */}
-          {(() => {
+          {/* Track bar directly below the cover art container — DISABLED (use global full-width bar only) */}
+          {false && (() => {
             try {
               const a = liveAudioRef?.current;
               // Try to find any audio element if liveAudioRef isn't set
@@ -2740,6 +2953,7 @@ const HUDPanel = React.memo(function HUDPanel({
                   className="hud-cover-track"
                   title="Click or drag to seek"
                   style={{
+                    display: 'none',
                     width: 'min(70vw, 600px)',
                     height: 14,
                     marginTop: 10,
@@ -2884,25 +3098,19 @@ const HUDPanel = React.memo(function HUDPanel({
                   const item = resolvedSongs.find(s => s.id === id);
                   if (item?.locked) return;
 
-                  // IMMEDIATELY close blue display when song is selected from dropdown
+                  // Close blue display immediately; DashboardApp.onSongChange also hides HUD/beam
                   onCloseBlueDisplay?.();
 
+                  // Update local active id for UI reflection
                   setActive(id);
 
-                  // Load the selected track into the audio provider for play/pause button
+                  // Delegate full warp + playback sequencing to DashboardApp
+                  // This triggers camera focus, lightspeed overlay, and post-warp playback
                   try {
-                    audioManager.selectTrack(id);
+                    onSongChange?.(id);
                   } catch (error) {
-                    if (DEBUG_MEDIA) dwarn('HUDPanel: failed to load track into audio provider', error);
+                    if (DEBUG_MEDIA) dwarn('HUDPanel: onSongChange handler failed', error);
                   }
-
-                  // Stop ambient space music when switching songs
-                  try {
-                    const ambient = document.querySelector('audio[data-ambient="1"]');
-                    if (ambient) {
-                      ambient.pause();
-                    }
-                  } catch {}
                 }}
               />
           </div>
@@ -2937,8 +3145,8 @@ const HUDPanel = React.memo(function HUDPanel({
 
                   const spotifyUrl = isHome ? CHXNDLER_SPOTIFY_PROFILE : (currentSong?.spotify || CHXNDLER_SPOTIFY_PROFILE);
                   const appleUrl = isHome ? CHXNDLER_APPLE_PROFILE : (currentSong?.apple || CHXNDLER_APPLE_PROFILE);
-                  // Always open channel per request
-                  const youtubeUrl = CHXNDLER_YOUTUBE_CHANNEL;
+                  // Use per-song YouTube when available; otherwise open channel
+                  const youtubeUrl = isHome ? CHXNDLER_YOUTUBE_CHANNEL : (currentSong?.youtube || CHXNDLER_YOUTUBE_CHANNEL);
 
                   const isSpotifyProfile = isHome || !currentSong?.spotify;
                   const isAppleProfile = isHome || !currentSong?.apple;
@@ -2957,12 +3165,14 @@ const HUDPanel = React.memo(function HUDPanel({
                         left: 6,
                         right: 8,
                         // Sit just above the track bar so it follows the same baseline
-                        bottom: 28,
+                        // Move higher to avoid accidental clicks when aiming for the track bar
+                        bottom: 44,
                         zIndex: 6,
                         borderRadius: '8px',
                         padding: '4px 2px',
                         backgroundColor: 'transparent',
-                        pointerEvents: 'auto'
+                        // Only child controls should receive pointer events; container itself should not
+                        pointerEvents: 'none'
                       }}>
                       <button
                         onClick={handlePlayPause}
@@ -3150,8 +3360,8 @@ const HUDPanel = React.memo(function HUDPanel({
                           data-button-id="youtube"
                           className="youtube-btn-waveform-hud"
                           style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', order: 5, position: 'relative', zIndex: 1000 }}
-                          title={"Open CHXNDLER on YouTube"}
-                          aria-label={"Open CHXNDLER on YouTube"}
+                          title={isYouTubeProfile ? "Open CHXNDLER on YouTube" : `Open ${currentSong?.title || 'current track'} on YouTube`}
+                          aria-label={isYouTubeProfile ? "Open CHXNDLER on YouTube" : `Open ${currentSong?.title || 'current track'} on YouTube`}
                           data-song={currentSong?.title || ''}
                           data-slug={currentSong?.id || ''}
                           data-id="yt"
@@ -3178,8 +3388,18 @@ const HUDPanel = React.memo(function HUDPanel({
                             try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
                             try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
                             try { sfx.play('join-aliens', 0.9); } catch {}
-                            // Open channel directly; do not use inline popover
-                            window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
+                            // If we have a per-track YouTube URL, show inline popover; otherwise open channel
+                            try {
+                              const embed = toYouTubeEmbed(youtubeUrl);
+                              if (!isYouTubeProfile && embed) {
+                                setYtEmbedUrl(embed);
+                                setShowYouTubePopover(true);
+                              } else {
+                                window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
+                              }
+                            } catch {
+                              try { window.open(youtubeUrl, '_blank', 'noopener,noreferrer'); } catch {}
+                            }
                           }}
                           onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                         >

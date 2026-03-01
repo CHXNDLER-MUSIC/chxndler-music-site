@@ -1,4 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { randomUUID } from 'crypto';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
@@ -14,7 +15,15 @@ export async function POST(req: Request) {
     const displayName = (body?.displayName ?? body?.username ?? "").toString().trim();
     const clientNonce = (body?.client_nonce ?? '').toString().trim() || null;
     const dedupeKey = (body?.dedupe_key ?? clientNonce ?? '').toString().trim() || null;
-    const guestId = (body?.guest_id ?? '').toString().trim() || null;
+
+    // Normalize guest_id: accept raw UUIDs or values prefixed with 'guest_' / 'guest-'
+    const rawGuestId = (body?.guest_id ?? '').toString().trim();
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    let guestId: string | null = null;
+    if (rawGuestId && rawGuestId !== 'guest_ssr_placeholder') {
+      const stripped = rawGuestId.replace(/^guest[_-]/i, '');
+      guestId = uuidRegex.test(stripped) ? stripped : null;
+    }
 
     if (!message) {
       return NextResponse.json(
@@ -62,11 +71,21 @@ export async function POST(req: Request) {
     // Use admin client for insert to bypass RLS (auth already verified above)
     const admin = getSupabaseAdmin();
 
+    // If no auth user and no valid guestId provided, generate a transient guest id
+    if (!userId && !guestId) {
+      try {
+        guestId = randomUUID();
+      } catch {
+        // very old runtimes: fallback
+        guestId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      }
+    }
+
     const { data, error } = await admin
       .from("heart_signal_messages")
       .insert({
         user_id: userId, // may be null for guests
-        guest_id: userId ? null : guestId, // set guest_id for logged-out users
+        guest_id: userId ? null : guestId, // set guest_id for logged-out users (normalized UUID or null)
         username,
         message,
         is_system: false,
@@ -108,7 +127,7 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await admin
       .from('heart_signal_messages')
-      .select('id, user_id, username, message, created_at, is_system, dedupe_key, heart_count, water_count, lightning_count, darkness_count, alien_count')
+      .select('id, user_id, guest_id, username, message, created_at, is_system, dedupe_key, heart_count, water_count, lightning_count, darkness_count, alien_count')
       .order('created_at', { ascending: false })
       .limit(limit);
 

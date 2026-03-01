@@ -5,6 +5,7 @@ import LoginModal from "@/components/LoginModal";
 import { createPortal } from "react-dom";
 import { tracks as ALL, type Track, type Song } from "@/lib/songs-consolidated";
 import { LINKS } from "@/config/cockpit";
+import { toYouTubeEmbed } from "@/lib/youtube";
 import { skyFor, verifyAllTrackSkies } from "@/lib/sky";
 import { DEBUG_MEDIA, dlog, dwarn, dumpAudio } from "@/lib/debug";
 import { ELEMENT_COLORS, type Element } from "@/lib/planets";
@@ -121,8 +122,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     }
   }, []);
 
-  // Always open channel per request
-  const youtubeButtonUrl = useMemo(() => LINKS.youtube, []);
+  // Prefer per-song YouTube link when available; fallback to channel
+  const youtubeButtonUrl = useMemo(() => {
+    try {
+      const u = (cur as any)?.youtube as string | undefined;
+      return u || LINKS.youtube;
+    } catch {
+      return LINKS.youtube;
+    }
+  }, [cur]);
 
   // Load saved volume on mount and apply to audio
   useEffect(() => {
@@ -1315,8 +1323,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   rel="noopener noreferrer"
                   className="youtube-link-waveform"
                   style={{ position: 'relative', zIndex: 10 }}
-                  title={`Open CHXNDLER channel on YouTube`}
-                  aria-label={`Open CHXNDLER channel on YouTube`}
+                  title={(cur as any)?.youtube ? `Open ${cur.title} on YouTube` : `Open CHXNDLER channel on YouTube`}
+                  aria-label={(cur as any)?.youtube ? `Open ${cur.title} on YouTube` : `Open CHXNDLER channel on YouTube`}
                   data-song={cur.title}
                   data-slug={cur.slug}
                   data-id="yt"
@@ -1331,14 +1339,25 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                     try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
                   }}
                   onClick={(e) => {
-                    // Open channel directly; do not show Apple popover or inline YouTube
+                    // If this track has a specific YouTube URL, show inline popover; otherwise open channel
                     try { e.preventDefault(); } catch {}
                     try { e.stopPropagation(); } catch {}
                     try { uiClick(); } catch {}
                     try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
                     try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
                     try { const a = audioRef.current; if (a) { a.pause(); setPlaying(false); } } catch {}
-                    try { window.open(youtubeButtonUrl || '', '_blank', 'noopener,noreferrer'); } catch {}
+                    try {
+                      const isPerTrack = !!(cur as any)?.youtube;
+                      const embed = toYouTubeEmbed(youtubeButtonUrl || '');
+                      if (isPerTrack && embed) {
+                        setYtEmbedUrl(embed);
+                        setShowYouTubePopover(true);
+                      } else {
+                        window.open(youtubeButtonUrl || '', '_blank', 'noopener,noreferrer');
+                      }
+                    } catch {
+                      try { window.open(youtubeButtonUrl || '', '_blank', 'noopener,noreferrer'); } catch {}
+                    }
                   }}
                   onMouseEnter={playHover}
                 >
@@ -2302,7 +2321,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           justify-content: center; /* center under controls */
           margin-top: 6px;
           width: 100%;
-          order: 2 !important; /* Place waveform between dropdown and controls */
+          order: 3 !important; /* Place waveform below play/pause controls */
         }
         /* Song dropdown row - sits above waveform */
         .song-dropdown-row {
@@ -2311,7 +2330,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           justify-content: center;
           gap: 10px;
           width: 100%;
-          order: 4 !important; /* Below controls */
+          order: 4 !important; /* Keep dropdown below controls and waveform */
           margin-top: 6px;
         }
         
@@ -2446,12 +2465,21 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           align-items: center;
           justify-content: center;
           text-decoration: none;
-          transition: transform 0.2s ease, opacity 0.2s ease;
+          transition: transform 0.2s ease, opacity 0.2s ease, filter 0.25s ease, box-shadow 0.25s ease;
           z-index: 100;
           background: transparent;
           border: none;
         }
-        .apple-btn-waveform:hover { transform: translate(-50%, -50%); opacity: 0.95; }
+        .apple-btn-waveform:hover {
+          transform: translate(-50%, -50%);
+          opacity: 0.98;
+          /* Add a soft neon glow similar to lyrics button */
+          filter: drop-shadow(0 0 10px rgba(255,59,48,0.75)) drop-shadow(0 0 22px rgba(255,59,48,0.55));
+        }
+        .apple-btn-waveform:hover svg {
+          /* Intensify the icon’s own glow */
+          filter: drop-shadow(0 0 10px rgba(255,59,48,0.9)) drop-shadow(0 0 22px rgba(255,59,48,0.7));
+        }
         .apple-btn-waveform:active { transform: translate(-50%, -50%); }
         .apple-btn-unavailable-waveform {
           position: absolute;
@@ -2553,9 +2581,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           z-index: 600; /* sit above waveform/svg and streaming buttons */
         }
         .youtube-link-waveform:hover { 
+          /* Boost glow to match lyrics button intensity */
           box-shadow: 
-            0 6px 20px rgba(255,59,48,0.6),
+            0 6px 22px rgba(255,59,48,0.85),
             inset 0 1px 0 rgba(255,255,255,0.3);
+          filter: brightness(1.05) saturate(1.08);
+        }
+        .youtube-link-waveform:hover svg {
+          /* Add inner icon glow for a stronger effect */
+          filter: drop-shadow(0 0 10px rgba(255,59,48,0.8)) drop-shadow(0 0 20px rgba(255,59,48,0.6));
         }
         .youtube-link-waveform:active { }
         /* Increase icon size so the outer rim appears thinner */
@@ -2799,7 +2833,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         /* Sleek integrated controls - keep fully transparent so it doesn't look dark on narrow layouts */
         .sleek-controls {
           display: flex;
-          order: 3 !important; /* Controls are below waveform */
+          order: 2 !important; /* Controls above waveform */
           align-items: center;
           justify-content: flex-start; /* left-align controls to reduce left gap */
           flex-wrap: wrap; /* allow wrapping on smaller screens */

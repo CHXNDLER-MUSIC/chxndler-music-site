@@ -560,14 +560,17 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                   }
                 }));
               } else if (reactionEvent.type === 'room_reaction') {
-                // Add room reaction for animation
+                // Add room reaction for animation; replace any active reaction from the same user
                 const roomReaction = {
                   id: `${reactionEvent.user_id}_${Date.now()}`,
                   reaction: reactionEvent.reaction,
                   user_id: reactionEvent.user_id,
                   created_at: reactionEvent.created_at
                 };
-                setRoomReactions(prev => [...prev, roomReaction]);
+                setRoomReactions(prev => {
+                  const others = prev.filter(r => r.user_id !== reactionEvent.user_id);
+                  return [...others, roomReaction];
+                });
               }
             },
             (error) => {
@@ -1303,13 +1306,18 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
         }));
       } else {
         // Add room reaction
+        // Ensure only the latest reaction from this user is shown at a time
         const roomReaction = {
           id: `${currentUserId}_${now}`,
           reaction,
           user_id: currentUserId,
           created_at: new Date().toISOString()
         };
-        setRoomReactions(prev => [...prev, roomReaction]);
+        setRoomReactions(prev => {
+          // Remove any active room reactions from the same user to avoid stacking
+          const others = prev.filter(r => r.user_id !== currentUserId);
+          return [...others, roomReaction];
+        });
       }
 
       if (process.env.NODE_ENV !== "production") console.log(`✨ ${reaction} sent for ${messageId ? 'message' : 'room'}`);

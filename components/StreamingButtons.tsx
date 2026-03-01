@@ -398,9 +398,9 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
         /* Re-enable pointer events only on actual button elements */
         .wrap :global(.ck-icon-btn), .wrap :global(.ck-icon-btn-disabled){ pointer-events:auto; }
         /* Performance hints for smoother hover animations */
-        .ck-icon-btn{ will-change: transform, filter; transform: translateZ(0); backface-visibility: hidden; contain: paint; }
-        /* Button hover: brighter + slightly larger (same intensity as SocialIcons) */
-        .ck-icon-btn:hover{
+        .wrap :global(.ck-icon-btn){ will-change: transform, filter; transform: translateZ(0); backface-visibility: hidden; contain: paint; }
+        /* Button hover: brighter + slightly larger, with brand-colored glow */
+        .wrap :global(.ck-icon-btn:hover){
           transform: scale(1.05);
           box-shadow:
             0 22px 44px rgba(0,0,0,.7),
@@ -410,8 +410,8 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
             inset 0 -8px 18px rgba(0,0,0,.65);
           filter: brightness(1.06) saturate(1.12);
         }
-        /* Match SocialIcons behavior; press handled inline */
-        .ck-icon-btn:hover .logo-glow{
+        /* Intensify logo glow on hover */
+        .wrap :global(.ck-icon-btn:hover .logo-glow){
           transform: scale(1.06);
           filter:
             drop-shadow(0 0 16px var(--btn-color))

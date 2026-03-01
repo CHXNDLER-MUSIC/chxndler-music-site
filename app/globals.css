@@ -517,6 +517,13 @@ main {
   -webkit-backdrop-filter: none;
   animation: buttonRailDrift 3s ease-in-out infinite;
   z-index: -1;
+  /* Ensure decorative rail never intercepts clicks */
+  pointer-events: none;
+}
+
+/* Allow only the direct child controls to receive pointer events */
+.hud-top-controls > * {
+  pointer-events: auto;
 }
 
 /* Enhanced button hover effects for floating above rail */
@@ -825,6 +832,16 @@ img[src$="/elements/music.webp"] {
 .cover-art-container:hover {
   transform: translateZ(0) scale(1.04);
   box-shadow: none;
+}
+
+/* Hover glow for HUD cover art wrapper to match SongDropdown */
+.cover-art-glow {
+  transition: transform 150ms ease, box-shadow 200ms ease;
+  will-change: transform, box-shadow;
+}
+.cover-art-glow:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 52px rgba(25,227,255,0.7), 0 0 90px rgba(25,227,255,0.45);
 }
 
 /* Ensure hover glow for all cover variants (hologram + HUD) */

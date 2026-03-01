@@ -454,7 +454,8 @@ export default function JoinAliens({ visible = true } = {}) {
                   color: isNext ? '#00FFFF' : 'rgba(252, 84, 175, 0.45)',
                   textAlign: 'center',
                   lineHeight: 1.05,
-                  marginTop: idx === 1 ? '4px' : 0,
+                  // Slightly more space between the two lines
+                  marginTop: idx === 1 ? '8px' : 0,
                 }}>
                   {label}
                 </div>
@@ -469,7 +470,8 @@ export default function JoinAliens({ visible = true } = {}) {
         width: '100%',
         height: '1px',
         background: 'linear-gradient(90deg, transparent, rgba(252, 84, 175, 0.5), transparent)',
-        marginTop: '-20px',
+        // Pull the divider closer to the schedule text above
+        marginTop: '-28px',
       }} />
 
       {/* Tip amount buttons - horizontal row below Twitch embed */}
