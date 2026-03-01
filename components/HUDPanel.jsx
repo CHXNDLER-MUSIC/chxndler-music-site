@@ -2474,6 +2474,96 @@ const HUDPanel = React.memo(function HUDPanel({
               </div>
           </div>
           )}
+
+          {/* Global full-width track bar: below cover and play/pause, spans blue display */}
+          {(() => {
+            try {
+              const a = liveAudioRef?.current;
+              let audioEl = a;
+              if (!audioEl) {
+                const allAudio = document.querySelectorAll('audio');
+                for (const el of allAudio) {
+                  if (!el.paused || el.currentTime > 0) { audioEl = el; break; }
+                }
+                if (!audioEl && allAudio.length > 0) audioEl = allAudio[0];
+              }
+
+              const amDur = audioManager?.duration;
+              const amTime = audioManager?.currentTime;
+              const elDur = audioEl?.duration;
+              const elTime = audioEl?.currentTime;
+              const liveDur = (isFinite(elDur) && elDur > 0) ? elDur
+                : (isFinite(amDur) && amDur > 0) ? amDur
+                : (isFinite(duration) && duration > 0) ? duration
+                : 0;
+              const liveTime = (isFinite(elTime) && elTime >= 0) ? elTime
+                : (isFinite(amTime) && amTime >= 0) ? amTime
+                : (isFinite(progress) && progress >= 0) ? progress
+                : 0;
+              const pct = liveDur > 0 ? Math.max(0, Math.min(100, (liveTime / liveDur) * 100)) : 0;
+
+              // Element color for glow
+              const TRACK_ELEMENT_COLORS = { heart: '#FC54AF', water: '#38B6FF', lightning: '#F2EF1D', darkness: '#FFFFFF' };
+              const currentSong = resolvedSongs.find(s => s.id === active);
+              const element = currentSong?.icon || 'heart';
+              const elementColor = TRACK_ELEMENT_COLORS[element] || '#38B6FF';
+
+              return (
+                <div
+                  className="absolute"
+                  title="Click or drag to seek"
+                  style={{
+                    left: inConsole ? 4 : 4,
+                    right: oneLinerRight + 2,
+                    bottom: (typeof DROPDOWN_BOTTOM === 'number' ? DROPDOWN_BOTTOM : 100) - 2,
+                    height: 12,
+                    borderRadius: 9999,
+                    background: 'rgba(20,20,25,0.9)',
+                    border: '1px solid rgba(25,227,255,0.6)',
+                    boxShadow: '0 0 8px rgba(25,227,255,0.5), 0 0 16px rgba(25,227,255,0.35), inset 0 0 4px rgba(25,227,255,0.25)',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    touchAction: 'none',
+                    zIndex: 8
+                  }}
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch {}
+                    const resolveAudioAndDuration = () => {
+                      let el = liveAudioRef?.current || audioManager.getCurrentAudio?.() || audioEl;
+                      if (!el) el = document.querySelector('audio[data-audio-player="1"]') || document.querySelector('audio[src*="tracks"]');
+                      let dur = liveDur; if ((!dur || dur <= 0) && el) dur = el.duration; if (!dur || dur <= 0) dur = duration; return { el, dur };
+                    };
+                    const bar = e.currentTarget;
+                    const { el, dur } = resolveAudioAndDuration();
+                    if (!el || !dur || dur <= 0) return;
+                    const seekFromClientX = (clientX) => {
+                      const rect = bar.getBoundingClientRect();
+                      const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                      const ratio = rect.width > 0 ? (x / rect.width) : 0;
+                      const newTime = Math.max(0, Math.min(dur, ratio * dur));
+                      try { el.currentTime = newTime; } catch {}
+                    };
+                    seekFromClientX(e.clientX);
+                    const onMove = (ev) => seekFromClientX(ev.clientX);
+                    const onUp = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); };
+                    window.addEventListener('pointermove', onMove);
+                    window.addEventListener('pointerup', onUp, { once: true });
+                  }}
+                >
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${pct}%`,
+                      background: `linear-gradient(90deg, ${elementColor}AA 0%, ${elementColor}DD 50%, ${elementColor}AA 100%)`,
+                      boxShadow: `0 0 8px ${elementColor}66, 0 0 16px ${elementColor}44`
+                    }}
+                  />
+                </div>
+              );
+            } catch { return null; }
+          })()}
           {/* Background removed for transparent HUD */}
           {/* Cover art moved into right column above the song list */}
           {/* Holographic beam overlays removed */}
@@ -2610,7 +2700,7 @@ const HUDPanel = React.memo(function HUDPanel({
               return null;
           })()}
           
-          {/* Track bar directly below the cover art container */}
+          {/* Track bar directly below the cover art container (hidden; using global bar below controls) */}
           {(() => {
             try {
               const a = liveAudioRef?.current;
@@ -2650,10 +2740,12 @@ const HUDPanel = React.memo(function HUDPanel({
                   className="hud-cover-track"
                   title="Click or drag to seek"
                   style={{
-                    width: '100%',
-                    height: 12,
-                    marginTop: 8,
+                    width: 'min(70vw, 600px)',
+                    height: 14,
+                    marginTop: 10,
+                    alignSelf: 'flex-end',
                     borderRadius: 9999,
+                    position: 'relative',
                     background: 'rgba(20,20,25,0.9)',
                     border: '1px solid rgba(25,227,255,0.6)',
                     boxShadow: '0 0 8px rgba(25,227,255,0.5), 0 0 16px rgba(25,227,255,0.35), inset 0 0 4px rgba(25,227,255,0.25)',
@@ -2670,7 +2762,6 @@ const HUDPanel = React.memo(function HUDPanel({
                       }
                     } catch {}
 
-                    // Resolve audio + duration snapshot
                     const resolveAudioAndDuration = () => {
                       let el = liveAudioRef?.current || audioManager.getCurrentAudio?.() || audioEl;
                       if (!el) {
@@ -2710,6 +2801,58 @@ const HUDPanel = React.memo(function HUDPanel({
                       width: `${pct}%`,
                       background: 'linear-gradient(90deg, #FC54AF 0%, #38B6FF 50%, #F2EF1D 100%)',
                       boxShadow: '0 0 8px rgba(252,84,175,0.4), 0 0 16px rgba(56,182,255,0.3)'
+                    }}
+                  />
+                  <div
+                    title="Drag to seek"
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: `${pct}%`,
+                      transform: 'translate(-50%, -50%)',
+                      width: 18,
+                      height: 18,
+                      borderRadius: '9999px',
+                      border: '2px solid white',
+                      background: 'radial-gradient(circle, #FC54AF, #38B6FF)',
+                      boxShadow: '0 0 10px rgba(252,84,175,0.6), 0 0 18px rgba(56,182,255,0.5), 0 2px 6px rgba(0,0,0,0.3)',
+                      cursor: 'ew-resize',
+                      pointerEvents: 'auto'
+                    }}
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      try {
+                        if (e.currentTarget && typeof e.currentTarget.setPointerCapture === 'function' && e.pointerId != null) {
+                          e.currentTarget.setPointerCapture(e.pointerId);
+                        }
+                      } catch {}
+                      let el = liveAudioRef?.current || audioManager.getCurrentAudio?.();
+                      if (!el) {
+                        el = document.querySelector('audio[data-audio-player="1"]') || document.querySelector('audio[src*="tracks"]');
+                      }
+                      let dur = liveDur;
+                      if ((!dur || dur <= 0) && el) dur = el.duration;
+                      if (!dur || dur <= 0) dur = duration;
+                      if (!el || !dur || dur <= 0) return;
+
+                      const bar = e.currentTarget.parentElement;
+                      if (!bar) return;
+                      const seekFromClientX = (clientX) => {
+                        const rect = bar.getBoundingClientRect();
+                        const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                        const ratio = rect.width > 0 ? (x / rect.width) : 0;
+                        const newTime = Math.max(0, Math.min(dur, ratio * dur));
+                        try { el.currentTime = newTime; } catch {}
+                      };
+                      seekFromClientX(e.clientX);
+                      const onMove = (ev) => seekFromClientX(ev.clientX);
+                      const onUp = () => {
+                        window.removeEventListener('pointermove', onMove);
+                        window.removeEventListener('pointerup', onUp);
+                      };
+                      window.addEventListener('pointermove', onMove);
+                      window.addEventListener('pointerup', onUp, { once: true });
                     }}
                   />
                 </div>
@@ -3165,10 +3308,7 @@ const HUDPanel = React.memo(function HUDPanel({
 
                           return (
                             <>
-                            {/* Hide in-panel track bar; using cover-aligned bar instead */}
-                            <div
-                              style={{ display: 'none' }}
-                            />
+                            {/* In-panel track bar not used; global bar added below cover/controls */}
                             <div
                               className="hud-enhanced-track"
                               style={{ display: 'none' }}

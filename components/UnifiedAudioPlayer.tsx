@@ -172,12 +172,23 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
       if (!target || !target.is_released) return;
     }
 
-    // Trigger visual warp: focus selected planet and hide all during effect
+    // Prefer the global warp flow managed by DashboardApp so we get
+    // the full camera + lightspeed overlay + auto-play after warp.
+    try {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('song:warp-request', {
+          detail: { songSlug: newTrackId, source: 'dropdown', autoPlay: false }
+        }));
+        return; // Hand off to DashboardApp
+      }
+    } catch {}
+
+    // Fallback: if the global handler isn't available (e.g., embedded usage),
+    // perform a minimal local "warp" by switching focus and selecting the track.
     try {
       const { playerStore } = await import("@/store/usePlayerStore");
       const st = playerStore.getState();
       if (st) {
-        // setMain without preserve to trigger hidden state during warp
         st.setMain(newTrackId);
         st.setPlanetDisplayMode('hidden');
         st.setPlanetsVisible(false);
@@ -185,20 +196,14 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
     } catch {}
 
     try {
-      // Use selectTrack method which stops music, plays warp SFX, then loads and auto-plays
       await audioManager.selectTrack(newTrackId);
     } catch (err) {
       console.error('Failed to select track:', err);
-      
-      // If selectTrack fails, try to set it as the current track at least
-      // so the play button can work with it
       const trackInfo = TRACK_INFO[newTrackId];
       if (trackInfo) {
-        // Set the track as current even if selection failed
         audioManager.loadTrack(getTrackUrlFromSongId(newTrackId));
       }
     } finally {
-      // Reveal selected planet after warp/audio has started
       try {
         const { playerStore } = await import("@/store/usePlayerStore");
         const st2 = playerStore.getState();
