@@ -3189,7 +3189,7 @@ const HUDPanel = React.memo(function HUDPanel({
                         right: 13,
                         // Move controls down by 3px more
                         bottom: -25,
-                        zIndex: 6,
+                        zIndex: 9,
                         borderRadius: '8px',
                         // Remove left padding so play/pause sits closer to the container edge
                         padding: '4px 0px',

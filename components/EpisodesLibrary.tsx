@@ -100,9 +100,10 @@ const VIDEOS: Video[] = [
   {
     id: "lsp-003",
     title: "Acoustic Signal 03",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    youtubeUrl: "https://youtu.be/Pxd-uIKa_lg",
     type: "acoustic",
     releaseDate: "2026-03-03T12:00:00",
+    postDescription: "Setlist\n00:00 MR. BRIGHTSIDE\n03:00 ALONE\n05:39 POKÉMON\n08:56 I MIGHT FALL IN LOVE WITH YOU\n13:32 AMERICAN DREAM\n16:14 FEELING THIS",
   },
   {
     id: "lsp-004",
@@ -315,12 +316,20 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
   const [startTime, setStartTime] = useState(0);
   const audio = useAudio();
   const wasPlayingRef = useRef(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const stopVideo = useCallback(() => {
+    if (iframeRef.current) {
+      iframeRef.current.src = "about:blank";
+    }
+  }, []);
 
   // Close on Escape
   useEffect(() => {
     if (!isOpen) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
+        stopVideo();
         if (wasPlayingRef.current) audio.play();
         setIsOpen(false);
         setActiveVideo(null);
@@ -358,6 +367,7 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
 
   const handleBack = () => {
     playClick();
+    stopVideo();
     // Resume music if it was playing before
     if (wasPlayingRef.current) audio.play();
     setActiveVideo(null);
@@ -414,7 +424,7 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
         className="episodes-trigger-btn"
         aria-label="Open Heartverse Library"
         title="Heartverse Library"
-        onClick={() => { playClick(); setIsOpen(!isOpen); }}
+        onClick={() => { playClick(); if (isOpen) stopVideo(); setIsOpen(!isOpen); }}
         onMouseEnter={() => { playHover(); }}
         onMouseLeave={() => {}}
         style={{
@@ -484,7 +494,7 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
             <button
               type="button"
               aria-label="Close"
-              onClick={() => { playClick(); if (wasPlayingRef.current) audio.play(); setIsOpen(false); setActiveVideo(null); }}
+              onClick={() => { playClick(); stopVideo(); if (wasPlayingRef.current) audio.play(); setIsOpen(false); setActiveVideo(null); }}
               onMouseEnter={playHover}
               className="inline-flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-bold transition-all duration-200 hover:scale-110 episodes-close-btn"
               style={{ position: 'absolute', right: '12px' }}
@@ -633,6 +643,7 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
                 style={{ aspectRatio: "16/9" }}
               >
                 <iframe
+                  ref={iframeRef}
                   key={startTime}
                   src={`${getYouTubeEmbedUrl(activeVideo.youtubeUrl)}&start=${startTime}&autoplay=${startTime > 0 ? 1 : 0}`}
                   title={activeVideo.title}

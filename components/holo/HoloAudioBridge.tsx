@@ -186,6 +186,7 @@ export default function HoloAudioBridge() {
           // Disable browser media session before playing to prevent title overlays
           if ('mediaSession' in navigator) {
             navigator.mediaSession.metadata = null;
+            navigator.mediaSession.playbackState = "none";
             navigator.mediaSession.setActionHandler('play', null);
             navigator.mediaSession.setActionHandler('pause', null);
             navigator.mediaSession.setActionHandler('previoustrack', null);

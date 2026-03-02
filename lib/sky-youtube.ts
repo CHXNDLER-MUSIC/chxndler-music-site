@@ -26,10 +26,9 @@ export const YOUTUBE_SKIES: Record<string, string> = {
   'house-party-acoustic': 'https://youtu.be/tvg7P50YP2k',
   // Also map alternate title variant used elsewhere
   'alien-house-party': 'https://youtu.be/7Wld93-xCiI',
-  // MR. BRIGHTSIDE — use provided official clip
-  'mr-brightside': 'https://youtu.be/ZBU5x5plj2E',
-  // Include potential alternate slug used in schedules/migrations
-  'mr-brightside-killers-cover': 'https://youtu.be/ZBU5x5plj2E',
+  // MR. BRIGHTSIDE
+  'mr-brightside': 'https://youtu.be/vQo8TaVJuec',
+  'mr-brightside-killers-cover': 'https://youtu.be/vQo8TaVJuec',
   'i-might-fall-in-love-with-you': 'https://youtu.be/Udds92-CRyQ',
   'i-might-fall-in-love-with-you-acoustic': 'https://youtu.be/Udds92-CRyQ',
   'kid-forever': 'https://youtu.be/pVKgCGjKMN8',

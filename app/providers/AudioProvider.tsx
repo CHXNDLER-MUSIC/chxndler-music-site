@@ -1170,6 +1170,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const onPlay = () => {
       if (process.env.NODE_ENV !== "production") console.log('🎵 AudioProvider: onPlay event fired');
       setState(s => ({ ...s, playing: true, isLoading: false }));
+      // Suppress macOS Now Playing / Apple Music HUD on every play event
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = null;
+        navigator.mediaSession.playbackState = "none";
+      }
 
       // Record play event for analytics
       if (currentTrackRef.current) {
@@ -1327,6 +1332,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     // Disable browser media session to prevent title overlays
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = null;
+      navigator.mediaSession.playbackState = "none";
       navigator.mediaSession.setActionHandler('play', null);
       navigator.mediaSession.setActionHandler('pause', null);
       navigator.mediaSession.setActionHandler('previoustrack', null);
@@ -2014,6 +2020,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Disable browser media session before playing to prevent title overlays
       if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = null;
+        navigator.mediaSession.playbackState = "none";
         navigator.mediaSession.setActionHandler('play', null);
         navigator.mediaSession.setActionHandler('pause', null);
         navigator.mediaSession.setActionHandler('previoustrack', null);

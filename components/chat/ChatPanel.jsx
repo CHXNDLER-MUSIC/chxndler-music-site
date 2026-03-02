@@ -1365,29 +1365,31 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
 
   return (
     <AnimatePresence>
+      {/* Backdrop */}
+      {isOpen && (
+        <motion.div
+          key="chat-backdrop"
+          className="absolute inset-0 z-[100]"
+          variants={backdropVariants}
+          initial="closed"
+          animate="open"
+          exit="closed"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Chat Panel */}
       {isOpen && (
         <>
-          {/* Backdrop */}
-          <motion.div
-            key="chat-backdrop"
-            className="absolute inset-0 z-[100]"
-            variants={backdropVariants}
-            initial="closed"
-            animate="open"
-            exit="closed"
-            onClick={onClose}
-          />
-
-          {/* Chat Panel */}
-          <motion.div
-            key="chat-panel"
-            className={`absolute z-[110] flex overflow-hidden left-0 right-0 ${isChatCollapsed ? 'bottom-0' : 'inset-0'}`}
-            style={isChatCollapsed ? { top: 'auto', height: '55%' } : undefined}
-            variants={panelVariants}
-            initial="closed"
-            animate="open"
-            exit="closed"
-          >
+        <motion.div
+          key="chat-panel"
+          className={`absolute z-[110] flex overflow-hidden left-0 right-0 ${isChatCollapsed ? 'bottom-0' : 'inset-0'}`}
+          style={isChatCollapsed ? { top: 'auto', height: '55%' } : undefined}
+          variants={panelVariants}
+          initial="closed"
+          animate="open"
+          exit="closed"
+        >
             <div
               className="w-full h-full flex flex-col overflow-hidden"
               style={{

@@ -3,7 +3,6 @@ import React, { useRef, useCallback, useEffect, useState } from "react";
 import { sfx } from "@/lib/sfx";
 import IconButtonShell from "@/components/IconButtonShell";
 import { toSpotifyEmbed, spotifyEmbedHeight } from "@/lib/spotify";
-import { toAppleEmbed, appleEmbedHeight } from "@/lib/apple";
 import { createPortal } from "react-dom";
 import { useAudio } from "@/app/providers/AudioProvider";
 
@@ -137,8 +136,6 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
 
   const [showSpotifyPopover, setShowSpotifyPopover] = useState(false);
   const [spEmbedUrl, setSpEmbedUrl] = useState<string | null>(null);
-  const [showApplePopover, setShowApplePopover] = useState(false);
-  const [amEmbedUrl, setAmEmbedUrl] = useState<string | null>(null);
   const [showLyrics, setShowLyrics] = useState(false);
   const [showVolumeControl, setShowVolumeControl] = useState(false);
 
@@ -149,13 +146,6 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [showSpotifyPopover]);
-  useEffect(() => {
-    if (!showApplePopover) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowApplePopover(false); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [showApplePopover]);
-  
   useEffect(() => {
     if (!showLyrics) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowLyrics(false); };
@@ -326,13 +316,7 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
                 onClickFX={playClick}
                 onHoverFX={playHover}
                 onClick={() => {
-                  try {
-                    const embed = toAppleEmbed(links.apple!);
-                    if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
-                    else { window.open(links.apple!, '_blank', 'noopener,noreferrer'); }
-                  } catch {
-                    try { window.open(links.apple!, '_blank', 'noopener,noreferrer'); } catch {}
-                  }
+                  try { window.open(links.apple!, '_blank', 'noopener,noreferrer'); } catch {}
                 }}
               >
                 {AppleIcon}
@@ -375,7 +359,6 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
                 onClick={() => {
                   try {
                     // Close any inline music previews so YouTube click doesn't leave them open
-                    setShowApplePopover(false); setAmEmbedUrl(null);
                     setShowSpotifyPopover(false); setSpEmbedUrl(null);
                     window.open(links.youtube!, '_blank', 'noopener,noreferrer');
                   } catch {
@@ -489,39 +472,6 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
         document.body
       ) : null}
 
-      {typeof document !== 'undefined' && showApplePopover && amEmbedUrl ? createPortal(
-        <div
-          role="dialog"
-          aria-label="Apple Music"
-          className="am-overlay"
-          onClick={() => setShowApplePopover(false)}
-        >
-          <div className="am-popover" onClick={(e) => e.stopPropagation()}>
-            <button
-              aria-label="Close"
-              title="Close"
-              className="am-close"
-              onMouseEnter={() => { try { const el = hoverRef.current; if (el) { el.currentTime = 0; el.volume = 0.35; el.play().catch(()=>{}); } } catch {} }}
-              onClick={() => setShowApplePopover(false)}
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
-              </svg>
-            </button>
-            <iframe
-              src={amEmbedUrl}
-              title="Apple Music"
-              allow="autoplay *; encrypted-media *; clipboard-write"
-              loading="lazy"
-              width="100%"
-              height="600"
-              style={{ border: 'none', display: 'block' }}
-            />
-          </div>
-        </div>,
-        document.body
-      ) : null}
-
       {/* Lyrics Modal */}
       {typeof document !== 'undefined' && showLyrics ? createPortal(
         <div
@@ -616,24 +566,6 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
         .sp-close:hover { transform: scale(1.1); background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
         .sp-close:active { transform: scale(0.95); }
 
-        .am-overlay {
-          position: fixed; inset: 0; background: transparent; backdrop-filter: none;
-          display: flex; align-items: center; justify-content: center; z-index: 2147483647;
-        }
-        .am-popover {
-          position: relative; width: min(90vw, 750px); height: 600px;
-          background: transparent; /* remove black fill */
-          border: 1px solid rgba(255,59,48,0.6);
-          border-radius: 14px; overflow: hidden;
-          box-shadow: 0 0 32px rgba(255,59,48,0.35); /* remove heavy dark drop shadow */
-          margin-top: -220px;
-        }
-        .am-close { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%;
-          border: 1px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.45); color: #fff; display: inline-flex;
-          align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 0 16px rgba(255,255,255,0.25);
-          transition: transform .15s ease, background .15s ease, box-shadow .15s ease; }
-        .am-close:hover { transform: scale(1.1); background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
-        .am-close:active { transform: scale(0.95); }
         .lyrics-overlay {
           position: fixed; background: transparent; backdrop-filter: none;
           display: flex; justify-content: center; align-items: stretch; z-index: 2147483647;
@@ -736,7 +668,6 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
 
         @media (max-width: 768px) {
           .sp-popover { margin-top: -150px; width: min(95vw, 650px); }
-          .am-popover { margin-top: -150px; width: min(95vw, 650px); }
           .lyrics-popover { width: min(98vw, 1400px); }
           .volume-popout { padding: 8px 12px; }
           .volume-slider-popout { width: 100px; }
