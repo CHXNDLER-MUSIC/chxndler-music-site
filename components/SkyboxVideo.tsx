@@ -400,7 +400,7 @@ export default function SkyboxVideo({
         ) : (
           <video
             ref={baseRef}
-            key={videoKey}
+            key={`vid-${videoKey || 'home'}`}
             autoPlay muted loop playsInline preload={lightMode ? 'metadata' : 'auto'} controls={false}
             // Prevent any default interactions that could open the video URL
             // on some mobile browsers when tapping during/after warp

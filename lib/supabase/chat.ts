@@ -474,9 +474,21 @@ export class ChatService {
       }
 
       // If there are authenticated users, try to get their profile info
-      const userIds = Array.from(uniqueUsers.values())
+      const rawUserIds = Array.from(uniqueUsers.values())
         .filter(u => !u.element || u.element !== 'alien')
         .map(u => u.id);
+
+      // Sanitize and dedupe IDs; guard against empty/invalid values
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      const userIds = Array.from(new Set(
+        (rawUserIds || []).filter((v): v is string => typeof v === 'string' && uuidRegex.test(v))
+      ));
+
+      if (process.env.NODE_ENV !== 'production') {
+        try {
+          console.log('[chat.getChatUsers] profiles lookup count:', userIds.length);
+        } catch {}
+      }
 
       if (userIds.length > 0) {
         const { data: profiles, error: profileError } = await supabaseClient

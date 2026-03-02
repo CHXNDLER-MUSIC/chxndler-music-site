@@ -470,8 +470,10 @@ export default function JoinAliens({ visible = true } = {}) {
         width: '100%',
         height: '1px',
         background: 'linear-gradient(90deg, transparent, rgba(252, 84, 175, 0.5), transparent)',
-        // Pull the divider closer to the schedule text above
-        marginTop: '-28px',
+        // Slight space under the schedule text
+        marginTop: '2px',
+        // Reduce overall gap by 10px
+        marginBottom: '6px',
       }} />
 
       {/* Tip amount buttons - horizontal row below Twitch embed */}

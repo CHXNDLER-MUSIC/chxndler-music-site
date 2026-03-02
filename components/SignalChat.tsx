@@ -422,8 +422,8 @@ export default function SignalChat({
 
                   return (
                     <motion.div
-                      // Ensure non-empty, stable key to avoid duplicate '' warnings
-                      key={`${msg.id || '0'}:${msg.client_id || '0'}:${(msg as any).dedupe_key || '0'}`}
+                      // Prefer client identity to keep key stable across reconciliation
+                      key={`${msg.client_id || (msg as any).dedupe_key || msg.id || 'm'}`}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: isPending ? 0.6 : 1, y: 0 }}
                       className={`text-xs rounded p-2 ${

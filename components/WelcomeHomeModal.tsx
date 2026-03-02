@@ -6,6 +6,8 @@ import { createPortal } from "react-dom";
 import { supabaseBrowser as supabaseClient } from "@/lib/supabase/client";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
+import { useRouter } from "next/navigation";
+import { audioHeartverse } from "@/lib/audio-heartverse";
 
 type Props = {
   open: boolean;
@@ -32,6 +34,7 @@ const isValidEmail = (email: string): boolean =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }: Props) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   type Step = "request" | "verify" | "success";
   const [step, setStep] = useState<Step>("request");
@@ -84,10 +87,9 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
     return () => window.removeEventListener('closeWelcomeHomeModal', handleCloseWelcomeHomeModal);
   }, [open, onClose]);
 
-  // Safety check: Never show welcome modal for logged-in users
-  if (isLoggedIn) {
-    return null;
-  }
+  // NOTE: Do not early-return before all hooks are declared.
+  // Returning early conditionally before later hooks causes
+  // "Rendered fewer hooks than expected" during auth state changes.
   
   // Audio is now handled by audioHeartverse controller when modal opens
   // No local audio management needed - the controller handles playback
@@ -241,6 +243,14 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
           }));
         }
       } catch {}
+      // After warp completes, navigate to homepage and play welcome back
+      try {
+        const WARP_DURATION_MS = 3500; // align with DashboardApp timing
+        setTimeout(() => {
+          try { audioHeartverse.playWelcomeHomeAndSpaceMusic(); } catch {}
+          try { router.replace('/'); } catch {}
+        }, WARP_DURATION_MS);
+      } catch {}
       // After success, ProfileContext should update and modal will close automatically
     } catch (e: any) {
       setError(e?.message || "Invalid or expired code. Try again.");
@@ -282,6 +292,12 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
     } finally {
       setLoading(false);
     }
+  }
+
+  // Safety check: Never show welcome modal for logged-in users
+  // Placed AFTER all hooks so hook order remains stable across renders
+  if (isLoggedIn) {
+    return null;
   }
 
   if (!renderStatus.shouldRender) {

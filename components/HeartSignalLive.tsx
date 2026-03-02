@@ -703,8 +703,8 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
               return (
                 <motion.div
-                  // Ensure key never collapses to an empty string
-                  key={`${msg.id || '0'}:${msg.client_id || '0'}:${(msg as any).dedupe_key || '0'}`}
+                  // Prefer client identity to keep key stable across reconciliation
+                  key={`${msg.client_id || (msg as any).dedupe_key || msg.id || 'm'}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: isPending ? 0.6 : 1, y: 0 }}
                   className={`rounded-lg p-3 ${

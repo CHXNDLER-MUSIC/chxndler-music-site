@@ -18,10 +18,18 @@ export const stableKey = (m, idx) => {
   const i = typeof idx === 'number' ? idx : 0;
   if (!m) return `fallback:${i}`;
 
-  if (m.id) return `msg:${m.id}`;
+  // Prefer client-local identity first to avoid flicker when reconciling
+  if (m.client_id) return `cid:${m.client_id}`;
   if (m.dedupe_key) return `dk:${m.dedupe_key}`;
   if (m.client_nonce) return `nonce:${m.client_nonce}`;
-  return `${m.user_id || 'anon'}:${m.created_at || '0'}:${i}`;
+  if (m.id) return `msg:${m.id}`;
+  const candidate = `${m.user_id || 'anon'}:${m.created_at || '0'}:${i}`;
+  if (candidate && candidate.trim().length > 0) return candidate;
+  // Final safety: generate a stable-ish fallback that is never empty
+  const rnd = (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function')
+    ? globalThis.crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+  return `fallback:${rnd}`;
 };
 
 /**

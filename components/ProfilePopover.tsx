@@ -2134,12 +2134,12 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                       >
                         {selectedMerchInline.name}
                       </span>
-                      {userMerchDates[selectedMerchInline.id] && (
+                      {(userMerchDates[selectedMerchInline.id] || userMerchDates[selectedMerchInline.slug]) && (
                         <span
                           className="text-[10px]"
                           style={{ color: 'rgba(255,255,255,0.7)' }}
                         >
-                          Collected: {new Date(userMerchDates[selectedMerchInline.id]).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          Collected: {new Date(userMerchDates[selectedMerchInline.id] || userMerchDates[selectedMerchInline.slug]).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       )}
                     </div>
@@ -2184,9 +2184,15 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                       };
 
                       // Per-color unlock: check which colors user has purchased
-                      const itemUnlockedColors = unlockedMerchColors[selectedMerchInline.id] || [];
+                      const itemUnlockedColorsRaw = (
+                        unlockedMerchColors[selectedMerchInline.id] ||
+                        unlockedMerchColors[selectedMerchInline.slug] ||
+                        []
+                      );
+                      // Normalize to lowercase for robust comparisons
+                      const itemUnlockedColors = itemUnlockedColorsRaw.map((v: string) => (v || '').toLowerCase());
                       // Default to first unlocked color (not first in list)
-                      const firstUnlocked = colors.find((c: any) => itemUnlockedColors.includes(c.value))?.value;
+                      const firstUnlocked = colors.find((c: any) => itemUnlockedColors.includes((c.value || '').toLowerCase()))?.value;
                       const currentColor = selectedMerchColor || firstUnlocked || colors[0]?.value;
 
                       return (
@@ -2194,7 +2200,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                           {colors.map((c: any) => {
                             const dotColor = dotColorMap[c.value?.toLowerCase()] || '#888';
                             const isSelected = currentColor === c.value;
-                            const isColorUnlocked = itemUnlockedColors.includes(c.value);
+                            const isColorUnlocked = itemUnlockedColors.includes((c.value || '').toLowerCase());
                             return (
                               <button
                                 key={c.value}
@@ -2286,8 +2292,13 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                             }
                             if (!allColors) allColors = FALLBACK_COLORS[selectedMerchInline.slug] || null;
                             if (allColors && allColors.length > 0) {
-                              const itemUnlocked = unlockedMerchColors[selectedMerchInline.id] || [];
-                              const firstUnlocked = allColors.find((c: any) => itemUnlocked.includes(c.value));
+                              const unlockedRaw = (
+                                unlockedMerchColors[selectedMerchInline.id] ||
+                                unlockedMerchColors[selectedMerchInline.slug] ||
+                                []
+                              );
+                              const unlocked = unlockedRaw.map((v: string) => (v || '').toLowerCase());
+                              const firstUnlocked = allColors.find((c: any) => unlocked.includes((c.value || '').toLowerCase()));
                               effectiveColor = firstUnlocked?.value || null;
                             }
                           }
@@ -2295,6 +2306,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                           const isShowingBack = merchShowBack;
 
                           if (effectiveColor) {
+                            const effectiveColorLower = (effectiveColor || '').toLowerCase();
                             // Try DB variant_options first
                             if (selectedMerchInline.variant_options) {
                               let opts = selectedMerchInline.variant_options;
@@ -2303,7 +2315,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                               }
                               const colors = (opts as any)?.colors;
                               if (Array.isArray(colors)) {
-                                const match = colors.find((c: any) => c.value === effectiveColor);
+                                const match = colors.find((c: any) => (c?.value || '').toLowerCase() === effectiveColorLower);
                                 if (match) {
                                   if (isShowingBack && match.images?.back) return match.images.back;
                                   if (match.images?.main || match.images?.front) return match.images.main || match.images.front;
@@ -2313,7 +2325,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                             // Fallback for known items
                             const fallback = FALLBACK_COLORS[selectedMerchInline.slug];
                             if (fallback) {
-                              const match = fallback.find(c => c.value === effectiveColor);
+                              const match = fallback.find(c => (c?.value || '').toLowerCase() === effectiveColorLower);
                               if (match) {
                                 if (isShowingBack && match.images.back) return match.images.back;
                                 if (match.images.main) return match.images.main;
@@ -2330,7 +2342,12 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                           transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
                           // Apply lock styling when viewing a color the user hasn't unlocked (or logged out)
                           filter: (() => {
-                            const unlocked = unlockedMerchColors[selectedMerchInline.id] || [];
+                            const unlockedRaw = (
+                              unlockedMerchColors[selectedMerchInline.id] ||
+                              unlockedMerchColors[selectedMerchInline.slug] ||
+                              []
+                            );
+                            const unlocked = unlockedRaw.map((v: string) => (v || '').toLowerCase());
                             // Recompute effective color to check lock state
                             const getEffectiveColor = (): string | null => {
                               if (selectedMerchColor) return selectedMerchColor;
@@ -2360,7 +2377,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                               }
                               if (!allColors) allColors = FALLBACK_COLORS[selectedMerchInline.slug] || null;
                               if (allColors && allColors.length > 0) {
-                                const firstUnlocked = allColors.find((c: any) => unlocked.includes(c.value));
+                                const firstUnlocked = allColors.find((c: any) => unlocked.includes((c.value || '').toLowerCase()));
                                 return firstUnlocked?.value || allColors[0]?.value || null;
                               }
                               return null;
@@ -2374,7 +2391,12 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                       />
                       {/* Locked overlay when current color is not unlocked (includes logged-out) */}
                       {(() => {
-                        const unlocked = unlockedMerchColors[selectedMerchInline.id] || [];
+                        const unlockedRaw = (
+                          unlockedMerchColors[selectedMerchInline.id] ||
+                          unlockedMerchColors[selectedMerchInline.slug] ||
+                          []
+                        );
+                        const unlocked = unlockedRaw.map((v: string) => (v || '').toLowerCase());
                         const getEffectiveColor = (): string | null => {
                           if (selectedMerchColor) return selectedMerchColor;
                           const FALLBACK_COLORS: Record<string, string[]> = {
@@ -2397,7 +2419,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                           return null;
                         };
                         const color = getEffectiveColor();
-                        const isUnlocked = !!(color && unlocked.includes(color));
+                        const isUnlocked = !!(color && unlocked.includes((color || '').toLowerCase()));
                         if (isUnlocked) return null;
                         return (
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -2429,7 +2451,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                     updated_at: ''
                   }))).map((item, i) => {
                     const hasImage = Boolean(item.image_url);
-                    const isUnlocked = Boolean(userMerchDates[item.id]);
+                    const isUnlocked = Boolean(
+                      userMerchDates[item.id] || (item as any).slug && userMerchDates[(item as any).slug]
+                    );
                     return (
                       <button
                         type="button"

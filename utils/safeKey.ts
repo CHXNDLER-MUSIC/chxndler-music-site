@@ -10,8 +10,11 @@ export const safeKey = (...parts: unknown[]): string => {
 
   // If no usable parts, use a random UUID as a last resort
   // This should be extremely rare if a prefix like 'msg' or 'alien' is provided
-  return key.length > 0 ? key : `fallback:${crypto.randomUUID()}`;
+  if (key.length > 0) return key;
+  const rnd = (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function')
+    ? globalThis.crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+  return `fallback:${rnd}`;
 };
 
 export default safeKey;
-
