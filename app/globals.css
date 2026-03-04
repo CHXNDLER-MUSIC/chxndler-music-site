@@ -1319,7 +1319,7 @@ img[src$="/elements/music.webp"] {
   justify-content: center;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
   box-shadow: 0 0 12px rgba(255, 59, 48, 0.4);
   flex-shrink: 0;
   contain: strict;
@@ -1328,8 +1328,9 @@ img[src$="/elements/music.webp"] {
 }
 .apple-btn-waveform-hud:hover{
   background: linear-gradient(135deg, #FF2D55, #FF1744);
-  box-shadow: 0 0 18px rgba(255, 59, 48, 0.6);
-  border-color: rgba(255,255,255,.6);
+  box-shadow: 0 0 22px rgba(255, 59, 48, 0.75), 0 0 8px rgba(255, 45, 85, 0.5);
+  border-color: rgba(255,255,255,.7);
+  transform: scale(1.18);
 }
 .apple-btn-waveform-hud:active{ }
 

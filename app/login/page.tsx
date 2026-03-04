@@ -7,7 +7,7 @@ import { supabaseBrowser as supabaseClient } from "@/lib/supabase/client";
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams?.get("next") || "/dashboard";
+  const next = searchParams?.get("next") || "/";
 
   type Step = "request" | "verify" | "success";
   const [step, setStep] = useState<Step>("request");

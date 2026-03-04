@@ -3277,6 +3277,47 @@ const HUDPanel = React.memo(function HUDPanel({
                         </div>
                       )}
 
+                      {/* Apple Music button - between Lyrics and Spotify */}
+                      {isCenterPlanet ? (
+                        <div className="apple-btn-unavailable-hud" style={{ marginTop: 1 }} title="Apple Music not available for Heartverse">
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+                            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                          </svg>
+                        </div>
+                      ) : (
+                        <a
+                          href={appleUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          data-button-id="apple-music"
+                          className="apple-btn-waveform-hud"
+                          style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto' }}
+                          title={isAppleProfile ? "Open CHXNDLER on Apple Music" : "Open on Apple Music"}
+                          aria-label={isAppleProfile ? "Open CHXNDLER on Apple Music" : `Open ${currentSong?.title || 'current track'} on Apple Music`}
+                          data-song={currentSong?.title || ''}
+                          data-slug={currentSong?.id || ''}
+                          data-id="am"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            try { sfx.play('join-aliens', 0.9); } catch {}
+                            try {
+                              const { toAppleEmbed } = require('@/lib/apple');
+                              const embed = toAppleEmbed(appleUrl);
+                              if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
+                              else { window.open(appleUrl, '_blank', 'noopener,noreferrer'); }
+                            } catch {
+                              window.open(appleUrl, '_blank', 'noopener,noreferrer');
+                            }
+                          }}
+                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+                            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                          </svg>
+                        </a>
+                      )}
+
                       {/* Streaming: Spotify, Apple, YouTube moved left into top controls */}
                       {isCenterPlanet ? (
                         <div className="spotify-btn-unavailable-hud" style={{ marginTop: 1 }} title="Spotify not available for Heartverse">
@@ -3318,56 +3359,6 @@ const HUDPanel = React.memo(function HUDPanel({
                         </a>
                       )}
 
-                      {(isCenterPlanet || isElementPlanet) && !currentSong?.apple ? (
-                        <div className="apple-btn-unavailable-hud" style={{ marginTop: 1 }} title={isCenterPlanet ? "Apple Music not available for Heartverse" : "Apple Music not available for elemental planets"}>
-                          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" role="img" aria-label="Music notes" style={{ display: 'block' }}>
-                            <ellipse cx="7.5" cy="18.2" rx="3.2" ry="3.4" />
-                            <ellipse cx="16.5" cy="16" rx="3.2" ry="3.4" />
-                            <rect x="9" y="6" width="2" height="11" rx="1" />
-                            <rect x="18" y="4" width="2" height="11" rx="1" />
-                            <path d="M11 6 L20 4 L20 6.5 L11 8.5 Z" />
-                          </svg>
-                        </div>
-                      ) : (
-                        <a
-                          href={appleUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          data-button-id="apple-music"
-                          className="apple-btn-waveform-hud"
-                          style={{ marginTop: 1, overflow: 'hidden', width: 32, height: 32, maxWidth: 32, maxHeight: 32, flexShrink: 0, pointerEvents: 'auto', order: 4, contain: 'strict' }}
-                          title="Open Apple Music"
-                          aria-label={isAppleProfile ? "Open CHXNDLER on Apple Music" : `Open ${currentSong?.title || 'current track'} on Apple Music`}
-                          data-song={currentSong?.title || ''}
-                          data-slug={currentSong?.id || ''}
-                          data-id="am"
-                          onMouseDown={(e) => { lastTopControlRef.current = 'am'; }}
-                          onClick={(e) => {
-                            // Only handle if Apple was the explicit target; guard against stray YT clicks
-                            if (lastTopControlRef.current !== 'am') { e.preventDefault(); e.stopPropagation(); return; }
-                            e.preventDefault();
-                            e.stopPropagation();
-                            try { sfx.play('join-aliens', 0.9); } catch {}
-                            try {
-                              const { toAppleEmbed } = require('@/lib/apple');
-                              const embed = toAppleEmbed(appleUrl);
-                              if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
-                              else { window.open(appleUrl, '_blank', 'noopener,noreferrer'); }
-                            } catch {
-                              window.open(appleUrl, '_blank', 'noopener,noreferrer');
-                            }
-                          }}
-                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                        >
-                          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" role="img" aria-label="Music notes" style={{ display: 'block' }}>
-                            <ellipse cx="7.5" cy="18.2" rx="3.2" ry="3.4" />
-                            <ellipse cx="16.5" cy="16" rx="3.2" ry="3.4" />
-                            <rect x="9" y="6" width="2" height="11" rx="1" />
-                            <rect x="18" y="4" width="2" height="11" rx="1" />
-                            <path d="M11 6 L20 4 L20 6.5 L11 8.5 Z" />
-                          </svg>
-                        </a>
-                      )}
 
                       {(isCenterPlanet || isElementPlanet) && !currentSong?.youtube ? (
                         <div className="youtube-btn-unavailable-hud" title={isCenterPlanet ? "YouTube not available for Heartverse" : "YouTube not available for elemental planets"} style={{ marginTop: 1 }}>
@@ -3415,7 +3406,7 @@ const HUDPanel = React.memo(function HUDPanel({
                             try {
                               const embed = toYouTubeEmbed(youtubeUrl);
                               if (!isYouTubeProfile && embed) {
-                                setYtEmbedUrl(embed);
+                                setYtEmbedUrl(`${embed}?autoplay=1`);
                                 setShowYouTubePopover(true);
                               } else {
                                 window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
