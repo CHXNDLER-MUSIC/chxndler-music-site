@@ -270,7 +270,8 @@ function getYouTubeEmbedUrl(url: string): string {
   } catch {
     videoId = url;
   }
-  return `https://www.youtube.com/embed/${videoId}?rel=0`;
+  const originParam = typeof window !== 'undefined' ? `&origin=${encodeURIComponent(window.location.origin)}` : '';
+  return `https://www.youtube.com/embed/${videoId}?rel=0&enablejsapi=1${originParam}`;
 }
 
 /** Check if a video is still locked based on its releaseDate or explicit lock */
@@ -308,7 +309,7 @@ function formatReleaseDate(isoDate: string): string {
 // ──────────────────────────────────────────────
 // COMPONENT
 // ──────────────────────────────────────────────
-export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: boolean }) {
+export default function EpisodesLibrary({ isChatOpen = false, visible = true }: { isChatOpen?: boolean; visible?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [topTab, setTopTab] = useState<TopTab>("heartverse");
   const [liveSignalSection, setLiveSignalSection] = useState<LiveSignalSection>("acoustic");
@@ -355,6 +356,19 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
   const playClick = useCallback(() => {
     try { sfx.play("click", 0.5); } catch {}
   }, []);
+
+  // If the parent live signal display is closed, pause the YouTube player (keep position)
+  useEffect(() => {
+    if (visible === false) {
+      try {
+        const iframe = iframeRef.current;
+        if (iframe && iframe.contentWindow) {
+          const msg = JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] });
+          iframe.contentWindow.postMessage(msg, '*');
+        }
+      } catch {}
+    }
+  }, [visible]);
 
   // Filter videos based on current tab/section
   const filteredVideos = VIDEOS.filter((v) => {

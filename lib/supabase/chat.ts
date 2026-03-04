@@ -491,10 +491,15 @@ export class ChatService {
       }
 
       if (userIds.length > 0) {
-        const { data: profiles, error: profileError } = await supabaseClient
+        // PostgREST sometimes returns 400 for in() with a single UUID on some setups.
+        // Use eq() for single id to avoid that edge case.
+        const profileQuery = supabaseClient
           .from('profiles')
-          .select('id, name, element, avatar_badge_id, profile_image_url')
-          .in('id', userIds);
+          .select('id, name, element, avatar_badge_id, profile_image_url');
+
+        const { data: profiles, error: profileError } = userIds.length === 1
+          ? await profileQuery.eq('id', userIds[0])
+          : await profileQuery.in('id', userIds);
 
         if (!profileError && profiles) {
           for (const profile of profiles) {

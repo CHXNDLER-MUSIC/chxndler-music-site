@@ -1071,7 +1071,8 @@ img[src$="/elements/music.webp"] {
   transition: all 0.2s ease;
   box-shadow: 0 4px 16px rgba(25,227,255,0.6);
   position: relative;
-  z-index: 10;
+  /* Ensure volume stays clickable above adjacent streaming buttons */
+  z-index: 1000;
   isolation: isolate;
 }
 .hud-volume-btn:hover{
@@ -1325,6 +1326,8 @@ img[src$="/elements/music.webp"] {
   contain: strict;
   overflow: hidden;
   position: relative;
+  /* Keep Apple below volume to avoid blocking clicks */
+  z-index: 1;
 }
 .apple-btn-waveform-hud:hover{
   background: linear-gradient(135deg, #FF2D55, #FF1744);

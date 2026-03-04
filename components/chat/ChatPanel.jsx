@@ -7,6 +7,7 @@ import { supabaseClient } from '@/lib/supabaseClient';
 import { useProfile } from '@/contexts/ProfileContext';
 import { sfx } from '@/lib/sfx';
 import { getOrCreateGuestNameSync, getOrCreateGuestIdSync, clearGuestIdentity, getOrCreateGuestIdentity } from '@/lib/supabase/guest';
+import { makeGuestKey, loadGuestMessages, saveGuestMessage, updateGuestMessage, toNormalizedMessages } from '@/lib/guestChatStorage';
 // import { useLiveStatus } from '@/hooks/useLiveStatus'; // Removed since chat is always available
 import UserList from './UserList';
 import MessageList from './MessageList';
@@ -334,6 +335,12 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
   const [resolvedUserId, setResolvedUserId] = useState(null);  // auth user.id when authenticated
   const [resolvedGuestId, setResolvedGuestId] = useState(null); // localStorage guest id when unauthenticated
   const [isIdentityReady, setIsIdentityReady] = useState(false);
+  const guestStorageKey = useMemo(() => {
+    if (!resolvedUserId) {
+      return makeGuestKey(resolvedGuestId, resolvedName);
+    }
+    return null;
+  }, [resolvedUserId, resolvedGuestId, resolvedName]);
 
   // Resolve identity once ProfileContext finishes loading
   useEffect(() => {
@@ -664,6 +671,15 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
           // Merge and dedupe by id and dedupe_key
           setMessages((prev) => mergeMessages(prev, transformedMessages));
 
+          // Merge in any locally persisted guest messages (for logged-out users)
+          if (!resolvedUserId && guestStorageKey && resolvedName) {
+            const localRows = loadGuestMessages(guestStorageKey, 100);
+            if (localRows && localRows.length > 0) {
+              const localNormalized = toNormalizedMessages(localRows).map(normalizeMessage);
+              setMessages((prev) => mergeMessages(prev, localNormalized));
+            }
+          }
+
           // Load reaction counts from messages into messageReactions state
           const loadedReactions = {};
           result.messages.forEach(msg => {
@@ -762,6 +778,11 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
               if (process.env.NODE_ENV !== "production") console.log('🛰 realtime INSERT', { id: msg.id, dedupe_key: msg.dedupe_key });
               return mergeMessages(prev, newMessage);
             });
+
+            // Reconcile local guest storage entry (if this belongs to this guest identity)
+            if (isGuestMessage && !resolvedUserId && guestStorageKey && msg.username === (resolvedName || '')) {
+              updateGuestMessage(guestStorageKey, { dedupeKey: msg.dedupe_key || null, clientNonce: msg.client_nonce || null }, { id: msg.id, createdAtISO: msg.created_at });
+            }
 
             // Play notification sound for new messages (not system messages)
             if (!msg.is_system) {
@@ -995,6 +1016,23 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
     if (process.env.NODE_ENV !== "production") console.log('🧪 OPTIMISTIC message', optimistic);
     setMessages(prev => mergeMessages(prev, optimistic));
 
+    // Persist guest message locally so it survives panel close/reopen
+    if (!isAuthenticated && guestStorageKey && guestUsername) {
+      try {
+        saveGuestMessage({
+          guestKey: guestStorageKey,
+          username: guestUsername,
+          message: messageText.trim(),
+          createdAtISO: optimistic.created_at,
+          dedupeKey: dedupe_key,
+          clientNonce: client_nonce,
+          isSystem: false,
+        });
+      } catch (e) {
+        // ignore localStorage errors
+      }
+    }
+
     // For guests, ensure they're in the users list
     if (!isAuthenticated) {
       setChatUsers(prev => {
@@ -1068,6 +1106,13 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
           const hasIt = next.some(m => m.id === realMessage.id);
           return hasIt ? next : mergeMessages(next, realMessage);
         });
+
+        // Update local guest storage with server id/timestamp
+        if (!isAuthenticated && guestStorageKey) {
+          try {
+            updateGuestMessage(guestStorageKey, { dedupeKey: dedupe_key, clientNonce: client_nonce }, { id: result.message.id, createdAtISO: result.message.created_at });
+          } catch {}
+        }
       }
       // Realtime subscription will also deliver the message; mergeMessages handles dedup
     } catch (error) {

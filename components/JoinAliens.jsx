@@ -809,7 +809,7 @@ export default function JoinAliens({ visible = true } = {}) {
       </button>
 
       {/* Episodes Library - button + panel rendered directly in container */}
-      <EpisodesLibrary isChatOpen={isChatOpen} />
+      <EpisodesLibrary isChatOpen={isChatOpen} visible={visible} />
 
       {/* Phone Button - positioned to the left of $ button */}
       <button

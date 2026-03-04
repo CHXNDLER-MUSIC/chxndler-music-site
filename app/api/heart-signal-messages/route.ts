@@ -81,15 +81,31 @@ export async function POST(req: Request) {
       }
     }
 
-    const insertPayload = {
-      user_id: userId, // may be null for guests
-      guest_id: userId ? null : guestId, // set guest_id for logged-out users (normalized UUID or null)
+    // Determine if this is a system message (sent by the app, not a user)
+    const isSystem = Boolean(body?.is_system);
+
+    // Build insert payload respecting DB constraints: exactly one sender identity
+    // - System: no user_id or guest_id
+    // - Auth user: user_id set, guest_id null
+    // - Guest: guest_id set, user_id null
+    const insertPayload: any = {
       username,
       message,
-      is_system: false,
+      is_system: isSystem,
       // allow client-provided dedupe_key for optimistic reconciliation
       dedupe_key: dedupeKey,
     };
+
+    if (isSystem) {
+      insertPayload.user_id = null;
+      insertPayload.guest_id = null;
+    } else if (userId) {
+      insertPayload.user_id = userId;
+      insertPayload.guest_id = null;
+    } else {
+      insertPayload.user_id = null;
+      insertPayload.guest_id = guestId; // normalized UUID (generated if missing)
+    }
 
     let { data, error } = await admin
       .from("heart_signal_messages")
