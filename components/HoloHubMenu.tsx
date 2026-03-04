@@ -454,37 +454,13 @@ export default function HoloHubMenu({
           }
           return;
         }
-        // Apple Music: prefer embedded player in inline modal
+        // Apple Music: open in new tab (disable inline display)
         else if (
           idLower === 'am' ||
           hrefLower.includes('music.apple') ||
           hrefLower.includes('itunes.')
         ) {
-          try {
-            const embed = toAppleEmbed(it.href);
-            if (embed) {
-              setClickedButtonId(it.id); // Track which button was clicked
-              setInlineTitle(it.label || 'Apple Music');
-              setInlineUrl(embed);
-              setInlineCompact(true);
-              // Use same height calculation as Spotify for consistency
-              try {
-                const natural = appleEmbedHeight(embed); // typical: track ~175, album/playlist ~450
-                // Scale down slightly to reduce overall height without cropping
-                const scale = 0.9;
-                const bodyH = Math.max(120, Math.round(natural * scale));
-                setInlineHeightPx(Math.min(340, Math.max(170, bodyH + 48))); // include header
-                setInlineIframeHeightPx(natural); // unscaled iframe height (we scale via CSS)
-              } catch {
-                setInlineHeightPx(240);
-                setInlineIframeHeightPx(undefined);
-              }
-            } else {
-              window.open(it.href, '_blank', 'noopener,noreferrer');
-            }
-          } catch {
-            try { window.open(it.href, '_blank', 'noopener,noreferrer'); } catch {}
-          }
+          try { window.open(it.href, '_blank', 'noopener,noreferrer'); } catch {}
           return;
         }
         // Fallback: open in a new tab

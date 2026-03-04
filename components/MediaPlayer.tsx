@@ -773,6 +773,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       return;
     }
     if (a.paused) { 
+      // Collapse any open volume popovers when user starts playback
+      setShowMainVolumePopover(false);
+      setShowWaveformVolumePopover(false);
       
       intentionalPlayRef.current = true; // Mark as intentional play
       

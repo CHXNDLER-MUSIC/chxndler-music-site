@@ -68,8 +68,15 @@ export async function POST(req: Request) {
       "ALIEN"
     ).toString().trim().substring(0, 64) || "ALIEN";
 
-    // Use admin client for insert to bypass RLS (auth already verified above)
-    const admin = getSupabaseAdmin();
+    // Try to get an admin client for privileged writes if available.
+    // If not available (e.g. missing service role key), we will fall back
+    // to using the RLS-aware client below.
+    let admin: ReturnType<typeof getSupabaseAdmin> | null = null;
+    try {
+      admin = getSupabaseAdmin();
+    } catch {
+      admin = null;
+    }
 
     // If no auth user and no valid guestId provided, generate a transient guest id
     if (!userId && !guestId) {
@@ -107,15 +114,35 @@ export async function POST(req: Request) {
       insertPayload.guest_id = guestId; // normalized UUID (generated if missing)
     }
 
-    let { data, error } = await admin
-      .from("heart_signal_messages")
-      .insert(insertPayload)
-      .select("*")
-      .single();
+    let data: any = null;
+    let error: any = null;
+
+    if (admin) {
+      ({ data, error } = await admin
+        .from("heart_signal_messages")
+        .insert(insertPayload)
+        .select("*")
+        .single());
+    } else {
+      // Fallback path: insert via RLS-aware client
+      // - Authenticated users: policy "authenticated insert heart signal messages" allows insert when auth.uid() = user_id
+      // - Guests (anon): requires DB policy permitting anon inserts with user_id null (added in migration)
+      const rlsPayload: any = { ...insertPayload };
+      // Ensure we don't accidentally attribute a guest as a user in RLS mode
+      if (!userId) {
+        rlsPayload.user_id = null;
+      }
+
+      ({ data, error } = await supabase
+        .from('heart_signal_messages')
+        .insert(rlsPayload)
+        .select('*')
+        .single());
+    }
 
     // P0001 = DB raised exception (e.g. guest_id not found in guest_profiles).
     // Retry without guest_id so the message still saves for unregistered guests.
-    if (error?.code === 'P0001' && insertPayload.guest_id) {
+    if (error?.code === 'P0001' && insertPayload.guest_id && admin) {
       console.warn("heart-signal: guest_id rejected by DB, retrying without it:", insertPayload.guest_id);
       ({ data, error } = await admin
         .from("heart_signal_messages")

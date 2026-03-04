@@ -1464,12 +1464,7 @@ const HUDPanel = React.memo(function HUDPanel({
     return () => window.removeEventListener('keydown', onKey);
   }, [showSpotifyPopover]);
 
-  useEffect(() => {
-    if (!showApplePopover) return;
-    const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowApplePopover(false); } };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [showApplePopover]);
+  // Apple inline popover removed; no Escape handler needed
 
   // Recalculate PROFILE popover alignment on resize while open
   useEffect(() => {
@@ -3297,19 +3292,6 @@ const HUDPanel = React.memo(function HUDPanel({
                           data-song={currentSong?.title || ''}
                           data-slug={currentSong?.id || ''}
                           data-id="am"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            try { sfx.play('join-aliens', 0.9); } catch {}
-                            try {
-                              const { toAppleEmbed } = require('@/lib/apple');
-                              const embed = toAppleEmbed(appleUrl);
-                              if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
-                              else { window.open(appleUrl, '_blank', 'noopener,noreferrer'); }
-                            } catch {
-                              window.open(appleUrl, '_blank', 'noopener,noreferrer');
-                            }
-                          }}
                           onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                         >
                           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
@@ -5579,74 +5561,7 @@ const HUDPanel = React.memo(function HUDPanel({
                 ) : null}
                 {/* END Full Collection Modal */}
 
-                {typeof document !== 'undefined' && showApplePopover && amEmbedUrl ? createPortal(
-                  <div
-                    role="dialog"
-                    aria-label="Apple Music Player"
-                    onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowApplePopover(false); }}
-                    style={{
-                      position: 'fixed',
-                      inset: 0,
-                      background: 'transparent',
-                      // no dim or blur for Apple overlay
-                      zIndex: 2147483647,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <div
-                      onClick={(e) => { e.stopPropagation(); }}
-                      style={{
-                        position: 'relative',
-                        width: 'min(88vw, 420px)',
-                        background: 'transparent', // remove black fill
-                        border: '1px solid rgba(255,59,48,0.6)',
-                        boxShadow: '0 0 32px rgba(255,59,48,0.35)', // remove heavy dark drop shadow
-                        borderRadius: 14,
-                        overflow: 'hidden',
-                        // Slightly higher on the screen
-                        marginTop: -150
-                      }}
-                    >
-                      <button
-                        aria-label="Close"
-                        title="Close"
-                        onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 22px rgba(255,255,255,0.7)'; } catch {} }}
-                        onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = 'none'; } catch {} }}
-                        onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowApplePopover(false); }}
-                        style={{
-                          position: 'absolute',
-                          top: 8,
-                          right: 8,
-                          width: 32,
-                          height: 32,
-                          borderRadius: 999,
-                          background: 'rgba(0,0,0,0.5)',
-                          color: '#fff',
-                          border: '1px solid rgba(255,255,255,0.5)',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                          <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
-                        </svg>
-                      </button>
-                      <iframe
-                        src={amEmbedUrl}
-                        title="Apple Music player"
-                        allow="autoplay *; encrypted-media *; clipboard-write"
-                        loading="lazy"
-                        width="100%"
-                        height={(() => { try { return require('@/lib/apple').appleEmbedHeight(amEmbedUrl); } catch { return 360; } })()}
-                        style={{ border: 'none', display: 'block' }}
-                      />
-                    </div>
-                  </div>,
-                  document.body
-                ) : null}
+                {/* Apple Music inline overlay removed */}
 
                 {typeof document !== 'undefined' && showSpotifyPopover && spEmbedUrl ? createPortal(
                   <div
