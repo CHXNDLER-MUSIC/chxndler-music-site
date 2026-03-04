@@ -93,11 +93,31 @@ export async function getOrCreateGuestIdentity(): Promise<GuestIdentity> {
   const storedUsername = localStorage.getItem(GUEST_USERNAME_KEY);
 
   if (storedGuestId && storedUsername) {
-    if (process.env.NODE_ENV !== "production") console.log('🔥 Using existing guest identity from localStorage:', { guest_id: storedGuestId, username: storedUsername });
-    return {
-      guest_id: storedGuestId,
-      username: storedUsername,
-    };
+    // Verify this ID is actually registered in guest_profiles before trusting it.
+    // IDs created by getOrCreateGuestIdSync() are localStorage-only and won't be in the DB.
+    try {
+      const { data, error } = await supabaseClient
+        .from('guest_profiles')
+        .select('guest_id')
+        .eq('guest_id', storedGuestId)
+        .maybeSingle();
+
+      if (!error && data) {
+        // ID is registered — safe to use
+        if (process.env.NODE_ENV !== "production") console.log('🔥 Using verified guest identity from localStorage:', { guest_id: storedGuestId, username: storedUsername });
+        return { guest_id: storedGuestId, username: storedUsername };
+      }
+
+      // Not in DB — stale/local-only ID. Clear it and fall through to create a new registered one.
+      if (process.env.NODE_ENV !== "production") console.warn('🔥 Stale guest_id not found in DB, clearing and registering new identity:', storedGuestId);
+      localStorage.removeItem(GUEST_ID_KEY);
+      localStorage.removeItem(GUEST_USERNAME_KEY);
+    } catch {
+      // DB check failed (network error, offline) — use cached ID optimistically.
+      // The API route will handle unregistered IDs gracefully.
+      if (process.env.NODE_ENV !== "production") console.warn('🔥 Could not verify guest_id, using cached identity optimistically');
+      return { guest_id: storedGuestId, username: storedUsername };
+    }
   }
 
   // If we have a guest_id but no username, try to fetch the username

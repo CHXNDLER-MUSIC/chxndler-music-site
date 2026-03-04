@@ -317,12 +317,21 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
   const audio = useAudio();
   const wasPlayingRef = useRef(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const videoOpenedAtRef = useRef<number>(0);
+  const lastPositionsRef = useRef<Map<string, number>>(new Map());
 
   const stopVideo = useCallback(() => {
     if (iframeRef.current) {
       iframeRef.current.src = "about:blank";
     }
   }, []);
+
+  // Reset the open-time clock whenever a video starts (or jumps to a timestamp)
+  useEffect(() => {
+    if (activeVideo) {
+      videoOpenedAtRef.current = Date.now();
+    }
+  }, [activeVideo, startTime]);
 
   // Close on Escape
   useEffect(() => {
@@ -361,12 +370,18 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
     // Remember if music was playing, then pause it
     wasPlayingRef.current = audio.playing;
     if (audio.playing) audio.pause();
+    const savedPos = lastPositionsRef.current.get(video.id) ?? 0;
+    setStartTime(savedPos);
     setActiveVideo(video);
-    setStartTime(0);
   };
 
   const handleBack = () => {
     playClick();
+    // Save approximate playback position so we can resume later
+    if (activeVideo && videoOpenedAtRef.current > 0) {
+      const elapsed = Math.floor((Date.now() - videoOpenedAtRef.current) / 1000);
+      lastPositionsRef.current.set(activeVideo.id, startTime + elapsed);
+    }
     stopVideo();
     // Resume music if it was playing before
     if (wasPlayingRef.current) audio.play();
@@ -513,6 +528,7 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
               }`}
               onClick={() => {
                 playClick();
+                stopVideo();
                 setTopTab("heartverse");
                 setActiveVideo(null);
               }}
@@ -528,6 +544,7 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
               }`}
               onClick={() => {
                 playClick();
+                stopVideo();
                 setTopTab("livesignal");
                 setActiveVideo(null);
               }}
@@ -564,6 +581,7 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
                 }`}
                 onClick={() => {
                   playClick();
+                  stopVideo();
                   setLiveSignalSection("acoustic");
                   setActiveVideo(null);
                 }}
@@ -579,6 +597,7 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
                 }`}
                 onClick={() => {
                   playClick();
+                  stopVideo();
                   setLiveSignalSection("electric");
                   setActiveVideo(null);
                 }}
@@ -645,7 +664,7 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
                 <iframe
                   ref={iframeRef}
                   key={startTime}
-                  src={`${getYouTubeEmbedUrl(activeVideo.youtubeUrl)}&start=${startTime}&autoplay=${startTime > 0 ? 1 : 0}`}
+                  src={`${getYouTubeEmbedUrl(activeVideo.youtubeUrl)}&start=${startTime}&autoplay=1`}
                   title={activeVideo.title}
                   width="100%"
                   height="100%"
@@ -707,30 +726,32 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
                     const isAcoustic = topTab === "livesignal" && liveSignalSection === "acoustic";
                     const accentColor = isElectric ? "#F2EF1D" : isAcoustic ? "#00FFFF" : "#FC54AF";
                     const isNewest = video.id === newestId;
-                    const borderDefault = isNewest
+                    const isReleased = !locked;
+                    const borderDefault = isReleased
                       ? accentColor
                       : isElectric
-                        ? (locked ? 'rgba(242,239,29,0.15)' : 'rgba(242,239,29,0.2)')
+                        ? 'rgba(242,239,29,0.15)'
                         : isAcoustic
-                          ? (locked ? 'rgba(0,255,255,0.15)' : 'rgba(0,255,255,0.2)')
-                          : (locked ? 'rgba(252,84,175,0.15)' : 'rgba(252,84,175,0.2)');
+                          ? 'rgba(0,255,255,0.15)'
+                          : 'rgba(252,84,175,0.15)';
                     return (
                       <button
                         key={video.id}
                         onClick={() => handleVideoClick(video)}
                         onMouseEnter={locked ? undefined : playHover}
                         disabled={locked}
-                        className={`episodes-video-card group flex items-center gap-2 w-full text-left p-2 rounded-lg border transition-all duration-200 ${
+                        className={`episodes-video-card group flex items-center gap-2 w-full text-left p-2 rounded-lg border transition-all duration-200 episode-row-base ${
                           locked
                             ? "bg-white/3 cursor-not-allowed"
-                            : "bg-white/3 hover:bg-white/8"
-                        }`}
+                            : "bg-white/3 hover:bg-white/8 episode-row-released"
+                        }${isNewest ? " episode-row-newest" : ""}`}
                         style={{
-                          borderColor: borderDefault,
-                          boxShadow: isNewest ? `0 0 14px ${accentColor}50, 0 0 28px ${accentColor}20, inset 0 0 6px ${accentColor}15` : undefined,
-                        }}
-                        onMouseOver={!locked ? (e) => { (e.currentTarget as HTMLElement).style.borderColor = `${accentColor}4D`; } : undefined}
-                        onMouseOut={!locked ? (e) => { (e.currentTarget as HTMLElement).style.borderColor = borderDefault; } : undefined}
+                          '--row-accent': accentColor,
+                          '--row-border': borderDefault,
+                          '--row-base-shadow': isReleased ? `0 0 14px ${accentColor}50, 0 0 28px ${accentColor}20, inset 0 0 6px ${accentColor}15` : 'none',
+                          '--row-pulse-shadow': `0 0 24px ${accentColor}BB, 0 0 48px ${accentColor}66, inset 0 0 10px ${accentColor}33`,
+                          '--row-hover-shadow': `0 0 26px ${accentColor}EE, 0 0 52px ${accentColor}99, inset 0 0 14px ${accentColor}55`,
+                        } as React.CSSProperties}
                       >
                         {/* Thumbnail placeholder */}
                         <div className="relative flex-shrink-0">
@@ -943,6 +964,25 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
           color: #FC54AF;
           border-color: rgba(252, 84, 175, 0.5);
           animation: newBadgePulsePink 2s ease-in-out infinite;
+        }
+        .episode-row-base {
+          border-color: var(--row-border);
+          box-shadow: var(--row-base-shadow);
+        }
+        @keyframes rowGlowPulse {
+          0%, 100% { box-shadow: var(--row-base-shadow); }
+          50%       { box-shadow: var(--row-pulse-shadow); }
+        }
+        .episode-row-newest {
+          animation: rowGlowPulse 2s ease-in-out infinite;
+        }
+        .episode-row-newest:hover {
+          animation-play-state: paused;
+        }
+        .episode-row-released:hover {
+          border-color: var(--row-accent) !important;
+          box-shadow: var(--row-hover-shadow) !important;
+          transform: scale(1.025);
         }
         .episodes-trigger-btn:hover {
           box-shadow:

@@ -315,6 +315,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const pendingTrackIndexRef = React.useRef(null);
   // Guard to prevent button.mp3 from playing multiple times per warp
   const buttonRevealTriggeredRef = React.useRef(false);
+  const startWarpBackupTimerRef = React.useRef(null); // tracks Start button backup timer so it can be cancelled on song select
   const [cardModalOpen, setCardModalOpen] = useState(false); // track card modal state for beam dimming
   const [joinAlienOpen, setJoinAlienOpen] = useState(false); // track join alien button state for pink beam
   const [beamColor, setBeamColor] = useState('blue'); // track active beam color
@@ -701,6 +702,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       return;
     }
     if (process.env.NODE_ENV !== "production") console.log('[WARP] start - resolved slug:', slug);
+    // Cancel the Start button backup timer so it doesn't fire home-mode audio/UI during a song warp
+    if (startWarpBackupTimerRef.current) {
+      clearTimeout(startWarpBackupTimerRef.current);
+      startWarpBackupTimerRef.current = null;
+    }
     // Notify planetarium to focus camera on destination immediately
     try {
       if (typeof window !== 'undefined' && slug) {
@@ -1566,7 +1572,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     
     // BACKUP TIMER: Ensure warp completes even if audio callback fails (Chrome compatibility)
     // This is a HARD fallback that forces UI transition regardless of onWarpSfxEnd
-    setTimeout(() => {
+    startWarpBackupTimerRef.current = setTimeout(() => {
       if (process.env.NODE_ENV === "development") {
         if (process.env.NODE_ENV !== "production") console.log("🔧 BACKUP TIMER: Checking if UI transition completed...", {
           buttonRevealTriggered: buttonRevealTriggeredRef.current,
@@ -1642,7 +1648,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         }
       }
     }, WARP_DURATION_MS + 1500); // Add 1500ms buffer for robust fallback
-    
+
     // Stop any existing audio using the unified audio system
     try {
       audioManager.stopAllAudio();

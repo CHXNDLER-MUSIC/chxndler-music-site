@@ -1395,6 +1395,7 @@ export default function JoinAliens({ visible = true } = {}) {
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
         onProfileOpen={setIsChatProfileOpen}
+        collapsedSidebarWidth={72}
       />
       
       {/* Welcome Home Modal */}

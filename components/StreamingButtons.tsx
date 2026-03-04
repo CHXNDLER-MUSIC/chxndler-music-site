@@ -76,15 +76,6 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
       className="object-contain"
     />
   );
-  const AppleIcon = (
-    <img
-      src="/elements/apple.webp"
-      alt="Apple Music"
-      width={iconSize}
-      height={iconSize}
-      className="object-contain"
-    />
-  );
 
   const PlayPauseIcon = (
     <svg
@@ -248,7 +239,7 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
           <span className="socket" aria-hidden />
           {/* Constrain click target to icon size to avoid off-target opens */}
           {disabled ? (
-            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'auto' }}>
+            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'none' }}>
               <div
                 className="ck-icon-btn-disabled"
                 title="Spotify (Not available for elemental planets)"
@@ -258,7 +249,7 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
               </div>
             </div>
           ) : (
-            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'auto' }}>
+            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'none' }}>
               <IconButtonShell
                 title="Listen on Spotify"
                 href={links.spotify!}
@@ -285,46 +276,6 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
           )}
         </div>
       )}
-      {/* Apple Music Button */}
-      {(links.apple || disabled) && (
-        <div
-          className="wrap"
-          style={vertical
-            // Move Apple up slightly more (56px -> 49px)
-            ? { left: `calc(${pos.xVw}vw - ${size/2}px - 18px)`, top: `calc(${pos.yVh}vh + ${gap/2}px + 49px)`, width: size, height: size, transform: tilt }
-            // Horizontal layout: move up slightly more (52px -> 45px)
-            : { left: `calc(${pos.xVw}vw + ${gap/2}px - 16px)`, top: `calc(${pos.yVh}vh - ${size/2}px + 45px)`, width: size, height: size, transform: tilt }
-          }
-        >
-          <span className="socket" aria-hidden />
-          {disabled ? (
-            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'auto' }}>
-              <div
-                className="ck-icon-btn-disabled"
-                title="Apple Music (Not available for elemental planets)"
-                aria-disabled="true"
-              >
-                <span className="logo-glow-disabled">{AppleIcon}</span>
-              </div>
-            </div>
-          ) : (
-            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'auto' }}>
-              <IconButtonShell
-                title="Listen on Apple Music"
-                href={links.apple!}
-                color="#FF3B30"
-                onClickFX={playClick}
-                onHoverFX={playHover}
-                onClick={() => {
-                  try { window.open(links.apple!, '_blank', 'noopener,noreferrer'); } catch {}
-                }}
-              >
-                {AppleIcon}
-              </IconButtonShell>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* YouTube Button */}
       {(links.youtube || disabled) && (
@@ -339,7 +290,7 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
         >
           <span className="socket" aria-hidden />
           {disabled ? (
-            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'auto' }}>
+            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'none' }}>
               <div
                 className="ck-icon-btn-disabled"
                 title="YouTube (Not available for elemental planets)"
@@ -349,7 +300,7 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
               </div>
             </div>
           ) : (
-            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'auto' }}>
+            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'none' }}>
               <IconButtonShell
                 title="Watch on YouTube"
                 href={links.youtube!}

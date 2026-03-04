@@ -385,7 +385,7 @@ export default function SkyboxVideo({
               }}
             >
               <iframe
-                key={`yt-${videoKey || 'home'}`}
+                key={`yt-${youtubeUrl || videoKey || 'home'}`}
                 src={ytEmbedUrl}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen

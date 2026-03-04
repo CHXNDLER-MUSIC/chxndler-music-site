@@ -81,19 +81,32 @@ export async function POST(req: Request) {
       }
     }
 
-    const { data, error } = await admin
+    const insertPayload = {
+      user_id: userId, // may be null for guests
+      guest_id: userId ? null : guestId, // set guest_id for logged-out users (normalized UUID or null)
+      username,
+      message,
+      is_system: false,
+      // allow client-provided dedupe_key for optimistic reconciliation
+      dedupe_key: dedupeKey,
+    };
+
+    let { data, error } = await admin
       .from("heart_signal_messages")
-      .insert({
-        user_id: userId, // may be null for guests
-        guest_id: userId ? null : guestId, // set guest_id for logged-out users (normalized UUID or null)
-        username,
-        message,
-        is_system: false,
-        // allow client-provided dedupe_key for optimistic reconciliation
-        dedupe_key: dedupeKey,
-      })
+      .insert(insertPayload)
       .select("*")
       .single();
+
+    // P0001 = DB raised exception (e.g. guest_id not found in guest_profiles).
+    // Retry without guest_id so the message still saves for unregistered guests.
+    if (error?.code === 'P0001' && insertPayload.guest_id) {
+      console.warn("heart-signal: guest_id rejected by DB, retrying without it:", insertPayload.guest_id);
+      ({ data, error } = await admin
+        .from("heart_signal_messages")
+        .insert({ ...insertPayload, guest_id: null })
+        .select("*")
+        .single());
+    }
 
     if (error) {
       console.error("heart-signal insert error:", error);

@@ -1049,9 +1049,10 @@ img[src$="/elements/music.webp"] {
   display: none !important;
 }
 .hud-lyrics-btn:hover{
-  transform: scale(1.08);
-  box-shadow: 0 6px 22px rgba(242,239,29,.9);
-  border-color: rgba(255,255,255,.7);
+  transform: scale(1.1);
+  background: linear-gradient(135deg, #FFFF8A, #F5F030);
+  box-shadow: 0 0 18px rgba(242,239,29,.85), 0 0 36px rgba(242,239,29,.45);
+  border-color: rgba(255,255,255,.8);
 }
 .hud-lyrics-btn:active{ transform: scale(0.95); }
 

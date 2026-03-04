@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, Fragment } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatService } from '@/lib/supabase/chat';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useProfile } from '@/contexts/ProfileContext';
 import { sfx } from '@/lib/sfx';
-import { getOrCreateGuestNameSync, getOrCreateGuestIdSync, clearGuestIdentity } from '@/lib/supabase/guest';
+import { getOrCreateGuestNameSync, getOrCreateGuestIdSync, clearGuestIdentity, getOrCreateGuestIdentity } from '@/lib/supabase/guest';
 // import { useLiveStatus } from '@/hooks/useLiveStatus'; // Removed since chat is always available
 import UserList from './UserList';
 import MessageList from './MessageList';
@@ -94,13 +94,22 @@ const mergeMessages = (prev, incoming) => {
 
     // If server row with id arrives: remove any optimistic with same dedupe_key
     if (hasId) {
-      // Remove any record under its dedupe_key
+      // Remove any record under its dedupe_key, preserving its client_id to keep React keys stable
       const dk = msg.dedupe_key || msg.client_nonce;
-      if (dk && outMap.has(dk)) outMap.delete(dk);
+      let existingClientId = null;
+      if (dk && outMap.has(dk)) {
+        existingClientId = outMap.get(dk)?.client_id || null;
+        outMap.delete(dk);
+      }
       // Also remove if it was stored under previous temp/tempId/client_id
       const optimistic = Array.from(outMap.entries())
         .find(([_, v]) => (v.dedupe_key && v.dedupe_key === dk) || (v.client_nonce && v.client_nonce === dk));
-      if (optimistic) outMap.delete(optimistic[0]);
+      if (optimistic) {
+        if (!existingClientId) existingClientId = optimistic[1]?.client_id || null;
+        outMap.delete(optimistic[0]);
+      }
+      // Reuse the optimistic client_id so AnimatePresence sees the same React key (no flash)
+      if (existingClientId) msg = { ...msg, client_id: existingClientId };
     }
 
     outMap.set(k, { ...outMap.get(k), ...msg });
@@ -152,7 +161,7 @@ const guestAliasFromId = (guestId) => {
  * Main Chat Panel Component
  * Slides in from the left side when live streaming is active
  */
-export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
+export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSidebarWidth = 32 }) {
   const { profile, user, loading: profileLoading, unlockedBadges, badgesLoading, badgesError, userBadges } = useProfile();
   
   // Log badges debug only when values change
@@ -351,7 +360,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
       DEBUG && console.log('🔥 Identity resolved (auth):', name);
     } else {
       // ── Guest path ──
-      // Use the stable guest identity from localStorage (creates if missing)
+      // Resolve synchronously first so the UI is ready immediately.
       const guestName = getOrCreateGuestNameSync();
       const guestId = getOrCreateGuestIdSync();
       setResolvedUserId(null);
@@ -359,6 +368,21 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
       setResolvedName(guestName);
       setIsIdentityReady(true);
       DEBUG && console.log('🔥 Identity resolved (guest):', guestName);
+
+      // In the background, verify/register this guest in the DB.
+      // If the sync ID was localStorage-only (stale/unregistered), the async call
+      // will clear it and create a proper registered identity, then update state.
+      getOrCreateGuestIdentity().then(({ guest_id, username }) => {
+        if (guest_id !== guestId) {
+          DEBUG && console.log('🔥 Guest identity upgraded (was unregistered):', { old: guestId, new: guest_id });
+          setResolvedGuestId(guest_id);
+        }
+        if (username !== guestName) {
+          setResolvedName(username);
+        }
+      }).catch(() => {
+        // Ignore — API route handles unregistered guest_ids with a fallback retry.
+      });
     }
   }, [profileLoading, user, profile?.name, profile?.display_name, profile?.username, profile?.id]);
 
@@ -1036,7 +1060,8 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
           // Replace optimistic message matched by dedupe_key (primary) or client_nonce
           const next = prev.map(m => {
             if (m.dedupe_key === dedupe_key || m.client_nonce === client_nonce || m.tempId === tempId) {
-              return { ...realMessage, status: 'sent', pending: false, tempId: m.tempId };
+              // Preserve client_id from the optimistic so the React key stays stable (prevents AnimatePresence flash)
+              return { ...realMessage, status: 'sent', pending: false, tempId: m.tempId, client_id: m.client_id };
             }
             return m;
           });
@@ -1380,7 +1405,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
 
       {/* Chat Panel */}
       {isOpen && (
-        <>
+        <Fragment key="chat-panel-content">
         <motion.div
           key="chat-panel"
           className={`absolute z-[110] flex overflow-hidden left-0 right-0 ${isChatCollapsed ? 'bottom-0' : 'inset-0'}`}
@@ -1451,8 +1476,9 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                 {/* User List */}
                 <div
                   className={`border-r border-cyan-400/20 transition-all duration-300 ease-in-out flex-shrink-0 ${
-                    isUserPanelCollapsed ? 'w-8' : selectedUser ? 'w-32 sm:w-40 md:w-48' : 'w-48'
+                    isUserPanelCollapsed ? '' : selectedUser ? 'w-32 sm:w-40 md:w-48' : 'w-48'
                   }`}
+                  style={isUserPanelCollapsed ? { width: `${collapsedSidebarWidth}px` } : undefined}
                 >
                   {/* Collapse Toggle Button */}
                   <div className="h-full flex flex-col">
@@ -2656,7 +2682,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
             reactions={roomReactions}
             onReactionComplete={handleRoomReactionComplete}
           />
-        </>
+        </Fragment>
       )}
 
       {/* Card Popup Modal */}
@@ -3055,7 +3081,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
 
       {/* Scanner Effect */}
       {isOpen && (
-        <>
+        <Fragment key="chat-scanner">
           <div 
             className="fixed inset-0 pointer-events-none z-[105]"
             style={{
@@ -3101,7 +3127,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
               backface-visibility: hidden;
             }
           `}</style>
-        </>
+        </Fragment>
       )}
     </AnimatePresence>
   );
