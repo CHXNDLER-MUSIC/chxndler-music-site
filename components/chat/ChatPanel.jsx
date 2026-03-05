@@ -330,6 +330,22 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
   // Log render state only when values change
   useLogOnChange('🔥 ChatPanel render:', { isOpen, profile: !!profile, user: !!user });
 
+  // Ensure a stable guest UUID exists in localStorage under "hs_guest_id"
+  // This ID is sent to the API as sender_guest_id so it satisfies DB constraint.
+  const getOrCreateHsGuestId = useCallback(() => {
+    if (typeof window === 'undefined') return null;
+    let id = localStorage.getItem('hs_guest_id');
+    if (!id) {
+      try {
+        id = crypto.randomUUID();
+      } catch {
+        id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      }
+      localStorage.setItem('hs_guest_id', id);
+    }
+    return id;
+  }, []);
+
   // ─── Identity resolution: never announce presence until we know who we are ───
   const [resolvedName, setResolvedName] = useState(null);      // display name for presence & messages
   const [resolvedUserId, setResolvedUserId] = useState(null);  // auth user.id when authenticated
@@ -888,7 +904,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
               username: displayName,
               is_system: true,
               client_nonce: crypto.randomUUID(),
-              guest_id: resolvedGuestId || null,
+              // System messages should not include sender fields
             }),
           });
           const result = await response.json();
@@ -1062,7 +1078,8 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
           is_system: false,
           client_nonce: client_nonce,
           dedupe_key: dedupe_key,
-          guest_id: isAuthenticated ? null : (resolvedGuestId || null),
+          // For guests, always include a stable sender_guest_id per requirements
+          sender_guest_id: isAuthenticated ? null : (getOrCreateHsGuestId() || null),
         }),
       });
 

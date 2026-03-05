@@ -49,6 +49,7 @@ import { useUIState } from "@/lib/use-ui-state";
 import { supabaseClient } from "@/lib/supabaseClient";
 import GlowingHamburgerMenuWrapper from "@/components/GlowingHamburgerMenuWrapper";
 import { useSongs } from "@/hooks/useSongs";
+import { useGoLiveOverride } from "@/hooks/useGoLiveOverride";
 
 export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const router = useRouter();
@@ -56,6 +57,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   
   // Unified audio provider for single source of truth
   const audioManager = useAudio();
+  // Live override flag (works without auth) used to decide live stream open-on-start
+  const { isOverrideActive: liveOverrideActive } = useGoLiveOverride();
   
   // UI store for profile refresh trigger and name modal (must be before useEffect)
   const { profileRefreshTrigger, openNamePrompt, openNamePromptFromAuth, openElementSelection } = useUIStore();
@@ -1478,10 +1481,48 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       let needsWelcomeHome = false;
 
       if (!session?.user) {
-        // User is logged out - will show WelcomeHomeModal after warp (not redirect to /login)
-        if (process.env.NODE_ENV !== "production") console.log("🚀 User not logged in - will show WelcomeHomeModal after warp");
-        needsWelcomeHome = true;
-        needsOnboarding = false;
+        // Helper: determine if we should open the live signal panel instead of Welcome Home
+        const isInBroadcastWindow = () => {
+          try {
+            const now = new Date();
+            const tz = 'America/New_York';
+            const parts = new Intl.DateTimeFormat('en-US', {
+              timeZone: tz,
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            }).formatToParts(now);
+            const get = (type) => parseInt(parts.find((p) => p.type === type)?.value ?? '0', 10);
+            const etHour = get('hour') === 24 ? 0 : get('hour');
+            const etDate = new Date(get('year'), get('month') - 1, get('day'));
+            const etDow = etDate.getDay();
+            return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 20;
+          } catch {
+            return false;
+          }
+        };
+
+        const shouldOpenSignalOnStart = !!liveOverrideActive || isInBroadcastWindow();
+
+        if (shouldOpenSignalOnStart) {
+          // Live stream mode: open the live signal panel after warp instead of Welcome Home
+          if (process.env.NODE_ENV !== "production") console.log("🚀 Logged out + LIVE: will open Live Stream panel after warp");
+          needsWelcomeHome = false;
+          needsOnboarding = false;
+          try {
+            (window).__CHX_PENDING_SIGNAL_OPEN = true;
+            (window).__SHOW_WELCOME_HOME_AFTER_WARP = false;
+          } catch {}
+        } else {
+          // Default: show WelcomeHome for logged-out users
+          if (process.env.NODE_ENV !== "production") console.log("🚀 User not logged in - will show WelcomeHomeModal after warp");
+          needsWelcomeHome = true;
+          needsOnboarding = false;
+        }
+
         // Set welcome audio type: logged out → welcome-to-the-heartverse
         welcomeAudioTypeRef.current = 'heartverse';
       } else {
@@ -1512,6 +1553,37 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         }
 
         if (process.env.NODE_ENV !== "production") console.log("🚀 Profile data:", profileData, "needsOnboarding:", needsOnboarding, "welcomeAudioType:", welcomeAudioTypeRef.current);
+
+        // If user is logged in and profile is complete, prioritize Live Stream when live
+        if (!needsOnboarding) {
+          const isInBroadcastWindow = () => {
+            try {
+              const now = new Date();
+              const tz = 'America/New_York';
+              const parts = new Intl.DateTimeFormat('en-US', {
+                timeZone: tz,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+              }).formatToParts(now);
+              const get = (type) => parseInt(parts.find((p) => p.type === type)?.value ?? '0', 10);
+              const etHour = get('hour') === 24 ? 0 : get('hour');
+              const etDate = new Date(get('year'), get('month') - 1, get('day'));
+              const etDow = etDate.getDay();
+              return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 20;
+            } catch {
+              return false;
+            }
+          };
+          const shouldOpenSignalOnStart = !!liveOverrideActive || isInBroadcastWindow();
+          if (shouldOpenSignalOnStart) {
+            if (process.env.NODE_ENV !== "production") console.log("📡 LIVE PRIORITY: opening live signal after warp for logged-in user");
+            try { (window).__CHX_PENDING_SIGNAL_OPEN = true; } catch {}
+          }
+        }
       }
 
       // Store flags for after warp completes
@@ -1630,6 +1702,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           }
         } catch {}
 
+        // If we queued opening the live signal display, do that now
+        if (typeof window !== 'undefined' && (window).__CHX_PENDING_SIGNAL_OPEN) {
+          setTimeout(() => {
+            try { handleBeamToggle('pink'); } catch {}
+          }, 500);
+          try { delete (window).__CHX_PENDING_SIGNAL_OPEN; } catch {}
+        }
+
         // Check what to show after warp
         if (typeof window !== 'undefined' && (window).__SHOW_WELCOME_HOME_AFTER_WARP) {
           // User not logged in - show WelcomeHomeModal
@@ -1706,7 +1786,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
     }, WARP_DURATION_MS);
 
-  }, [audioManager, profile, openElementSelection, openNamePrompt, setShowWelcomeHomeModal, router]);
+  }, [audioManager, profile, openElementSelection, openNamePrompt, setShowWelcomeHomeModal, router, liveOverrideActive]);
 
   // Handle opening journal: opens journal view in Soul Sky popover
   const handleOpenJournal = React.useCallback(() => {

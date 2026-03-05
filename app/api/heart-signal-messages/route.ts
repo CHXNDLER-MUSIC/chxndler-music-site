@@ -16,13 +16,14 @@ export async function POST(req: Request) {
     const clientNonce = (body?.client_nonce ?? '').toString().trim() || null;
     const dedupeKey = (body?.dedupe_key ?? clientNonce ?? '').toString().trim() || null;
 
-    // Normalize guest_id: accept raw UUIDs or values prefixed with 'guest_' / 'guest-'
-    const rawGuestId = (body?.guest_id ?? '').toString().trim();
+    // Normalize sender_guest_id: prefer body.sender_guest_id; also accept legacy body.guest_id
+    // Accept raw UUIDs or values prefixed with 'guest_' / 'guest-'
+    const rawGuestIdInput = (body?.sender_guest_id ?? body?.guest_id ?? '').toString().trim();
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    let guestId: string | null = null;
-    if (rawGuestId && rawGuestId !== 'guest_ssr_placeholder') {
-      const stripped = rawGuestId.replace(/^guest[_-]/i, '');
-      guestId = uuidRegex.test(stripped) ? stripped : null;
+    let senderGuestId: string | null = null;
+    if (rawGuestIdInput && rawGuestIdInput !== 'guest_ssr_placeholder') {
+      const stripped = rawGuestIdInput.replace(/^guest[_-]/i, '');
+      senderGuestId = uuidRegex.test(stripped) ? stripped : null;
     }
 
     if (!message) {
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
       }
     );
 
-    // Try to resolve auth user, but allow guests to post
+    // Try to resolve auth user
     const { data: userResult } = await supabase.auth.getUser();
     const userId = userResult?.user?.id ?? null;
 
@@ -78,16 +79,6 @@ export async function POST(req: Request) {
       admin = null;
     }
 
-    // If no auth user and no valid guestId provided, generate a transient guest id
-    if (!userId && !guestId) {
-      try {
-        guestId = randomUUID();
-      } catch {
-        // very old runtimes: fallback
-        guestId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      }
-    }
-
     // Determine if this is a system message (sent by the app, not a user)
     const isSystem = Boolean(body?.is_system);
 
@@ -104,14 +95,33 @@ export async function POST(req: Request) {
     };
 
     if (isSystem) {
+      // System path: no sender set
       insertPayload.user_id = null;
       insertPayload.guest_id = null;
+      insertPayload.sender_user_id = null;
+      insertPayload.sender_guest_id = null;
     } else if (userId) {
-      insertPayload.user_id = userId;
+      // Authenticated user path
+      insertPayload.user_id = userId; // keep legacy column for compatibility
       insertPayload.guest_id = null;
+      insertPayload.sender_user_id = userId;
+      insertPayload.sender_guest_id = null;
     } else {
-      insertPayload.user_id = null;
-      insertPayload.guest_id = guestId; // normalized UUID (generated if missing)
+      // Guest path: require sender_guest_id
+      if (!senderGuestId) {
+        return NextResponse.json(
+          { ok: false, error: 'sender_guest_id is required for guest messages' },
+          { status: 400 }
+        );
+      }
+      insertPayload.user_id = null; // ensure not attributed to any user
+      insertPayload.guest_id = senderGuestId; // keep legacy column for compatibility
+      insertPayload.sender_user_id = null;
+      insertPayload.sender_guest_id = senderGuestId;
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[heart-signal] Insert payload:', insertPayload);
     }
 
     let data: any = null;
@@ -137,17 +147,6 @@ export async function POST(req: Request) {
         .from('heart_signal_messages')
         .insert(rlsPayload)
         .select('*')
-        .single());
-    }
-
-    // P0001 = DB raised exception (e.g. guest_id not found in guest_profiles).
-    // Retry without guest_id so the message still saves for unregistered guests.
-    if (error?.code === 'P0001' && insertPayload.guest_id && admin) {
-      console.warn("heart-signal: guest_id rejected by DB, retrying without it:", insertPayload.guest_id);
-      ({ data, error } = await admin
-        .from("heart_signal_messages")
-        .insert({ ...insertPayload, guest_id: null })
-        .select("*")
         .single());
     }
 

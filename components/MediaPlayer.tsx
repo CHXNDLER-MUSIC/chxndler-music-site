@@ -2504,6 +2504,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
         /* Lyrics link next to volume control */
         .lyrics-link-waveform {
+          position: relative;
+          z-index: 600; /* ensure above nearby overlays/links */
           width: 32px;
           height: 32px;
           border-radius: 50%;

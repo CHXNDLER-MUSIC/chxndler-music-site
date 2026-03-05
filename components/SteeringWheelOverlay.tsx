@@ -177,11 +177,17 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
       }, 400);
     } else {
       // Close any open modals before opening live signal display
+      // Also explicitly close Welcome Home modal wherever it is mounted
+      // Important: defer opening by a tick so Welcome Home (and others) fully close first
       try { window.dispatchEvent(new CustomEvent('closeAllModals')); } catch {}
-      // Open pink display with Twitch embed
-      setActiveBeamColor('pink');
-      onBeamColorChange?.('pink');
-      onJoinToggle?.(true);
+      try { window.dispatchEvent(new CustomEvent('closeWelcomeHomeModal')); } catch {}
+      // Small delay ensures the welcome home display closes before live stream opens (prevents overlap/flicker)
+      setTimeout(() => {
+        // Open pink display with Twitch embed
+        setActiveBeamColor('pink');
+        onBeamColorChange?.('pink');
+        onJoinToggle?.(true);
+      }, 60);
     }
     
   }, [showUI, isUIUnlocked, joinAlienOpen, activeBeamColor, onJoinToggle, onBeamColorChange]);

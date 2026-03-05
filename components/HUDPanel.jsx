@@ -1152,7 +1152,13 @@ const HUDPanel = React.memo(function HUDPanel({
 
   async function openLyricsPopover(slug){
     try { sfx.play('click', 0.4); } catch {}
-    // Anchor position
+    // Always set a default position immediately so the portal renders even if calculation below fails
+    try {
+      const w = typeof window !== 'undefined' ? window.innerWidth : 400;
+      const h = typeof window !== 'undefined' ? window.innerHeight : 600;
+      setLyricsPopoverPos({ left: 8, top: 64, width: Math.max(200, w - 16), height: Math.max(200, h - 80) });
+    } catch {}
+    // Refine position to match blue display bounds
     try {
       const r = lyricsBtnRef.current?.getBoundingClientRect?.();
       const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
@@ -1464,7 +1470,12 @@ const HUDPanel = React.memo(function HUDPanel({
     return () => window.removeEventListener('keydown', onKey);
   }, [showSpotifyPopover]);
 
-  // Apple inline popover removed; no Escape handler needed
+  useEffect(() => {
+    if (!showApplePopover) return;
+    const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowApplePopover(false); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showApplePopover]);
 
   // Recalculate PROFILE popover alignment on resize while open
   useEffect(() => {
@@ -3149,7 +3160,7 @@ const HUDPanel = React.memo(function HUDPanel({
                 {(() => {
                   const isHome = !currentId;
                   const currentSong = resolvedSongs.find(s => s.id === active);
-                  const slug = isHome ? 'homepage' : (currentSong?.id || active || 'homepage');
+                  const slug = isHome ? 'homepage' : (currentSong?.slug || currentSong?.id || active || 'homepage');
                   const hasLyrics = isHome ? true : !!(currentSong && (currentSong.hasLyrics !== false));
                   const lyricsTitle = isHome ? 'Lyrics for CHXNDLER' : `Lyrics for ${currentSong?.title || 'current track'}`;
                   const lyricsAria = isHome ? 'View lyrics for CHXNDLER' : `View lyrics for ${currentSong?.title || 'current track'}`;
@@ -3293,6 +3304,19 @@ const HUDPanel = React.memo(function HUDPanel({
                           data-slug={currentSong?.id || ''}
                           data-id="am"
                           onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            try { sfx.play('join-aliens', 0.9); } catch {}
+                            try {
+                              const { toAppleEmbed } = require('@/lib/apple');
+                              const embed = toAppleEmbed(appleUrl);
+                              if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
+                              else { window.open(appleUrl, '_blank', 'noopener,noreferrer'); }
+                            } catch {
+                              window.open(appleUrl, '_blank', 'noopener,noreferrer');
+                            }
+                          }}
                         >
                           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
                             <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
@@ -5632,6 +5656,75 @@ const HUDPanel = React.memo(function HUDPanel({
                   document.body
                 ) : null}
 
+                {typeof document !== 'undefined' && showApplePopover && amEmbedUrl ? createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="Apple Music Player"
+                    onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowApplePopover(false); }}
+                    style={{
+                      position: 'fixed',
+                      inset: 0,
+                      background: 'transparent',
+                      backdropFilter: 'none',
+                      zIndex: 2147483647,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <div
+                      onClick={(e) => { e.stopPropagation(); }}
+                      style={{
+                        position: 'relative',
+                        width: 'min(88vw, 420px)',
+                        background: 'transparent',
+                        border: '1px solid rgba(252,60,68,0.6)',
+                        boxShadow: '0 0 32px rgba(252,60,68,0.35)',
+                        borderRadius: 14,
+                        overflow: 'hidden',
+                        marginTop: -150
+                      }}
+                    >
+                      <button
+                        aria-label="Close"
+                        title="Close"
+                        onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 22px rgba(255,255,255,0.7)'; } catch {} }}
+                        onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = 'none'; } catch {} }}
+                        onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowApplePopover(false); }}
+                        style={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          width: 32,
+                          height: 32,
+                          borderRadius: 999,
+                          background: 'rgba(0,0,0,0.5)',
+                          color: '#fff',
+                          border: '1px solid rgba(255,255,255,0.5)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          zIndex: 1
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                          <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
+                        </svg>
+                      </button>
+                      <iframe
+                        src={amEmbedUrl}
+                        title="Apple Music player"
+                        allow="autoplay *; encrypted-media *; clipboard-write"
+                        loading="lazy"
+                        width="100%"
+                        height={amEmbedUrl ? (() => { try { return require('@/lib/apple').appleEmbedHeight(amEmbedUrl); } catch { return 360 } })() : undefined}
+                        style={{ border: 'none', display: 'block' }}
+                      />
+                    </div>
+                  </div>,
+                  document.body
+                ) : null}
+
                 {typeof document !== 'undefined' && showYouTubePopover && ytEmbedUrl ? createPortal(
                   <div
                     role="dialog"
@@ -6444,7 +6537,7 @@ const HUDPanel = React.memo(function HUDPanel({
                   document.body
                 ) : null}
 
-                {typeof document !== 'undefined' && showLyricsPopover && lyricsPopoverPos ? (() => {
+                {typeof document !== 'undefined' && showLyricsPopover ? (() => {
                   const isHome = !currentId;
                   const currentSong = resolvedSongs.find(s => s.id === active);
                   return createPortal(
