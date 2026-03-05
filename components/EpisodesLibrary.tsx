@@ -39,7 +39,7 @@ const VIDEOS: Video[] = [
   {
     id: "hv-003",
     title: "Heartverse 03: Welcome To New York",
-    youtubeUrl: "https://youtube.com/shorts/x4xhwXkx9yE?feature=share",
+    youtubeUrl: "https://youtube.com/shorts/yvbtCNO0PAI",
     type: "heartverse",
     releaseDate: "2026-03-04T19:00:00",
   },
@@ -87,7 +87,7 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://youtu.be/RXWbQzWjTPg",
     type: "acoustic",
     releaseDate: "2026-02-17T12:00:00",
-    postDescription: "Setlist\n00:00 OCEAN GIRL\n03:50 ALWAYS ON MY MIND\n07:15 SOMEBODY TO LOVE\n11:48 MR. BRIGHTSIDE (The Killers)\n14:48 Good Things Fall Apart — Audience Request (Illenium, Jon Bellion)\n15:54 Julia — Audience Request (Lauv)\n16:56 Too Old To Cry — Audience Request (Voodoo Blue)",
+    postDescription: "Setlist\n00:00 OCEAN GIRL\n03:50 ALWAYS ON MY MIND\n07:15 SOMEBODY TO LOVE\n11:48 MR. BRIGHTSIDE (The Killers)\n14:48 Good Things Fall Apart (Illenium, Jon Bellion)\n15:54 Julia (Lauv)\n16:56 Too Old To Cry (Voodoo Blue)",
   },
   {
     id: "lsp-002",
@@ -95,7 +95,7 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://youtu.be/MWyv2bfps9w",
     type: "acoustic",
     releaseDate: "2026-02-24T12:00:00",
-    postDescription: "Setlist\n00:00 WE'RE JUST FRIENDS\n05:15 BE MY BEE\n10:19 Love Drunk — Audience Request\n13:51 BABY\n18:55 FEELING THIS\n22:21 AMERICAN DREAM",
+    postDescription: "Setlist\n00:00 WE'RE JUST FRIENDS\n05:15 BE MY BEE\n10:19 Love Drunk (Boys Like Girls)\n13:51 BABY (Justin Bieber)\n18:55 FEELING THIS (Blink 182)\n22:21 AMERICAN DREAM",
   },
   {
     id: "lsp-003",
@@ -103,14 +103,15 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://youtu.be/Pxd-uIKa_lg",
     type: "acoustic",
     releaseDate: "2026-03-03T12:00:00",
-    postDescription: "Setlist\n00:00 MR. BRIGHTSIDE\n03:00 ALONE\n05:39 POKÉMON\n08:56 I MIGHT FALL IN LOVE WITH YOU\n13:32 AMERICAN DREAM\n16:14 FEELING THIS",
+    postDescription: "Setlist\n00:00 MR. BRIGHTSIDE (The Killers)\n03:00 ALONE\n05:39 POKÉMON (Jason Paige)\n08:56 I MIGHT FALL IN LOVE WITH YOU\n13:32 AMERICAN DREAM\n16:14 FEELING THIS (Blink 182)",
   },
   {
     id: "lsp-004",
     title: "Acoustic Signal 04",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    youtubeUrl: "https://youtu.be/OzJwQ--EFd8",
     type: "acoustic",
     releaseDate: "2026-03-10T12:00:00",
+    postDescription: "Setlist\n00:00 Heartverse\n00:18 Holy (Justin Bieber)\n02:51 ALONE\n04:33 Castle On The Hill (Ed Sheeran)\n06:21 LITTLE BLACK HEART\n08:55 I Lose Control (Teddy Swims)\n10:44 COLORS OF OUR HOME\n13:00 LOVE ME",
   },
   {
     id: "lsp-005",
@@ -171,15 +172,15 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://youtu.be/rsLzbiOIPrM",
     type: "electric",
     releaseDate: "2026-02-28T12:00:00",
-    postDescription: "Setlist\n00:00 FEELING THIS\n02:26 PARIS\n06:16 ALWAYS ON MY MIND\n09:32 ALONE\n13:16 CHXNDLER Cards\n14:00 WE'RE JUST FRIENDS\n17:50 MR. BRIGHTSIDE\n21:19 OCEAN GIRL",
+    postDescription: "Setlist\n00:00 FEELING THIS (Blink 182)\n02:26 PARIS (The 1975)\n06:16 ALWAYS ON MY MIND\n09:32 ALONE\n13:16 CHXNDLER Cards\n14:00 WE'RE JUST FRIENDS\n17:50 MR. BRIGHTSIDE (The Killers)\n21:19 OCEAN GIRL",
   },
   {
     id: "lsf-003",
     title: "Electric Signal 03",
-    youtubeUrl: "https://youtu.be/fiw8XEdCR8g",
+    youtubeUrl: "https://youtu.be/B500GjaXeEs",
     type: "electric",
     releaseDate: "2026-03-07T12:00:00",
-    postDescription: "Setlist\n00:00 WELCOME ALIEN\n00:29 FEELING THIS\n02:55 ALONE\n06:22 MR. BRIGHTSIDE\n10:05 ALWAYS ON MY MIND\n13:23 ALIEN (HOUSE PARTY)\n17:49 WE'RE JUST FRIENDS",
+    postDescription: "Setlist\n00:00 Heartverse\n00:18 FEELING THIS\n02:44 ALONE\n06:11 MR. BRIGHTSIDE\n09:55 ALWAYS ON MY MIND\n13:10 ALIEN (HOUSE PARTY)\n17:34 WE'RE JUST FRIENDS",
   },
   {
     id: "lsf-004",
