@@ -110,7 +110,7 @@ const VIDEOS: Video[] = [
     title: "Acoustic Signal 04",
     youtubeUrl: "https://youtu.be/OzJwQ--EFd8",
     type: "acoustic",
-    releaseDate: "2026-03-10T12:00:00",
+    releaseDate: "2026-03-17T12:00:00",
     postDescription: "Setlist\n00:00 Heartverse\n00:18 Holy (Justin Bieber)\n02:51 ALONE\n04:33 Castle On The Hill (Ed Sheeran)\n06:21 LITTLE BLACK HEART\n08:55 I Lose Control (Teddy Swims)\n10:44 COLORS OF OUR HOME\n13:00 LOVE ME",
   },
   {
@@ -177,17 +177,18 @@ const VIDEOS: Video[] = [
   {
     id: "lsf-003",
     title: "Electric Signal 03",
-    youtubeUrl: "https://youtu.be/B500GjaXeEs",
+    youtubeUrl: "https://youtu.be/cvVkNj47Ut8",
     type: "electric",
     releaseDate: "2026-03-07T12:00:00",
-    postDescription: "Setlist\n00:00 Heartverse\n00:18 FEELING THIS\n02:44 ALONE\n06:11 MR. BRIGHTSIDE\n09:55 ALWAYS ON MY MIND\n13:10 ALIEN (HOUSE PARTY)\n17:34 WE'RE JUST FRIENDS",
+    postDescription: "Setlist\n00:00 WELCOME ALIEN\n00:29 FEELING THIS (Blink 182)\n02:55 ALONE\n06:22 MR. BRIGHTSIDE (The Killers)\n10:05 ALWAYS ON MY MIND\n13:23 ALIEN (HOUSE PARTY)\n17:49 WE'RE JUST FRIENDS",
   },
   {
     id: "lsf-004",
     title: "Electric Signal 04",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    youtubeUrl: "https://youtu.be/lFuXBbTa2Cg",
     type: "electric",
     releaseDate: "2026-03-14T12:00:00",
+    postDescription: "Setlist\n00:00 Heartverse\n00:18 MR. BRIGHTSIDE (The Killers)\n03:27 BE ME BEE\n07:33 CHEERLEADER\n10:39  LOVE ME\n14:17 AMERICAN DREAM\n18:09 WERE JUST FRIENDS",
   },
   {
     id: "lsf-005",
