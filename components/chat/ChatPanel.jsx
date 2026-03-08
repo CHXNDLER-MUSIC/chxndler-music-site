@@ -671,15 +671,17 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
           // Guests have user_id = null, authenticated users have user_id set
           const transformedMessages = result.messages.map(msg => normalizeMessage({
             id: msg.id,
-            user_id: msg.user_id,
+            user_id: msg.user_id ?? null,
             username: msg.username,
             message: msg.message,
             message_type: msg.is_system ? 'join' : 'message',
             created_at: msg.created_at,
             dedupe_key: msg.dedupe_key || null,
+            source: msg.source ?? 'auth',
             user_profile: {
               name: msg.username,
-              element: msg.user_id === null ? 'alien' : null, // Guests (user_id=null) have alien element
+              // Use source field from view to identify guest messages (user_id is absent in view rows)
+              element: msg.source === 'guest' ? 'alien' : null,
               avatar_badge_id: null,
               profile_image_url: null
             }
@@ -759,18 +761,15 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
         }
       }
 
-      // Subscribe to heart_signal_messages table directly
+      // Subscribe to both heart_signal_messages (auth) and heart_signal_guest_messages (guest)
       channelRef.current = supabaseClient
         .channel('heart-signal-chat-panel')
         .on(
           'postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'heart_signal_messages' },
           (payload) => {
-            DEBUG && console.log('🔥 Heart Signal realtime message:', payload);
+            DEBUG && console.log('🔥 Heart Signal auth realtime message:', payload);
             const msg = payload.new;
-
-            // Determine if this is a guest message (user_id = null)
-            const isGuestMessage = msg.user_id === null;
 
             const newMessage = normalizeMessage({
               id: msg.id,
@@ -780,32 +779,25 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
               message_type: msg.is_system ? 'join' : 'message',
               created_at: msg.created_at,
               dedupe_key: msg.dedupe_key || msg.client_nonce || null,
+              source: 'auth',
               user_profile: {
                 name: msg.username,
-                element: isGuestMessage ? 'alien' : null,
+                element: null,
                 avatar_badge_id: null,
                 profile_image_url: null
               }
             });
 
-            // Dedupe: skip if a message with this id already exists in state
+            // Dedupe: skip if auth message with this id already exists
             setMessages(prev => {
-              if (msg.id && prev.some(m => m.id === msg.id)) return prev;
-              if (process.env.NODE_ENV !== "production") console.log('🛰 realtime INSERT', { id: msg.id, dedupe_key: msg.dedupe_key });
+              if (msg.id && prev.some(m => m.id === msg.id && (!m.source || m.source === 'auth'))) return prev;
+              if (process.env.NODE_ENV !== "production") console.log('🛰 auth realtime INSERT', { id: msg.id, dedupe_key: msg.dedupe_key });
               return mergeMessages(prev, newMessage);
             });
 
-            // Reconcile local guest storage entry (if this belongs to this guest identity)
-            if (isGuestMessage && !resolvedUserId && guestStorageKey && msg.username === (resolvedName || '')) {
-              updateGuestMessage(guestStorageKey, { dedupeKey: msg.dedupe_key || null, clientNonce: msg.client_nonce || null }, { id: msg.id, createdAtISO: msg.created_at });
-            }
-
             // Play notification sound for new messages (not system messages)
             if (!msg.is_system) {
-              // Check if it's our own message (don't play sound for own messages)
-              const isOwnMessage = (resolvedUserId && msg.user_id === resolvedUserId) ||
-                (!resolvedUserId && msg.username === resolvedName);
-
+              const isOwnMessage = resolvedUserId && msg.user_id === resolvedUserId;
               if (!isOwnMessage) {
                 try {
                   const audio = new Audio('/notification.mp3');
@@ -819,8 +811,8 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
               }
             }
 
-            // Update user list with new sender
-            const senderId = msg.user_id || `guest-${msg.username}`;
+            // Update user list with new auth sender
+            const senderId = msg.user_id || `auth-${msg.username}`;
             setChatUsers(prev => {
               const existingUser = prev.find(u => u.id === senderId || u.name === msg.username);
               if (existingUser) {
@@ -833,7 +825,82 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
                 return [...prev, {
                   id: senderId,
                   name: msg.username,
-                  element: isGuestMessage ? 'alien' : null,
+                  element: null,
+                  avatar_badge_id: null,
+                  profile_image_url: null,
+                  last_seen: msg.created_at
+                }];
+              }
+            });
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'heart_signal_guest_messages' },
+          (payload) => {
+            DEBUG && console.log('🔥 Heart Signal guest realtime message:', payload);
+            const msg = payload.new;
+
+            const newMessage = normalizeMessage({
+              id: msg.id,
+              user_id: null,
+              username: msg.username,
+              message: msg.message,
+              message_type: msg.is_system ? 'join' : 'message',
+              created_at: msg.created_at,
+              dedupe_key: null,
+              source: 'guest',
+              user_profile: {
+                name: msg.username,
+                element: 'alien',
+                avatar_badge_id: null,
+                profile_image_url: null
+              }
+            });
+
+            // Dedupe: skip if guest message with this id already exists
+            setMessages(prev => {
+              if (msg.id && prev.some(m => m.id === msg.id && m.source === 'guest')) return prev;
+              if (process.env.NODE_ENV !== "production") console.log('🛰 guest realtime INSERT', { id: msg.id });
+              return mergeMessages(prev, newMessage);
+            });
+
+            // Reconcile local guest storage entry (if this belongs to this guest)
+            if (!resolvedUserId && guestStorageKey && msg.username === (resolvedName || '')) {
+              updateGuestMessage(guestStorageKey, { dedupeKey: null, clientNonce: null }, { id: msg.id, createdAtISO: msg.created_at });
+            }
+
+            // Play notification sound for new messages (not system messages)
+            if (!msg.is_system) {
+              const isOwnMessage = !resolvedUserId && msg.username === resolvedName;
+              if (!isOwnMessage) {
+                try {
+                  const audio = new Audio('/notification.mp3');
+                  audio.volume = 0.3;
+                  audio.play().catch(error => {
+                    if (process.env.NODE_ENV !== "production") console.log('Notification sound failed:', error);
+                  });
+                } catch (error) {
+                  if (process.env.NODE_ENV !== "production") console.log('Audio creation failed:', error);
+                }
+              }
+            }
+
+            // Update user list with new guest sender
+            const guestSenderId = `guest-${msg.username}`;
+            setChatUsers(prev => {
+              const existingUser = prev.find(u => u.id === guestSenderId || u.name === msg.username);
+              if (existingUser) {
+                return prev.map(u =>
+                  (u.id === guestSenderId || u.name === msg.username)
+                    ? { ...u, last_seen: msg.created_at }
+                    : u
+                );
+              } else {
+                return [...prev, {
+                  id: guestSenderId,
+                  name: msg.username,
+                  element: 'alien',
                   avatar_badge_id: null,
                   profile_image_url: null,
                   last_seen: msg.created_at
@@ -1188,9 +1255,11 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
     let user = chatUsers.find(u => u.id === userId);
     DEBUG && console.log('🔥 Found user in chatUsers:', user);
     DEBUG && console.log('🔥 Current chatUsers:', chatUsers);
-    
-    // For anonymous/guest users, use resolved guest name
-    if (userId === 'anonymous' || (typeof userId === 'string' && userId.startsWith('guest-'))) {
+
+    // Only substitute viewer's own identity when clicking their own alias (anonymous or self)
+    const isViewerOwnAlias = userId === 'anonymous' || userId === `guest-${resolvedName}`;
+
+    if (isViewerOwnAlias) {
       const guestUsername = resolvedName || 'ALIEN000000';
       user = normalizeUser({
         id: `guest-${guestUsername}`,
@@ -1199,23 +1268,52 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
         avatar_badge_id: null,
         last_seen: new Date().toISOString()
       });
-      DEBUG && console.log('🔥 Using guest user:', user);
+      DEBUG && console.log('🔥 Using viewer own guest profile:', user);
     }
-    
+
     // If user not found in chatUsers, try to build from message data
     if (!user) {
-      const msg = messages.find(m => m.user_id === userId);
-      if (msg) {
-        const msgProfile = msg.user_profile;
+      // Primary: match by user_id (auth messages delivered via realtime)
+      const msgByUserId = messages.find(m => m.user_id === userId);
+      if (msgByUserId) {
+        const msgProfile = msgByUserId.user_profile;
         user = normalizeUser({
           id: userId,
-          name: msgProfile?.name || msg.username || 'Unknown',
+          name: msgProfile?.name || msgByUserId.username || 'Unknown',
           element: msgProfile?.element || null,
           avatar_badge_id: msgProfile?.avatar_badge_id || null,
           profile_image_url: msgProfile?.profile_image_url || null,
-          last_seen: msg.created_at
+          last_seen: msgByUserId.created_at
         });
-        DEBUG && console.log('🔥 Built user from message data:', user);
+        DEBUG && console.log('🔥 Built user from message user_id:', user);
+      } else {
+        // Fallback: match by username for view-sourced messages (user_id = null)
+        // senderId = 'guest-USERNAME' when user_id is absent — strip the prefix to get the name
+        const nameFromId = (typeof userId === 'string' && userId.startsWith('guest-'))
+          ? userId.slice(6)
+          : userId;
+
+        // First try chatUsers by name
+        const userByName = chatUsers.find(u => u.name === nameFromId);
+        if (userByName) {
+          user = userByName;
+          DEBUG && console.log('🔥 Found user by name in chatUsers:', user);
+        } else {
+          // Then try messages by username
+          const msgByName = messages.find(m => m.username === nameFromId);
+          if (msgByName) {
+            const msgProfile = msgByName.user_profile;
+            user = normalizeUser({
+              id: userId,
+              name: nameFromId,
+              element: msgProfile?.element || (msgByName.source === 'guest' ? 'alien' : null),
+              avatar_badge_id: msgProfile?.avatar_badge_id || null,
+              profile_image_url: msgProfile?.profile_image_url || null,
+              last_seen: msgByName.created_at
+            });
+            DEBUG && console.log('🔥 Built user from message username:', user);
+          }
+        }
       }
     }
 

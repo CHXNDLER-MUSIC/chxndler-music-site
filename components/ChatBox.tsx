@@ -8,15 +8,17 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 
 const PAGE_SIZE = 50;
 
-const MESSAGE_COLS = 'id, user_id, username, message, created_at, is_system';
+// Read from the combined public view (auth + guest messages)
+const MESSAGE_COLS = 'id, username, message, created_at, is_system, source';
 
 interface HeartSignalMessage {
   id: string;
-  user_id: string;
+  user_id: string | null;
   username: string;
   message: string;
   created_at: string;
   is_system?: boolean;
+  source?: 'auth' | 'guest';
   // Client-only fields for optimistic UI
   client_id?: string;
   status?: 'pending' | 'failed';
@@ -28,14 +30,20 @@ interface ChatBoxProps {
   showInput?: boolean;
 }
 
-const normalizeRow = (row: any): HeartSignalMessage => ({
-  id: row.id,
-  user_id: row.user_id,
-  username: row.username ?? 'ALIEN',
-  message: row.message,
-  created_at: row.created_at,
-  is_system: row.is_system,
-});
+const normalizeRow = (row: any, sourceOverride?: 'auth' | 'guest'): HeartSignalMessage => {
+  const source: 'auth' | 'guest' = sourceOverride ?? row.source ?? 'auth';
+  return {
+    id: row.id,
+    user_id: row.user_id ?? null,
+    username: row.username ?? 'ALIEN',
+    message: row.message,
+    created_at: row.created_at,
+    is_system: row.is_system,
+    source,
+    // Stable client_id scoped by source so auth and guest IDs never collide as React keys
+    client_id: row.client_id ?? (row.id ? `${source}-${row.id}` : undefined),
+  };
+};
 
 export default function ChatBox({
   className = "",
@@ -56,13 +64,13 @@ export default function ChatBox({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Load recent messages with optional cursor for pagination
+  // Load recent messages with optional cursor for pagination (reads from combined view)
   const loadMessages = async (cursor?: string) => {
     try {
       setFetchError(null);
 
       let query = supabaseClient
-        .from('heart_signal_messages')
+        .from('heart_signal_messages_public')
         .select(MESSAGE_COLS)
         .order('created_at', { ascending: false })
         .limit(cursor ? PAGE_SIZE : maxMessages);
@@ -114,7 +122,34 @@ export default function ChatBox({
     await loadMessages();
   };
 
-  // Subscribe to real-time messages with dedup
+  // Shared handler for incoming realtime inserts from either table
+  const handleIncomingMessage = (incoming: HeartSignalMessage) => {
+    setMessages(prev => {
+      // Dedup by source-scoped id
+      if (prev.some(m => m.id === incoming.id && m.source === incoming.source)) return prev;
+
+      // Reconcile optimistic: match by user_id+message for auth, or username+message for guest
+      const optIdx = prev.findIndex(m =>
+        m.status === 'pending' &&
+        m.message === incoming.message &&
+        (incoming.source === 'auth'
+          ? m.user_id === incoming.user_id
+          : m.username === incoming.username)
+      );
+
+      if (optIdx >= 0) {
+        const next = [...prev];
+        next[optIdx] = { ...incoming, client_id: prev[optIdx].client_id };
+        return next;
+      }
+
+      const updated = [...prev, incoming];
+      return updated.slice(-maxMessages);
+    });
+    setTimeout(scrollToBottom, 100);
+  };
+
+  // Subscribe to both tables so guest and auth messages appear in realtime
   const subscribeToMessages = () => {
     if (channelRef.current) {
       supabaseClient.removeChannel(channelRef.current);
@@ -126,24 +161,14 @@ export default function ChatBox({
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'heart_signal_messages' },
         (payload) => {
-          const incoming = normalizeRow(payload.new);
-          setMessages(prev => {
-            if (prev.some(m => m.id === incoming.id)) return prev;
-
-            const optIdx = prev.findIndex(
-              m => m.status === 'pending' && m.user_id === incoming.user_id && m.message === incoming.message
-            );
-
-            if (optIdx >= 0) {
-              const next = [...prev];
-              next[optIdx] = { ...incoming, client_id: prev[optIdx].client_id };
-              return next;
-            }
-
-            const updated = [...prev, incoming];
-            return updated.slice(-maxMessages);
-          });
-          setTimeout(scrollToBottom, 100);
+          handleIncomingMessage(normalizeRow(payload.new, 'auth'));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'heart_signal_guest_messages' },
+        (payload) => {
+          handleIncomingMessage(normalizeRow(payload.new, 'guest'));
         }
       )
       .subscribe();
@@ -310,8 +335,8 @@ export default function ChatBox({
 
             return (
               <motion.div
-                // Prefer client identity to keep key stable across reconciliation
-                key={`${msg.client_id || (msg as any).dedupe_key || msg.id || 'm'}`}
+                // Source-aware key prevents auth/guest UUID collisions
+                key={msg.client_id || `${msg.source ?? 'auth'}-${msg.id}` || 'm'}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: isPending ? 0.6 : 1, y: 0 }}
                 className={`text-sm rounded p-2 ${

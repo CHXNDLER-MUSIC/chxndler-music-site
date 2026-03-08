@@ -1,10 +1,11 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { randomUUID } from 'crypto';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
-// POST - Send a new heart signal message (authenticated users only)
+// POST - Send a new heart signal message
+// Authenticated users → heart_signal_messages
+// Logged-out/guest users → heart_signal_guest_messages
 export async function POST(req: Request) {
   if (process.env.NODE_ENV !== "production") console.log("✅ HEART SIGNAL ROUTE HIT (APP ROUTER)");
   try {
@@ -13,18 +14,6 @@ export async function POST(req: Request) {
     const raw = (body?.message ?? body?.messageText ?? "").toString();
     const message = raw.trim();
     const displayName = (body?.displayName ?? body?.username ?? "").toString().trim();
-    const clientNonce = (body?.client_nonce ?? '').toString().trim() || null;
-    const dedupeKey = (body?.dedupe_key ?? clientNonce ?? '').toString().trim() || null;
-
-    // Normalize sender_guest_id: prefer body.sender_guest_id; also accept legacy body.guest_id
-    // Accept raw UUIDs or values prefixed with 'guest_' / 'guest-'
-    const rawGuestIdInput = (body?.sender_guest_id ?? body?.guest_id ?? '').toString().trim();
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    let senderGuestId: string | null = null;
-    if (rawGuestIdInput && rawGuestIdInput !== 'guest_ssr_placeholder') {
-      const stripped = rawGuestIdInput.replace(/^guest[_-]/i, '');
-      senderGuestId = uuidRegex.test(stripped) ? stripped : null;
-    }
 
     if (!message) {
       return NextResponse.json(
@@ -70,8 +59,6 @@ export async function POST(req: Request) {
     ).toString().trim().substring(0, 64) || "ALIEN";
 
     // Try to get an admin client for privileged writes if available.
-    // If not available (e.g. missing service role key), we will fall back
-    // to using the RLS-aware client below.
     let admin: ReturnType<typeof getSupabaseAdmin> | null = null;
     try {
       admin = getSupabaseAdmin();
@@ -79,86 +66,90 @@ export async function POST(req: Request) {
       admin = null;
     }
 
-    // Determine if this is a system message (sent by the app, not a user)
     const isSystem = Boolean(body?.is_system);
-
-    // Build insert payload respecting DB constraints: exactly one sender identity
-    // - System: no user_id or guest_id
-    // - Auth user: user_id set, guest_id null
-    // - Guest: guest_id set, user_id null
-    const insertPayload: any = {
-      username,
-      message,
-      is_system: isSystem,
-      // allow client-provided dedupe_key for optimistic reconciliation
-      dedupe_key: dedupeKey,
-    };
-
-    if (isSystem) {
-      // System path: no sender set
-      insertPayload.user_id = null;
-      insertPayload.guest_id = null;
-      insertPayload.sender_user_id = null;
-      insertPayload.sender_guest_id = null;
-    } else if (userId) {
-      // Authenticated user path
-      insertPayload.user_id = userId; // keep legacy column for compatibility
-      insertPayload.guest_id = null;
-      insertPayload.sender_user_id = userId;
-      insertPayload.sender_guest_id = null;
-    } else {
-      // Guest path: require sender_guest_id
-      if (!senderGuestId) {
-        return NextResponse.json(
-          { ok: false, error: 'sender_guest_id is required for guest messages' },
-          { status: 400 }
-        );
-      }
-      insertPayload.user_id = null; // ensure not attributed to any user
-      insertPayload.guest_id = senderGuestId; // keep legacy column for compatibility
-      insertPayload.sender_user_id = null;
-      insertPayload.sender_guest_id = senderGuestId;
-    }
-
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[heart-signal] Insert payload:', insertPayload);
-    }
+    const clientNonce = (body?.client_nonce ?? '').toString().trim() || null;
+    const dedupeKey = (body?.dedupe_key ?? clientNonce ?? '').toString().trim() || null;
 
     let data: any = null;
     let error: any = null;
 
-    if (admin) {
-      ({ data, error } = await admin
-        .from("heart_signal_messages")
-        .insert(insertPayload)
-        .select("*")
-        .single());
-    } else {
-      // Fallback path: insert via RLS-aware client
-      // - Authenticated users: policy "authenticated insert heart signal messages" allows insert when auth.uid() = user_id
-      // - Guests (anon): requires DB policy permitting anon inserts with user_id null (added in migration)
-      const rlsPayload: any = { ...insertPayload };
-      // Ensure we don't accidentally attribute a guest as a user in RLS mode
-      if (!userId) {
-        rlsPayload.user_id = null;
+    if (userId) {
+      // ── Authenticated user → heart_signal_messages ──
+      const insertPayload: any = {
+        username,
+        message,
+        is_system: isSystem,
+        dedupe_key: dedupeKey,
+        user_id: userId,
+        guest_id: null,
+        sender_user_id: userId,
+        sender_guest_id: null,
+      };
+
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[heart-signal] Auth insert payload:', { username, isSystem, userId });
       }
 
-      ({ data, error } = await supabase
-        .from('heart_signal_messages')
-        .insert(rlsPayload)
-        .select('*')
-        .single());
-    }
+      if (admin) {
+        ({ data, error } = await admin
+          .from("heart_signal_messages")
+          .insert(insertPayload)
+          .select("*")
+          .single());
+      } else {
+        ({ data, error } = await supabase
+          .from('heart_signal_messages')
+          .insert(insertPayload)
+          .select('*')
+          .single());
+      }
 
-    if (error) {
-      console.error("heart-signal insert error:", error);
-      return NextResponse.json(
-        { ok: false, error: error.message, code: error.code, details: error.details, hint: error.hint },
-        { status: 500 }
-      );
-    }
+      if (error) {
+        console.error("[heart-signal] Auth insert error:", error);
+        return NextResponse.json(
+          { ok: false, error: error.message, code: error.code, details: error.details, hint: error.hint },
+          { status: 500 }
+        );
+      }
 
-    return NextResponse.json({ ok: true, message: data });
+      return NextResponse.json({ ok: true, message: { ...data, source: 'auth' } });
+    } else {
+      // ── Guest / logged-out user → heart_signal_guest_messages ──
+      // Only send username, message, is_system — no sender identity columns needed
+      const guestPayload = {
+        username: username.trim() || 'ALIEN',
+        message,
+        is_system: isSystem,
+      };
+
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[heart-signal] Guest insert payload:', guestPayload);
+      }
+
+      if (admin) {
+        ({ data, error } = await admin
+          .from("heart_signal_guest_messages")
+          .insert(guestPayload)
+          .select("*")
+          .single());
+      } else {
+        ({ data, error } = await supabase
+          .from('heart_signal_guest_messages')
+          .insert(guestPayload)
+          .select('*')
+          .single());
+      }
+
+      if (error) {
+        console.error("[heart-signal] Guest insert error:", error);
+        return NextResponse.json(
+          { ok: false, error: error.message, code: error.code, details: error.details, hint: error.hint },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ ok: true, message: { ...data, source: 'guest' } });
+    }
   } catch (err: any) {
     console.error("heart-signal POST crash:", err);
     return NextResponse.json(
@@ -173,7 +164,8 @@ export async function POST(req: Request) {
   }
 }
 
-// GET - Fetch recent messages
+// GET - Fetch recent messages from the combined public view
+// Returns messages from both heart_signal_messages (auth) and heart_signal_guest_messages (guest)
 export async function GET(req: NextRequest) {
   try {
     const admin = getSupabaseAdmin();
@@ -181,8 +173,8 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(url.searchParams.get('limit') || '50');
 
     const { data, error } = await admin
-      .from('heart_signal_messages')
-      .select('id, user_id, guest_id, username, message, created_at, is_system, dedupe_key, heart_count, water_count, lightning_count, darkness_count, alien_count')
+      .from('heart_signal_messages_public')
+      .select('id, username, message, created_at, is_system, source')
       .order('created_at', { ascending: false })
       .limit(limit);
 

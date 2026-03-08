@@ -193,9 +193,9 @@ function ChatMessage({ message, onUserClick, onUserClickByName, reactions, onRea
   
   const userProfile = message.user_profile;
   const displayName = userProfile?.name || message.username || 'Anonymous';
-  // Resolve element/profile image from message, known users, or current user
-  // Guests have user_id = null and always have 'alien' element
-  const isGuestMessage = message.user_id === null;
+  // Use source field if present (added when reading from combined view), fall back to user_id check
+  // This prevents auth history messages (user_id=null from view) being wrongly treated as guests
+  const isGuestMessage = message.source ? message.source === 'guest' : message.user_id === null;
   const senderId = message.user_id || `guest-${displayName}`;
   const resolvedElement = isGuestMessage ? 'alien' : ((userProfile?.element) || (userProfilesById?.[senderId]?.element) || ((senderId === currentUserId) ? currentUserElement : null));
   const elementColor = resolvedElement ? getElementColor(resolvedElement) : undefined;

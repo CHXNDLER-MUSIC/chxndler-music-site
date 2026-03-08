@@ -3208,7 +3208,7 @@ const HUDPanel = React.memo(function HUDPanel({
                         className="hud-play-btn-enhanced"
                         aria-label={audioManager.playing ? "Pause" : "Play"}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                        style={{ marginTop: 1, marginLeft: -6, width: 36, height: 36 }}
+                        style={{ marginTop: 1, marginLeft: -6, width: 36, height: 36, pointerEvents: 'auto' }}
                         data-tour-id="music-power-button"
                       >
                         {audioManager.playing ? (
@@ -3243,7 +3243,7 @@ const HUDPanel = React.memo(function HUDPanel({
                           ref={lyricsBtnRef}
                           type="button"
                           className="hud-lyrics-btn"
-                          style={{ marginTop: 1 }}
+                          style={{ marginTop: 1, pointerEvents: 'auto' }}
                           title={lyricsTitle}
                           aria-label={lyricsAria}
                           data-id="lyrics"
@@ -3307,6 +3307,8 @@ const HUDPanel = React.memo(function HUDPanel({
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
+                            // Prevent accidental cross-trigger when YouTube was pressed
+                            if (lastTopControlRef.current === 'yt') { lastTopControlRef.current = ''; return; }
                             try { sfx.play('join-aliens', 0.9); } catch {}
                             try {
                               const { toAppleEmbed } = require('@/lib/apple');
@@ -3347,6 +3349,8 @@ const HUDPanel = React.memo(function HUDPanel({
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
+                            // Prevent accidental cross-trigger when YouTube was pressed
+                            if (lastTopControlRef.current === 'yt') { lastTopControlRef.current = ''; return; }
                             try { sfx.play('join-aliens', 0.9); } catch {}
                             try {
                               const { toSpotifyEmbed } = require('@/lib/spotify');
