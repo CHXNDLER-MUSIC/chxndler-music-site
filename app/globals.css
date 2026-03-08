@@ -1035,7 +1035,11 @@ img[src$="/elements/music.webp"] {
   text-decoration: none;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 0 12px rgba(242,239,29,.45);
+  will-change: transform, box-shadow;
+  box-shadow: 0 4px 16px rgba(242,239,29,.55);
+  position: relative;
+  z-index: 1000; /* keep above adjacent icons like volume */
+  isolation: isolate;
   flex-shrink: 0;
 }
 
@@ -1049,10 +1053,10 @@ img[src$="/elements/music.webp"] {
   display: none !important;
 }
 .hud-lyrics-btn:hover{
-  transform: scale(1.1);
+  transform: scale(1.08); /* match volume button growth */
   background: linear-gradient(135deg, #FFFF8A, #F5F030);
-  box-shadow: 0 0 18px rgba(242,239,29,.85), 0 0 36px rgba(242,239,29,.45);
-  border-color: rgba(255,255,255,.8);
+  box-shadow: 0 6px 22px rgba(242,239,29,0.9), 0 0 36px rgba(242,239,29,0.55);
+  border-color: rgba(255,255,255,0.7);
 }
 .hud-lyrics-btn:active{ transform: scale(0.95); }
 
@@ -1328,12 +1332,13 @@ img[src$="/elements/music.webp"] {
   position: relative;
   /* Keep Apple below volume to avoid blocking clicks */
   z-index: 1;
+  /* Limit hit area to the visible circle to avoid stray overlaps */
+  clip-path: circle(50% at 50% 50%);
 }
 .apple-btn-waveform-hud:hover{
   background: linear-gradient(135deg, #FF2D55, #FF1744);
   box-shadow: 0 0 22px rgba(255, 59, 48, 0.75), 0 0 8px rgba(255, 45, 85, 0.5);
   border-color: rgba(255,255,255,.7);
-  transform: scale(1.18);
 }
 .apple-btn-waveform-hud:active{ }
 
@@ -1692,9 +1697,11 @@ button:hover > .heart-coin-glow,
 }
 .apple-btn-waveform-hud svg{
   filter: drop-shadow(0 0 6px rgba(255,59,48,0.95)) drop-shadow(0 0 12px rgba(255,59,48,0.7));
+  transition: transform 0.2s ease;
 }
 .apple-btn-waveform-hud:hover svg{
   filter: drop-shadow(0 0 8px rgba(255,59,48,1)) drop-shadow(0 0 16px rgba(255,59,48,0.9));
+  transform: scale(1.14);
 }
 .hud-play-btn-enhanced svg{
   filter: drop-shadow(0 0 6px rgba(25,227,255,0.9)) drop-shadow(0 0 12px rgba(25,227,255,0.65));

@@ -371,6 +371,7 @@ const HUDPanel = React.memo(function HUDPanel({
   const [showYouTubePopover, setShowYouTubePopover] = useState(false);
   // Track last top-control pressed to avoid cross-triggering between YouTube and Apple
   const lastTopControlRef = useRef('');
+  const lastTopControlAtRef = useRef(0);
   const [showSpotifyPopover, setShowSpotifyPopover] = useState(false);
   const [spEmbedUrl, setSpEmbedUrl] = useState(null);
   const [ytEmbedUrl, setYtEmbedUrl] = useState('');
@@ -3187,7 +3188,7 @@ const HUDPanel = React.memo(function HUDPanel({
                       <div className="hud-top-controls" style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 10,
+                        gap: 12,
                         position: 'absolute',
                         // Keep inside blue display; nudge slightly right
                         left: 6,
@@ -3307,8 +3308,11 @@ const HUDPanel = React.memo(function HUDPanel({
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            // Prevent accidental cross-trigger when YouTube was pressed
-                            if (lastTopControlRef.current === 'yt') { lastTopControlRef.current = ''; return; }
+                            // Prevent accidental cross-trigger when YouTube was just pressed
+                            try {
+                              const recent = (Date.now() - (lastTopControlAtRef.current || 0)) < 600;
+                              if (lastTopControlRef.current === 'yt' || recent) { lastTopControlRef.current = ''; return; }
+                            } catch {}
                             try { sfx.play('join-aliens', 0.9); } catch {}
                             try {
                               const { toAppleEmbed } = require('@/lib/apple');
@@ -3349,8 +3353,11 @@ const HUDPanel = React.memo(function HUDPanel({
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            // Prevent accidental cross-trigger when YouTube was pressed
-                            if (lastTopControlRef.current === 'yt') { lastTopControlRef.current = ''; return; }
+                            // Prevent accidental cross-trigger when YouTube was just pressed
+                            try {
+                              const recent = (Date.now() - (lastTopControlAtRef.current || 0)) < 600;
+                              if (lastTopControlRef.current === 'yt' || recent) { lastTopControlRef.current = ''; return; }
+                            } catch {}
                             try { sfx.play('join-aliens', 0.9); } catch {}
                             try {
                               const { toSpotifyEmbed } = require('@/lib/spotify');
@@ -3396,6 +3403,7 @@ const HUDPanel = React.memo(function HUDPanel({
                             try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
                             try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
                             lastTopControlRef.current = 'yt';
+                            try { lastTopControlAtRef.current = Date.now(); } catch {}
                           }}
                           onTouchStart={(e) => {
                             // Mobile Safari: also guard on touchstart
@@ -3404,6 +3412,7 @@ const HUDPanel = React.memo(function HUDPanel({
                             try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
                             try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
                             lastTopControlRef.current = 'yt';
+                            try { lastTopControlAtRef.current = Date.now(); } catch {}
                           }}
                           onClick={(e) => {
                             e.preventDefault();

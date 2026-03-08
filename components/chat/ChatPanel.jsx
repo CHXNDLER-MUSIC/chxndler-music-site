@@ -487,11 +487,70 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
   const [activeTab, setActiveTab] = useState('chat'); // 'chat', 'voting', 'badges', 'cards'
   const [isVotingPanelCollapsed, setIsVotingPanelCollapsed] = useState(true); // Start collapsed by default
   const channelRef = useRef(null);
+  // Track which selectedUser.id we've already hydrated so we don't refetch on every render
+  const profileHydratedForRef = useRef(null);
 
   // Notify parent when a user profile is opened/closed
   useEffect(() => {
     onProfileOpen?.(!!selectedUser);
   }, [selectedUser, onProfileOpen]);
+
+  // Hydrate selectedUser with full profile data (element, profile_image_url, etc.)
+  // Runs whenever the selected user changes. Works for both logged-in and logged-out viewers.
+  useEffect(() => {
+    if (!selectedUser) return;
+    // Guests never have a DB profile to fetch
+    if (selectedUser.element === 'alien') return;
+    // Already hydrated this user
+    if (profileHydratedForRef.current === selectedUser.id) return;
+    // Already has image and element — nothing to fetch
+    if (selectedUser.profile_image_url && selectedUser.element) return;
+
+    profileHydratedForRef.current = selectedUser.id;
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const isUUID = uuidRegex.test(selectedUser.id || '');
+    const nameToLookup = selectedUser.name;
+
+    if (!nameToLookup) return;
+
+    (async () => {
+      try {
+        let query = supabaseClient
+          .from('profiles')
+          .select('id, name, element, profile_image_url, avatar_badge_id, journey, heartcoin_total, daily_streak');
+
+        if (isUUID) {
+          query = query.eq('id', selectedUser.id);
+        } else {
+          // Fell back to guest-NAME id — look up by display name
+          query = query.eq('name', nameToLookup);
+        }
+
+        const { data, error } = await query.maybeSingle();
+        if (error || !data) return;
+
+        // Merge fetched data into selectedUser without changing the id
+        // (keeps the effect dependency stable and avoids a second hydration loop)
+        setSelectedUser(prev => {
+          if (!prev || prev.id !== selectedUser.id) return prev;
+          return {
+            ...prev,
+            element: data.element || prev.element,
+            profile_image_url: data.profile_image_url ?? prev.profile_image_url,
+            avatar_badge_id: data.avatar_badge_id ?? prev.avatar_badge_id,
+            journey: data.journey ?? prev.journey,
+            heartcoin_total: data.heartcoin_total ?? prev.heartcoin_total,
+            daily_streak: data.daily_streak ?? prev.daily_streak,
+            // Store the real UUID so card fetches can use it
+            resolved_user_id: data.id,
+          };
+        });
+      } catch (err) {
+        if (process.env.NODE_ENV !== 'production') console.warn('[ChatPanel] profile hydration failed:', err);
+      }
+    })();
+  }, [selectedUser?.id]);
 
   // Initialize chat users when chat opens — only after identity is resolved
   useEffect(() => {
@@ -1243,6 +1302,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
     // Toggle profile - if clicking on same user, close profile
     if (selectedUser && selectedUser.id === userId) {
       DEBUG && console.log('🔥 Closing profile for same user');
+      profileHydratedForRef.current = null;
       setSelectedUser(null);
       setSelectedUserCards([]);
       setShowUserBadges(false);
@@ -1960,30 +2020,26 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
                                 </div>
                                 
                                 {/* Journey directly below user name */}
-                                <span
-                                  className={"text-base font-bold " + (
-                                    ((selectedUser.id === 'anonymous')
-                                      ? 'WANDERER'
-                                      : (user && profile?.journey)
-                                        ? String(profile.journey).toUpperCase()
-                                        : 'WANDERER') === 'LOVER'
-                                      ? 'text-pink-400'
-                                      : (((selectedUser.id === 'anonymous')
-                                          ? 'WANDERER'
-                                          : (user && profile?.journey)
-                                            ? String(profile.journey).toUpperCase()
-                                            : 'WANDERER') === 'DREAMER'
-                                          ? 'text-yellow-400'
-                                          : 'text-cyan-400')
-                                  )}
-                                  style={{ lineHeight: '1.2' }}
-                                >
-                                  { (selectedUser.id === 'anonymous')
+                                {(() => {
+                                  const journeyVal = selectedUser.id === 'anonymous'
                                     ? 'WANDERER'
-                                    : (user && profile?.journey)
-                                      ? String(profile.journey).toUpperCase()
-                                      : 'WANDERER' }
-                                </span>
+                                    : (selectedUser.journey
+                                        ? String(selectedUser.journey).toUpperCase()
+                                        : 'WANDERER');
+                                  const journeyColor = journeyVal === 'LOVER'
+                                    ? 'text-pink-400'
+                                    : journeyVal === 'DREAMER'
+                                      ? 'text-yellow-400'
+                                      : 'text-cyan-400';
+                                  return (
+                                    <span
+                                      className={`text-base font-bold ${journeyColor}`}
+                                      style={{ lineHeight: '1.2' }}
+                                    >
+                                      {journeyVal}
+                                    </span>
+                                  );
+                                })()}
                                 
                                 {/* Element name */}
                                 <div className="mt-1">
@@ -2119,6 +2175,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
                             } catch (error) {
                               if (process.env.NODE_ENV !== "production") console.log('Close audio creation failed:', error);
                             }
+                            profileHydratedForRef.current = null;
                             setSelectedUser(null);
                             setSelectedUserCards([]);
                             setShowUserBadges(false);
@@ -2153,22 +2210,18 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
                               draggable={false}
                             />
                             <span className="text-lg text-pink-400 font-bold">
-                              {selectedUser.id === 'anonymous' 
-                                ? 0 
-                                : (user && profile?.heartcoin_balance !== undefined) 
-                                  ? profile.heartcoin_balance 
-                                  : (selectedUser.total_heart_coins || 0)
+                              {selectedUser.id === 'anonymous'
+                                ? 0
+                                : (selectedUser.heartcoin_total ?? selectedUser.total_heart_coins ?? 0)
                               }
                             </span>
                             <span className="text-sm text-white/80">earned</span>
                           </div>
                           <div className="text-sm text-white/80 text-center bg-black/30 px-1 py-0.5 rounded -mt-0.5">
                             <span className="text-yellow-400 font-bold">
-                              Streak: {selectedUser.id === 'anonymous' 
-                                ? 0 
-                                : (user && profile?.daily_streak !== undefined) 
-                                  ? profile.daily_streak 
-                                  : 0
+                              Streak: {selectedUser.id === 'anonymous'
+                                ? 0
+                                : (selectedUser.daily_streak ?? 0)
                               } Days
                             </span>
                           </div>
