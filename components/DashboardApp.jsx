@@ -1447,8 +1447,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
   // Function to open HeartCoin modal with a specific tab
   const openHeartCoinModal = React.useCallback((tab = 'earn') => {
+    // Ensure Welcome Home is closed before opening HeartCoin
+    try { window.dispatchEvent(new CustomEvent('closeWelcomeHomeModal')); } catch {}
+    setShowWelcomeHomeModal(false);
     setHeartCoinModalTab(tab);
-    setShowHeartCoinModal(true);
+    // Small delay to avoid overlap during close animation
+    setTimeout(() => setShowHeartCoinModal(true), 60);
   }, []);
 
 

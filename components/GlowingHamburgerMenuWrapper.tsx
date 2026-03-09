@@ -78,8 +78,14 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
     };
 
     const handleOpenHeartCoinModal = () => {
+      // If Welcome Home is open anywhere, close it first to avoid overlap
+      try { window.dispatchEvent(new CustomEvent('closeWelcomeHomeModal')); } catch {}
+      setWelcomeHomeOpen(false);
       try { onBeamColorChange?.('pink'); } catch {}
-      setHeartCoinOpen(true);
+      // Small delay to ensure Welcome Home closes before opening HeartCoin
+      setTimeout(() => {
+        setHeartCoinOpen(true);
+      }, 60);
     };
 
     const handleOpenWelcomeHomeModal = () => {
@@ -229,7 +235,10 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
             (window as any).priceHeartCoinsFromStore = true;
           }
           try { onBeamColorChange?.('white'); } catch {}
-          setHeartCoinOpen(true);
+          // Ensure Welcome Home is fully closed before opening HeartCoin
+          try { window.dispatchEvent(new CustomEvent('closeWelcomeHomeModal')); } catch {}
+          setWelcomeHomeOpen(false);
+          setTimeout(() => setHeartCoinOpen(true), 60);
           break;
         case "CHXNDLER":
           setChxndlerOpen(true);

@@ -224,12 +224,22 @@ export default function ProfileBar({
 
   // Panel toggle function
   const togglePanel = (panelKey: ActivePanel) => {
+    // If opening heartcoins while Welcome Home is visible, close Welcome Home first
+    if (panelKey === 'heartcoins') {
+      try { window.dispatchEvent(new CustomEvent('closeWelcomeHomeModal')); } catch {}
+      setShowWelcomeHome(false);
+    }
+
     if (activePanel === panelKey) {
       // Same panel clicked, close it
       setActivePanel(null);
     } else {
-      // Different panel clicked, open it
-      setActivePanel(panelKey);
+      // Different panel clicked, open it (slight defer if we just closed Welcome Home)
+      if (panelKey === 'heartcoins') {
+        setTimeout(() => setActivePanel(panelKey), 50);
+      } else {
+        setActivePanel(panelKey);
+      }
     }
   };
 

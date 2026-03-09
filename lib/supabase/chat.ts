@@ -491,26 +491,31 @@ export class ChatService {
       }
 
       if (userIds.length > 0) {
-        // PostgREST sometimes returns 400 for in() with a single UUID on some setups.
-        // Use eq() for single id to avoid that edge case.
-        const profileQuery = supabaseClient
-          .from('profiles')
-          .select('id, name, element, avatar_badge_id, profile_image_url');
+        // Decide which view/table to query based on auth presence.
+        // For logged-out viewers, query the public view to satisfy RLS and expose only public fields.
+        const { data: authSession } = await supabaseClient.auth.getSession();
+        const isAuthed = !!authSession?.session?.user;
+
+        // Build base query against appropriate source
+        const baseQuery = isAuthed
+          ? supabaseClient.from('profiles').select('id, name, element, avatar_badge_id, profile_image_url')
+          : supabaseClient.from('public_profiles_table').select('id, name, element, profile_image_url');
 
         const { data: profiles, error: profileError } = userIds.length === 1
-          ? await profileQuery.eq('id', userIds[0])
-          : await profileQuery.in('id', userIds);
+          ? await baseQuery.eq('id', userIds[0])
+          : await baseQuery.in('id', userIds);
 
         if (!profileError && profiles) {
-          for (const profile of profiles) {
+          for (const profile of profiles as any[]) {
             const existingUser = uniqueUsers.get(profile.id);
             if (existingUser) {
               uniqueUsers.set(profile.id, {
                 ...existingUser,
                 name: profile.name || existingUser.name,
-                element: profile.element as ElementType | null,
-                avatar_badge_id: profile.avatar_badge_id,
-                profile_image_url: profile.profile_image_url
+                element: (profile.element as ElementType | null) ?? existingUser.element ?? null,
+                // avatar_badge_id may not exist on the public view — preserve existing value
+                avatar_badge_id: (profile as any).avatar_badge_id ?? existingUser.avatar_badge_id ?? null,
+                profile_image_url: profile.profile_image_url ?? existingUser.profile_image_url ?? null,
               });
             }
           }

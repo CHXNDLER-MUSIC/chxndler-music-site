@@ -125,12 +125,13 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "S
               disabled={disabled}
               maxLength={500}
               rows={1}
-              className="w-full resize-none rounded-lg px-3 text-sm focus:outline-none"
+              className="w-full resize-none rounded-lg px-3 focus:outline-none"
               style={{
                 height: '44px',
                 minHeight: '44px',
                 maxHeight: '44px',
                 padding: '10px 12px',
+                fontSize: '16px',
                 lineHeight: '24px',
                 background: 'rgba(0, 0, 0, 0.6)',
                 border: `2px solid ${getElementColor(currentUserElement)}`,

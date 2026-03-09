@@ -776,7 +776,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         // Don't override tab settings if this is from the STORE menu
         if (typeof window !== 'undefined' && (window as any).priceHeartCoinsFromStore) {
           // Just open the modal, don't change tab settings
-          setOpen(true);
+          try { window.dispatchEvent(new CustomEvent('closeWelcomeHomeModal')); } catch {}
+          setTimeout(() => setOpen(true), 50);
           return;
         }
         
@@ -795,9 +796,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             setSelectedSong('');
             setSelectedSongSlug('');
             setSelectedCardElement(null);
-            // Mark as from collect and open modal
+            // Mark as from collect and open modal (ensure Welcome Home is closed first)
             setIsFromCollectCard(true);
-            setOpen(true);
+            try { window.dispatchEvent(new CustomEvent('closeWelcomeHomeModal')); } catch {}
+            setTimeout(() => setOpen(true), 50);
             // Fetch cards if needed so counts render
             try { if (cards.length === 0) { fetchCards(); } } catch {}
             return;
@@ -825,9 +827,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           } catch {}
         }
         
-        // Mark as opened from collect card and open the modal
+        // Mark as opened from collect card and open the modal (ensure Welcome Home is closed first)
         setIsFromCollectCard(true);
-        setOpen(true);
+        try { window.dispatchEvent(new CustomEvent('closeWelcomeHomeModal')); } catch {}
+        setTimeout(() => setOpen(true), 50);
 
         // Ensure cards are fetched immediately when opening from collect
         try {

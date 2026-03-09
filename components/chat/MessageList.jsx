@@ -196,7 +196,7 @@ function ChatMessage({ message, onUserClick, onUserClickByName, reactions, onRea
   // Use source field if present (added when reading from combined view), fall back to user_id check
   // This prevents auth history messages (user_id=null from view) being wrongly treated as guests
   const isGuestMessage = message.source ? message.source === 'guest' : message.user_id === null;
-  const senderId = message.user_id || `guest-${displayName}`;
+  const senderId = isGuestMessage ? `guest-${displayName}` : (message.user_id || `auth-${displayName}`);
   const resolvedElement = isGuestMessage ? 'alien' : ((userProfile?.element) || (userProfilesById?.[senderId]?.element) || ((senderId === currentUserId) ? currentUserElement : null));
   const elementColor = resolvedElement ? getElementColor(resolvedElement) : undefined;
   const textColor = elementColor;

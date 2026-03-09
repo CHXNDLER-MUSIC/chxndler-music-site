@@ -438,20 +438,35 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
     try {
       (chatUsers || []).forEach(u => {
         if (!u?.id) return;
+        // Primary key by id
         map[u.id] = {
           element: u.element || null,
           profile_image_url: u.profile_image_url || null,
         };
+        // For authenticated senders where we only know their display name in initial history,
+        // also map an alias key `auth-<name>` so MessageList can resolve avatars before user_id arrives.
+        if (u.name && u.element !== 'alien') {
+          map[`auth-${u.name}`] = {
+            element: u.element || null,
+            profile_image_url: u.profile_image_url || null,
+          };
+        }
       });
       if (user && profile) {
         map[user.id] = {
           element: profile.element || null,
           profile_image_url: profile.profile_image_url || null,
         };
+        if (profile.name) {
+          map[`auth-${profile.name}`] = {
+            element: profile.element || null,
+            profile_image_url: profile.profile_image_url || null,
+          };
+        }
       }
     } catch {}
     return map;
-  }, [chatUsers, user?.id, profile?.element, profile?.profile_image_url]);
+  }, [chatUsers, user?.id, profile?.element, profile?.profile_image_url, profile?.name]);
   const [showRoomReactionTray, setShowRoomReactionTray] = useState(false);
   const [lastReactionTime, setLastReactionTime] = useState(0);
   const [lastLightningTime, setLastLightningTime] = useState(0);
@@ -516,9 +531,17 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
 
     (async () => {
       try {
-        let query = supabaseClient
-          .from('profiles')
-          .select('id, name, element, profile_image_url, avatar_badge_id, journey, heartcoin_total, daily_streak');
+        // If viewer is logged in, we can read from private profiles.
+        // Otherwise, query the public view to respect RLS and still get avatar/element.
+        const selectColsPrivate = 'id, name, element, profile_image_url, avatar_badge_id, journey, heartcoin_total, daily_streak';
+        const selectColsPublic = 'id, name, element, profile_image_url';
+
+        const { data: sessionCheck } = await supabaseClient.auth.getSession();
+        const isAuthed = !!sessionCheck?.session?.user;
+
+        let query = isAuthed
+          ? supabaseClient.from('profiles').select(selectColsPrivate)
+          : supabaseClient.from('public_profiles_table').select(selectColsPublic);
 
         if (isUUID) {
           query = query.eq('id', selectedUser.id);
@@ -530,20 +553,17 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
         const { data, error } = await query.maybeSingle();
         if (error || !data) return;
 
-        // Merge fetched data into selectedUser without changing the id
-        // (keeps the effect dependency stable and avoids a second hydration loop)
         setSelectedUser(prev => {
           if (!prev || prev.id !== selectedUser.id) return prev;
           return {
             ...prev,
-            element: data.element || prev.element,
-            profile_image_url: data.profile_image_url ?? prev.profile_image_url,
-            avatar_badge_id: data.avatar_badge_id ?? prev.avatar_badge_id,
-            journey: data.journey ?? prev.journey,
-            heartcoin_total: data.heartcoin_total ?? prev.heartcoin_total,
-            daily_streak: data.daily_streak ?? prev.daily_streak,
-            // Store the real UUID so card fetches can use it
-            resolved_user_id: data.id,
+            element: data?.element || prev.element,
+            profile_image_url: data?.profile_image_url ?? prev.profile_image_url,
+            avatar_badge_id: data?.avatar_badge_id ?? prev.avatar_badge_id,
+            journey: data?.journey ?? prev.journey,
+            heartcoin_total: data?.heartcoin_total ?? prev.heartcoin_total,
+            daily_streak: data?.daily_streak ?? prev.daily_streak,
+            resolved_user_id: data?.id,
           };
         });
       } catch (err) {
