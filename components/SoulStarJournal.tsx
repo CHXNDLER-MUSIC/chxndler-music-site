@@ -847,13 +847,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
   return (
     <div
-      className="fixed z-[100005] flex items-stretch justify-center pointer-events-none"
+      className="fixed z-[250] flex items-stretch justify-center pointer-events-none"
       style={{
-        top: 0,
+        top: '64px',
         left: 0,
         right: 0,
         bottom: 'calc(var(--light-beam-boundary) + var(--beam-height))',
-        paddingTop: '8vh',
         paddingLeft: '16px',
         paddingRight: '20px'
       }}
@@ -1208,7 +1207,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           </div>
 
           {/* Scrollable entries container for both PUBLIC and PRIVATE tabs */}
-          <div className="journal-scroll mt-3 space-y-3 flex-1 overflow-y-auto pr-1 pl-2">
+          <div className="journal-scroll mt-3 space-y-3 flex-1 overflow-y-auto pr-1 pl-2" style={{ overscrollBehavior: 'contain' }}>
             {activeTab === 'private' && !user?.id && (
               <div className="flex flex-col items-center justify-center py-16 space-y-4">
                 <div className="text-lg text-white/70 font-semibold text-center">Your soul star journal awaits</div>
@@ -1497,6 +1496,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           style={{
             height: '100%',
             overflowY: 'auto',
+            overscrollBehavior: 'contain',
             display: 'flex',
             flexDirection: 'column',
             background: 'rgba(0, 0, 0, 0.7)',

@@ -761,7 +761,7 @@ export default function JoinAliens({ visible = true } = {}) {
           setIsChatOpen(!isChatOpen);
           if (process.env.NODE_ENV !== "production") console.log('Setting chat state to:', !isChatOpen);
         }}
-        title="Open text chat"
+        title=""
         className="text-chat-button"
         style={{
           position: 'absolute',

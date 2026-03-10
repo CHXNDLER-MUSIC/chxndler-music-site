@@ -39,6 +39,8 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
   type Step = "request" | "verify" | "success";
   const [step, setStep] = useState<Step>("request");
   const [code, setCode] = useState("");
+  const codeInputRef = useRef<HTMLInputElement | null>(null);
+  const [canUseClipboard, setCanUseClipboard] = useState(false);
   const [justSent, setJustSent] = useState(false);
   const [resendSeconds, setResendSeconds] = useState(0);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
@@ -197,6 +199,10 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       setJustSent(true);
       setTimeout(() => setJustSent(false), 1000);
       setResendSeconds(60);
+      // Focus the code input to surface system OTP suggestions
+      setTimeout(() => {
+        try { codeInputRef.current?.focus(); } catch {}
+      }, 0);
     } catch (e: any) {
       // Show sanitized email in error message so users don't see invisible characters
       const errorMsg = e?.message || "Failed to send heart signal";
@@ -235,22 +241,9 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       if (error) throw error;
       setStep("success");
       setInfoMessage(null);
-      // Trigger Heartverse warp effect to center after successful confirmation
-      try {
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('planet:warp', {
-            detail: { element: 'center', isCenterPlanet: true }
-          }));
-        }
-      } catch {}
-      // After warp completes, navigate to homepage and play welcome back
-      try {
-        const WARP_DURATION_MS = 3500; // align with DashboardApp timing
-        setTimeout(() => {
-          try { audioHeartverse.playWelcomeHomeAndSpaceMusic(); } catch {}
-          try { router.replace('/'); } catch {}
-        }, WARP_DURATION_MS);
-      } catch {}
+      // Go straight to the homepage experience: play welcome + space music and navigate home
+      try { audioHeartverse.playWelcomeHomeAndSpaceMusic(); } catch {}
+      try { router.replace('/'); } catch {}
       // After success, ProfileContext should update and modal will close automatically
     } catch (e: any) {
       setError(e?.message || "Invalid or expired code. Try again.");
@@ -265,6 +258,15 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
     const id = setInterval(() => setResendSeconds((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(id);
   }, [resendSeconds]);
+
+  // When entering verify step, attempt to enable clipboard helper and focus input
+  useEffect(() => {
+    if (step === 'verify') {
+      try { codeInputRef.current?.focus(); } catch {}
+      // Clipboard API availability (actual read requires a user gesture)
+      setCanUseClipboard(typeof navigator !== 'undefined' && !!navigator.clipboard);
+    }
+  }, [step]);
 
   async function resendCode() {
     if (loading || resendSeconds > 0 || !email) return;
@@ -514,6 +516,8 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
                     setCode(digits);
                   }
                 }}
+                ref={codeInputRef}
+                enterKeyHint="done"
                 placeholder="••••••"
                 disabled={step === 'success'}
                 className="block w-full rounded-md border px-3 py-3 text-lg shadow-sm focus:outline-none disabled:opacity-50 text-center tracking-widest"
@@ -525,6 +529,30 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
                   backdropFilter: 'blur(4px)'
                 }}
               />
+              {canUseClipboard && (
+                <div className="flex justify-center mt-1">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const text = await navigator.clipboard.readText();
+                        const digits = (text || '').replace(/\D/g, '').slice(0, 6);
+                        if (digits.length === 6) {
+                          setCode(digits);
+                          // Attempt verification immediately when we have a full token
+                          verifyCode(digits);
+                        }
+                      } catch (err) {
+                        // Silently ignore clipboard errors; user can paste manually
+                      }
+                    }}
+                    className="underline text-xs"
+                    style={{ color: '#FF69B4' }}
+                  >
+                    Paste code from clipboard
+                  </button>
+                </div>
+              )}
             </div>
           )}
           
