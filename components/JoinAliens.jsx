@@ -9,6 +9,7 @@ import ChatPanel from "@/components/chat/ChatPanel";
 import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import EpisodesLibrary from "@/components/EpisodesLibrary";
 import { useGoLiveOverride } from "@/hooks/useGoLiveOverride";
+import YouTubeLive from "@/components/YouTubeLive";
 
 export default function JoinAliens({ visible = true } = {}) {
   const { profile, savePhone, user } = useProfile();
@@ -20,27 +21,8 @@ export default function JoinAliens({ visible = true } = {}) {
   const [heartSignalSent, setHeartSignalSent] = useState(false);
   const [status, setStatus] = useState("idle");
 
-  // Check if currently inside a broadcast window (Mon/Thu 7-8 PM ET)
-  const isInBroadcastWindow = () => {
-    const now = new Date();
-    const tz = 'America/New_York';
-    const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: tz,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }).formatToParts(now);
-    const get = (type) => parseInt(parts.find((p) => p.type === type)?.value ?? '0', 10);
-    const etHour = get('hour') === 24 ? 0 : get('hour');
-    const etDate = new Date(get('year'), get('month') - 1, get('day'));
-    const etDow = etDate.getDay();
-    return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 20;
-  };
-
-  const showTwitchEmbed = isOverrideActive || isInBroadcastWindow();
+  // YouTube Live status for indicator and embed
+  const [isLive, setIsLive] = useState(false);
   const [showWelcomeHome, setShowWelcomeHome] = useState(false);
   
   // Chat state
@@ -278,8 +260,8 @@ export default function JoinAliens({ visible = true } = {}) {
                 borderRadius: '50%',
                 background: '#FC54AF',
                 boxShadow: '0 0 8px #FC54AF, 0 0 16px #FC54AF',
-                animation: showTwitchEmbed ? 'signalBlink 1.2s ease-in-out infinite' : 'none',
-                opacity: showTwitchEmbed ? 1 : 0.5
+                animation: isLive ? 'signalBlink 1.2s ease-in-out infinite' : 'none',
+                opacity: isLive ? 1 : 0.5
               }}
             />
             <h1
@@ -309,33 +291,19 @@ export default function JoinAliens({ visible = true } = {}) {
         </div>
       </div>
 
-      {/* Twitch Stream Embed - Middle (only during broadcast or override) */}
-      {showTwitchEmbed ? (
-        <div style={{
+      {/* YouTube Live Embed (auto-detect) with countdown fallback */}
+      <YouTubeLive
+        forceLive={isOverrideActive}
+        onStatusChange={setIsLive}
+        pollMs={60_000}
+        className=""
+        style={{
           width: 'calc(100% + 16px)',
           padding: '0',
           margin: '-6px -8px 8px'
-        }}>
-          <iframe
-            src={`https://player.twitch.tv/?channel=chxndlerthealien&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}&autoplay=true&muted=true`}
-            width="100%"
-            style={{
-              aspectRatio: '16 / 9',
-              borderRadius: '0px',
-              border: 'none',
-              boxShadow: '0 0 15px rgba(252, 84, 175, 0.2)',
-              background: 'rgba(0, 0, 0, 0.8)',
-              display: 'block'
-            }}
-            frameBorder="0"
-            scrolling="no"
-            allowFullScreen
-            allow="autoplay; fullscreen"
-            title="CHXNDLER Twitch Stream"
-          />
-        </div>
-      ) : (
-        /* ── Cinematic Countdown ─────────────────────────────────── */
+        }}
+      >
+        {/* ── Cinematic Countdown ─────────────────────────────────── */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -463,7 +431,7 @@ export default function JoinAliens({ visible = true } = {}) {
             })()}
           </div>
         </div>
-      )}
+      </YouTubeLive>
 
       {/* Divider */}
       <div style={{
@@ -476,7 +444,7 @@ export default function JoinAliens({ visible = true } = {}) {
         marginBottom: '6px',
       }} />
 
-      {/* Tip amount buttons - horizontal row below Twitch embed */}
+      {/* Tip amount buttons - horizontal row below live embed */}
       {showTipOptions && (
         <div style={{
           display: 'flex',
@@ -557,7 +525,7 @@ export default function JoinAliens({ visible = true } = {}) {
         </div>
       )}
 
-      {/* Stay Connected Section - fits below Twitch embed */}
+      {/* Stay Connected Section - fits below live embed */}
       {showPhoneForm && (
       <div style={{
         padding: '12px 12px 0',
@@ -743,7 +711,6 @@ export default function JoinAliens({ visible = true } = {}) {
       </button>
       </div>
       </div>
-      )}
 
 
 

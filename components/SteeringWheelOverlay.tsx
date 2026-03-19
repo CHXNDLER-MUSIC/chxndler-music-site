@@ -183,7 +183,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
       try { window.dispatchEvent(new CustomEvent('closeWelcomeHomeModal')); } catch {}
       // Small delay ensures the welcome home display closes before live stream opens (prevents overlap/flicker)
       setTimeout(() => {
-        // Open pink display with Twitch embed
+        // Open pink display with live stream
         setActiveBeamColor('pink');
         onBeamColorChange?.('pink');
         onJoinToggle?.(true);
@@ -751,7 +751,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
           const joinSize: number = 72; // Fixed size to match yellow and blue buttons
           return (
             <div style={{ pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none' }}>
-              {/* Signal button for Twitch stream */}
+              {/* Signal button for live stream */}
               <HoloJoinButton size={joinSize} hubColor="#FC54AF" onClick={handleSignalToggle} label="Live Stream" iconSrc="/elements/antennas.webp" isActive={joinAlienOpen} dataTourId="signal-button" />
             </div>
           );

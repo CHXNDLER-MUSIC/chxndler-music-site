@@ -5,7 +5,7 @@ import { chatService } from '@/lib/supabase/chat';
 
 /**
  * Hook to track CHXNDLER's live streaming status
- * Checks both Supabase profile flag and can integrate with Twitch API
+ * Currently checks Supabase profile flag only.
  */
 export function useLiveStatus() {
   const [isLive, setIsLive] = useState(false);
@@ -24,8 +24,7 @@ export function useLiveStatus() {
       // Method 1: Check Supabase profile flag
       const supabaseStatus = await chatService.checkLiveStatus();
       
-      // Method 2: Optionally check Twitch API (if you have client ID)
-      // const twitchStatus = await checkTwitchAPI();
+      // External live providers are not queried here.
       
       // For now, use Supabase status
       // You can combine multiple sources here
@@ -42,59 +41,7 @@ export function useLiveStatus() {
     }
   }, []);
 
-  /**
-   * Optional: Check Twitch API directly
-   * Requires NEXT_PUBLIC_TWITCH_CLIENT_ID in your .env.local
-   */
-  const checkTwitchAPI = useCallback(async () => {
-    const clientId = process.env.NEXT_PUBLIC_TWITCH_CLIENT_ID;
-    const username = 'chxndlerthealien'; // Your Twitch username
-    
-    if (!clientId) {
-      if (process.env.NODE_ENV !== "production") console.warn('Twitch client ID not configured');
-      return false;
-    }
-
-    try {
-      // Get app access token
-      const tokenResponse = await fetch(`https://id.twitch.tv/oauth2/token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          client_id: clientId,
-          client_secret: process.env.NEXT_PUBLIC_TWITCH_CLIENT_SECRET || '',
-          grant_type: 'client_credentials'
-        })
-      });
-
-      if (!tokenResponse.ok) {
-        throw new Error('Failed to get Twitch token');
-      }
-
-      const { access_token } = await tokenResponse.json();
-
-      // Check if user is live
-      const streamResponse = await fetch(`https://api.twitch.tv/helix/streams?user_login=${username}`, {
-        headers: {
-          'Client-Id': clientId,
-          'Authorization': `Bearer ${access_token}`
-        }
-      });
-
-      if (!streamResponse.ok) {
-        throw new Error('Failed to check Twitch stream status');
-      }
-
-      const streamData = await streamResponse.json();
-      return streamData.data && streamData.data.length > 0;
-
-    } catch (error) {
-      console.error('Error checking Twitch API:', error);
-      return false;
-    }
-  }, []);
+  // Twitch API integration removed.
 
   /**
    * Manually refresh the live status
