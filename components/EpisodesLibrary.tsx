@@ -26,7 +26,8 @@ const VIDEOS: Video[] = [
     title: "Heartverse 01: Searching for a Place to Call Home in NYC",
     youtubeUrl: "https://youtube.com/shorts/9qEktORb8EY?feature=share",
     type: "heartverse",
-    releaseDate: "2026-02-18T19:00:00",
+    // 7PM Eastern (EST, UTC-5) => next day 00:00Z
+    releaseDate: "2026-02-19T00:00:00Z",
     postDescription: "Sofia and I search New York City for a place to call home. This episode is about more than apartment hunting. It is about building something real. A home for us. A home for the music. A home for the Aliens.\nWelcome to the Heartverse.",
   },
   {
@@ -34,49 +35,56 @@ const VIDEOS: Video[] = [
     title: "Heartverse 02: Moving Day",
     youtubeUrl: "https://youtube.com/shorts/AdvP_6VVp3k",
     type: "heartverse",
-    releaseDate: "2026-02-25T19:00:00",
+    // 7PM Eastern (EST, UTC-5) => next day 00:00Z
+    releaseDate: "2026-02-26T00:00:00Z",
   },
   {
     id: "hv-003",
     title: "Heartverse 03: Welcome To New York",
     youtubeUrl: "https://youtube.com/shorts/yvbtCNO0PAI",
     type: "heartverse",
-    releaseDate: "2026-03-04T19:00:00",
+    // 7PM Eastern (EST, UTC-5) => next day 00:00Z
+    releaseDate: "2026-03-05T00:00:00Z",
   },
   {
     id: "hv-004",
-    title: "Heartverse 04: Fight Club",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    title: "Heartverse 04: First Gig in New York City",
+    youtubeUrl: "https://youtube.com/shorts/vfzrqgOcfe4",
     type: "heartverse",
-    releaseDate: "2026-03-11T19:00:00",
+    // 7PM Eastern on 2026-03-11 (EDT, UTC-4)
+    releaseDate: "2026-03-11T23:00:00Z",
   },
   {
     id: "hv-005",
-    title: "Heartverse 05: I Got Cheated On Last Night",
+    title: "Heartverse 05: Fight Club",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
-    releaseDate: "2026-03-18T19:00:00",
+    // 7PM Eastern (EDT, UTC-4)
+    releaseDate: "2026-03-25T23:00:00Z",
   },
   {
     id: "hv-006",
-    title: "Heartverse 06: First Gig",
+    title: "Heartverse 06: I Got Cheated On Last Night",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
-    releaseDate: "2026-03-25T19:00:00",
+    // 7PM Eastern (EDT, UTC-4)
+    releaseDate: "2026-04-01T23:00:00Z",
   },
   {
     id: "hv-007",
     title: "Heartverse 07: Our First Tattoos",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
-    releaseDate: "2026-04-01T19:00:00",
+    // 7PM Eastern (EDT, UTC-4)
+    releaseDate: "2026-04-08T23:00:00Z",
   },
   {
     id: "hv-008",
     title: "Heartverse 08: The Dirty Thirties",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
-    releaseDate: "2026-04-08T19:00:00",
+    // 7PM Eastern (EDT, UTC-4)
+    releaseDate: "2026-04-15T23:00:00Z",
   },
 
   // ── Live Signal – Acoustic Session ──
@@ -116,9 +124,10 @@ const VIDEOS: Video[] = [
   {
     id: "lsp-005",
     title: "Acoustic Signal 05",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    youtubeUrl: "https://youtu.be/1iOv7Sd8ac8",
     type: "acoustic",
     releaseDate: "2026-03-25T12:00:00",
+    postDescription: "Setlist\n00:00 Heartverse\n00:18 ALONE\n03:25 AMERICAN DREAM\n07:11 MR. BRIGHTSIDE\n11:22  LETTING GO\n16:03 OCEAN GIRL\n20:09 Stitches (Shawn Mendes)\n23:03 MAKE BELIEVE",
   },
   {
     id: "lsp-006",
@@ -193,9 +202,10 @@ const VIDEOS: Video[] = [
   {
     id: "lsf-005",
     title: "Electric Signal 05",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    youtubeUrl: "https://youtu.be/Gmdh0ZyfcZo",
     type: "electric",
     releaseDate: "2026-03-28T12:00:00",
+    postDescription: "Setlist\n00:00 Heartverse\n00:17 BABY\n02:13 ALWAYS ON MY MIND\n05:26 MAKE BELIEVE\n09:29 ALONE (ACOUSTIC)\n12:09 LITTLE BLACK HEART\n15:37 WERE JUST FRIENDS",
   },
   {
     id: "lsf-006",
@@ -756,6 +766,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true }: 
                         onClick={() => handleVideoClick(video)}
                         onMouseEnter={locked ? undefined : playHover}
                         disabled={locked}
+                        aria-disabled={locked}
                         className={`episodes-video-card group flex items-center gap-2 w-full text-left p-2 rounded-lg border transition-all duration-200 episode-row-base ${
                           locked
                             ? "bg-white/3 cursor-not-allowed"
@@ -767,6 +778,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true }: 
                           '--row-base-shadow': isReleased ? `0 0 14px ${accentColor}50, 0 0 28px ${accentColor}20, inset 0 0 6px ${accentColor}15` : 'none',
                           '--row-pulse-shadow': `0 0 24px ${accentColor}BB, 0 0 48px ${accentColor}66, inset 0 0 10px ${accentColor}33`,
                           '--row-hover-shadow': `0 0 26px ${accentColor}EE, 0 0 52px ${accentColor}99, inset 0 0 14px ${accentColor}55`,
+                          pointerEvents: locked ? 'none' : 'auto',
                         } as React.CSSProperties}
                       >
                         {/* Thumbnail placeholder */}
@@ -827,7 +839,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true }: 
                                 textShadow: `0 0 4px ${accentColor}4D`,
                               }}
                             >
-                              Released {formatReleaseDate(video.releaseDate)}
+                              Releases {formatReleaseDate(video.releaseDate)}
                             </span>
                           )}
                         </div>

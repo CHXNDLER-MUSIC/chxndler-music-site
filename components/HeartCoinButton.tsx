@@ -2975,7 +2975,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             style={{
               width: 'min(92vw, 550px)',
               height: '50vh',
-              maxHeight: 'calc(100vh - 80px - var(--light-beam-boundary))',
+              // Ensure the bottom of the display stops at the TOP of the light beam
+              // Top-of-beam = var(--light-beam-boundary) + var(--beam-height)
+              // So maxHeight must subtract both from viewport height minus the top padding
+              maxHeight: 'calc(100vh - 80px - var(--light-beam-boundary) - var(--beam-height))',
               padding: '10px 14px 14px 14px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.6)',
@@ -2992,7 +2995,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           <div 
             className="absolute"
             style={{
-              bottom: '-15px',
+              // Keep the glow inside the container so it doesn’t dip into the beam
+              bottom: '0px',
               left: '50%',
               transform: 'translateX(-50%)',
               width: '120%',
