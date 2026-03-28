@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -10,6 +11,7 @@ import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import EpisodesLibrary from "@/components/EpisodesLibrary";
 import { useGoLiveOverride } from "@/hooks/useGoLiveOverride";
 import YouTubeLive from "@/components/YouTubeLive";
+import { getNextIrlShow, irlShows } from "@/data/irlShows";
 
 export default function JoinAliens({ visible = true } = {}) {
   const { profile, savePhone, user } = useProfile();
@@ -28,6 +30,10 @@ export default function JoinAliens({ visible = true } = {}) {
   // Chat state
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isChatProfileOpen, setIsChatProfileOpen] = useState(false);
+  // IRL panel state
+  const [isIrlOpen, setIsIrlOpen] = useState(false);
+  const [showAllIrl, setShowAllIrl] = useState(false);
+  const [expandedIrlIndex, setExpandedIrlIndex] = useState(null);
   
   // Tip functionality state
   const [showTipOptions, setShowTipOptions] = useState(false);
@@ -42,6 +48,7 @@ export default function JoinAliens({ visible = true } = {}) {
   // ── Next-broadcast countdown ──────────────────────────────────────────────
   const [countdownMs, setCountdownMs] = useState(0);
   const [nextBroadcast, setNextBroadcast] = useState(null);
+  const nextIrl = getNextIrlShow();
 
   /**
    * Returns the next upcoming broadcast (Mon 7 PM ET / Thu 7 PM ET).
@@ -124,6 +131,16 @@ export default function JoinAliens({ visible = true } = {}) {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [visible]);
+
+  // Close the upcoming shows list when panel closes
+  useEffect(() => {
+    if (!isIrlOpen) setShowAllIrl(false);
+  }, [isIrlOpen]);
+
+  // Reset expanded row when list is hidden
+  useEffect(() => {
+    if (!showAllIrl) setExpandedIrlIndex(null);
+  }, [showAllIrl]);
 
   // Controlled input: only allow digits and plus sign
   function handlePhoneChange(e) {
@@ -235,7 +252,7 @@ export default function JoinAliens({ visible = true } = {}) {
       <div style={{ 
         textAlign: 'center', 
         paddingTop: '2px',
-        paddingBottom: '2px',
+        paddingBottom: '0px',
         borderBottom: '1px solid rgba(252, 84, 175, 0.3)',
         position: 'relative',
         width: '100%',
@@ -252,7 +269,7 @@ export default function JoinAliens({ visible = true } = {}) {
           left: '50%',
           transform: 'translateX(-50%)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <div
               style={{
                 width: '10px',
@@ -300,7 +317,7 @@ export default function JoinAliens({ visible = true } = {}) {
         style={{
           width: 'calc(100% + 16px)',
           padding: '0',
-          margin: '-6px -8px 8px'
+          margin: '-10px -8px 4px'
         }}
       >
         {/* ── Cinematic Countdown ─────────────────────────────────── */}
@@ -309,7 +326,7 @@ export default function JoinAliens({ visible = true } = {}) {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: 'clamp(24px, 6vw, 48px) 16px',
+          padding: 'clamp(16px, 5vw, 36px) 12px',
           width: '100%',
           boxSizing: 'border-box',
         }}>
@@ -321,8 +338,8 @@ export default function JoinAliens({ visible = true } = {}) {
             letterSpacing: '0.35em',
             textTransform: 'uppercase',
             color: 'rgba(0, 255, 255, 0.6)',
-            marginTop: '8px',
-            marginBottom: 'clamp(12px, 3vw, 20px)',
+            marginTop: '2px',
+            marginBottom: 'clamp(4px, 1.2vw, 10px)',
           }}>
             NEXT TRANSMISSION
           </div>
@@ -337,7 +354,7 @@ export default function JoinAliens({ visible = true } = {}) {
 
             const digitStyle = {
               fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
-              fontSize: 'clamp(36px, 12vw, 72px)',
+              fontSize: 'clamp(30px, 9.5vw, 60px)',
               fontWeight: '700',
               lineHeight: 1,
               color: '#00FFFF',
@@ -348,7 +365,7 @@ export default function JoinAliens({ visible = true } = {}) {
 
             const separatorStyle = {
               fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
-              fontSize: 'clamp(28px, 9vw, 56px)',
+              fontSize: 'clamp(22px, 7.5vw, 44px)',
               fontWeight: '300',
               color: 'rgba(0, 255, 255, 0.35)',
               padding: '0 clamp(4px, 2vw, 12px)',
@@ -358,11 +375,11 @@ export default function JoinAliens({ visible = true } = {}) {
 
             const labelStyle = {
               fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
-              fontSize: 'clamp(8px, 2vw, 11px)',
+              fontSize: 'clamp(8px, 1.8vw, 10px)',
               fontWeight: '500',
               letterSpacing: '0.25em',
               color: 'rgba(0, 255, 255, 0.4)',
-              marginTop: '6px',
+              marginTop: '4px',
               textAlign: 'center',
             };
 
@@ -399,7 +416,7 @@ export default function JoinAliens({ visible = true } = {}) {
 
           {/* Weekly schedule */}
           <div style={{
-            marginTop: 'clamp(8px, 2.2vw, 14px)',
+            marginTop: 'clamp(6px, 2vw, 10px)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -423,26 +440,553 @@ export default function JoinAliens({ visible = true } = {}) {
                   textAlign: 'center',
                   lineHeight: 1.05,
                   // Slightly more space between the two lines
-                  marginTop: idx === 1 ? '8px' : 0,
+                  marginTop: idx === 1 ? '6px' : 0,
                 }}>
                   {label}
                 </div>
               ));
             })()}
           </div>
+
+          {/* Divider above IRL panel (pink) */}
+          <div style={{
+            width: '100%',
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent, rgba(252, 84, 175, 0.5), transparent)',
+            marginTop: '2px',
+            marginBottom: '2px',
+          }} />
+
+          {/* IRL SIGNAL — expandable neon dashboard drawer */}
+          <div style={{ width: 'calc(100% + 16px)', margin: '4px -8px 0', position: 'relative' }}>
+            <motion.button
+              type="button"
+              onClick={() => { try { sfx.play('click', 0.35); } catch {} setIsIrlOpen((v) => !v); }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              style={{
+                width: '100%',
+                borderRadius: 12,
+                padding: '8px 12px',
+                background: 'linear-gradient(90deg, rgba(252,84,175,0.12), rgba(0,255,255,0.12))',
+                border: '1px solid rgba(0,255,255,0.35)',
+                boxShadow: isIrlOpen
+                  ? '0 0 24px rgba(0,255,255,0.35), 0 0 36px rgba(252,84,175,0.25)'
+                  : '0 0 14px rgba(0,255,255,0.18)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                cursor: 'pointer'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: 1 }}>
+                  <span style={{
+                    fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+                    letterSpacing: '0.18em', fontSize: 11, color: '#FC54AF',
+                    textShadow: '0 0 10px rgba(252,84,175,0.9)'
+                  }}>
+                    ● NEXT IRL SIGNAL
+                  </span>
+                  {(() => {
+                    const fmtDateShort = (d) => {
+                      try { return new Intl.DateTimeFormat('en-US', { month: 'numeric', day: 'numeric' }).format(d); }
+                      catch { return d.toLocaleDateString('en-US'); }
+                    };
+                    const fmtTimeShort = (d) => {
+                      try { return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(d); }
+                      catch { return d.toLocaleTimeString(); }
+                    };
+                    const deriveHeaderTime = (label, d) => {
+                      if (label) {
+                        let m = label.match(/(\d{1,2})(?::(\d{2}))?\s*([AP]M)/i);
+                        if (!m) {
+                          const m2 = label.match(/(\d{1,2})\s*[–-]\s*\d{1,2}\s*([AP]M)/i);
+                          if (m2) m = [null, m2[1], '00', m2[2]];
+                        }
+                        if (m) {
+                          const hh = m[1];
+                          const mm = m[2] || '00';
+                          const ap = m[3].toUpperCase();
+                          return `${hh}:${mm} ${ap}`;
+                        }
+                      }
+                      return fmtTimeShort(d);
+                    };
+                    if (!nextIrl) {
+                      return (
+                        <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>No terrestrial coordinates detected</span>
+                      );
+                    }
+                    const venue = nextIrl.venue || '';
+                    const dateShort = fmtDateShort(nextIrl.dateObj);
+                    const timeShort = deriveHeaderTime(nextIrl.timeLabel, nextIrl.dateObj);
+                    return (
+                      <span style={{
+                        color: 'rgba(255,255,255,0.92)', fontSize: 12, fontWeight: 700,
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0
+                      }}>
+                        {venue} • {dateShort} • {timeShort} ▾
+                      </span>
+                    );
+                  })()}
+                </div>
+              </div>
+            </motion.button>
+
+            <AnimatePresence initial={false}>
+              {isIrlOpen && (
+                <motion.div
+                  key="irl-panel"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.35, ease: [0.2, 0.6, 0.2, 1] }}
+                  style={{
+                    overflow: 'hidden',
+                    border: '1px solid rgba(0,255,255,0.25)',
+                    borderTop: 'none',
+                    borderRadius: '0 0 12px 12px',
+                    background: 'linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.6))',
+                    boxShadow: 'inset 0 0 24px rgba(0,255,255,0.08)'
+                  }}
+                >
+                  <div style={{ padding: 12 }}>
+                    {(() => {
+                      const fmtFullDate = (d) => {
+                        try { return new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(d); }
+                        catch { return d.toDateString(); }
+                      };
+                      const fmtTime = (d) => {
+                        try { return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(d); }
+                        catch { return d.toLocaleTimeString(); }
+                      };
+
+                      if (nextIrl) {
+                        const hasTime = !isNaN(nextIrl.dateObj.getHours());
+                        const dateText = nextIrl.displayDate || fmtFullDate(nextIrl.dateObj);
+                        const timeText = nextIrl.timeLabel || (hasTime ? fmtTime(nextIrl.dateObj) : 'Time TBA');
+                        const venueText = nextIrl.venue || '';
+                        const addressText = nextIrl.location || '';
+                        const locationForMaps = [venueText, addressText].filter(Boolean).join(', ');
+                        const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(locationForMaps)}`;
+                        const pad = (n) => String(n).padStart(2, '0');
+                        const toGCalDateUTC = (d) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
+                        let startStr = '';
+                        let endStr = '';
+                        if (hasTime) {
+                          const start = new Date(nextIrl.dateObj);
+                          const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+                          startStr = toGCalDateUTC(start);
+                          endStr = toGCalDateUTC(end);
+                        } else {
+                          const d = nextIrl.dateObj;
+                          const ymd = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+                          // All-day event same-day
+                          startStr = ymd;
+                          endStr = ymd;
+                        }
+                        const calTitle = nextIrl.title || venueText || 'IRL Signal';
+                        const calLocation = locationForMaps;
+                        const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calTitle)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(calLocation)}`;
+                        const costText = (nextIrl.signalType && nextIrl.signalType.toUpperCase().includes('FREE'))
+                          ? 'FREE'
+                          : (nextIrl.signalType || 'TBA');
+                        const rowStyle = { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' };
+                        const labelStyle = { fontWeight: 800, color: '#fff', letterSpacing: '0.04em', flexShrink: 0 };
+                        const valueStyle = { color: 'rgba(255,255,255,0.9)', flex: 1, whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'anywhere', minWidth: 0 };
+                        const iconStyle = { width: 16, height: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' };
+                        return (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+                            {/* Removed white NEXT IRL SIGNAL header and divider */}
+                            {!showAllIrl && (
+                            <>
+                            <div style={{ ...rowStyle, fontSize: 12 }}>
+                              <span style={iconStyle}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M12 21s-7-6.58-7-11a7 7 0 1 1 14 0c0 4.42-7 11-7 11z" stroke="#FC54AF" strokeWidth="1.6"/>
+                                  <circle cx="12" cy="10" r="2.5" stroke="#FC54AF" strokeWidth="1.6"/>
+                                </svg>
+                              </span>
+                              <span style={{ ...labelStyle, fontSize: 12 }}>Location:</span>
+                              <span style={{ ...valueStyle, fontSize: 12, display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+                                <span>{venueText}</span>
+                                {addressText && <span>{addressText}</span>}
+                              </span>
+                            </div>
+                            <div style={{ ...rowStyle, fontSize: 12 }}>
+                              <span style={iconStyle}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <rect x="3" y="5" width="18" height="16" rx="2" stroke="#00FFFF" strokeWidth="1.6"/>
+                                  <path d="M3 9h18M8 3v4M16 3v4" stroke="#00FFFF" strokeWidth="1.6" strokeLinecap="round"/>
+                                </svg>
+                              </span>
+                              <span style={{ ...labelStyle, fontSize: 12 }}>Date:</span>
+                              <span style={{ ...valueStyle, fontSize: 12 }}>{dateText}{timeText ? ` • ${timeText}` : ''}</span>
+                            </div>
+                            <div style={{ ...rowStyle, fontSize: 12 }}>
+                              <span style={iconStyle}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M7 7h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" stroke="#F2EF1D" strokeWidth="1.6"/>
+                                  <path d="M8.5 12h7" stroke="#F2EF1D" strokeWidth="1.6" strokeLinecap="round"/>
+                                </svg>
+                              </span>
+                              <span style={{ ...labelStyle, fontSize: 12 }}>Cost:</span>
+                              <span style={{ ...valueStyle, fontSize: 12 }}>{costText}</span>
+                            </div>
+                            
+                            </>
+                            )}
+
+                            {showAllIrl && (
+                              <div>
+                                {(() => {
+                                  const nowMs = Date.now();
+                                  const upcoming = irlShows
+                                    .map((ev) => ({ ev, d: new Date(ev.date) }))
+                                    .filter(({ d }) => !isNaN(d.getTime()) && d.getTime() >= nowMs)
+                                    .sort((a, b) => a.d.getTime() - b.d.getTime());
+                                  if (upcoming.length === 0) {
+                                    return (
+                                      <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>No additional shows scheduled.</div>
+                                    );
+                                  }
+                                  const fmtListDate = (d) => new Intl.DateTimeFormat(undefined, { month: 'numeric', day: 'numeric' }).format(d);
+                                  const fmtTime = (d) => new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(d);
+                                  return (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 6 }}>
+                                      {upcoming.map(({ ev, d }, idx) => {
+                                        const dateText = (ev.displayDate ? ev.displayDate.replace(/\/?\d{2}$/, '') : fmtListDate(d));
+                                        const title = ev.venue || ev.title;
+                                        const loc = ev.location;
+                                        const timeText = ev.timeLabel || fmtTime(d);
+                                        const timeCompact = (() => {
+                                          const src = ev.timeLabel || timeText || '';
+                                          // Try to extract hour + AM/PM and collapse spaces/minutes
+                                          const m = src.match(/(\d{1,2})(?::(\d{2}))?\s*([AP]M)/i);
+                                          if (m) {
+                                            const hour = m[1];
+                                            const ampm = m[3].toUpperCase();
+                                            return `${hour}${ampm}`;
+                                          }
+                                          // Fallback: strip ":00" and spaces in AM/PM
+                                          return src.replace(/:00/, '').replace(/\s*(AM|PM)/i, (__, p1) => p1.toUpperCase());
+                                        })();
+                                        const costText = (ev.signalType && ev.signalType.toUpperCase().includes('FREE')) ? 'FREE' : (ev.signalType || 'TBA');
+                                        const venueForMaps = title || '';
+                                        const locationForMaps = [venueForMaps, loc].filter(Boolean).join(', ');
+                                        const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(locationForMaps)}`;
+                                        const pad = (n) => String(n).padStart(2, '0');
+                                        const toGCalDateUTC = (d0) => `${d0.getUTCFullYear()}${pad(d0.getUTCMonth() + 1)}${pad(d0.getUTCDate())}T${pad(d0.getUTCHours())}${pad(d0.getUTCMinutes())}00Z`;
+                                        const hasTime = !isNaN(d.getHours());
+                                        let startStr = '';
+                                        let endStr = '';
+                                        if (hasTime) {
+                                          const start = new Date(d);
+                                          const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+                                          startStr = toGCalDateUTC(start);
+                                          endStr = toGCalDateUTC(end);
+                                        } else {
+                                          const ymd = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+                                          startStr = ymd;
+                                          endStr = ymd;
+                                        }
+                                        const calTitle = ev.title || title || 'IRL Signal';
+                                        const calLocation = locationForMaps;
+                                        const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calTitle)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(calLocation)}`;
+                                        const isOpen = expandedIrlIndex === idx;
+                                        return (
+                                          <div key={idx} style={{ border: '1px solid rgba(0,255,255,0.25)', borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.25)' }}>
+                                            <button
+                                              onClick={() => { try { sfx.play('audio/click.mp3', 0.35); } catch {} setExpandedIrlIndex(isOpen ? null : idx); }}
+                                              style={{
+                                                width: '100%', textAlign: 'left', cursor: 'pointer',
+                                                background: 'transparent', border: 'none', padding: '8px 10px',
+                                                display: 'flex', alignItems: 'center', gap: 8, minWidth: 0
+                                              }}
+                                            >
+                                              <span style={{ width: 14, height: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                  <circle cx="12" cy="12" r="5" fill="rgba(0,255,255,0.6)" />
+                                                </svg>
+                                              </span>
+                                              <span style={{ color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {title} • {dateText}{timeCompact ? ` • ${timeCompact}` : ''}
+                                              </span>
+                                              <span style={{ marginLeft: 'auto', color: 'rgba(255,255,255,0.7)' }}>{isOpen ? '▴' : '▾'}</span>
+                                            </button>
+                                            <AnimatePresence initial={false}>
+                                              {isOpen && (
+                                                <motion.div
+                                                  initial={{ opacity: 0, height: 0 }}
+                                                  animate={{ opacity: 1, height: 'auto' }}
+                                                  exit={{ opacity: 0, height: 0 }}
+                                                  transition={{ duration: 0.25 }}
+                                                  style={{ borderTop: '1px solid rgba(0,255,255,0.2)', padding: '8px 10px', background: 'rgba(0,0,0,0.35)' }}
+                                                >
+                                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 6 }}>
+                                                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                                                      <span style={{ width: 14, height: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                          <path d="M12 21s-7-6.58-7-11a7 7 0 1 1 14 0c0 4.42-7 11-7 11z" stroke="#FC54AF" strokeWidth="1.6"/>
+                                                          <circle cx="12" cy="10" r="2.5" stroke="#FC54AF" strokeWidth="1.6"/>
+                                                        </svg>
+                                                      </span>
+                                                      <strong style={{ color: '#fff' }}>Location:</strong>
+                                                      <span style={{ color: 'rgba(255,255,255,0.9)', display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+                                                        <span>{title}</span>
+                                                        {loc && <span>{loc}</span>}
+                                                      </span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                                                      <span style={{ width: 14, height: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                          <rect x="3" y="5" width="18" height="16" rx="2" stroke="#00FFFF" strokeWidth="1.6"/>
+                                                          <path d="M3 9h18M8 3v4M16 3v4" stroke="#00FFFF" strokeWidth="1.6" strokeLinecap="round"/>
+                                                        </svg>
+                                                      </span>
+                                                      <strong style={{ color: '#fff' }}>Date:</strong>
+                                                      <span style={{ color: 'rgba(255,255,255,0.9)' }}>{dateText}{timeText ? ` • ${timeText}` : ''}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                                                      <span style={{ width: 14, height: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                          <path d="M7 7h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" stroke="#F2EF1D" strokeWidth="1.6"/>
+                                                          <path d="M8.5 12h7" stroke="#F2EF1D" strokeWidth="1.6" strokeLinecap="round"/>
+                                                        </svg>
+                                                      </span>
+                                                      <strong style={{ color: '#fff' }}>Cost:</strong>
+                                                      <span style={{ color: 'rgba(255,255,255,0.9)' }}>{costText}</span>
+                                                    </div>
+                                                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-start', marginTop: 4 }}>
+                                                    <a
+                                                      href={directionsUrl}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      onClick={() => { try { sfx.play('click', 0.45); } catch {} }}
+                                                      style={{
+                                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                        borderRadius: 7, border: '1px solid #FC54AF',
+                                                        background: 'rgba(252,84,175,0.10)', color: '#FC54AF',
+                                                        textDecoration: 'none', fontWeight: 700, padding: '4px 8px',
+                                                        fontSize: 11,
+                                                        boxShadow: '0 0 10px rgba(252,84,175,0.25)'
+                                                      }}
+                                                    >
+                                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                          <path d="M12 21s-7-6.58-7-11a7 7 0 1 1 14 0c0 4.42-7 11-7 11z" stroke="#FC54AF" strokeWidth="1.6"/>
+                                                          <circle cx="12" cy="10" r="2.5" stroke="#FC54AF" strokeWidth="1.6"/>
+                                                        </svg>
+                                                        <span>Get Directions</span>
+                                                      </span>
+                                                    </a>
+                                                    <a
+                                                      href={calendarUrl}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      onClick={() => { try { sfx.play('click', 0.45); } catch {} }}
+                                                      style={{
+                                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                        borderRadius: 7, border: '1px solid #00FFFF',
+                                                        background: 'rgba(0,255,255,0.10)', color: '#00FFFF',
+                                                        textDecoration: 'none', fontWeight: 700, padding: '4px 8px',
+                                                        fontSize: 11,
+                                                        boxShadow: '0 0 10px rgba(0,255,255,0.25)'
+                                                      }}
+                                                    >
+                                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                          <rect x="3" y="5" width="18" height="16" rx="2" stroke="#00FFFF" strokeWidth="1.6"/>
+                                                          <path d="M3 9h18M8 3v4M16 3v4" stroke="#00FFFF" strokeWidth="1.6" strokeLinecap="round"/>
+                                                        </svg>
+                                                        <span>Add to Calendar</span>
+                                                      </span>
+                                                    </a>
+                                                    {ev.url && (
+                                                      <a
+                                                        href={ev.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        onClick={() => { try { sfx.play('click', 0.45); } catch {} }}
+                                                        style={{
+                                                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                          borderRadius: 7, border: '1px solid #F2EF1D',
+                                                          background: 'rgba(242,239,29,0.10)', color: '#F2EF1D',
+                                                          textDecoration: 'none', fontWeight: 700, padding: '4px 8px',
+                                                          fontSize: 11,
+                                                          boxShadow: '0 0 10px rgba(242,239,29,0.25)'
+                                                        }}
+                                                      >
+                                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                            <path d="M7 7h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" stroke="#F2EF1D" strokeWidth="1.6"/>
+                                                            <path d="M8.5 12h7" stroke="#F2EF1D" strokeWidth="1.6" strokeLinecap="round"/>
+                                                          </svg>
+                                                          <span>Get Tickets</span>
+                                                        </span>
+                                                      </a>
+                                                    )}
+                                                  </div>
+                                                  </div>
+                                                </motion.div>
+                                              )}
+                                            </AnimatePresence>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            )}
+                            {/* Actions row above Upcoming IRL Signals */}
+                            {!showAllIrl && (
+                              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-start', marginTop: 2 }}>
+                                <a
+                                  href={directionsUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={() => { try { sfx.play('click', 0.45); } catch {} }}
+                                  style={{
+                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                    borderRadius: 7, border: '1px solid #FC54AF',
+                                    background: 'rgba(252,84,175,0.10)', color: '#FC54AF',
+                                    textDecoration: 'none', fontWeight: 700, padding: '4px 8px',
+                                    fontSize: 11,
+                                    boxShadow: '0 0 10px rgba(252,84,175,0.25)'
+                                  }}
+                                >
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <path d="M12 21s-7-6.58-7-11a7 7 0 1 1 14 0c0 4.42-7 11-7 11z" stroke="#FC54AF" strokeWidth="1.6"/>
+                                      <circle cx="12" cy="10" r="2.5" stroke="#FC54AF" strokeWidth="1.6"/>
+                                    </svg>
+                                    <span>Get Directions</span>
+                                  </span>
+                                </a>
+                                <a
+                                  href={calendarUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={() => { try { sfx.play('click', 0.45); } catch {} }}
+                                  style={{
+                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                    borderRadius: 7, border: '1px solid #00FFFF',
+                                    background: 'rgba(0,255,255,0.10)', color: '#00FFFF',
+                                    textDecoration: 'none', fontWeight: 700, padding: '4px 8px',
+                                    fontSize: 11,
+                                    boxShadow: '0 0 10px rgba(0,255,255,0.25)'
+                                  }}
+                                >
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <rect x="3" y="5" width="18" height="16" rx="2" stroke="#00FFFF" strokeWidth="1.6"/>
+                                      <path d="M3 9h18M8 3v4M16 3v4" stroke="#00FFFF" strokeWidth="1.6" strokeLinecap="round"/>
+                                    </svg>
+                                    <span>Add to Calendar</span>
+                                  </span>
+                                </a>
+                                <a
+                                  href={nextIrl.url || '#'}
+                                  target={nextIrl.url ? '_blank' : undefined}
+                                  rel={nextIrl.url ? 'noopener noreferrer' : undefined}
+                                  onClick={(e) => {
+                                    try { sfx.play('click', 0.45); } catch {}
+                                    if (!nextIrl.url) { e.preventDefault(); setShowAllIrl((v) => !v); }
+                                  }}
+                                  style={{
+                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                    borderRadius: 7, border: '1px solid #F2EF1D',
+                                    background: 'rgba(242,239,29,0.10)', color: '#F2EF1D',
+                                    textDecoration: 'none', fontWeight: 700, padding: '4px 8px',
+                                    fontSize: 11,
+                                    boxShadow: '0 0 10px rgba(242,239,29,0.25)'
+                                  }}
+                                >
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <path d="M7 7h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" stroke="#F2EF1D" strokeWidth="1.6"/>
+                                      <path d="M8.5 12h7" stroke="#F2EF1D" strokeWidth="1.6" strokeLinecap="round"/>
+                                    </svg>
+                                    <span>Get Tickets</span>
+                                  </span>
+                                </a>
+                              </div>
+                            )}
+                            {/* CTA below rows */}
+                              <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: 'flex-start', marginTop: 4 }}>
+                                <a
+                                  href={nextIrl.url || '#'}
+                                  target={nextIrl.url ? '_blank' : undefined}
+                                  rel={nextIrl.url ? 'noopener noreferrer' : undefined}
+                                  onClick={(e) => {
+                                    if (!nextIrl.url) {
+                                      e.preventDefault();
+                                      setShowAllIrl((v) => !v);
+                                      try { sfx.play('click', 0.45); } catch {}
+                                    } else {
+                                      try { sfx.play('card-ding', 0.6); } catch {}
+                                    }
+                                  }}
+                                  style={{
+                                    flex: 1,
+                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                    borderRadius: 10,
+                                    border: (!nextIrl.url) ? '1px solid rgba(255,255,255,0.95)' : '1px solid #F2EF1D',
+                                    background: (!nextIrl.url) ? 'rgba(255,255,255,0.10)' : 'rgba(242,239,29,0.1)',
+                                    color: (!nextIrl.url) ? '#FFFFFF' : '#F2EF1D',
+                                    textDecoration: 'none', fontWeight: 700,
+                                    boxShadow: (!nextIrl.url) ? '0 0 18px rgba(255,255,255,0.30)' : '0 0 18px rgba(242,239,29,0.25)',
+                                    padding: '8px 12px',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  {nextIrl.url ? 'Get Tickets' : (showAllIrl ? 'Back' : 'Upcoming IRL Signals')}
+                                </a>
+                              </div>
+                          </div>
+                        );
+                      }
+
+                      // Polished empty state
+                      return (
+                        <div style={{
+                          border: '1px dashed rgba(0,255,255,0.35)', borderRadius: 10,
+                          padding: 14, textAlign: 'center',
+                          background: 'radial-gradient(100% 60% at 50% 0%, rgba(0,255,255,0.08) 0%, rgba(0,0,0,0) 70%)'
+                        }}>
+                          <div style={{ color: '#00FFFF', textShadow: '0 0 10px rgba(0,255,255,0.7)', letterSpacing: '0.18em', fontSize: 12, marginBottom: 6 }}>
+                            AWAITING IRL COORDINATES
+                          </div>
+                          <div style={{ color: 'rgba(255,255,255,0.85)' }}>
+                            No IRL signal in range. Lock in to get an alert when a mission is confirmed.
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
+                            <button
+                              onClick={() => { try { sfx.play('click', 0.4); } catch {} setShowPhoneForm(true); }}
+                              style={{
+                                borderRadius: 8, border: '1px solid #00FFFF', background: 'rgba(0,255,255,0.1)',
+                                color: '#00FFFF', padding: '10px 14px', fontWeight: 700,
+                                boxShadow: '0 0 14px rgba(0,255,255,0.25)'
+                              }}
+                            >
+                              Get SMS Alerts
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </YouTubeLive>
 
-      {/* Divider */}
-      <div style={{
-        width: '100%',
-        height: '1px',
-        background: 'linear-gradient(90deg, transparent, rgba(252, 84, 175, 0.5), transparent)',
-        // Slight space under the schedule text
-        marginTop: '2px',
-        // Reduce overall gap by 10px
-        marginBottom: '6px',
-      }} />
+      
 
       {/* Tip amount buttons - horizontal row below live embed */}
       {showTipOptions && (
@@ -711,7 +1255,7 @@ export default function JoinAliens({ visible = true } = {}) {
       </button>
       </div>
       </div>
-
+      )}
 
 
       {/* Text Button - positioned in bottom left */}

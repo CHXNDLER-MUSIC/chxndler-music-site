@@ -48,16 +48,16 @@ const VIDEOS: Video[] = [
   },
   {
     id: "hv-004",
-    title: "Heartverse 04: First Gig in New York City",
-    youtubeUrl: "https://youtube.com/shorts/vfzrqgOcfe4",
+    title: "Heartverse 04: Fight Club",
+    youtubeUrl: "https://youtube.com/shorts/BJ711zgixAk",
     type: "heartverse",
     // 7PM Eastern on 2026-03-11 (EDT, UTC-4)
     releaseDate: "2026-03-11T23:00:00Z",
   },
   {
     id: "hv-005",
-    title: "Heartverse 05: Fight Club",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    title: "Heartverse 05: First Gig in New York City",
+    youtubeUrl: "https://youtube.com/shorts/vfzrqgOcfe4",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
     releaseDate: "2026-03-25T23:00:00Z",
@@ -132,9 +132,10 @@ const VIDEOS: Video[] = [
   {
     id: "lsp-006",
     title: "Acoustic Signal 06",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    youtubeUrl: "https://youtu.be/WX2655uxjy4",
     type: "acoustic",
     releaseDate: "2026-04-01T12:00:00",
+    postDescription: "Setlist\n00:00 Heartverse\n00:46 HOUSE PARTY\n04:15 BE MY BEE\n08:55 HOME\n12:44 LITTLE BLACK HEART\n16:40 WE'RE JUST FRIENDS",
   },
   {
     id: "lsp-007",
@@ -210,9 +211,10 @@ const VIDEOS: Video[] = [
   {
     id: "lsf-006",
     title: "Electric Signal 06",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    youtubeUrl: "https://youtu.be/235FBFd0Ntw",
     type: "electric",
     releaseDate: "2026-04-04T12:00:00",
+    postDescription: "Setlist\n00:00 Heartverse\n00:17 LOVE ME\n03:30 CHEERLEADER\n06:42 Painted Smiles (Mickey Jas)\n10:42 I Hate Holding Hands (Mickey Jas)\n16:19 LETTING GO\n20:02 AMERICAN DREAM\n23:32 MAKE BELIEVE\n28:07 OCEAN GIRL (REMIX)",
   },
   {
     id: "lsf-007",
