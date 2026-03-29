@@ -305,6 +305,23 @@ export default function JoinAliens({ visible = true } = {}) {
               boxShadow: '0 0 8px rgba(252, 84, 175, 0.4)'
             }}
           />
+      </div>
+      </div>
+
+      {/* NEXT LIVE SIGNAL label directly below the pink line */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        marginTop: '6px', marginBottom: '4px'
+      }}>
+        <div style={{
+          fontSize: 'clamp(10px, 2.5vw, 13px)',
+          fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+          fontWeight: '600',
+          letterSpacing: '0.35em',
+          textTransform: 'uppercase',
+          color: 'rgba(0, 255, 255, 0.6)'
+        }}>
+          NEXT LIVE SIGNAL
         </div>
       </div>
 
@@ -320,7 +337,7 @@ export default function JoinAliens({ visible = true } = {}) {
           margin: '-10px -8px 4px'
         }}
       >
-        {/* ── Cinematic Countdown ─────────────────────────────────── */}
+        {/* ── Cinematic Countdown ─────────────────────────────────── */
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -330,19 +347,7 @@ export default function JoinAliens({ visible = true } = {}) {
           width: '100%',
           boxSizing: 'border-box',
         }}>
-          {/* "NEXT TRANSMISSION" label */}
-          <div style={{
-            fontSize: 'clamp(10px, 2.5vw, 13px)',
-            fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
-            fontWeight: '600',
-            letterSpacing: '0.35em',
-            textTransform: 'uppercase',
-            color: 'rgba(0, 255, 255, 0.6)',
-            marginTop: '2px',
-            marginBottom: 'clamp(4px, 1.2vw, 10px)',
-          }}>
-            NEXT TRANSMISSION
-          </div>
+          {/*  */}
 
           {/* HH : MM : SS countdown */}
           {(() => {
@@ -500,9 +505,9 @@ export default function JoinAliens({ visible = true } = {}) {
                     };
                     const deriveHeaderTime = (label, d) => {
                       if (label) {
-                        let m = label.match(/(\d{1,2})(?::(\d{2}))?\s*([AP]M)/i);
+                        let m = label.match(new RegExp('(\\\d{1,2})(?::(\\\d{2}))?\\s*([AP]M)', 'i'));
                         if (!m) {
-                          const m2 = label.match(/(\d{1,2})\s*[–-]\s*\d{1,2}\s*([AP]M)/i);
+                          const m2 = label.match(new RegExp('(\\\d{1,2})\\s*[–-]\\s*\\d{1,2}\\s*([AP]M)', 'i'));
                           if (m2) m = [null, m2[1], '00', m2[2]];
                         }
                         if (m) {
@@ -657,21 +662,30 @@ export default function JoinAliens({ visible = true } = {}) {
                                   return (
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 6 }}>
                                       {upcoming.map(({ ev, d }, idx) => {
-                                        const dateText = (ev.displayDate ? ev.displayDate.replace(/\/?\d{2}$/, '') : fmtListDate(d));
+                                        const dateText = (() => {
+                                          if (!ev.displayDate) return fmtListDate(d);
+                                          const s = ev.displayDate;
+                                          const lastSlash = s.lastIndexOf('/');
+                                          if (lastSlash !== -1 && s.length - lastSlash - 1 === 2) {
+                                            return s.slice(0, lastSlash);
+                                          }
+                                          return s;
+                                        })();
                                         const title = ev.venue || ev.title;
                                         const loc = ev.location;
                                         const timeText = ev.timeLabel || fmtTime(d);
                                         const timeCompact = (() => {
                                           const src = ev.timeLabel || timeText || '';
-                                          // Try to extract hour + AM/PM and collapse spaces/minutes
-                                          const m = src.match(/(\d{1,2})(?::(\d{2}))?\s*([AP]M)/i);
+                                          // Try to extract hour + AM/PM
+                                          const re = new RegExp('(\\\d{1,2})(?::(\\\d{2}))?\\s*([AP]M)', 'i');
+                                          const m = src.match(re);
                                           if (m) {
                                             const hour = m[1];
                                             const ampm = m[3].toUpperCase();
                                             return `${hour}${ampm}`;
                                           }
-                                          // Fallback: strip ":00" and spaces in AM/PM
-                                          return src.replace(/:00/, '').replace(/\s*(AM|PM)/i, (__, p1) => p1.toUpperCase());
+                                          // Fallback: remove :00 and tighten AM/PM spacing
+                                          return src.replace(new RegExp(':00'), '').replace(new RegExp('\\s*(AM|PM)', 'i'), (_, p1) => p1.toUpperCase());
                                         })();
                                         const costText = (ev.signalType && ev.signalType.toUpperCase().includes('FREE')) ? 'FREE' : (ev.signalType || 'TBA');
                                         const venueForMaps = title || '';
@@ -804,30 +818,33 @@ export default function JoinAliens({ visible = true } = {}) {
                                                         <span>Add to Calendar</span>
                                                       </span>
                                                     </a>
-                                                    {ev.url && (
-                                                      <a
-                                                        href={ev.url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        onClick={() => { try { sfx.play('click', 0.45); } catch {} }}
-                                                        style={{
-                                                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                                          borderRadius: 7, border: '1px solid #F2EF1D',
-                                                          background: 'rgba(242,239,29,0.10)', color: '#F2EF1D',
-                                                          textDecoration: 'none', fontWeight: 700, padding: '4px 8px',
-                                                          fontSize: 11,
-                                                          boxShadow: '0 0 10px rgba(242,239,29,0.25)'
-                                                        }}
-                                                      >
-                                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                            <path d="M7 7h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" stroke="#F2EF1D" strokeWidth="1.6"/>
-                                                            <path d="M8.5 12h7" stroke="#F2EF1D" strokeWidth="1.6" strokeLinecap="round"/>
-                                                          </svg>
-                                                          <span>Get Tickets</span>
-                                                        </span>
-                                                      </a>
-                                                    )}
+                                                    <a
+                                                      href={ev.url || '#'}
+                                                      target={ev.url ? '_blank' : undefined}
+                                                      rel={ev.url ? 'noopener noreferrer' : undefined}
+                                                      onClick={(e) => { if (!ev.url) { e.preventDefault(); return; } try { sfx.play('click', 0.45); } catch {} }}
+                                                      style={{
+                                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                        borderRadius: 7,
+                                                        border: ev.url ? '1px solid #F2EF1D' : '1px solid rgba(255,255,255,0.35)',
+                                                        background: ev.url ? 'rgba(242,239,29,0.10)' : 'rgba(255,255,255,0.06)',
+                                                        color: ev.url ? '#F2EF1D' : 'rgba(255,255,255,0.6)',
+                                                        textDecoration: 'none', fontWeight: 700, padding: '4px 8px',
+                                                        fontSize: 11,
+                                                        boxShadow: ev.url ? '0 0 10px rgba(242,239,29,0.25)' : '0 0 8px rgba(255,255,255,0.15)',
+                                                        cursor: ev.url ? 'pointer' : 'default',
+                                                        pointerEvents: ev.url ? 'auto' : 'none',
+                                                        opacity: ev.url ? 1 : 0.7
+                                                      }}
+                                                    >
+                                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                          <path d="M7 7h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" stroke="#F2EF1D" strokeWidth="1.6"/>
+                                                          <path d="M8.5 12h7" stroke="#F2EF1D" strokeWidth="1.6" strokeLinecap="round"/>
+                                                        </svg>
+                                                        <span>Get Tickets</span>
+                                                      </span>
+                                                    </a>
                                                   </div>
                                                   </div>
                                                 </motion.div>
@@ -893,16 +910,21 @@ export default function JoinAliens({ visible = true } = {}) {
                                   target={nextIrl.url ? '_blank' : undefined}
                                   rel={nextIrl.url ? 'noopener noreferrer' : undefined}
                                   onClick={(e) => {
+                                    if (!nextIrl.url) { e.preventDefault(); return; }
                                     try { sfx.play('click', 0.45); } catch {}
-                                    if (!nextIrl.url) { e.preventDefault(); setShowAllIrl((v) => !v); }
                                   }}
                                   style={{
                                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                    borderRadius: 7, border: '1px solid #F2EF1D',
-                                    background: 'rgba(242,239,29,0.10)', color: '#F2EF1D',
+                                    borderRadius: 7,
+                                    border: nextIrl.url ? '1px solid #F2EF1D' : '1px solid rgba(255,255,255,0.35)',
+                                    background: nextIrl.url ? 'rgba(242,239,29,0.10)' : 'rgba(255,255,255,0.06)',
+                                    color: nextIrl.url ? '#F2EF1D' : 'rgba(255,255,255,0.6)',
                                     textDecoration: 'none', fontWeight: 700, padding: '4px 8px',
                                     fontSize: 11,
-                                    boxShadow: '0 0 10px rgba(242,239,29,0.25)'
+                                    boxShadow: nextIrl.url ? '0 0 10px rgba(242,239,29,0.25)' : '0 0 8px rgba(255,255,255,0.15)',
+                                    cursor: nextIrl.url ? 'pointer' : 'default',
+                                    pointerEvents: nextIrl.url ? 'auto' : 'none',
+                                    opacity: nextIrl.url ? 1 : 0.7
                                   }}
                                 >
                                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -984,6 +1006,7 @@ export default function JoinAliens({ visible = true } = {}) {
             </AnimatePresence>
           </div>
         </div>
+        }
       </YouTubeLive>
 
       

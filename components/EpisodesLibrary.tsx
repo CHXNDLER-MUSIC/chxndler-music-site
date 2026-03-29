@@ -140,9 +140,10 @@ const VIDEOS: Video[] = [
   {
     id: "lsp-007",
     title: "Acoustic Signal 07",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    youtubeUrl: "https://youtu.be/nUOnKt_FjMI",
     type: "acoustic",
     releaseDate: "2026-04-08T12:00:00",
+    postDescription: "Setlist\n00:00 Heartverse\n01:00 LOVE ME\n04:54 CHEERLEADER\n08:55 LETTING GO\n13:16 Goodnight Moon (Go Radio)\n18:33 AMERICAN DREAM\n24:05 MAKE BELIEVE\n29:21 OCEAN GIRL",
   },
   {
     id: "lsp-008",
