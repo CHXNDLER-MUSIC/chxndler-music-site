@@ -12,7 +12,7 @@
  * Set ENABLE_HEARTVERSE_3D = true to re-enable the 3D system when ready.
  * When false, no React Three Fiber Canvas will be created and no 3D components will mount.
  */
-export const ENABLE_HEARTVERSE_3D = false;
+export const ENABLE_HEARTVERSE_3D = true;
 
 // Other feature flags can be added here as needed
 export const ENABLE_ANALYTICS_DASHBOARD = true;

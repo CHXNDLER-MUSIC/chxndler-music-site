@@ -454,13 +454,35 @@ export default function HoloHubMenu({
           }
           return;
         }
-        // Apple Music: open in new tab (disable inline display)
+        // Apple Music: prefer embedded player (like Spotify)
         else if (
           idLower === 'am' ||
           hrefLower.includes('music.apple') ||
           hrefLower.includes('itunes.')
         ) {
-          try { window.open(it.href, '_blank', 'noopener,noreferrer'); } catch {}
+          try {
+            const embed = toAppleEmbed(it.href);
+            if (embed) {
+              setClickedButtonId(it.id);
+              setInlineTitle(it.label || 'Apple Music');
+              setInlineUrl(embed);
+              setInlineCompact(true);
+              try {
+                const natural = appleEmbedHeight(embed);
+                const scale = 0.9;
+                const bodyH = Math.max(160, Math.round(natural * scale));
+                setInlineHeightPx(Math.min(460, Math.max(210, bodyH + 60))); // include header
+                setInlineIframeHeightPx(natural);
+              } catch {
+                setInlineHeightPx(260);
+                setInlineIframeHeightPx(undefined);
+              }
+            } else {
+              window.open(it.href, '_blank', 'noopener,noreferrer');
+            }
+          } catch {
+            try { window.open(it.href, '_blank', 'noopener,noreferrer'); } catch {}
+          }
           return;
         }
         // Fallback: open in a new tab
@@ -596,8 +618,8 @@ export default function HoloHubMenu({
           const isFirst = i === 0;
           const isLast = i === entries.length - 1;
           const size = itemSize;
-          // Disable Apple Music on the opening screen, and disable Spotify on LIGHTNING planet
-          const isDisabled = (it.id === 'am') || (isLightningPlanet && it.id === 'sp');
+          // Disable Spotify on LIGHTNING planet only
+          const isDisabled = (isLightningPlanet && it.id === 'sp');
           return (
             <button
               key={it.id}
@@ -681,8 +703,8 @@ export default function HoloHubMenu({
                 const isFirst = i === 0;
                 const isLast = i === entries.length - 1;
                 const size = itemSize;
-                // Disable Apple Music everywhere, and Spotify on LIGHTNING planet
-                const isDisabled = (it.id === 'am') || (isLightningPlanet && it.id === 'sp');
+                // Disable Spotify on LIGHTNING planet only
+                const isDisabled = (isLightningPlanet && it.id === 'sp');
                 return (
                   <button
                     key={it.id}

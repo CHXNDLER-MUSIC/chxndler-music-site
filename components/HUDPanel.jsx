@@ -26,7 +26,7 @@ import { useHeartcoinBalance } from "@/providers/HeartcoinBalanceProvider";
 // FEATURE FLAG: Set to true to re-enable the 3D planet system.
 // When false, no Three.js Canvas or WebGL context will be created.
 // ═══════════════════════════════════════════════════════════════════
-const ENABLE_PLANETS = false;
+const ENABLE_PLANETS = true;
 
 import { playerStore } from "@/store/usePlayerStore";
 
