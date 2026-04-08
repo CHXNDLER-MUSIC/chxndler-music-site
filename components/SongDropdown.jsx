@@ -10,6 +10,8 @@ import { useCycleList } from "@/lib/useCycleList";
 import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
 import { useNextDrop } from "@/hooks/useNextDrop";
 import { useProfile } from "@/contexts/ProfileContext";
+import { slugify } from "@/lib/slug";
+import { SONG_ELEMENT_MAPPING as PLANET_SONG_ELEMENTS } from "@/lib/planetConfig";
 
 function ElementIcon({ name }) {
   const colorFor = (key) => {
@@ -68,6 +70,15 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
   const dragTrackLenRef = useRef(0);
   const dragMaxScrollRef = useRef(0);
   const GUTTER_W = 22; // px region at right edge treated as scrollbar gutter
+
+  // Tap vs scroll detection (mobile): register taps only when movement is small
+  const TAP_MOVE_THRESHOLD = 12; // px
+  const touchStateRef = useRef({
+    id: null,
+    startX: 0,
+    startY: 0,
+    moved: false,
+  });
 
   // Supabase-backed next drop config
   const { nextDrop } = useNextDrop();
@@ -296,8 +307,25 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       >
         <span className="flex items-center gap-2 min-w-0">
           {(() => {
-            // When element warp, use the element name as icon; otherwise use song icon or music
-            const headerIconName = !currentId ? 'music' : (isElementWarp ? String(currentId).toLowerCase() : (current?.icon || 'music'));
+            // Prefer the element based on the currently selected/playing song slug.
+            let headerIconName = 'music';
+            if (currentId) {
+              if (isElementWarp) {
+                headerIconName = String(currentId).toLowerCase();
+              } else {
+                const slug = normalizeSlug(currentId);
+                const mapped = PLANET_SONG_ELEMENTS[slug];
+                if (mapped) {
+                  headerIconName = mapped;
+                } else {
+                  // Fallback: infer from currently playing track id
+                  const playId = normalizeSlug(audioManager?.currentTrack?.id || '');
+                  const inferred = PLANET_SONG_ELEMENTS[playId];
+                  if (inferred) headerIconName = inferred;
+                  else if (current?.icon) headerIconName = String(current.icon).toLowerCase();
+                }
+              }
+            }
             const dataIcon = headerIconName === 'music' ? 'music' : 'element';
             return (
               <span
@@ -323,7 +351,14 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
               textShadow: '0 0 2px rgba(255,255,255,0.95), 0 0 6px rgba(255,255,255,0.65)'
             } : undefined}
           >
-            {!currentId ? 'MUSIC' : (isElementWarp ? elementDisplayName : (current?.title || 'SONGS'))}
+            {(() => {
+              if (!currentId) return 'MUSIC';
+              if (isElementWarp) return elementDisplayName;
+              const audioTitle = audioManager?.currentTrack?.title;
+              const fromItems = current?.title;
+              const fallbackFromSlug = String(currentId).toUpperCase().replace(/-/g, ' ');
+              return audioTitle || fromItems || fallbackFromSlug || 'SONGS';
+            })()}
           </span>
         </span>
         <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden className="opacity-80 text-[#9EEBFF]"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
@@ -471,7 +506,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             const nextDropItem = items.find(i => normalizeSlug(i.id) === normalizeSlug(nextDrop.slug))
               || items.find(i => i.title?.toUpperCase() === nextDrop.title?.toUpperCase());
             // Use the matched item's actual id so warp/onChange receives the correct slug
-            const nextDropId = nextDropItem?.id || nextDrop.slug;
+            const nextDropId = (nextDropItem?.id || nextDrop?.slug || slugify(nextDrop?.title || '')).toLowerCase();
             // Lock state: base (global) vs per-user.
             // Base locked reflects whether the song is globally unreleased.
             // DREAMER/LOVER get early access (clickable), but we keep the base locked hint text.
@@ -517,26 +552,67 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   // Allow native scrollbar drag when pressing in right gutter
                   try {
                     const lr = listRef.current?.getBoundingClientRect?.();
-                    if (lr && e.clientX >= (lr.right - 22)) {
+                    if (lr && e.clientX >= (lr.right - GUTTER_W)) {
                       return;
                     }
                   } catch {}
+                  // Defer selection to click/touch-end. Block interaction if locked.
                   if (isNextDropLocked) {
                     e.preventDefault();
                     e.stopPropagation();
-                    return;
                   }
-                  setActiveId(nextDropId);
-                  setOpen(false);
+                }}
+                onClick={(e) => {
+                  if (isNextDropLocked) { e.preventDefault(); e.stopPropagation(); return; }
+                  try { setActiveId(nextDropId); } catch {}
+                  try { setOpen(false); } catch {}
                   if (onChange) onChange(nextDropId);
+                  try { setTimeout(() => { const st = playerStore.getState(); st && st.setHover(null); }, 0); } catch {}
+                }}
+                onTouchStart={(e) => {
                   try {
-                    setTimeout(() => {
-                      const state = playerStore.getState();
-                      if (state) state.setHover(null);
-                    }, 0);
+                    if (isScrollbarDragRef.current) return;
+                    const touch = e.touches && e.touches[0];
+                    if (!touch) return;
+                    const lr = listRef.current?.getBoundingClientRect?.();
+                    if (lr && touch.clientX >= (lr.right - GUTTER_W)) return;
+                    touchStateRef.current = {
+                      id: nextDropId,
+                      startX: touch.clientX,
+                      startY: touch.clientY,
+                      moved: false,
+                    };
                   } catch {}
-                  e.preventDefault();
-                  e.stopPropagation();
+                }}
+                onTouchMove={(e) => {
+                  try {
+                    const touch = e.touches && e.touches[0];
+                    if (!touch) return;
+                    const st = touchStateRef.current || {};
+                    if (st && (st.id === nextDropId)) {
+                      const dx = touch.clientX - (st.startX || 0);
+                      const dy = touch.clientY - (st.startY || 0);
+                      const dist = Math.hypot(dx, dy);
+                      if (dist > TAP_MOVE_THRESHOLD) {
+                        st.moved = true;
+                        touchStateRef.current = st;
+                      }
+                    }
+                  } catch {}
+                }}
+                onTouchEnd={(e) => {
+                  try {
+                    const st = touchStateRef.current || {};
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!isNextDropLocked && st && st.id === nextDropId && !st.moved) {
+                      setActiveId(nextDropId);
+                      setOpen(false);
+                      if (onChange) onChange(nextDropId);
+                      try { setTimeout(() => { const st2 = playerStore.getState(); st2 && st2.setHover(null); }, 0); } catch {}
+                    }
+                    touchStateRef.current = { id: null, startX: 0, startY: 0, moved: false };
+                  } catch {}
                 }}
               >
                 {/* Left: element icon with hint text below, constrain column width; nudge slightly left */}
@@ -732,38 +808,72 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   // If the user presses in the scrollbar gutter/overlay area, allow native drag.
                   try {
                     const lr = listRef.current?.getBoundingClientRect?.();
-                    if (lr && e.clientX >= (lr.right - 22)) {
-                      // Do not consume the event; let the OS/native scrollbar handle dragging
-                      return;
+                    if (lr && e.clientX >= (lr.right - GUTTER_W)) {
+                      return; // let native scroll/thumb drag happen
                     }
                   } catch {}
+                  // Do not select on pointer down; wait for click/touch-end.
                   if (isLocked) {
                     e.preventDefault();
                     e.stopPropagation();
-                    return;
                   }
-                  // Set active id for UI state
-                  setActiveId(s.id);
-                  setOpen(false);
-
-                  // Audio is handled by parent component via onChange callback
+                }}
+                onClick={(e) => {
+                  if (isLocked) { e.preventDefault(); e.stopPropagation(); return; }
+                  // Mouse click selection
+                  try { setActiveId(s.id); } catch {}
+                  try { setOpen(false); } catch {}
                   if (onChange) onChange(s.id);
-
+                  try { setTimeout(() => playerStore.getState().setHover(null), 0); } catch {}
+                }}
+                onTouchStart={(e) => {
                   try {
-                    setTimeout(() => {
-                      const state = playerStore.getState();
-                      if (state) {
-                        state.setHover(null);
+                    if (isScrollbarDragRef.current) return; // already dragging scrollbar
+                    const touch = e.touches && e.touches[0];
+                    if (!touch) return;
+                    // Ignore touches in the right gutter (scrollbar region)
+                    const lr = listRef.current?.getBoundingClientRect?.();
+                    if (lr && touch.clientX >= (lr.right - GUTTER_W)) return;
+                    touchStateRef.current = {
+                      id: s.id,
+                      startX: touch.clientX,
+                      startY: touch.clientY,
+                      moved: false,
+                    };
+                  } catch {}
+                }}
+                onTouchMove={(e) => {
+                  try {
+                    const touch = e.touches && e.touches[0];
+                    if (!touch) return;
+                    const st = touchStateRef.current || {};
+                    if (st && (st.id === s.id)) {
+                      const dx = touch.clientX - (st.startX || 0);
+                      const dy = touch.clientY - (st.startY || 0);
+                      const dist = Math.hypot(dx, dy);
+                      if (dist > TAP_MOVE_THRESHOLD) {
+                        st.moved = true;
+                        touchStateRef.current = st;
                       }
-                    }, 0);
-                  } catch(error) {
-                    if (process.env.NODE_ENV !== 'production') {
-                      console.error('Failed to clear hover state:', error);
                     }
-                  }
-
-                  e.preventDefault();
-                  e.stopPropagation();
+                  } catch {}
+                }}
+                onTouchEnd={(e) => {
+                  try {
+                    const st = touchStateRef.current || {};
+                    // Always prevent default to avoid synthetic click firing
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Only treat as tap if minimal movement and correct target id and not locked
+                    if (!isLocked && st && st.id === s.id && !st.moved) {
+                      setActiveId(s.id);
+                      setOpen(false);
+                      if (onChange) onChange(s.id);
+                      try { setTimeout(() => playerStore.getState().setHover(null), 0); } catch {}
+                    }
+                    // Reset touch state
+                    touchStateRef.current = { id: null, startX: 0, startY: 0, moved: false };
+                  } catch {}
                 }}
               >
                 <span className="shrink-0" style={{ marginLeft: '-2px' }}>

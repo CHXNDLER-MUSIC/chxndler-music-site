@@ -14,6 +14,11 @@ import { useProfile } from "@/contexts/ProfileContext";
 import type { Tier } from "@/utils/tier";
 import { tierRank, TIER_ORDER } from "@/utils/tier";
 
+// Display title overrides for specific slugs
+const TITLE_OVERRIDES: Record<string, string> = {
+  'mr-brightside': 'MR. BRIGHTSIDE',
+};
+
 // Normalize helper for slugs
 const normalizeSlug = (slug?: string) => (slug ? String(slug).toLowerCase().replace(/'/g, "") : "");
 
@@ -143,7 +148,7 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
 
         return {
           id: song.slug,
-          title: song.title,
+          title: TITLE_OVERRIDES[song.slug] || song.title,
           oneLiner: `Released ${new Date(song.created_at).getFullYear()}`,
           src: asset.src,
           cover: asset.cover,

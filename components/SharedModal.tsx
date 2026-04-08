@@ -25,7 +25,7 @@ export default function SharedModal({ open, onClose, title, children, ariaLabel 
 
   return (
     <div
-      className="fixed z-[9999] flex justify-center"
+      className="fixed z-[100000] flex justify-center"
       aria-modal="true"
       role="dialog"
       aria-label={ariaLabel || title}
@@ -47,7 +47,7 @@ export default function SharedModal({ open, onClose, title, children, ariaLabel 
           top: '5px',
           left: '50%',
           transform: 'translateX(-50%)',
-          zIndex: 10000,
+          zIndex: 100001,
           willChange: 'transform',
         }}
       >

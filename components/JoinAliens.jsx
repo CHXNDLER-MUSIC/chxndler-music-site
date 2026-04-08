@@ -11,7 +11,7 @@ import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import EpisodesLibrary from "@/components/EpisodesLibrary";
 import { useGoLiveOverride } from "@/hooks/useGoLiveOverride";
 import YouTubeLive from "@/components/YouTubeLive";
-import { getNextIrlShow, irlShows } from "@/data/irlShows";
+// IRL shows now fetched from Supabase instead of static list
 
 export default function JoinAliens({ visible = true } = {}) {
   const { profile, savePhone, user } = useProfile();
@@ -48,7 +48,57 @@ export default function JoinAliens({ visible = true } = {}) {
   // ── Next-broadcast countdown ──────────────────────────────────────────────
   const [countdownMs, setCountdownMs] = useState(0);
   const [nextBroadcast, setNextBroadcast] = useState(null);
-  const nextIrl = getNextIrlShow();
+  const [shows, setShows] = useState([]);
+  const [showsLoading, setShowsLoading] = useState(false);
+  const [showsError, setShowsError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadShows() {
+      setShowsLoading(true);
+      setShowsError(null);
+      try {
+        const { data, error } = await supabaseClient
+          .from('irl_shows')
+          .select('*')
+          .order('date', { ascending: true });
+        if (error) throw error;
+        if (!cancelled) {
+          setShows(Array.isArray(data) ? data : []);
+        }
+      } catch (e) {
+        if (!cancelled) setShowsError(e?.message || 'Failed to load shows');
+      } finally {
+        if (!cancelled) setShowsLoading(false);
+      }
+    }
+    loadShows();
+    return () => { cancelled = true; };
+  }, []);
+
+  const nextIrl = React.useMemo(() => {
+    const now = Date.now();
+    let best = null;
+    for (const row of shows) {
+      const d = new Date(row.date);
+      if (isNaN(d.getTime())) continue;
+      if (d.getTime() >= now) {
+        if (!best || d.getTime() < best.dateObj.getTime()) {
+          best = {
+            dateObj: d,
+            venue: row.location || '',
+            title: row.title || row.location || '',
+            signalType: row.cost || '',
+            displayDate: row.display_date || '',
+            timeLabel: row.time_label || '',
+            url: row.tickets_url || '',
+            directionsUrl: row.directions || '',
+          };
+        }
+      }
+    }
+    return best;
+  }, [shows]);
 
   /**
    * Returns the next upcoming broadcast (Mon 7 PM ET / Thu 7 PM ET).
@@ -234,7 +284,7 @@ export default function JoinAliens({ visible = true } = {}) {
         minHeight: isChatOpen ? '0' : 'fit-content',
         maxHeight: '100%',
         margin: '0',
-        padding: '0px 8px 0px 8px',
+        padding: isIrlOpen ? '0px 8px 100px 8px' : '0px 8px 0px 8px',
         background: 'rgba(0, 0, 0, 0.6)',
         backdropFilter: 'blur(12px)',
         border: 'none',
@@ -264,10 +314,7 @@ export default function JoinAliens({ visible = true } = {}) {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          width: '100%',
-          position: 'absolute',
-          left: '50%',
-          transform: 'translateX(-50%)'
+          width: '100%'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <div
@@ -308,22 +355,7 @@ export default function JoinAliens({ visible = true } = {}) {
       </div>
       </div>
 
-      {/* NEXT LIVE SIGNAL label directly below the pink line */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        marginTop: '6px', marginBottom: '4px'
-      }}>
-        <div style={{
-          fontSize: 'clamp(10px, 2.5vw, 13px)',
-          fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
-          fontWeight: '600',
-          letterSpacing: '0.35em',
-          textTransform: 'uppercase',
-          color: 'rgba(0, 255, 255, 0.6)'
-        }}>
-          NEXT LIVE SIGNAL
-        </div>
-      </div>
+      {/* Removed NEXT LIVE SIGNAL label */}
 
       {/* YouTube Live Embed (auto-detect) with countdown fallback */}
       <YouTubeLive
@@ -334,7 +366,8 @@ export default function JoinAliens({ visible = true } = {}) {
         style={{
           width: 'calc(100% + 16px)',
           padding: '0',
-          margin: '-10px -8px 4px'
+          // Tighter spacing below the pink line
+          margin: '2px -8px 4px'
         }}
       >
         {/* ── Cinematic Countdown ─────────────────────────────────── */
@@ -343,7 +376,8 @@ export default function JoinAliens({ visible = true } = {}) {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: 'clamp(16px, 5vw, 36px) 12px',
+          // Reduce top padding so numbers are closer to the pink line
+          padding: 'clamp(2px, 1.5vw, 8px) 12px 12px',
           width: '100%',
           boxSizing: 'border-box',
         }}>
@@ -464,6 +498,16 @@ export default function JoinAliens({ visible = true } = {}) {
 
           {/* IRL SIGNAL — expandable neon dashboard drawer */}
           <div style={{ width: 'calc(100% + 16px)', margin: '4px -8px 0', position: 'relative' }}>
+            {/* Wrapper with single continuous border so contents stay inside */}
+            <div
+              className="irl-pulse"
+              style={{
+                width: '100%',
+                border: '1px solid rgba(242,239,29,0.55)',
+                borderRadius: 12,
+                overflow: 'hidden'
+              }}
+            >
             <motion.button
               type="button"
               onClick={() => { try { sfx.play('click', 0.35); } catch {} setIsIrlOpen((v) => !v); }}
@@ -471,13 +515,10 @@ export default function JoinAliens({ visible = true } = {}) {
               whileTap={{ scale: 0.99 }}
               style={{
                 width: '100%',
-                borderRadius: 12,
-                padding: '8px 12px',
+                padding: isIrlOpen ? '4px 10px' : '8px 12px',
                 background: 'linear-gradient(90deg, rgba(252,84,175,0.12), rgba(0,255,255,0.12))',
-                border: '1px solid rgba(0,255,255,0.35)',
-                boxShadow: isIrlOpen
-                  ? '0 0 24px rgba(0,255,255,0.35), 0 0 36px rgba(252,84,175,0.25)'
-                  : '0 0 14px rgba(0,255,255,0.18)',
+                border: 'none',
+                borderBottom: '1px solid rgba(0,255,255,0.25)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -486,15 +527,17 @@ export default function JoinAliens({ visible = true } = {}) {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: 1 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: isIrlOpen ? 0 : 2, minWidth: 0, flex: 1 }}>
                   <span style={{
                     fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
-                    letterSpacing: '0.18em', fontSize: 11, color: '#FC54AF',
-                    textShadow: '0 0 10px rgba(252,84,175,0.9)'
+                    letterSpacing: '0.18em', fontSize: 12, color: '#F2EF1D',
+                    textShadow: '0 0 10px rgba(242,239,29,0.85)',
+                    lineHeight: isIrlOpen ? 1 : 1.2
                   }}>
-                    ● NEXT IRL SIGNAL
+                    NEXT IRL SIGNAL
                   </span>
                   {(() => {
+                    if (isIrlOpen) return null; // Hide header details when dropdown is open
                     const fmtDateShort = (d) => {
                       try { return new Intl.DateTimeFormat('en-US', { month: 'numeric', day: 'numeric' }).format(d); }
                       catch { return d.toLocaleDateString('en-US'); }
@@ -550,14 +593,11 @@ export default function JoinAliens({ visible = true } = {}) {
                   transition={{ duration: 0.35, ease: [0.2, 0.6, 0.2, 1] }}
                   style={{
                     overflow: 'hidden',
-                    border: '1px solid rgba(0,255,255,0.25)',
-                    borderTop: 'none',
-                    borderRadius: '0 0 12px 12px',
                     background: 'linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.6))',
                     boxShadow: 'inset 0 0 24px rgba(0,255,255,0.08)'
                   }}
                 >
-                  <div style={{ padding: 12 }}>
+                  <div style={{ padding: isIrlOpen ? 8 : 12 }}>
                     {(() => {
                       const fmtFullDate = (d) => {
                         try { return new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(d); }
@@ -573,16 +613,16 @@ export default function JoinAliens({ visible = true } = {}) {
                         const dateText = nextIrl.displayDate || fmtFullDate(nextIrl.dateObj);
                         const timeText = nextIrl.timeLabel || (hasTime ? fmtTime(nextIrl.dateObj) : 'Time TBA');
                         const venueText = nextIrl.venue || '';
-                        const addressText = nextIrl.location || '';
-                        const locationForMaps = [venueText, addressText].filter(Boolean).join(', ');
-                        const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(locationForMaps)}`;
+                        const directionsUrl = nextIrl.directionsUrl && nextIrl.directionsUrl.startsWith('http')
+                          ? nextIrl.directionsUrl
+                          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venueText)}`;
                         const pad = (n) => String(n).padStart(2, '0');
                         const toGCalDateUTC = (d) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
                         let startStr = '';
                         let endStr = '';
                         if (hasTime) {
                           const start = new Date(nextIrl.dateObj);
-                          const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+                          const end = new Date(start.getTime() + 150 * 60 * 1000); // 2.5 hours (e.g., 9:30 PM → 12:00 AM)
                           startStr = toGCalDateUTC(start);
                           endStr = toGCalDateUTC(end);
                         } else {
@@ -593,12 +633,19 @@ export default function JoinAliens({ visible = true } = {}) {
                           endStr = ymd;
                         }
                         const calTitle = nextIrl.title || venueText || 'IRL Signal';
-                        const calLocation = locationForMaps;
-                        const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calTitle)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(calLocation)}`;
+                        const calLocation = venueText;
                         const costText = (nextIrl.signalType && nextIrl.signalType.toUpperCase().includes('FREE'))
                           ? 'FREE'
                           : (nextIrl.signalType || 'TBA');
-                        const rowStyle = { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' };
+                        const description = [
+                          'Aliens… welcome to the Heartverse 👽',
+                          `I’m playing live at ${calLocation}.`,
+                          'Songs about love, feeling lost, and finding your community.',
+                          'Come be part of it.',
+                          `🎟 ${costText || 'Free'}`,
+                        ].join('\n');
+                        const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`CHXNDLER LIVE at ${calTitle}`)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(calLocation)}&details=${encodeURIComponent(description)}&ctz=America/New_York`;
+                        const rowStyle = { display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' };
                         const labelStyle = { fontWeight: 800, color: '#fff', letterSpacing: '0.04em', flexShrink: 0 };
                         const valueStyle = { color: 'rgba(255,255,255,0.9)', flex: 1, whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'anywhere', minWidth: 0 };
                         const iconStyle = { width: 16, height: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' };
@@ -617,7 +664,6 @@ export default function JoinAliens({ visible = true } = {}) {
                               <span style={{ ...labelStyle, fontSize: 12 }}>Location:</span>
                               <span style={{ ...valueStyle, fontSize: 12, display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
                                 <span>{venueText}</span>
-                                {addressText && <span>{addressText}</span>}
                               </span>
                             </div>
                             <div style={{ ...rowStyle, fontSize: 12 }}>
@@ -648,8 +694,8 @@ export default function JoinAliens({ visible = true } = {}) {
                               <div>
                                 {(() => {
                                   const nowMs = Date.now();
-                                  const upcoming = irlShows
-                                    .map((ev) => ({ ev, d: new Date(ev.date) }))
+                                  const upcoming = (Array.isArray(shows) ? shows : [])
+                                    .map((row) => ({ row, d: new Date(row.date) }))
                                     .filter(({ d }) => !isNaN(d.getTime()) && d.getTime() >= nowMs)
                                     .sort((a, b) => a.d.getTime() - b.d.getTime());
                                   if (upcoming.length === 0) {
@@ -657,25 +703,30 @@ export default function JoinAliens({ visible = true } = {}) {
                                       <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>No additional shows scheduled.</div>
                                     );
                                   }
+                                  // Preserve original indices so expansion state remains stable
+                                  const upcomingWithIndex = upcoming.map((v, idx) => ({ ...v, idx }));
+                                  // If a row is expanded, show only that row in detail view
+                                  const items = (expandedIrlIndex !== null)
+                                    ? upcomingWithIndex.filter((v) => v.idx === expandedIrlIndex)
+                                    : upcomingWithIndex;
                                   const fmtListDate = (d) => new Intl.DateTimeFormat(undefined, { month: 'numeric', day: 'numeric' }).format(d);
                                   const fmtTime = (d) => new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(d);
                                   return (
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 6 }}>
-                                      {upcoming.map(({ ev, d }, idx) => {
+                                      {items.map(({ row, d, idx }) => {
                                         const dateText = (() => {
-                                          if (!ev.displayDate) return fmtListDate(d);
-                                          const s = ev.displayDate;
+                                          if (!row.display_date) return fmtListDate(d);
+                                          const s = row.display_date;
                                           const lastSlash = s.lastIndexOf('/');
                                           if (lastSlash !== -1 && s.length - lastSlash - 1 === 2) {
                                             return s.slice(0, lastSlash);
                                           }
                                           return s;
                                         })();
-                                        const title = ev.venue || ev.title;
-                                        const loc = ev.location;
-                                        const timeText = ev.timeLabel || fmtTime(d);
+                                        const title = row.title || row.location;
+                                        const timeText = row.time_label || fmtTime(d);
                                         const timeCompact = (() => {
-                                          const src = ev.timeLabel || timeText || '';
+                                          const src = row.time_label || timeText || '';
                                           // Try to extract hour + AM/PM
                                           const re = new RegExp('(\\\d{1,2})(?::(\\\d{2}))?\\s*([AP]M)', 'i');
                                           const m = src.match(re);
@@ -687,10 +738,11 @@ export default function JoinAliens({ visible = true } = {}) {
                                           // Fallback: remove :00 and tighten AM/PM spacing
                                           return src.replace(new RegExp(':00'), '').replace(new RegExp('\\s*(AM|PM)', 'i'), (_, p1) => p1.toUpperCase());
                                         })();
-                                        const costText = (ev.signalType && ev.signalType.toUpperCase().includes('FREE')) ? 'FREE' : (ev.signalType || 'TBA');
+                                        const costText = (row.cost && String(row.cost).toUpperCase().includes('FREE')) ? 'FREE' : (row.cost || 'TBA');
                                         const venueForMaps = title || '';
-                                        const locationForMaps = [venueForMaps, loc].filter(Boolean).join(', ');
-                                        const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(locationForMaps)}`;
+                                        const directionsUrl = row.directions && String(row.directions).startsWith('http')
+                                          ? row.directions
+                                          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venueForMaps)}`;
                                         const pad = (n) => String(n).padStart(2, '0');
                                         const toGCalDateUTC = (d0) => `${d0.getUTCFullYear()}${pad(d0.getUTCMonth() + 1)}${pad(d0.getUTCDate())}T${pad(d0.getUTCHours())}${pad(d0.getUTCMinutes())}00Z`;
                                         const hasTime = !isNaN(d.getHours());
@@ -698,7 +750,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                         let endStr = '';
                                         if (hasTime) {
                                           const start = new Date(d);
-                                          const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+                                          const end = new Date(start.getTime() + 150 * 60 * 1000); // 2.5 hours
                                           startStr = toGCalDateUTC(start);
                                           endStr = toGCalDateUTC(end);
                                         } else {
@@ -706,9 +758,16 @@ export default function JoinAliens({ visible = true } = {}) {
                                           startStr = ymd;
                                           endStr = ymd;
                                         }
-                                        const calTitle = ev.title || title || 'IRL Signal';
-                                        const calLocation = locationForMaps;
-                                        const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calTitle)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(calLocation)}`;
+                                        const calTitle = row.title || title || 'IRL Signal';
+                                        const calLocation = title || '';
+                                        const description = [
+                                          'Aliens… welcome to the Heartverse 👽',
+                                          `I’m playing live at ${calLocation}.`,
+                                          'Songs about love, feeling lost, and finding your community.',
+                                          'Come be part of it.',
+                                          `🎟 ${costText || 'Free'}`,
+                                        ].join('\n');
+                                        const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`CHXNDLER LIVE at ${calTitle}`)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(calLocation)}&details=${encodeURIComponent(description)}&ctz=America/New_York`;
                                         const isOpen = expandedIrlIndex === idx;
                                         return (
                                           <div key={idx} style={{ border: '1px solid rgba(0,255,255,0.25)', borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.25)' }}>
@@ -750,7 +809,6 @@ export default function JoinAliens({ visible = true } = {}) {
                                                       <strong style={{ color: '#fff' }}>Location:</strong>
                                                       <span style={{ color: 'rgba(255,255,255,0.9)', display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
                                                         <span>{title}</span>
-                                                        {loc && <span>{loc}</span>}
                                                       </span>
                                                     </div>
                                                     <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -773,7 +831,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                                       <strong style={{ color: '#fff' }}>Cost:</strong>
                                                       <span style={{ color: 'rgba(255,255,255,0.9)' }}>{costText}</span>
                                                     </div>
-                                                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-start', marginTop: 4 }}>
+                                                  <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap', justifyContent: 'flex-start', marginTop: 4 }}>
                                                     <a
                                                       href={directionsUrl}
                                                       target="_blank"
@@ -788,7 +846,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                                         boxShadow: '0 0 10px rgba(252,84,175,0.25)'
                                                       }}
                                                     >
-                                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                           <path d="M12 21s-7-6.58-7-11a7 7 0 1 1 14 0c0 4.42-7 11-7 11z" stroke="#FC54AF" strokeWidth="1.6"/>
                                                           <circle cx="12" cy="10" r="2.5" stroke="#FC54AF" strokeWidth="1.6"/>
@@ -796,6 +854,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                                         <span>Get Directions</span>
                                                       </span>
                                                     </a>
+                                                    
                                                     <a
                                                       href={calendarUrl}
                                                       target="_blank"
@@ -810,7 +869,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                                         boxShadow: '0 0 10px rgba(0,255,255,0.25)'
                                                       }}
                                                     >
-                                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                           <rect x="3" y="5" width="18" height="16" rx="2" stroke="#00FFFF" strokeWidth="1.6"/>
                                                           <path d="M3 9h18M8 3v4M16 3v4" stroke="#00FFFF" strokeWidth="1.6" strokeLinecap="round"/>
@@ -819,25 +878,25 @@ export default function JoinAliens({ visible = true } = {}) {
                                                       </span>
                                                     </a>
                                                     <a
-                                                      href={ev.url || '#'}
-                                                      target={ev.url ? '_blank' : undefined}
-                                                      rel={ev.url ? 'noopener noreferrer' : undefined}
-                                                      onClick={(e) => { if (!ev.url) { e.preventDefault(); return; } try { sfx.play('click', 0.45); } catch {} }}
+                                                      href={row.tickets_url || '#'}
+                                                      target={row.tickets_url ? '_blank' : undefined}
+                                                      rel={row.tickets_url ? 'noopener noreferrer' : undefined}
+                                                      onClick={(e) => { if (!row.tickets_url) { e.preventDefault(); return; } try { sfx.play('click', 0.45); } catch {} }}
                                                       style={{
                                                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                                                         borderRadius: 7,
-                                                        border: ev.url ? '1px solid #F2EF1D' : '1px solid rgba(255,255,255,0.35)',
-                                                        background: ev.url ? 'rgba(242,239,29,0.10)' : 'rgba(255,255,255,0.06)',
-                                                        color: ev.url ? '#F2EF1D' : 'rgba(255,255,255,0.6)',
+                                                        border: row.tickets_url ? '1px solid #F2EF1D' : '1px solid rgba(255,255,255,0.35)',
+                                                        background: row.tickets_url ? 'rgba(242,239,29,0.10)' : 'rgba(255,255,255,0.06)',
+                                                        color: row.tickets_url ? '#F2EF1D' : 'rgba(255,255,255,0.6)',
                                                         textDecoration: 'none', fontWeight: 700, padding: '4px 8px',
                                                         fontSize: 11,
-                                                        boxShadow: ev.url ? '0 0 10px rgba(242,239,29,0.25)' : '0 0 8px rgba(255,255,255,0.15)',
-                                                        cursor: ev.url ? 'pointer' : 'default',
-                                                        pointerEvents: ev.url ? 'auto' : 'none',
-                                                        opacity: ev.url ? 1 : 0.7
+                                                        boxShadow: row.tickets_url ? '0 0 10px rgba(242,239,29,0.25)' : '0 0 8px rgba(255,255,255,0.15)',
+                                                        cursor: row.tickets_url ? 'pointer' : 'default',
+                                                        pointerEvents: row.tickets_url ? 'auto' : 'none',
+                                                        opacity: row.tickets_url ? 1 : 0.7
                                                       }}
                                                     >
-                                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                           <path d="M7 7h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" stroke="#F2EF1D" strokeWidth="1.6"/>
                                                           <path d="M8.5 12h7" stroke="#F2EF1D" strokeWidth="1.6" strokeLinecap="round"/>
@@ -860,7 +919,7 @@ export default function JoinAliens({ visible = true } = {}) {
                             )}
                             {/* Actions row above Upcoming IRL Signals */}
                             {!showAllIrl && (
-                              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-start', marginTop: 2 }}>
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap', justifyContent: 'flex-start', marginTop: 2 }}>
                                 <a
                                   href={directionsUrl}
                                   target="_blank"
@@ -875,7 +934,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                     boxShadow: '0 0 10px rgba(252,84,175,0.25)'
                                   }}
                                 >
-                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                       <path d="M12 21s-7-6.58-7-11a7 7 0 1 1 14 0c0 4.42-7 11-7 11z" stroke="#FC54AF" strokeWidth="1.6"/>
                                       <circle cx="12" cy="10" r="2.5" stroke="#FC54AF" strokeWidth="1.6"/>
@@ -883,6 +942,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                     <span>Get Directions</span>
                                   </span>
                                 </a>
+                                
                                 <a
                                   href={calendarUrl}
                                   target="_blank"
@@ -897,7 +957,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                     boxShadow: '0 0 10px rgba(0,255,255,0.25)'
                                   }}
                                 >
-                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                       <rect x="3" y="5" width="18" height="16" rx="2" stroke="#00FFFF" strokeWidth="1.6"/>
                                       <path d="M3 9h18M8 3v4M16 3v4" stroke="#00FFFF" strokeWidth="1.6" strokeLinecap="round"/>
@@ -927,7 +987,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                     opacity: nextIrl.url ? 1 : 0.7
                                   }}
                                 >
-                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                       <path d="M7 7h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" stroke="#F2EF1D" strokeWidth="1.6"/>
                                       <path d="M8.5 12h7" stroke="#F2EF1D" strokeWidth="1.6" strokeLinecap="round"/>
@@ -946,12 +1006,19 @@ export default function JoinAliens({ visible = true } = {}) {
                                   onClick={(e) => {
                                     if (!nextIrl.url) {
                                       e.preventDefault();
-                                      setShowAllIrl((v) => !v);
                                       try { sfx.play('click', 0.45); } catch {}
+                                      if (showAllIrl && expandedIrlIndex !== null) {
+                                        // In detail view: go back to the list of upcoming signals
+                                        setExpandedIrlIndex(null);
+                                      } else {
+                                        // Toggle between showing all upcoming signals and the main panel
+                                        setShowAllIrl((v) => !v);
+                                      }
                                     } else {
                                       try { sfx.play('card-ding', 0.6); } catch {}
                                     }
                                   }}
+                                  className={!nextIrl.url && !showAllIrl ? 'upcoming-irl-pulse' : undefined}
                                   style={{
                                     flex: 1,
                                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -960,7 +1027,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                     background: (!nextIrl.url) ? 'rgba(255,255,255,0.10)' : 'rgba(242,239,29,0.1)',
                                     color: (!nextIrl.url) ? '#FFFFFF' : '#F2EF1D',
                                     textDecoration: 'none', fontWeight: 700,
-                                    boxShadow: (!nextIrl.url) ? '0 0 18px rgba(255,255,255,0.30)' : '0 0 18px rgba(242,239,29,0.25)',
+                                    boxShadow: nextIrl.url ? '0 0 18px rgba(242,239,29,0.25)' : undefined,
                                     padding: '8px 12px',
                                     cursor: 'pointer'
                                   }}
@@ -1004,6 +1071,7 @@ export default function JoinAliens({ visible = true } = {}) {
                 </motion.div>
               )}
             </AnimatePresence>
+            </div>
           </div>
         </div>
         }
@@ -1890,6 +1958,28 @@ export default function JoinAliens({ visible = true } = {}) {
           }
         }
 
+        /* Subtle glow and pulse for entire IRL box */
+        .irl-pulse {
+          box-shadow:
+            0 0 18px rgba(242,239,29,0.22),
+            0 0 32px rgba(242,239,29,0.12);
+          animation: irlPulse 3.2s ease-in-out infinite;
+        }
+        @keyframes irlPulse {
+          0%, 100% {
+            box-shadow:
+              0 0 28px rgba(242,239,29,0.34),
+              0 0 56px rgba(242,239,29,0.20),
+              0 0 72px rgba(242,239,29,0.12);
+          }
+          50% {
+            box-shadow:
+              0 0 16px rgba(242,239,29,0.18),
+              0 0 36px rgba(242,239,29,0.10),
+              0 0 48px rgba(242,239,29,0.06);
+          }
+        }
+
         @keyframes countdownPulse {
           0%, 100% {
             text-shadow:
@@ -1919,6 +2009,25 @@ export default function JoinAliens({ visible = true } = {}) {
               0 0 7px #FF00FF,
               0 0 12px #FF00FF,
               0 0 17px #FF00FF;
+          }
+        }
+
+        /* White glowing pulse for "UPCOMING IRL SIGNALS" CTA */
+        .upcoming-irl-pulse {
+          animation: upcomingIrlPulse 2.6s ease-in-out infinite;
+        }
+        @keyframes upcomingIrlPulse {
+          0%, 100% {
+            box-shadow:
+              0 0 22px rgba(255,255,255,0.45),
+              0 0 36px rgba(255,255,255,0.25);
+            text-shadow: 0 0 8px rgba(255,255,255,0.90);
+          }
+          50% {
+            box-shadow:
+              0 0 12px rgba(255,255,255,0.25),
+              0 0 22px rgba(255,255,255,0.15);
+            text-shadow: 0 0 3px rgba(255,255,255,0.60);
           }
         }
       `}</style>

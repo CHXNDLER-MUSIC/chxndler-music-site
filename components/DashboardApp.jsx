@@ -2057,6 +2057,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         if (process.env.NODE_ENV !== "production") console.log('🎵 song:warp-request event received:', { songSlug, source, autoPlay });
       }
       if (songSlug) {
+        // Preload to update header/UI immediately while warp runs
+        try { audioManager.preloadTrack(songSlug); } catch {}
         // Call onSongChange which triggers the full warp sequence (camera + visual effect)
         onSongChange(songSlug);
 

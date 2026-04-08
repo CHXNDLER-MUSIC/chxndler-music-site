@@ -92,6 +92,8 @@ export type TrackInfo = {
 // Audio source files — full-length songs served from Supabase Storage (public bucket).
 // Small UI sounds, welcome clips, and space ambience remain in /public.
 export const TRACKS = {
+  // Use MP3 only for ALONE to avoid loading a missing Opus source
+  ALONE: { mp3: S("alone.mp3") },
   BABY: { mp3: S("baby.mp3"), opus: S("baby.opus") },
   BE_MY_BEE: { mp3: S("be-my-bee.mp3"), opus: S("be-my-bee.opus") },
   BRAIN_FREEZE: { mp3: S("brain-freeze.mp3"), opus: S("brain-freeze.opus") },
@@ -125,6 +127,12 @@ export const TRACKS = {
 
 // Track info mapping - links track keys to visual/metadata information
 export const TRACK_INFO: Record<string, TrackInfo> = {
+  'alone': {
+    id: 'alone',
+    title: 'ALONE',
+    artist: 'CHXNDLER',
+    oneLiner: 'Lost in a crowd under city lights.'
+  },
   'welcome-to-the-heartverse': {
     id: 'welcome-to-the-heartverse',
     title: 'Welcome to the Heartverse',

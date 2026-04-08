@@ -1284,7 +1284,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 data-slug={cur.slug}
                 data-id="lyrics"
                 onMouseEnter={playHover}
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   uiClick();
                   setLyricsOpen(true);
                   ensureLyricsLoaded(cur.slug);

@@ -10,7 +10,7 @@ import ReactionTray from './ReactionTray';
  * MessageInput Component
  * Input field for sending chat messages with emoji picker and formatting
  */
-export default function MessageInput({ onSendMessage, disabled, placeholder = "Send a Heart Signal…", onTyping, onRoomReaction, showRoomReactionTray, setShowRoomReactionTray, user, currentUserElement = null }) {
+export default function MessageInput({ onSendMessage, disabled, placeholder = "Send heart signal…", onTyping, onRoomReaction, showRoomReactionTray, setShowRoomReactionTray, user, currentUserElement = null }) {
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [isTyping, setIsTyping] = useState(false);

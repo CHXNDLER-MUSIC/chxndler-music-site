@@ -32,8 +32,12 @@ I’m really starting to like me
 Letting go of what I think I should be 
 Letting go of what you think of me
 Letting go of the fantasy
-Im really starting to like me
+I’m really starting to like me
 Letting go of what I think I should be 
 Letting go of what you think of me
-Letting go of the fantasy 
-Im really starting to like me
+Letting go of everything 
+I’m really starting to like me
+Letting go of what I think I should be 
+Letting go of what you think of me
+Letting go of the fantasy
+I think I’m starting to like me

@@ -1,53 +1,47 @@
-Oh, woah
-Oh, woah
-Oh, woah
+Comin' out of my cage and I've been doin' just fine
+Gotta, gotta be down because I want it all
+It started out with a kiss, how did it end up like this?
+It was only a kiss, it was only a kiss
+Now I'm falling asleep and she's calling a cab
+While he's having a smoke and she's taking a drag
+Now they're goin' to bed and my stomach is sick
+And it's all in my head, but she's touching his
 
-You know you love me (Yo), 
-I know you care (Uh-huh)
-Just shout whenever (Yo), 
-and I'll be there (Uh-huh)
-You are my love (Yo), 
-you are my heart (Uh-huh)
-And we will never, ever, 
-ever be apart (Yo, uh-huh)
-Are we an item? (Yo) Girl, 
-quit playin' (Uh-huh)
-"We're just friends" (Yo), 
-what are you sayin'? (Uh-huh)
-Said, "There's another" (Yo), 
-and looked right in my eyes (Uh-huh)
-My first love broke my heart for the first time (Yo), 
-and I was like (Uh-huh)
+Chest now
+He takes off her dress now
+Let me go
+And I just can't look, it's killing me
+And taking control
 
-Baby, baby, baby, oh
-Like baby, baby, baby, no
-Like baby, baby, baby, oh
-I thought you'd always be mine, mine
-Baby, baby, baby, oh
-Like baby, baby, baby, no
-Like baby, baby, baby, oh
-I thought you'd always be mine, mine
+Jealousy
+Turning saints into the sea
+Swimming through sick lullabies
+Choking on your alibis
+But it's just the price I pay
+Destiny is calling me
+Open up my eager eyes
+'Cause I'm Mr. Brightside
 
-Oh, for you, 
-I would've done whatever (Uh-huh)
-And I just can't believe we ain't together (Yo, uh-huh)
-And I wanna play it cool (Yo), 
-but I'm losin' you (Uh-huh)
-I'll buy you anything (Yo), 
-I'll buy you any ring (Uh-huh)
-And I'm in pieces (Yo), 
-baby, fix me (Uh-huh)
-And just shake me 'til you wake me from this bad dream (Yo, uh-huh)
-I'm goin' down (Yo), 
-down, down, down (Uh-huh)
-And I just can't believe my first love won't be around, 
-and I'm like
+I'm comin' out of my cage and I've been doin' just fine
+Gotta, gotta be down because I want it all
+It started out with a kiss, how did it end up like this?
+(It was only a kiss) It was only a kiss
+Now I'm falling asleep and she's calling a cab
+While he's havin' a smoke and she's taking a drag
+Now they're goin' to bed and my stomach is sick
+And it's all in my head, but she's touching his
 
-Baby, baby, baby, oh
-Like baby, baby, baby, no
-Like baby, baby, baby, oh
-I thought you'd always be mine, mine
-Baby, baby, baby, oh
-Like baby, baby, baby, no
-Like baby, baby, baby, oh
-I thought you'd always be mine, mine
+Chest now
+He takes off her dress now
+Let me go
+'Cause I just can't look, it's killing me
+And taking control
+
+Jealousy
+Turning saints into the sea
+Swimming through sick lullabies
+Choking on your alibis
+But it's just the price I pay
+Destiny is calling me
+Open up my eager eyes
+'Cause I'm Mr. Brightside

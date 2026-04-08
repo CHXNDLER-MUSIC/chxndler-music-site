@@ -3216,8 +3216,10 @@ const HUDPanel = React.memo(function HUDPanel({
                 {(() => {
                   const isHome = !currentId;
                   const currentSong = resolvedSongs.find(s => s.id === active);
-                  const slug = isHome ? 'homepage' : (currentSong?.slug || currentSong?.id || active || 'homepage');
-                  const hasLyrics = isHome ? true : !!(currentSong && (currentSong.hasLyrics !== false));
+                  // Prefer currentId for slug fallback so lyrics open even if list hasn’t reconciled yet
+                  const slug = isHome ? 'homepage' : (currentSong?.slug || currentSong?.id || currentId || active || 'homepage');
+                  // Allow lyrics when a selection exists even if DB song isn't in resolved list yet
+                  const hasLyrics = isHome ? true : (currentSong ? (currentSong.hasLyrics !== false) : true);
                   const lyricsTitle = isHome ? 'Lyrics for CHXNDLER' : `Lyrics for ${currentSong?.title || 'current track'}`;
                   const lyricsAria = isHome ? 'View lyrics for CHXNDLER' : `View lyrics for ${currentSong?.title || 'current track'}`;
 
@@ -3227,12 +3229,21 @@ const HUDPanel = React.memo(function HUDPanel({
                   const CHXNDLER_YOUTUBE_CHANNEL = 'https://www.youtube.com/@chxndlerthealien';
 
                   const spotifyUrl = isHome ? CHXNDLER_SPOTIFY_PROFILE : (currentSong?.spotify || CHXNDLER_SPOTIFY_PROFILE);
-                  const appleUrl = isHome ? CHXNDLER_APPLE_PROFILE : (currentSong?.apple || CHXNDLER_APPLE_PROFILE);
+                  let appleUrl = isHome ? CHXNDLER_APPLE_PROFILE : (currentSong?.apple || CHXNDLER_APPLE_PROFILE);
+                  // Override Apple Music link for MR. BRIGHTSIDE
+                  try {
+                    const slugId = String(currentSong?.id || '').toLowerCase();
+                    if (!isHome && slugId === 'mr-brightside') {
+                      appleUrl = 'https://music.apple.com/us/album/mr-brightside-single/1881001013';
+                    }
+                  } catch {}
                   // Use per-song YouTube when available; otherwise open channel
                   const youtubeUrl = isHome ? CHXNDLER_YOUTUBE_CHANNEL : (currentSong?.youtube || CHXNDLER_YOUTUBE_CHANNEL);
 
                   const isSpotifyProfile = isHome || !currentSong?.spotify;
                   const isAppleProfile = isHome || !currentSong?.apple;
+                  // Disable streaming buttons for unreleased songs (treat unknown as unreleased)
+                  const isReleased = isHome ? true : (currentSong?.is_released === true);
                   const isYouTubeProfile = isHome || !currentSong?.youtube;
 
                   const isElementPlanet = ELEMENT_PLANETS.includes(String(active).toLowerCase());
@@ -3251,7 +3262,7 @@ const HUDPanel = React.memo(function HUDPanel({
                         right: 13,
                         // Move controls down by 3px more
                         bottom: -25,
-                        zIndex: 15,
+                        zIndex: 1200,
                         borderRadius: '8px',
                         // Remove left padding so play/pause sits closer to the container edge
                         padding: '4px 0px',
@@ -3299,7 +3310,7 @@ const HUDPanel = React.memo(function HUDPanel({
                           ref={lyricsBtnRef}
                           type="button"
                           className="hud-lyrics-btn"
-                          style={{ marginTop: 1, pointerEvents: 'auto' }}
+                          style={{ marginTop: 1, pointerEvents: 'auto', position: 'relative', zIndex: 2000 }}
                           title={lyricsTitle}
                           aria-label={lyricsAria}
                           data-id="lyrics"
@@ -3307,7 +3318,9 @@ const HUDPanel = React.memo(function HUDPanel({
                           aria-haspopup="dialog"
                           aria-expanded={showLyricsPopover}
                           onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             if (showLyricsPopover) { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); return; }
                             openLyricsPopover(slug);
                           }}
@@ -3340,10 +3353,17 @@ const HUDPanel = React.memo(function HUDPanel({
                       )}
 
                       {/* Apple Music button - between Lyrics and Spotify */}
-                      {isCenterPlanet ? (
+                      {isCenterPlanet || !isReleased ? (
                         <div className="apple-btn-unavailable-hud" style={{ marginTop: 1 }} title="Apple Music not available for Heartverse">
-                          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
-                            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden>
+                            {/* Apple Music-style beamed notes (rounded heads, rounded stems, slanted beam) */}
+                            <g fill="currentColor">
+                              <circle cx="8.2" cy="15.8" r="2.1" />
+                              <rect x="9.5" y="7.2" width="1.6" height="6.8" rx="0.8" />
+                              <circle cx="15.2" cy="13.0" r="2.1" />
+                              <rect x="16.5" y="4.5" width="1.6" height="6.5" rx="0.8" />
+                              <rect x="10.3" y="4.6" width="8.2" height="1.8" rx="0.9" transform="rotate(-12 14.4 5.5)" />
+                            </g>
                           </svg>
                         </div>
                       ) : (
@@ -3379,14 +3399,21 @@ const HUDPanel = React.memo(function HUDPanel({
                             }
                           }}
                         >
-                          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
-                            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden>
+                            {/* Apple Music-style beamed notes (rounded heads, rounded stems, slanted beam) */}
+                            <g fill="currentColor">
+                              <circle cx="8.2" cy="15.8" r="2.1" />
+                              <rect x="9.5" y="7.2" width="1.6" height="6.8" rx="0.8" />
+                              <circle cx="15.2" cy="13.0" r="2.1" />
+                              <rect x="16.5" y="4.5" width="1.6" height="6.5" rx="0.8" />
+                              <rect x="10.3" y="4.6" width="8.2" height="1.8" rx="0.9" transform="rotate(-12 14.4 5.5)" />
+                            </g>
                           </svg>
                         </a>
                       )}
 
                       {/* Streaming: Spotify, Apple, YouTube moved left into top controls */}
-                      {isCenterPlanet ? (
+                      {isCenterPlanet || !isReleased ? (
                         <div className="spotify-btn-unavailable-hud" style={{ marginTop: 1 }} title="Spotify not available for Heartverse">
                           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                             <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
@@ -3432,7 +3459,7 @@ const HUDPanel = React.memo(function HUDPanel({
                       )}
 
 
-                      {(isCenterPlanet || isElementPlanet) && !currentSong?.youtube ? (
+                      {(isCenterPlanet || isElementPlanet) && !currentSong?.youtube || !isReleased ? (
                         <div className="youtube-btn-unavailable-hud" title={isCenterPlanet ? "YouTube not available for Heartverse" : "YouTube not available for elemental planets"} style={{ marginTop: 1 }}>
                           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
                             <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
@@ -3500,7 +3527,7 @@ const HUDPanel = React.memo(function HUDPanel({
                       <button
                         data-button-id="volume-control"
                         className="hud-volume-btn"
-                        style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', touchAction: 'manipulation', order: 99 }}
+                        style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', touchAction: 'manipulation', order: 99, position: 'relative', zIndex: 3000 }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                         onTouchStart={(e) => {
                           // Prevent touch events from propagating to underlying elements
