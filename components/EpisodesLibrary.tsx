@@ -64,19 +64,19 @@ const VIDEOS: Video[] = [
   },
   {
     id: "hv-006",
-    title: "Heartverse 06: I Got Cheated On Last Night",
+    title: "Heartverse 07: I Got Cheated On Last Night",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-04-01T23:00:00Z",
+    releaseDate: "2026-04-29T23:00:00Z",
   },
   {
     id: "hv-007",
-    title: "Heartverse 07: Our First Tattoos",
+    title: "Heartverse 06: Our First Tattoos",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-04-08T23:00:00Z",
+    releaseDate: "2026-04-15T23:00:00Z",
   },
   {
     id: "hv-008",
@@ -222,28 +222,28 @@ const VIDEOS: Video[] = [
     title: "Electric Signal 07",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "electric",
-    releaseDate: "2026-04-11T12:00:00",
+    releaseDate: "2026-04-25T12:00:00",
   },
   {
     id: "lsf-008",
     title: "Electric Signal 08",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "electric",
-    releaseDate: "2026-04-18T12:00:00",
+    releaseDate: "2026-05-09T12:00:00",
   },
   {
     id: "lsf-009",
     title: "Electric Signal 09",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "electric",
-    releaseDate: "2026-04-25T12:00:00",
+    releaseDate: "2026-05-23T12:00:00",
   },
   {
     id: "lsf-010",
     title: "Electric Signal 10",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "electric",
-    releaseDate: "2026-05-02T12:00:00",
+    releaseDate: "2026-06-06T12:00:00",
   },
 ];
 

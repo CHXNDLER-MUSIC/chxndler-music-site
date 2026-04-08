@@ -199,6 +199,11 @@ const HUDPanel = React.memo(function HUDPanel({
   const [preferRaw3D, setPreferRaw3D] = useState(false);
   // Toggle between 3D planet system and flat world map
   const [showFlatMap, setShowFlatMap] = useState(false);
+  // Temporary: hide the MAP/3D toggle button in the blue display
+  const SHOW_MAP_TOGGLE = false;
+  // Toggle visibility of the 3D planets layer
+  // Default off; lazy-load planets when user clicks the button
+  const [showPlanets, setShowPlanets] = useState(false);
   // Remove problematic component state that causes React CurrentOwner issues
   const [threeFailed, setThreeFailed] = useState(null);
   const [mounted, setMounted] = useState(false);
@@ -2395,7 +2400,54 @@ const HUDPanel = React.memo(function HUDPanel({
               zIndex: 5 // Lower z-index so it doesn't block cover art
             }}
           >
-            {/* Toggle button: 3D Planets <-> Flat Map */}
+            {/* Planets visibility toggle button */}
+            <button
+              type="button"
+              onClick={() => { try { sfx.play('click', 0.5); } catch {} setShowPlanets(prev => !prev); }}
+              aria-label={showPlanets ? 'Hide 3D planets' : 'Show 3D planets'}
+              title={showPlanets ? 'Hide Planets' : 'Show Planets'}
+              style={{
+                position: 'absolute',
+                top: '8px',
+                right: '8px',
+                zIndex: 50,
+                pointerEvents: 'auto',
+                background: 'rgba(0, 20, 30, 0.7)',
+                border: '1px solid rgba(61, 245, 255, 0.4)',
+                borderRadius: '8px',
+                padding: '6px 10px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                backdropFilter: 'blur(6px)',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 0 10px rgba(61, 245, 255, 0.15)',
+              }}
+              onMouseEnter={(e) => {
+                try { sfx.play('hover', 0.5); } catch {}
+                e.currentTarget.style.borderColor = 'rgba(61, 245, 255, 0.8)';
+                e.currentTarget.style.boxShadow = '0 0 16px rgba(61, 245, 255, 0.35)';
+                e.currentTarget.style.transform = 'scale(1.06)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(61, 245, 255, 0.4)';
+                e.currentTarget.style.boxShadow = '0 0 10px rgba(61, 245, 255, 0.15)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              {/* Planet/globe icon */}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3DF5FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              <span style={{ color: '#3DF5FF', fontSize: '10px', fontFamily: 'monospace', letterSpacing: '1px', textTransform: 'uppercase', opacity: 0.9 }}>
+                PLANETS
+              </span>
+            </button>
+            {/* Toggle button: 3D Planets <-> Flat Map (hidden via flag) */}
+            {SHOW_MAP_TOGGLE && (
             <button
               type="button"
               onClick={() => { try { sfx.play('click', 0.5); } catch {} setShowFlatMap(prev => !prev); }}
@@ -2447,7 +2499,9 @@ const HUDPanel = React.memo(function HUDPanel({
                 {showFlatMap ? '3D' : 'MAP'}
               </span>
             </button>
+            )}
 
+            {showPlanets && (
             <div className="w-full h-full" style={{ pointerEvents: showFlatMap ? 'auto' : 'none', minHeight: '300px' }}>
               {showFlatMap ? (
                 /* Flat World Map view */
@@ -2491,6 +2545,7 @@ const HUDPanel = React.memo(function HUDPanel({
                 </ErrorBoundary>
               ) : null}
               </div>
+            )}
           </div>
           )}
 

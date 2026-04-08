@@ -9,6 +9,7 @@ import { playerStore } from "@/store/usePlayerStore";
 import { useCycleList } from "@/lib/useCycleList";
 import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
 import { useNextDrop } from "@/hooks/useNextDrop";
+import { useProfile } from "@/contexts/ProfileContext";
 
 function ElementIcon({ name }) {
   const colorFor = (key) => {
@@ -70,6 +71,11 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
 
   // Supabase-backed next drop config
   const { nextDrop } = useNextDrop();
+  // Profile for journey-based early access gating
+  const { profile } = useProfile();
+  const userJourneyRaw = (profile?.journey || profile?.tier || 'wanderer');
+  const userJourney = typeof userJourneyRaw === 'string' ? userJourneyRaw.toLowerCase() : String(userJourneyRaw || 'wanderer');
+  const hasEarlyAccess = userJourney === 'dreamer' || userJourney === 'lover';
 
   // Next-drop countdown (ticks only while dropdown is open and nextDrop exists)
   const [dropCountdown, setDropCountdown] = useState(0);
@@ -466,8 +472,11 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
               || items.find(i => i.title?.toUpperCase() === nextDrop.title?.toUpperCase());
             // Use the matched item's actual id so warp/onChange receives the correct slug
             const nextDropId = nextDropItem?.id || nextDrop.slug;
-            // Default to locked if item cannot be matched to ensure safe gating for logged-out/WANDERER
-            const isNextDropLocked = nextDropItem?.locked ?? true;
+            // Lock state: base (global) vs per-user.
+            // Base locked reflects whether the song is globally unreleased.
+            // DREAMER/LOVER get early access (clickable), but we keep the base locked hint text.
+            const baseLocked = nextDropItem?.locked ?? true;
+            const isNextDropLocked = baseLocked && !hasEarlyAccess; // per-user lock
             const nextDropIcon = nextDropItem?.icon || 'darkness';
 
             // Build countdown string for locked display
@@ -541,7 +550,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                     letterSpacing: '0.05em',
                     whiteSpace: 'nowrap',
                   }}>
-                    {isNextDropLocked ? (
+                    {baseLocked ? (
                       <>
                         <span style={{ color: '#FFFFFF' }}>Signal unlocked for </span>
                         <span style={{ color: '#F2EF1D' }}>DREAMERS</span>
@@ -563,7 +572,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   {/* Hint moved under element icon */}
                 </span>
                 {/* Right column: countdown + lock aligned to far right of entire row */}
-                {isNextDropLocked && countdownStr ? (
+                {baseLocked && countdownStr ? (
                   <span className="ml-auto shrink-0 flex items-center gap-2" style={{ transform: 'translateY(-7px)' }}>
                     <span style={{
                       fontSize: '11px',
