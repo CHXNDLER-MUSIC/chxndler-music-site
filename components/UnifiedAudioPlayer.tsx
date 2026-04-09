@@ -35,6 +35,10 @@ const ELEMENT_MAP: Record<string, string> = {
   "midnight": "darkness",
   "tidal": "water",
   "drift": "water",
+  // COLORS OF OUR HOME variants
+  "colors-of-our-home": "heart",
+  "colors-of-our-home-acoustic": "heart",
+  "colors-of-our-home-bluma-game-soundtrack": "heart",
   "mr-brightside": "darkness",
 };
 

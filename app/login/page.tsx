@@ -20,6 +20,7 @@ export default function LoginPage() {
   const [justSent, setJustSent] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const codeInputRef = useRef<HTMLInputElement | null>(null);
 
   async function signInWithGoogle() {
     setError(null);
@@ -52,6 +53,8 @@ export default function LoginPage() {
       setJustSent(true);
       setTimeout(() => setJustSent(false), 1000);
       setResendSeconds(30);
+      // Focus the code input to surface system OTP suggestions
+      setTimeout(() => { try { codeInputRef.current?.focus(); } catch {} }, 0);
     } catch (e: any) {
       setError(e?.message || "Failed to send code");
     } finally {
@@ -102,6 +105,37 @@ export default function LoginPage() {
     const id = setInterval(() => setResendSeconds((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(id);
   }, [step, resendSeconds]);
+
+  // WebOTP (Email) best-effort auto-read to suggest/fill the code on supported browsers
+  useEffect(() => {
+    if (step !== "verify") return;
+    const w = typeof window !== 'undefined' ? (window as any) : undefined;
+    const n = typeof navigator !== 'undefined' ? (navigator as any) : undefined;
+    if (!w || !n || !('credentials' in n)) return;
+    const hasOtp = 'OTPCredential' in w;
+    if (!hasOtp) return;
+    const ac = new AbortController();
+    const t = setTimeout(() => ac.abort(), 90_000);
+    (async () => {
+      try {
+        const cred = await n.credentials.get({ otp: { transport: ['email'] }, signal: ac.signal } as any);
+        const codeFromOtp = (cred as any)?.code || (cred as any)?.otp;
+        if (codeFromOtp && typeof codeFromOtp === 'string') {
+          const digits = codeFromOtp.replace(/\D/g, '').slice(0, 6);
+          if (digits.length === 6) {
+            setCode(digits);
+            verifyCode(digits);
+          }
+        }
+      } catch {
+        // Ignore if unsupported or user declined
+      } finally {
+        clearTimeout(t);
+        ac.abort();
+      }
+    })();
+    return () => { clearTimeout(t); ac.abort(); };
+  }, [step]);
 
   async function resendCode() {
     if (loading || resendSeconds > 0 || !email) return;
@@ -200,7 +234,9 @@ export default function LoginPage() {
                   id="code"
                   type="text"
                   inputMode="numeric"
+                  name="one-time-code"
                   autoComplete="one-time-code"
+                  enterKeyHint="done"
                   pattern="[0-9]*"
                   maxLength={6}
                   value={codeSanitized}
@@ -216,6 +252,7 @@ export default function LoginPage() {
                   placeholder="••••••"
                   disabled={step === "success"}
                   className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-center tracking-widest text-lg text-white placeholder-white/40 shadow-sm focus:border-[#38B6FF] focus:outline-none"
+                  ref={codeInputRef}
                 />
 
                 <button

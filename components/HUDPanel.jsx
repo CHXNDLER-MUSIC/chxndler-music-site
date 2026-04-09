@@ -211,6 +211,10 @@ const HUDPanel = React.memo(function HUDPanel({
   const [beamOpacity, setBeamOpacity] = useState(0);
   // Refs for dynamic planet placement above player
   const innerRef = useRef(null);
+  // Refs to align the global track bar dynamically under the controls
+  const sectionRef = useRef(null); // wraps the blue display; used as positioning context
+  const controlsRef = useRef(null); // the container with play/pause, volume, etc.
+  const [trackBarBottom, setTrackBarBottom] = useState(null);
   const planetRef = useRef(null);
   const playerRef = useRef(null);
   const [planetBottom, setPlanetBottom] = useState(56);
@@ -2333,6 +2337,19 @@ const HUDPanel = React.memo(function HUDPanel({
           const b = Math.max(0, ir.bottom - pr.top + gap);
           // Only update if there's a significant change to prevent micro-adjustments
           setPlanetBottom(prev => Math.abs(prev - b) > 2 ? b : prev);
+          // Also position the global track bar directly below the controls container
+          const sectionEl = sectionRef.current;
+          const controlsEl = controlsRef.current;
+          if (sectionEl && controlsEl) {
+            const sr = sectionEl.getBoundingClientRect();
+            const cr = controlsEl.getBoundingClientRect();
+            // Gap below the controls; increase to push the bar lower
+            const tbGap = 20;
+            // Place the bar directly beneath controls, allowing negative bottom
+            // when controls extend below the section baseline.
+            const bottomPx = Math.round(sr.bottom - cr.bottom - tbGap);
+            setTrackBarBottom(prev => (prev == null || Math.abs(prev - bottomPx) > 1) ? bottomPx : prev);
+          }
         } catch {}
       }, 100); // 100ms throttle
     };
@@ -2340,6 +2357,8 @@ const HUDPanel = React.memo(function HUDPanel({
     const ro = new ResizeObserver(() => measure());
     if (innerRef.current) ro.observe(innerRef.current);
     if (playerRef.current) ro.observe(playerRef.current);
+    if (controlsRef.current) ro.observe(controlsRef.current);
+    if (sectionRef.current) ro.observe(sectionRef.current);
     window.addEventListener('resize', measure);
     return () => { 
       clearTimeout(measureTimeout);
@@ -2350,6 +2369,7 @@ const HUDPanel = React.memo(function HUDPanel({
 
   return (
     <motion.section
+      ref={sectionRef}
       className={
         `relative ${inConsole ? 'w-full h-full mx-0 mt-0' : 'mx-auto w-[400px] mt-[10vh]'} `
       }
@@ -2590,9 +2610,10 @@ const HUDPanel = React.memo(function HUDPanel({
                     left: inConsole ? 4 : 4,
                     // Stretch the bar wider by minimizing right padding (allow under cover art)
                     right: 4,
-                    // Move the track bar further DOWN beneath the waveform/controls block
-                    // Align relative to the waveform container bottom (DROPDOWN_BOTTOM - 80), then add extra offset
-                    bottom: Math.max(0, (typeof DROPDOWN_BOTTOM === 'number' ? (DROPDOWN_BOTTOM - 80) : (100 - 80)) - 8),
+                    // Position dynamically so it sits directly under the controls container
+                    bottom: (trackBarBottom != null)
+                      ? trackBarBottom
+                      : Math.max(0, (typeof DROPDOWN_BOTTOM === 'number' ? (DROPDOWN_BOTTOM - 80) : (100 - 80)) - 8),
                     height: 16,
                     borderRadius: 9999,
                     background: 'rgba(20,20,25,0.9)',
@@ -3251,7 +3272,7 @@ const HUDPanel = React.memo(function HUDPanel({
                   return (
                     <>
                       {/* Controls positioned above waveform */}
-                      <div className="hud-top-controls" style={{
+                      <div ref={controlsRef} className="hud-top-controls" style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: 12,

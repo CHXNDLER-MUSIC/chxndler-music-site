@@ -218,4 +218,17 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
       { time: 164.4, label: "Final Chorus", kind: "chorus" }
     ]
   },
+  // COLORS OF OUR HOME — variants
+  "colors-of-our-home": {
+    src: supabaseTrackUrl("COLORS-OF-OUR-HOME.opus"),
+    cover: "/covers/COLORS OF OUR HOME.webp",
+  },
+  "colors-of-our-home-acoustic": {
+    src: supabaseTrackUrl("COLORS-OF-OUR-HOME-_ACOUSTIC_.opus"),
+    cover: "/covers/COLORS OF OUR HOME (ACOUSTIC).webp",
+  },
+  "colors-of-our-home-bluma-game-soundtrack": {
+    src: supabaseTrackUrl("COLORS-OF-OUR-HOME-_BLUMA-Game-Soundtrack_.opus"),
+    cover: "/covers/COLORS OF OUR HOME (BLUMA Game Soundtrack).webp",
+  },
 };

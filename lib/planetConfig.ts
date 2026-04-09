@@ -78,6 +78,8 @@ export const SONG_ELEMENT_MAPPING: Record<string, ElementType> = {
   "be-my-bee": "heart",
   "collide": "heart",
   "colors-of-our-home": "heart",
+  "colors-of-our-home-acoustic": "heart",
+  "colors-of-our-home-bluma-game-soundtrack": "heart",
   "i-might-fall-in-love": "heart",
   "love-me": "heart",
   "somebody-to-love": "heart",

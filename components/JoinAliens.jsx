@@ -279,6 +279,8 @@ export default function JoinAliens({ visible = true } = {}) {
         zIndex: 130,
         position: 'relative',
         pointerEvents: visible ? 'auto' : 'none',
+        // Ensure hidden state cannot be interacted with
+        visibility: visible ? 'visible' : 'hidden',
         width: '100%',
         height: '100%',
         minHeight: isChatOpen ? '0' : 'fit-content',
