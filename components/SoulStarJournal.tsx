@@ -775,7 +775,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       'DARKNESS': getCardImageUrl('DARKNESS'),
     };
 
-    return songImages[songName] || getCardImageUrl(element);
+    const upperKey = (songName || '').toUpperCase();
+    return songImages[songName] || songImages[upperKey] || getCardImageUrl(element);
   };
 
   // Handle card click to show popup

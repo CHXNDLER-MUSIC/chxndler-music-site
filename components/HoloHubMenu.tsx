@@ -561,6 +561,8 @@ export default function HoloHubMenu({
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={open ? "Close Comms" : "Open Comms"}
+        draggable={false}
+        onDragStart={(e) => { try { e.preventDefault(); } catch {} }}
         onClick={(e) => { e.stopPropagation(); onHubClick(); }}
         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
         onMouseDown={(e) => { e.stopPropagation(); }}
@@ -659,7 +661,7 @@ export default function HoloHubMenu({
             >
               <span className="icon" aria-hidden>
                 {typeof it.icon === "string" ? (
-                  <img src={it.icon} alt="" />
+                  <img src={it.icon} alt="" draggable={false} />
                 ) : (
                   it.icon || <span className="dot" />
                 )}
@@ -687,6 +689,8 @@ export default function HoloHubMenu({
           width: `calc(var(--display-width) + 32px)`,
               height: panelHeight,
               pointerEvents: open && !suspend ? 'auto' : 'none',
+              // Ensure closed panel is not hit-testable or focusable
+              visibility: open && !suspend ? 'visible' : 'hidden',
               zIndex: 98,
               borderRadius: `var(--display-border-radius)`,
               overflow: 'visible',
@@ -759,7 +763,7 @@ export default function HoloHubMenu({
                   >
                     <span className="icon" aria-hidden>
                       {typeof it.icon === 'string' ? (
-                        <img src={String(it.icon)} alt="" />
+                        <img src={String(it.icon)} alt="" draggable={false} />
                       ) : (
                         it.icon || <span className="dot" />
                       )}

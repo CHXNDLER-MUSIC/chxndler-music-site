@@ -367,7 +367,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
       // Decorative sub-elements are marked aria-hidden individually instead
       suppressHydrationWarning
       style={{
-        position: 'absolute', inset: 0, zIndex: 100, pointerEvents: 'none',
+        position: 'fixed', inset: 0, zIndex: 100, pointerEvents: 'none',
         // Shared CSS vars so other components can align to the button baseline responsively
         ['--buttons-bottom' as any]: `${buttonsBottomPercent}%`,
         ['--button-offset-px' as any]: `${buttonOffsetPx}px`,
@@ -607,6 +607,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
                   className={`power-btn ${(blueActive && showUI) ? 'power-btn-active' : ''}`}
                   data-id="power"
                   data-tour-id="music-power-button"
+                  draggable={false}
+                  onDragStart={(e)=>{ try { e.preventDefault(); } catch {} }}
                   onMouseEnter={() => { if (!showUI || !mounted) return; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
                   onClick={() => {
                     if (!showUI || !isUIUnlocked) return;
@@ -635,7 +637,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
                 >
                   <span className="sr-only">Power Button</span>
                   <span className="power-glyph" aria-hidden>
-                    <img src="/elements/power.webp" alt="" className="power-icon" onError={(e)=>{ try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/lightning.webp'; } catch {} }} />
+                    <img src="/elements/power.webp" alt="" className="power-icon" draggable={false} onError={(e)=>{ try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/lightning.webp'; } catch {} }} />
                   </span>
                 </button>
               ) : null}
@@ -675,7 +677,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
                 isActive={activeBeamColor === 'yellow'}
                 itemSize={yellowItemSize}
                 hubSize={yellowHubSize}
-                angles={{ sp: -36, am: -18, ig: 0, tt: 18, yt: 36 }}
+                angles={{ sp: -24, am: -12, ig: 0, tt: 18, yt: 36 }}
                 anchorBottomPercent={buttonsBottomPercent}
                 anchorOffsetPx={buttonOffsetPx}
                 closeSignal={closeAllSignal}
@@ -877,6 +879,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
           // ALWAYS allow pointer events for Start button
           pointerEvents: 'auto',
         }}
+        draggable={false}
+        onDragStart={(e)=>{ try { e.preventDefault(); } catch {} }}
         onMouseEnter={() => { if (!mounted) return; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
         aria-label={isStart ? "Start" : (playing ? "Pause" : "Play")}
         title={isStart ? "Start" : (playing ? "Pause" : "Play")}
@@ -889,6 +893,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
               src="/elements/start.webp?v=20250915c"
               alt="Start"
               className="chx-icon"
+              draggable={false}
               onError={(e) => { try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/start.webp'; } catch {} }}
             />
           ) : (
@@ -1339,6 +1344,15 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
             transform: translate(-50%, -50%) rotate(360deg); 
             filter: brightness(1);
           }
+        }
+      `}</style>
+      <style jsx>{`
+        /* Hard-disable drag/select and unify touch behavior on main controls */
+        .wheel-play, .power-btn, .hub, .hub .hub-icon, .glyph img, .power-icon, .chx-icon {
+          -webkit-user-drag: none;
+          user-select: none;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
         }
       `}</style>
 

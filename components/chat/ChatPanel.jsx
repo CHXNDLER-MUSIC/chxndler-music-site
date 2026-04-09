@@ -315,6 +315,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
     if (songImages[songName]) {
       return songImages[songName];
     }
+    const upperKey = (songName || '').toUpperCase();
+    if (songImages[upperKey]) {
+      return songImages[upperKey];
+    }
 
     // Fallback to element image
     const elementImages = {

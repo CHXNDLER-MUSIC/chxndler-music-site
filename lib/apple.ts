@@ -17,15 +17,16 @@ export function appleEmbedHeight(url: string): number {
     const p = u.pathname;
     const hasSongParam = !!u.searchParams.get('i');
     // Use Apple's typical widget heights for better aspect
+    // Adjusted to match blue display vertical bounds
     // - Single track: ~175px
-    // - Album/Playlist/Artist: ~450px
-    if (p.includes('/playlist/')) return 450;
-    if (p.includes('/album/') && !hasSongParam) return 450;
-    if (p.includes('/artist/')) return 450;
+    // - Album/Playlist/Artist: ~320px (reduced from ~450)
+    if (p.includes('/playlist/')) return 320;
+    if (p.includes('/album/') && !hasSongParam) return 320;
+    if (p.includes('/artist/')) return 320;
     // Likely a single track embed
     return 175;
   } catch {
-    // Sensible default if parsing fails
-    return 350;
+    // Sensible default if parsing fails (align with blue display area)
+    return 320;
   }
 }

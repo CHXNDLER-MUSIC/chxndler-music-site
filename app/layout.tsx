@@ -90,7 +90,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preload" as="image" href="/elements/tiktok.webp" />
         <link rel="preload" as="image" href="/elements/youtube.webp" />
         <link rel="preload" as="image" href="/elements/spotify.webp" />
-        <link rel="preload" as="image" href="/elements/apple.webp" />
         {/* Preload cockpit frame and light beam base so they render instantly */}
         {/**
          * Avoid preloading decorative cockpit images to keep bandwidth for critical content.

@@ -2324,7 +2324,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           align-items: center;
           gap: 12px;
           justify-content: center; /* center under controls */
-          margin-top: 6px;
+          margin-top: 14px;
           width: 100%;
           order: 3 !important; /* Place waveform below play/pause controls */
         }
@@ -2855,8 +2855,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           backdrop-filter: none;
           box-shadow: none;
           margin: 0 2px 0 -6px; /* slight negative left margin to tighten gap */
-          /* Nudge slightly down */
-          transform: translateY(10px);
+          /* Keep in normal flow; avoid overlapping the waveform */
         }
 
         .play-pause-btn {
@@ -3089,19 +3088,22 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           z-index: 2147483647;
         }
         .sp-popover {
-          position: relative;
-          width: min(88vw, 420px);
-          /* Make container transparent to avoid visible gaps as black */
+          /* Match the blue display width and anchor just above the light beam */
+          position: fixed;
+          left: 50%;
+          transform: translateX(-50%);
+          bottom: calc(var(--light-beam-boundary, 120px) + var(--beam-height, 68px));
+          width: var(--display-width);
+          /* Keep container clear with subtle green rim */
           background: transparent;
           border-radius: 16px;
           border: 1px solid rgba(29,185,84,0.55);
-          /* Remove shadow to avoid any perceived dimming */
           box-shadow: none;
           overflow: hidden;
-          /* Slightly higher on the screen */
-          margin-top: 180px;
         }
-        @media (max-width: 768px) { .sp-popover { margin-top: 120px; } }
+        @media (max-width: 768px) {
+          .sp-popover { width: min(92vw, 660px); }
+        }
 
         /* Apple Music popout overlay */
         .am-overlay {
@@ -3116,17 +3118,26 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           z-index: 2147483647;
         }
         .am-popover {
-          position: relative;
-          width: min(88vw, 420px);
+          /* Anchor the Apple player so its bottom sits on top of the light beam */
+          position: fixed;
+          left: 50%;
+          transform: translateX(-50%);
+          bottom: calc(var(--light-beam-boundary, 120px) + var(--beam-height, 68px));
+          /* Match the blue display width */
+          width: var(--display-width);
           background: transparent; /* remove black fill */
           border-radius: 16px;
           border: 1px solid rgba(255,59,48,0.55);
-          box-shadow: 0 0 30px rgba(255,59,48,0.25); /* remove heavy dark drop shadow */
+          /* Avoid outer drop shadow so the bottom edge doesn't spill below the beam */
+          box-shadow: none;
           overflow: hidden;
-          /* Lower on the screen */
-          margin-top: 480px;
         }
-        @media (max-width: 768px) { .am-popover { margin-top: 320px; } }
+        @media (max-width: 768px) {
+          .am-popover {
+            bottom: calc(var(--light-beam-boundary, 120px) + var(--beam-height, 68px));
+            width: min(92vw, 420px);
+          }
+        }
         .am-close {
           position: absolute;
           top: 8px;

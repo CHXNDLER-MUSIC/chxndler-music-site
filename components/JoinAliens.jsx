@@ -51,6 +51,11 @@ export default function JoinAliens({ visible = true } = {}) {
   const [shows, setShows] = useState([]);
   const [showsLoading, setShowsLoading] = useState(false);
   const [showsError, setShowsError] = useState(null);
+  
+  // Drag-to-scroll for Upcoming IRL list
+  const irlScrollRef = useRef(null);
+  const [isDraggingIrl, setIsDraggingIrl] = useState(false);
+  const irlDragRef = useRef({ startX: 0, startY: 0, startScrollLeft: 0, startScrollTop: 0, moved: false });
 
   useEffect(() => {
     let cancelled = false;
@@ -702,7 +707,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                     .sort((a, b) => a.d.getTime() - b.d.getTime());
                                   if (upcoming.length === 0) {
                                     return (
-                                      <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>No additional shows scheduled.</div>
+                                      <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>No upcoming shows.</div>
                                     );
                                   }
                                   // Preserve original indices so expansion state remains stable
@@ -713,8 +718,77 @@ export default function JoinAliens({ visible = true } = {}) {
                                     : upcomingWithIndex;
                                   const fmtListDate = (d) => new Intl.DateTimeFormat(undefined, { month: 'numeric', day: 'numeric' }).format(d);
                                   const fmtTime = (d) => new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(d);
+                                  const isDetailView = expandedIrlIndex !== null;
+                                  const enableHorizontalDrag = false; // Use vertical list with drag-to-scroll
+                                  const listStyle = isDetailView
+                                    ? { display: 'grid', gridTemplateColumns: '1fr', gap: 6 }
+                                    : enableHorizontalDrag
+                                    ? {
+                                        display: 'flex',
+                                        gap: 8,
+                                        overflowX: 'auto',
+                                        paddingBottom: 4,
+                                        scrollSnapType: 'x mandatory',
+                                        WebkitOverflowScrolling: 'touch',
+                                        scrollbarWidth: 'none',
+                                        msOverflowStyle: 'none',
+                                        cursor: isDraggingIrl ? 'grabbing' : 'grab',
+                                        userSelect: isDraggingIrl ? 'none' : 'auto'
+                                      }
+                                    : {
+                                        display: 'grid',
+                                        gridTemplateColumns: '1fr',
+                                        gap: 6,
+                                        maxHeight: 280,
+                                        overflowY: 'auto',
+                                        cursor: isDraggingIrl ? 'grabbing' : 'grab',
+                                        userSelect: isDraggingIrl ? 'none' : 'auto',
+                                        paddingBottom: 'calc(56px + env(safe-area-inset-bottom))'
+                                      };
                                   return (
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 6 }}>
+                                    <div
+                                      style={listStyle}
+                                      ref={!isDetailView ? irlScrollRef : null}
+                                      onMouseDown={!isDetailView ? (e) => {
+                                        const el = irlScrollRef.current;
+                                        if (!el) return;
+                                        e.preventDefault();
+                                        setIsDraggingIrl(true);
+                                        if (enableHorizontalDrag) {
+                                          irlDragRef.current.startX = e.pageX - el.offsetLeft;
+                                          irlDragRef.current.startScrollLeft = el.scrollLeft;
+                                        } else {
+                                          irlDragRef.current.startY = e.pageY - el.offsetTop;
+                                          irlDragRef.current.startScrollTop = el.scrollTop;
+                                        }
+                                        irlDragRef.current.moved = false;
+                                      } : undefined}
+                                      onMouseMove={!isDetailView ? (e) => {
+                                        if (!isDraggingIrl) return;
+                                        const el = irlScrollRef.current;
+                                        if (!el) return;
+                                        if (enableHorizontalDrag) {
+                                          const x = e.pageX - el.offsetLeft;
+                                          const walkX = x - irlDragRef.current.startX;
+                                          if (Math.abs(walkX) > 2) irlDragRef.current.moved = true;
+                                          el.scrollLeft = irlDragRef.current.startScrollLeft - walkX;
+                                        } else {
+                                          const y = e.pageY - el.offsetTop;
+                                          const walkY = y - irlDragRef.current.startY;
+                                          if (Math.abs(walkY) > 2) irlDragRef.current.moved = true;
+                                          el.scrollTop = irlDragRef.current.startScrollTop - walkY;
+                                        }
+                                      } : undefined}
+                                      onMouseUp={!isDetailView ? () => setIsDraggingIrl(false) : undefined}
+                                      onMouseLeave={!isDetailView ? () => setIsDraggingIrl(false) : undefined}
+                                      onClickCapture={!isDetailView ? (e) => {
+                                        if (irlDragRef.current.moved) {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          irlDragRef.current.moved = false;
+                                        }
+                                      } : undefined}
+                                    >
                                       {items.map(({ row, d, idx }) => {
                                         const dateText = (() => {
                                           if (!row.display_date) return fmtListDate(d);
@@ -771,8 +845,23 @@ export default function JoinAliens({ visible = true } = {}) {
                                         ].join('\n');
                                         const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`CHXNDLER LIVE at ${calTitle}`)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(calLocation)}&details=${encodeURIComponent(description)}&ctz=America/New_York`;
                                         const isOpen = expandedIrlIndex === idx;
+                                        const cardStyleBase = {
+                                          border: '1px solid rgba(0,255,255,0.25)',
+                                          borderRadius: 8,
+                                          overflow: 'hidden',
+                                          background: 'rgba(0,0,0,0.25)'
+                                        };
+                                        const cardStyle = (isDetailView || !enableHorizontalDrag)
+                                          ? cardStyleBase
+                                          : {
+                                              ...cardStyleBase,
+                                              flex: '0 0 85%',
+                                              minWidth: '85%',
+                                              scrollSnapAlign: 'start',
+                                              scrollSnapStop: 'always'
+                                            };
                                         return (
-                                          <div key={idx} style={{ border: '1px solid rgba(0,255,255,0.25)', borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.25)' }}>
+                                          <div key={idx} style={cardStyle}>
                                             <button
                                               onClick={() => { try { sfx.play('audio/click.mp3', 0.35); } catch {} setExpandedIrlIndex(isOpen ? null : idx); }}
                                               style={{
@@ -914,6 +1003,47 @@ export default function JoinAliens({ visible = true } = {}) {
                                           </div>
                                         );
                                       })}
+                                      {!isDetailView && (
+                                        <div
+                                          style={{
+                                            position: 'sticky',
+                                            bottom: 'calc(8px + env(safe-area-inset-bottom))',
+                                            marginTop: 6,
+                                            paddingTop: 8,
+                                            background:
+                                              'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.45) 45%, rgba(0,0,0,0.75) 100%)',
+                                            borderTop: '1px solid rgba(255,255,255,0.12)'
+                                          }}
+                                        >
+                                          <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: 'flex-start' }}>
+                                            <a
+                                              href="#"
+                                              onClick={(e) => {
+                                                e.preventDefault();
+                                                try { sfx.play('click', 0.45); } catch {}
+                                                if (expandedIrlIndex !== null) {
+                                                  setExpandedIrlIndex(null);
+                                                } else {
+                                                  setShowAllIrl(false);
+                                                }
+                                              }}
+                                              style={{
+                                                flex: 1,
+                                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                borderRadius: 10,
+                                                border: '1px solid rgba(255,255,255,0.95)',
+                                                background: 'rgba(255,255,255,0.10)',
+                                                color: '#FFFFFF',
+                                                textDecoration: 'none', fontWeight: 700,
+                                                padding: '8px 12px',
+                                                cursor: 'pointer'
+                                              }}
+                                            >
+                                              Back
+                                            </a>
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
                                   );
                                 })()}
@@ -1000,6 +1130,7 @@ export default function JoinAliens({ visible = true } = {}) {
                               </div>
                             )}
                             {/* CTA below rows */}
+                            {!showAllIrl && (
                               <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: 'flex-start', marginTop: 4 }}>
                                 <a
                                   href={nextIrl.url || '#'}
@@ -1009,18 +1140,12 @@ export default function JoinAliens({ visible = true } = {}) {
                                     if (!nextIrl.url) {
                                       e.preventDefault();
                                       try { sfx.play('click', 0.45); } catch {}
-                                      if (showAllIrl && expandedIrlIndex !== null) {
-                                        // In detail view: go back to the list of upcoming signals
-                                        setExpandedIrlIndex(null);
-                                      } else {
-                                        // Toggle between showing all upcoming signals and the main panel
-                                        setShowAllIrl((v) => !v);
-                                      }
+                                      setShowAllIrl(true);
                                     } else {
                                       try { sfx.play('card-ding', 0.6); } catch {}
                                     }
                                   }}
-                                  className={!nextIrl.url && !showAllIrl ? 'upcoming-irl-pulse' : undefined}
+                                  className={!nextIrl.url ? 'upcoming-irl-pulse' : undefined}
                                   style={{
                                     flex: 1,
                                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -1034,9 +1159,10 @@ export default function JoinAliens({ visible = true } = {}) {
                                     cursor: 'pointer'
                                   }}
                                 >
-                                  {nextIrl.url ? 'Get Tickets' : (showAllIrl ? 'Back' : 'Upcoming IRL Signals')}
+                                  {nextIrl.url ? 'Get Tickets' : 'Upcoming IRL Signals'}
                                 </a>
                               </div>
+                            )}
                           </div>
                         );
                       }

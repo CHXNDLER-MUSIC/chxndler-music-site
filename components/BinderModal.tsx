@@ -597,7 +597,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       'DARKNESS': getCardImageUrl('DARKNESS'),
     };
 
-    return songImages[songName] || getCardImageUrl('CHXNDLER');
+    const upperKey = (songName || '').toUpperCase();
+    return songImages[songName] || songImages[upperKey] || getCardImageUrl('CHXNDLER');
   };
 
   const getFilteredCards = () => {
