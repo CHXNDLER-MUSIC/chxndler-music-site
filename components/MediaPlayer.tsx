@@ -2471,9 +2471,12 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           justify-content: center;
           text-decoration: none;
           transition: transform 0.2s ease, opacity 0.2s ease, filter 0.25s ease, box-shadow 0.25s ease;
-          z-index: 100;
+          /* Keep this below inline controls so it never blocks volume */
+          z-index: 40;
           background: transparent;
           border: none;
+          /* Limit the hit area to the visible circle to avoid stray overlap */
+          clip-path: circle(50% at 50% 50%);
         }
         .apple-btn-waveform:hover {
           transform: translate(-50%, -50%);
@@ -2498,7 +2501,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           align-items: center;
           justify-content: center;
           text-decoration: none;
-          z-index: 90;
+          z-index: 30;
           background: transparent;
           border: none;
           cursor: not-allowed;
@@ -2691,8 +2694,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           backdrop-filter: none; /* keep fully clear like dropdown */
           -webkit-backdrop-filter: none;
           box-shadow: none;
-          /* Raise above any streaming buttons that might overlap */
-          z-index: 60;
+          /* Ensure above Spotify/Apple icons so clicks always hit volume */
+          z-index: 700;
           isolation: isolate; /* create new stacking context to avoid backdrop bleed */
         }
         .waveform-volume-btn {

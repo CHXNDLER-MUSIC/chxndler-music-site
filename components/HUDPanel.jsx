@@ -2343,11 +2343,13 @@ const HUDPanel = React.memo(function HUDPanel({
           if (sectionEl && controlsEl) {
             const sr = sectionEl.getBoundingClientRect();
             const cr = controlsEl.getBoundingClientRect();
-            // Gap below the controls; increase to push the bar lower
-            const tbGap = 20;
-            // Place the bar directly beneath controls, allowing negative bottom
-            // when controls extend below the section baseline.
-            const bottomPx = Math.round(sr.bottom - cr.bottom - tbGap);
+            // Visual gap between controls' bottom and the TOP of the bar
+            const TB_GAP = 32; // increase to lower bar further
+            const BAR_HEIGHT = 16; // matches style height of the bar
+            // Position bar so its TOP is TB_GAP below controls' bottom
+            // bottom CSS value is distance from section bottom to bar BOTTOM
+            // so subtract both gap and bar height from controls' bottom distance
+            const bottomPx = Math.round(sr.bottom - cr.bottom - (TB_GAP + BAR_HEIGHT));
             setTrackBarBottom(prev => (prev == null || Math.abs(prev - bottomPx) > 1) ? bottomPx : prev);
           }
         } catch {}
