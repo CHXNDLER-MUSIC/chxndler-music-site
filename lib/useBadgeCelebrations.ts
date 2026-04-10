@@ -24,9 +24,11 @@ const SEEN_BADGES_KEY = 'heartverse_seen_badge_celebrations';
 const SEEN_BADGES_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // ============================================================================
-// Batch Window - Only celebrate first badge when multiple unlock at once
+// Batch Window - Only celebrate the first badge when multiple unlock in close proximity
+// Increase window to account for realtime/event latency so previously-unlocked
+// or rapidly-awarded badges don't chain celebrations.
 // ============================================================================
-const BATCH_WINDOW_MS = 2000; // 2 second window to group rapid unlocks
+const BATCH_WINDOW_MS = 8000; // 8s window to aggressively dedupe follow-up celebrations
 
 // ============================================================================
 // Init Grace Period - Block all celebrations for N seconds after initialization

@@ -104,6 +104,9 @@ export interface ShippingInfo {
   shipping_state: string;
   shipping_zip: string;
   shipping_country: string;
+  // Optional fallbacks when orderId is unavailable
+  client_request_id?: string;
+  merch_item_id?: string;
 }
 
 export interface ShippingUpdateResponse {

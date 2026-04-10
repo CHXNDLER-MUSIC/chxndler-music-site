@@ -214,15 +214,27 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
           }
         >
           <span className="socket" aria-hidden />
-          <IconButtonShell
-            title="Show Lyrics"
-            color="#F39C12"
-            onClickFX={playClick}
-            onHoverFX={playHover}
-            onClick={() => setShowLyrics(!showLyrics)}
-          >
-            {LyricsIcon}
-          </IconButtonShell>
+          {disabled ? (
+            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'none' }}>
+              <div
+                className="ck-icon-btn-disabled"
+                title="Lyrics (Not available for elemental planets)"
+                aria-disabled="true"
+              >
+                <span className="logo-glow-disabled">{LyricsIcon}</span>
+              </div>
+            </div>
+          ) : (
+            <IconButtonShell
+              title="Show Lyrics"
+              color="#F39C12"
+              onClickFX={playClick}
+              onHoverFX={playHover}
+              onClick={() => setShowLyrics(!showLyrics)}
+            >
+              {LyricsIcon}
+            </IconButtonShell>
+          )}
         </div>
       )}
 

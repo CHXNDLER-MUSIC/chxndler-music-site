@@ -291,7 +291,9 @@ export default function JoinAliens({ visible = true } = {}) {
         minHeight: isChatOpen ? '0' : 'fit-content',
         maxHeight: '100%',
         margin: '0',
-        padding: isIrlOpen ? '0px 8px 100px 8px' : '0px 8px 0px 8px',
+        // Always reserve space for bottom-floating buttons (chat, episodes, $/phone)
+        // Use safe-area inset where available to avoid iOS home indicator overlap
+        padding: '0px 8px calc(120px + env(safe-area-inset-bottom, 0px)) 8px',
         background: 'rgba(0, 0, 0, 0.6)',
         backdropFilter: 'blur(12px)',
         border: 'none',
@@ -1159,7 +1161,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                     cursor: 'pointer'
                                   }}
                                 >
-                                  {nextIrl.url ? 'Get Tickets' : 'Upcoming IRL Signals'}
+                                  {nextIrl.url ? 'Get Tickets' : 'UPCOMING IRL SIGNALS'}
                                 </a>
                               </div>
                             )}

@@ -910,7 +910,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const { hudSongs: staticHudSongs, holoSongs } = React.useMemo(() => buildPlanetSongs(), []);
 
   // Fetch database songs to get ALL songs including unreleased
-  const { songs: dbSongs } = useSongs();
+  // Use allSongs from hook (released + unreleased)
+  const { allSongs: dbSongs } = useSongs();
 
   // Element colors for planet display
   const ELEMENT_COLORS = {

@@ -15,6 +15,7 @@ import { logHeartcoinTransaction } from "@/utils/heartcoins";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useAudio } from "@/app/providers/AudioProvider";
 import { useHeartcoinBalance } from "@/providers/HeartcoinBalanceProvider";
+import { useUIState } from "@/lib/use-ui-state";
 // 2D fallback hologram
 // 2D HUD removed per request; 3D only
 // 3D planet system (requires three/r3f/drei installed)
@@ -153,6 +154,9 @@ const HUDPanel = React.memo(function HUDPanel({
 }) {
   // Use unified audio system for play/pause controls
   const audioManager = useAudio();
+
+  // Track the selected planet from the 3D scene to align UI behavior
+  const { selectedPlanetId } = useUIState();
 
   // Planet rewards system for element planet clicks
   const planetRewards = usePlanetRewardsContext();
@@ -2444,8 +2448,9 @@ const HUDPanel = React.memo(function HUDPanel({
                 gap: '5px',
                 backdropFilter: 'blur(6px)',
                 transition: 'all 0.2s ease',
-                boxShadow: '0 0 10px rgba(61, 245, 255, 0.15)',
+                boxShadow: '0 0 10px rgba(61, 245, 255, 0.18)',
               }}
+              className="planets-toggle-btn"
               onMouseEnter={(e) => {
                 try { sfx.play('hover', 0.5); } catch {}
                 e.currentTarget.style.borderColor = 'rgba(61, 245, 255, 0.8)';
@@ -2468,6 +2473,22 @@ const HUDPanel = React.memo(function HUDPanel({
                 PLANETS
               </span>
             </button>
+            {/* Subtle pulse + glow for the Planets button */}
+            <style jsx>{`
+              @keyframes planetsBtnPulse {
+                0%, 100% {
+                  filter: brightness(1) saturate(1.0);
+                  box-shadow: 0 0 10px rgba(61, 245, 255, 0.18), 0 0 0 rgba(61, 245, 255, 0);
+                }
+                50% {
+                  filter: brightness(1.12) saturate(1.1);
+                  box-shadow: 0 0 16px rgba(61, 245, 255, 0.35), 0 0 36px rgba(61, 245, 255, 0.18);
+                }
+              }
+              .planets-toggle-btn {
+                animation: planetsBtnPulse 2.4s ease-in-out infinite;
+              }
+            `}</style>
             {/* Toggle button: 3D Planets <-> Flat Map (hidden via flag) */}
             {SHOW_MAP_TOGGLE && (
             <button
@@ -3269,7 +3290,8 @@ const HUDPanel = React.memo(function HUDPanel({
                   const isReleased = isHome ? true : (currentSong?.is_released === true);
                   const isYouTubeProfile = isHome || !currentSong?.youtube;
 
-                  const isElementPlanet = ELEMENT_PLANETS.includes(String(active).toLowerCase());
+                  const isElementPlanet = ELEMENT_PLANETS.includes(String(active).toLowerCase()) ||
+                    ELEMENT_PLANETS.includes(String(selectedPlanetId).toLowerCase());
                   const isCenterPlanet = String(active).toLowerCase() === 'center';
                   return (
                     <>
@@ -6719,7 +6741,16 @@ const HUDPanel = React.memo(function HUDPanel({
                       <div className="lyrics-glow-bg"></div>
                       {/* Section header */}
                       <div className="lyrics-header">
-                        LYRICS — {isHome ? 'CHXNDLER' : (currentSong?.title || 'UNKNOWN')}
+                        {(() => {
+                          const title = isHome
+                            ? 'CHXNDLER'
+                            // Prefer resolved currentSong title, then playing track title,
+                            // then lookup by currentId, else fallback.
+                            : (currentSong?.title || track?.title || (resolvedSongs.find(s => s.id === currentId)?.title) || 'UNKNOWN');
+                          return (
+                            <>LYRICS — {title}</>
+                          );
+                        })()}
                       </div>
                     {lyricsLoading ? (
                       <div style={{ fontSize: 18, opacity: .99, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>Loading…</div>

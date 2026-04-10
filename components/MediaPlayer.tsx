@@ -17,6 +17,7 @@ import { sfx } from "@/lib/sfx";
 import NeonWaveform from "@/components/NeonWaveform";
 import SharedModal from "@/components/SharedModal";
 import AnimatedLyrics from "@/components/AnimatedLyrics";
+import { useUIState } from "@/lib/use-ui-state";
 
 type Props = {
   onSkyChange: (webm: string, mp4: string, key: string) => void;
@@ -98,6 +99,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const [lyricsLoading, setLyricsLoading] = useState(false);
   const [lyricsError, setLyricsError] = useState<string | null>(null);
   const lyricsCacheRef = useRef<Map<string, string>>(new Map());
+
+  // Detect when an elemental planet is selected to disable Lyrics button
+  const { selectedPlanetId } = useUIState();
+  const isElementPlanetSelected = (() => {
+    try {
+      const id = String(selectedPlanetId || '').toLowerCase();
+      return id === 'heart' || id === 'water' || id === 'lightning' || id === 'darkness';
+    } catch { return false; }
+  })();
   const playHover = () => { try { sfx.play('hover', 0.35); } catch {} };
   // Global guard: prevent main audio from playing unless explicitly allowed (home/start mode)
   const isMainAudioBlocked = () => {
@@ -1275,7 +1285,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           aria-label="Lyrics, YouTube, and Volume"
           ref={waveVolRef}
         >
-            {((cur as any)?.hasLyrics !== false) ? (
+            {((cur as any)?.hasLyrics !== false) && !isElementPlanetSelected ? (
               <button
                 className="lyrics-link-waveform"
                 title={`Lyrics for ${cur.title}`}
@@ -1303,7 +1313,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             ) : (
               <div
                 className="lyrics-link-unavailable-waveform"
-                title={`Lyrics not available for ${cur.title}`}
+                title={isElementPlanetSelected ? `Lyrics not available for elemental planets` : `Lyrics not available for ${cur.title}`}
                 aria-disabled="true"
                 data-song={cur.title}
                 data-slug={cur.slug}

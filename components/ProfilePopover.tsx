@@ -556,12 +556,70 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           }
         }
       });
+      
+      // Legacy fallback: include purchases stored in user_items (older flow that didn't create orders)
+      try {
+        const merchSlugs = (allMerch || []).map((m: any) => (m?.slug || '').toLowerCase()).filter(Boolean);
+        if (merchSlugs.length > 0) {
+          const { data: legacyItems, error: legacyErr } = await supabaseBrowser
+            .from('user_items')
+            .select('item_id, acquisition_date, created_at')
+            .eq('user_id', user.id)
+            .in('item_id', merchSlugs);
+          if (!legacyErr && Array.isArray(legacyItems)) {
+            legacyItems.forEach((row: any) => {
+              const key = (row.item_id || '').toLowerCase();
+              if (key && !dateMap[key]) {
+                dateMap[key] = row.acquisition_date || row.created_at || new Date().toISOString();
+              }
+            });
+          }
+        }
+      } catch (e) {
+        if (process.env.NODE_ENV !== "production") console.log('Legacy user_items fallback failed (non-fatal):', e);
+      }
+      // Also mirror by slug for robustness (id ↔ slug mapping)
+      try {
+        (allMerch || []).forEach((m: any) => {
+          const idKey = m?.id;
+          const slugKey = (m?.slug || '').toLowerCase();
+          if (!slugKey) return;
+          if (idKey && dateMap[idKey] && !dateMap[slugKey]) {
+            dateMap[slugKey] = dateMap[idKey];
+          }
+          if (idKey && colorMap[idKey] && !colorMap[slugKey]) {
+            colorMap[slugKey] = [...colorMap[idKey]];
+          }
+        });
+      } catch {}
+
       setUserMerchDates(dateMap);
       setUnlockedMerchColors(colorMap);
     } catch (error) {
       if (process.env.NODE_ENV !== "production") console.log('Error fetching user merch dates:', error);
     }
   };
+
+  // Refresh merch unlocks when inventory changes (after purchases)
+  React.useEffect(() => {
+    const handleInventoryRefresh = async () => {
+      try {
+        await fetchAllMerch();
+      } catch {}
+      try {
+        await fetchUserMerchDates();
+      } catch {}
+    };
+    // Listen to global inventory refresh events dispatched after purchase
+    if (typeof window !== 'undefined') {
+      window.addEventListener('inventory:refresh', handleInventoryRefresh as EventListener);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('inventory:refresh', handleInventoryRefresh as EventListener);
+      }
+    };
+  }, []);
 
   // Fetch user's unlocked badges and relics
   const fetchUnlockedItems = async () => {
@@ -2172,9 +2230,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                           if (Array.isArray(dbColors) && dbColors.length > 0) colors = dbColors;
                         }
                       }
-                      // Fallback for known items
+                      // Fallback for known items (support slug variants like `beanie-blue`)
                       if (!colors) {
-                        colors = FALLBACK_COLORS[selectedMerchInline.slug] || null;
+                        const slug = (selectedMerchInline.slug || '').toLowerCase();
+                        const fallbackKey = slug.includes('beanie') ? 'beanie' : slug.includes('bracelet') ? 'bracelet' : slug;
+                        colors = FALLBACK_COLORS[fallbackKey] || null;
                       }
                       if (!colors || colors.length === 0) return <div className="w-8" />;
 
@@ -2290,7 +2350,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                                 if (Array.isArray(dbC) && dbC.length > 0) allColors = dbC;
                               }
                             }
-                            if (!allColors) allColors = FALLBACK_COLORS[selectedMerchInline.slug] || null;
+                            if (!allColors) {
+                              const slug = (selectedMerchInline.slug || '').toLowerCase();
+                              const fallbackKey = slug.includes('beanie') ? 'beanie' : slug.includes('bracelet') ? 'bracelet' : slug;
+                              allColors = FALLBACK_COLORS[fallbackKey] || null;
+                            }
                             if (allColors && allColors.length > 0) {
                               const unlockedRaw = (
                                 unlockedMerchColors[selectedMerchInline.id] ||
@@ -2322,8 +2386,10 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                                 }
                               }
                             }
-                            // Fallback for known items
-                            const fallback = FALLBACK_COLORS[selectedMerchInline.slug];
+                            // Fallback for known items (support slug variants)
+                            const slug = (selectedMerchInline.slug || '').toLowerCase();
+                            const fallbackKey = slug.includes('beanie') ? 'beanie' : slug.includes('bracelet') ? 'bracelet' : slug;
+                            const fallback = FALLBACK_COLORS[fallbackKey];
                             if (fallback) {
                               const match = fallback.find(c => (c?.value || '').toLowerCase() === effectiveColorLower);
                               if (match) {
@@ -2332,8 +2398,14 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                               }
                             }
                           }
+                          // Final generic fallbacks to avoid blank images
                           if (isShowingBack && selectedMerchInline.image_url_2) return selectedMerchInline.image_url_2;
-                          return selectedMerchInline.image_url || '';
+                          if (selectedMerchInline.image_url) return selectedMerchInline.image_url;
+                          // If beanie-like item with no resolved image, default to front-pink
+                          const slug = (selectedMerchInline.slug || '').toLowerCase();
+                          if (slug.includes('beanie')) return '/store/beanie-front-pink.webp';
+                          if (slug.includes('bracelet')) return '/store/bracelet-pink.webp';
+                          return '';
                         })()}
                         alt={selectedMerchInline.name}
                         className="w-full h-full object-contain"
@@ -2342,12 +2414,17 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                           transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
                           // Apply lock styling when viewing a color the user hasn't unlocked (or logged out)
                           filter: (() => {
+                            const slugLower = (selectedMerchInline.slug || '').toLowerCase();
                             const unlockedRaw = (
                               unlockedMerchColors[selectedMerchInline.id] ||
-                              unlockedMerchColors[selectedMerchInline.slug] ||
+                              unlockedMerchColors[slugLower] ||
                               []
                             );
                             const unlocked = unlockedRaw.map((v: string) => (v || '').toLowerCase());
+                            const itemUnlocked = !!(userMerchDates[selectedMerchInline.id] || userMerchDates[slugLower]);
+                            // If the item is unlocked but we have no per-color data, treat all colors as unlocked
+                            if (itemUnlocked && unlocked.length === 0) return 'none';
+
                             // Recompute effective color to check lock state
                             const getEffectiveColor = (): string | null => {
                               if (selectedMerchColor) return selectedMerchColor;
@@ -2375,7 +2452,10 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                                   if (Array.isArray(dbC) && dbC.length > 0) allColors = dbC;
                                 }
                               }
-                              if (!allColors) allColors = FALLBACK_COLORS[selectedMerchInline.slug] || null;
+                              if (!allColors) {
+                                const fallbackKey = slugLower.includes('beanie') ? 'beanie' : slugLower.includes('bracelet') ? 'bracelet' : slugLower;
+                                allColors = FALLBACK_COLORS[fallbackKey] || null;
+                              }
                               if (allColors && allColors.length > 0) {
                                 const firstUnlocked = allColors.find((c: any) => unlocked.includes((c.value || '').toLowerCase()));
                                 return firstUnlocked?.value || allColors[0]?.value || null;
@@ -2383,7 +2463,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                               return null;
                             };
                             const color = getEffectiveColor();
-                            const isUnlocked = !!(color && unlocked.includes(color));
+                            const isUnlocked = !!(color && unlocked.includes((color || '').toLowerCase()));
                             return isUnlocked ? 'none' : 'grayscale(100%) opacity(0.6)';
                           })(),
                         }}
@@ -2391,12 +2471,14 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                       />
                       {/* Locked overlay when current color is not unlocked (includes logged-out) */}
                       {(() => {
+                        const slugLower = (selectedMerchInline.slug || '').toLowerCase();
                         const unlockedRaw = (
                           unlockedMerchColors[selectedMerchInline.id] ||
-                          unlockedMerchColors[selectedMerchInline.slug] ||
+                          unlockedMerchColors[slugLower] ||
                           []
                         );
                         const unlocked = unlockedRaw.map((v: string) => (v || '').toLowerCase());
+                        const itemUnlocked = !!(userMerchDates[selectedMerchInline.id] || userMerchDates[slugLower]);
                         const getEffectiveColor = (): string | null => {
                           if (selectedMerchColor) return selectedMerchColor;
                           const FALLBACK_COLORS: Record<string, string[]> = {
@@ -2411,15 +2493,21 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                               all = (parsed as any).colors.map((c: any) => c.value).filter(Boolean);
                             }
                           }
-                          if (!all) all = FALLBACK_COLORS[selectedMerchInline.slug] || null;
+                          if (!all) {
+                            const slug = slugLower;
+                            const fallbackKey = slug.includes('beanie') ? 'beanie' : slug.includes('bracelet') ? 'bracelet' : slug;
+                            all = FALLBACK_COLORS[fallbackKey] || null;
+                          }
                           if (all && all.length > 0) {
-                            const firstUnlocked = all.find((v: string) => unlocked.includes(v));
+                            const firstUnlocked = all.find((v: string) => unlocked.includes((v || '').toLowerCase()));
                             return firstUnlocked || all[0] || null;
                           }
                           return null;
                         };
                         const color = getEffectiveColor();
-                        const isUnlocked = !!(color && unlocked.includes((color || '').toLowerCase()));
+                        const isUnlocked = itemUnlocked && unlocked.length === 0
+                          ? true
+                          : !!(color && unlocked.includes((color || '').toLowerCase()));
                         if (isUnlocked) return null;
                         return (
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -2451,8 +2539,10 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                     updated_at: ''
                   }))).map((item, i) => {
                     const hasImage = Boolean(item.image_url);
+                    const slugKey = ((item as any).slug || '').toLowerCase();
                     const isUnlocked = Boolean(
-                      userMerchDates[item.id] || (item as any).slug && userMerchDates[(item as any).slug]
+                      userMerchDates[item.id] ||
+                      (slugKey && (userMerchDates[slugKey] || userMerchDates[(item as any).slug]))
                     );
                     return (
                       <button

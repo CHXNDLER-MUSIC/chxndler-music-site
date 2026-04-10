@@ -57,7 +57,7 @@ export function useSongs() {
     };
   }, []);
 
-  // Group songs by element for easier consumption
+  // Group released songs by element for easier consumption
   const songsByElement = songs.reduce((acc, song) => {
     const element = song.element;
     if (!acc[element]) {
@@ -67,5 +67,15 @@ export function useSongs() {
     return acc;
   }, {} as Record<ElementType, SongWithElement[]>);
 
-  return { songs, allSongs, songsByElement, loading, error };
+  // Group all songs (released + unreleased) by element
+  const songsByElementAll = allSongs.reduce((acc, song) => {
+    const element = song.element;
+    if (!acc[element]) {
+      acc[element] = [];
+    }
+    acc[element].push(song);
+    return acc;
+  }, {} as Record<ElementType, SongWithElement[]>);
+
+  return { songs, allSongs, songsByElement, songsByElementAll, loading, error };
 }

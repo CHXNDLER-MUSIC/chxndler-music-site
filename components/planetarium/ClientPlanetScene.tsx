@@ -31,7 +31,7 @@ export default function ClientPlanetScene({
   onPlanetSelect,
   worldId
 }: ClientPlanetSceneProps) {
-  const { songs, songsByElement, loading, error } = useSongs();
+  const { songs, allSongs, songsByElementAll, loading, error } = useSongs();
   const { focusElement } = useFocusElementOfDay();
   const { loading: eodLoading, element, isClaimed, claim, intention, rewardKey, relicLabel, relicImageUrl } = useElementOfDayClaim();
   const [optimisticClaimed, setOptimisticClaimed] = useState(false);
@@ -58,7 +58,7 @@ export default function ClientPlanetScene({
     }
   }, [audioManager]);
 
-  if (process.env.NODE_ENV !== "production") console.log('ClientPlanetScene render:', { loading, error: error?.message, songsCount: songs.length, quality });
+  if (process.env.NODE_ENV !== "production") console.log('ClientPlanetScene render:', { loading, error: error?.message, releasedSongs: songs.length, allSongs: allSongs.length, quality });
 
   if (loading) {
     return (
@@ -130,8 +130,9 @@ export default function ClientPlanetScene({
 
   return (
     <Pure3DPlanets
-      songs={songs}
-      songsByElement={songsByElement}
+      // Show planets for all songs; unreleased will render grey
+      songs={allSongs}
+      songsByElement={songsByElementAll}
       zoomLevel={zoomLevel}
       onPlanetSelect={onPlanetSelect}
       onSongChange={handleSongChange}

@@ -41,6 +41,8 @@ interface PlanetPopup {
   element: ElementType | 'center';
   slug: string;
   isSong: boolean;
+  // If a song planet popup, whether it's released (enables warp)
+  isReleased?: boolean;
   // Reference to the 3D object for position tracking
   targetObject?: THREE.Object3D;
   // Flag for element of the day - warp will trigger reward claim
@@ -614,7 +616,7 @@ export default function Pure3DPlanets({
     scene.add(holoHUD.mesh);
 
     // Orbiting planets evenly spaced (90 degrees apart) around the sun
-    const orbitRadius = 18;
+    const orbitRadius = 22;
     const planets = [
       { id: 'heart', texture: '/textures/planet_heart.webp', pos: [orbitRadius, 0, 0] as [number, number, number], speed: 0.08, glow: 0xff6b9d },           // 0° - pink
       { id: 'water', texture: '/textures/planet_water.webp', pos: [0, 0, orbitRadius] as [number, number, number], speed: 0.08, glow: 0x4fc3f7 },           // 90° - blue
@@ -703,7 +705,9 @@ export default function Pure3DPlanets({
       // Add song planets orbiting around this element
       const elementSongs = songsByElement[p.id] || [];
       debug(`Element ${p.id} has ${elementSongs.length} songs`);
-      const songOrbitRadius = 10; // Distance from element planet
+      // Distance from element planet — add a bit more room for HEART songs
+      const songOrbitBase = 10;
+      const songOrbitRadius = p.id === 'heart' ? songOrbitBase + 4 : songOrbitBase;
 
       if (elementSongs.length > 0) {
         // Create song orbit group centered at the element position
@@ -995,6 +999,7 @@ export default function Pure3DPlanets({
         element: songElement || 'heart',
         slug: songSlug,
         isSong: true,
+        isReleased: song ? !!song.is_released : true,
         targetObject: obj
       });
       try { setSelectedPlanetId(String(songSlug).toLowerCase()); } catch {}
@@ -1371,7 +1376,7 @@ export default function Pure3DPlanets({
 
       // Get the element planet position for popup placement
       const sunY = 12;
-      const orbitRadius = 18;
+      const orbitRadius = 22;
       const elementPositions: Record<ElementType, THREE.Vector3> = {
         heart: new THREE.Vector3(orbitRadius, sunY, 0),
         water: new THREE.Vector3(0, sunY, orbitRadius),
@@ -1565,9 +1570,9 @@ export default function Pure3DPlanets({
     const camera = cameraRef.current;
     const controls = controlsRef.current;
 
-    // Element planet positions (world coordinates - planets orbit at y=12, radius=18)
+    // Element planet positions (world coordinates - planets orbit at y=12)
     const sunY = 12;
-    const orbitRadius = 18;
+    const orbitRadius = 22;
 
     // Define target positions (where the element planets are)
     const elementTargets: Record<ElementType, THREE.Vector3> = {
@@ -1885,6 +1890,11 @@ export default function Pure3DPlanets({
 
   // Handle warp button click - uses shared triggerWarpToSong for consistency
   const handleWarpClick = async () => {
+    // Block warp when popup is for an unreleased song
+    if (planetPopup?.isSong && planetPopup?.isReleased === false) {
+      if (isDebug()) debugLog('[WARP] blocked - song is unreleased');
+      return;
+    }
     // Prevent double-firing from both onClick and onTouchEnd
     if (warpTriggeredRef.current) {
       if (process.env.NODE_ENV !== "production") console.log('[WARP] skipping - already triggered');
@@ -2142,12 +2152,23 @@ export default function Pure3DPlanets({
           }}
         >
           {/* Warp Button - iOS safe with onClick + onTouchEnd fallback */}
+          {(() => {
+            const disabled = !!(planetPopup.isSong && planetPopup.isReleased === false);
+            const btnBg = disabled ? 'linear-gradient(135deg, #666666cc, #44444488)' : `linear-gradient(135deg, ${getElementColor(planetPopup.element)}cc, ${getElementColor(planetPopup.element)}88)`;
+            const btnBorder = disabled ? '#777' : getElementColor(planetPopup.element);
+            const btnText = disabled ? '#d0d0d0' : '#fff';
+            const btnShadow = disabled
+              ? '0 0 8px rgba(120,120,120,0.25), inset 0 0 6px rgba(90,90,90,0.35)'
+              : `0 0 10px ${getElementColor(planetPopup.element)}80, 0 0 20px ${getElementColor(planetPopup.element)}60, 0 0 30px ${getElementColor(planetPopup.element)}40, 0 0 40px ${getElementColor(planetPopup.element)}20, inset 0 0 10px ${getElementColor(planetPopup.element)}40`;
+            const btnAnimation = disabled ? 'none' : 'warpGlow 1.5s ease-in-out infinite alternate';
+            const cursor = disabled ? 'not-allowed' : 'pointer';
+            return (
           <button
             onClick={(e) => {
               if (process.env.NODE_ENV !== "production") console.log('[WARP] button onClick triggered');
               e.stopPropagation();
               e.preventDefault();
-              handleWarpClick();
+              if (!disabled) handleWarpClick();
             }}
             onPointerDown={(e) => {
               if (process.env.NODE_ENV !== "production") console.log('[WARP] button onPointerDown');
@@ -2172,21 +2193,21 @@ export default function Pure3DPlanets({
               if (process.env.NODE_ENV !== "production") console.log('[WARP] button onTouchEnd - triggering warp');
               e.stopPropagation();
               e.preventDefault();
-              handleWarpClick();
+              if (!disabled) handleWarpClick();
             }}
             className="warp-button"
             data-element={planetPopup.element}
             style={{
-              background: `linear-gradient(135deg, ${getElementColor(planetPopup.element)}cc, ${getElementColor(planetPopup.element)}88)`,
-              border: `2px solid ${getElementColor(planetPopup.element)}`,
+              background: btnBg,
+              border: `2px solid ${btnBorder}`,
               borderRadius: '24px',
               padding: '8px 24px',
-              color: '#fff',
+              color: btnText,
               fontWeight: 700,
               fontSize: '14px',
               textTransform: 'uppercase',
               letterSpacing: '2px',
-              cursor: 'pointer',
+              cursor,
               pointerEvents: 'auto',
               touchAction: 'manipulation',
               userSelect: 'none',
@@ -2194,19 +2215,15 @@ export default function Pure3DPlanets({
               WebkitUserSelect: 'none',
               position: 'relative',
               zIndex: 10,
-              boxShadow: `
-                0 0 10px ${getElementColor(planetPopup.element)}80,
-                0 0 20px ${getElementColor(planetPopup.element)}60,
-                0 0 30px ${getElementColor(planetPopup.element)}40,
-                0 0 40px ${getElementColor(planetPopup.element)}20,
-                inset 0 0 10px ${getElementColor(planetPopup.element)}40
-              `,
-              animation: 'warpGlow 1.5s ease-in-out infinite alternate',
-              textShadow: `0 0 10px ${getElementColor(planetPopup.element)}`
+              boxShadow: btnShadow,
+              animation: btnAnimation,
+              textShadow: disabled ? 'none' : `0 0 10px ${getElementColor(planetPopup.element)}`
             }}
+            aria-disabled={disabled}
           >
             WARP
           </button>
+            ); })()}
 
           {/* Planet Info Card */}
           <div
@@ -2282,6 +2299,13 @@ export default function Pure3DPlanets({
         }
         .warp-button:active {
           transform: scale(0.98);
+        }
+        .warp-button[aria-disabled="true"] {
+          pointer-events: auto;
+        }
+        .warp-button[aria-disabled="true"]:hover,
+        .warp-button[aria-disabled="true"]:active {
+          transform: none !important;
         }
       `}</style>
     </div>

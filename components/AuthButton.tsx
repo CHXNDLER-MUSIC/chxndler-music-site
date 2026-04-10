@@ -65,8 +65,14 @@ export default function AuthButton() {
         const shouldShowMerch = customEvent.detail?.showMerch ?? false;
         setShowRelicsOnOpen(shouldShowRelics);
         setShowMerchOnOpen(shouldShowMerch);
-        setShowProfilePopover(true);
-        window.dispatchEvent(new CustomEvent('profilePopoverToggle', { detail: { open: true } }));
+        // Ensure other displays (e.g., HeartCoin) close before opening profile
+        try { window.dispatchEvent(new CustomEvent('closeHeartCoinModal')); } catch {}
+        // Immediately signal cyan beam (will close other displays via DashboardApp)
+        try { window.dispatchEvent(new CustomEvent('profilePopoverToggle', { detail: { open: true } })); } catch {}
+        // Small delay to allow close animations to start before opening profile
+        setTimeout(() => {
+          setShowProfilePopover(true);
+        }, 150);
       }
     };
 
@@ -170,9 +176,18 @@ export default function AuthButton() {
       case 'profile':
         // Mode B: Complete profile - show profile popover
         const nextOpen = !showProfilePopover;
-        setShowProfilePopover(nextOpen);
-        // Toggle cyan light beam when profile popover opens/closes
-        window.dispatchEvent(new CustomEvent('profilePopoverToggle', { detail: { open: nextOpen } }));
+        if (nextOpen) {
+          // Close other displays first (e.g., HeartCoin) before opening profile
+          try { window.dispatchEvent(new CustomEvent('closeHeartCoinModal')); } catch {}
+          // Immediately signal cyan beam (will close other displays via DashboardApp)
+          try { window.dispatchEvent(new CustomEvent('profilePopoverToggle', { detail: { open: true } })); } catch {}
+          setTimeout(() => {
+            setShowProfilePopover(true);
+          }, 150);
+        } else {
+          setShowProfilePopover(false);
+          window.dispatchEvent(new CustomEvent('profilePopoverToggle', { detail: { open: false } }));
+        }
         break;
     }
   };

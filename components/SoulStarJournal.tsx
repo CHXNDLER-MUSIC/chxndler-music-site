@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useProfile } from "@/contexts/ProfileContext";
 import PublicJournalFeed from "@/components/PublicJournalFeed";
 import { sfx } from "@/lib/sfx";
@@ -157,6 +158,29 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [pendingRewardData, setPendingRewardData] = useState<{ awarded: number } | null>(null);
   // Ref to store pending reward amount - avoids stale closure issues in handleRitualComplete
   const pendingRewardRef = useRef<number>(0);
+
+  // Portal setup to ensure the journal renders above any transformed ancestors (e.g., blue display)
+  const [mounted, setMounted] = useState(false);
+  const portalRootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const id = 'soulstar-journal-root';
+    let root = document.getElementById(id) as HTMLDivElement | null;
+    if (!root) {
+      root = document.createElement('div');
+      root.id = id;
+      // Highest practical z-index below max; prevents being clipped by stacking contexts
+      root.style.position = 'relative';
+      root.style.zIndex = '2147483646';
+      document.body.appendChild(root);
+    }
+    portalRootRef.current = root;
+    setMounted(true);
+    return () => {
+      setMounted(false);
+    };
+  }, []);
 
   // Memoize target position for ritual overlay to prevent animation restarts.
   // getGlowingPlanetPosition returns a new object every call, which would cause
@@ -825,14 +849,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   // Render ritual overlay even when journal is closed (animation plays after close)
   if (!isOpen) {
     // Only render the ritual overlay if animation is active
-    if (showRitualOverlay && ritualStartPosition) {
-      return (
+    if (showRitualOverlay && ritualStartPosition && mounted && portalRootRef.current) {
+      return createPortal(
         <CastToStarsOverlay
           startPosition={ritualStartPosition}
           targetPosition={ritualTargetPosition}
           onComplete={handleRitualComplete}
-          element={dailyPrompt?.element as ElementType || null}
-        />
+          element={(dailyPrompt?.element as ElementType) || null}
+        />,
+        portalRootRef.current
       );
     }
     return null;
@@ -846,7 +871,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const elementTheme = ELEMENT_COLORS[currentElement] || ELEMENT_COLORS.heart;
   const elementEmoji = ELEMENT_EMOJIS[currentElement] || "💖";
 
-  return (
+  // If not mounted or no portal root, avoid rendering client-only UI
+  if (!mounted || !portalRootRef.current) return null;
+
+  const journalUI = (
     <div
       className="fixed z-[250] flex items-stretch justify-center pointer-events-none"
       style={{
@@ -2193,4 +2221,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
     </div>
   );
+
+  // Render the journal UI via a portal to body to escape transformed ancestors
+  return createPortal(journalUI, portalRootRef.current);
 }

@@ -1403,6 +1403,9 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
 
     if (user) {
       setSelectedUser(user);
+      // Auto-expand the chat panel when opening a user profile
+      // so the profile view has more vertical space
+      setIsChatCollapsed(false);
       setShowUserBadges(false); // Reset badge view when switching users
       setShowUserBinder(false); // Reset binder view when switching users
       setShowSendHeartCoin(false); // Reset heart coin view when switching users

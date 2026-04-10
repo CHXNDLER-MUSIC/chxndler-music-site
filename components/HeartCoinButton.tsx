@@ -2627,7 +2627,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         shipping_city: shippingForm.city,
         shipping_state: shippingForm.state,
         shipping_zip: shippingForm.zip,
-        shipping_country: shippingForm.country || 'United States'
+        shipping_country: shippingForm.country || 'United States',
+        // Fallback identifiers if orderId was not returned yet
+        client_request_id: currentIdempotencyKeyRef.current || undefined,
+        merch_item_id: purchaseDraft.merchItemId
       });
 
       if (updateResult) {
@@ -2752,7 +2755,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         shipping_city: shippingForm.city,
         shipping_state: shippingForm.state,
         shipping_zip: shippingForm.zip,
-        shipping_country: shippingForm.country || 'United States'
+        shipping_country: shippingForm.country || 'United States',
+        // Fallback identifiers if orderId was lost
+        client_request_id: currentIdempotencyKeyRef.current || undefined,
+        merch_item_id: purchaseDraft?.merchItemId
       });
 
       if (updateResult) {
