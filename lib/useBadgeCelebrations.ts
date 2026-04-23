@@ -31,6 +31,12 @@ const SEEN_BADGES_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const BATCH_WINDOW_MS = 8000; // 8s window to aggressively dedupe follow-up celebrations
 
 // ============================================================================
+// Recency Window - Only celebrate badges earned very recently
+// Defensive check to ensure we never celebrate retroactively-inserted badges.
+// ============================================================================
+const CELEBRATION_RECENCY_WINDOW_MS = 20000; // 20 seconds
+
+// ============================================================================
 // Init Grace Period - Block all celebrations for N seconds after initialization
 // This is the primary defense against page-load celebrations caused by race
 // conditions between realtime events, suppression timing, and localStorage dedup.
@@ -296,6 +302,24 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
               // Mark as seen to prevent future attempts
               markBadgeAsSeen(newRow.badge_id, newRow.earned_at, seenBadgesRef.current);
               return;
+            }
+
+            // Additional safeguard: Only celebrate if the earned_at is very recent.
+            // This avoids triggering celebrations for historical or delayed inserts
+            // even if they happen to arrive after subscription start.
+            const earnedTimeMs = Date.parse(newRow.earned_at);
+            if (!Number.isNaN(earnedTimeMs)) {
+              const ageMs = Date.now() - earnedTimeMs;
+              if (ageMs > CELEBRATION_RECENCY_WINDOW_MS) {
+                debugCelebration("BADGE_CELEBRATION_SKIPPED", {
+                  badgeId: newRow.badge_id,
+                  reason: "earned_too_old",
+                  ageMs,
+                  recencyWindowMs: CELEBRATION_RECENCY_WINDOW_MS
+                });
+                markBadgeAsSeen(newRow.badge_id, newRow.earned_at, seenBadgesRef.current);
+                return;
+              }
             }
 
             // GRACE PERIOD: Block ALL celebrations for a window after initialization.

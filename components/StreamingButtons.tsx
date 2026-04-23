@@ -323,6 +323,12 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
                   try {
                     // Close any inline music previews so YouTube click doesn't leave them open
                     setShowSpotifyPopover(false); setSpEmbedUrl(null);
+                    // Pause background music to avoid audio overlap with YouTube
+                    try { const { audioCoordinator } = require('@/lib/audio-coordinator'); audioCoordinator.setActiveSource('sfx'); } catch {}
+                    try {
+                      const main = document.querySelector('audio[data-audio-player="1"]') as HTMLAudioElement | null;
+                      if (main) main.pause();
+                    } catch {}
                     window.open(links.youtube!, '_blank', 'noopener,noreferrer');
                   } catch {
                     // Fallback if window.open fails

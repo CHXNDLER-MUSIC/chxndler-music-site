@@ -25,6 +25,42 @@ export default function JoinAliens({ visible = true } = {}) {
 
   // YouTube Live status for indicator and embed
   const [isLive, setIsLive] = useState(false);
+  
+  // Consider local/URL overrides and pending flag to force live embed immediately on open
+  const isLocalLive = React.useMemo(() => {
+    try {
+      if (typeof window === 'undefined') return false;
+      const p = new URLSearchParams(window.location.search || '');
+      if (p.get('live') === '1' || p.get('goLive') === '1') return true;
+      return window.localStorage.getItem('GO_LIVE_DEV_OVERRIDE') === '1';
+    } catch { return false; }
+  }, []);
+  const isPendingLive = (typeof window !== 'undefined' && (window).__CHX_PENDING_SIGNAL_OPEN) === true;
+
+  // Also respect the DB live flag immediately without waiting for the hook,
+  // and the value captured during Start (window.__CHX_LAST_DB_LIVE)
+  const [dbLiveNow, setDbLiveNow] = useState(false);
+  const [dbLoaded, setDbLoaded] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchDbLive() {
+      try {
+        const r = await fetch('/api/admin/go-live', { cache: 'no-store' });
+        if (!r.ok) throw new Error('bad status');
+        const j = await r.json();
+        if (!cancelled) setDbLiveNow(!!j?.live);
+      } catch {
+        if (!cancelled) setDbLiveNow(false);
+      } finally {
+        if (!cancelled) setDbLoaded(true);
+      }
+    }
+    fetchDbLive();
+    return () => { cancelled = true; };
+  }, []);
+  const startDbLive = (typeof window !== 'undefined' && (window).__CHX_LAST_DB_LIVE === true);
+  const startForceEmbed = (typeof window !== 'undefined' && (window).__CHX_FORCE_LIVE_EMBED === true);
+  const forceLiveFlag = isOverrideActive || isLocalLive || isPendingLive || dbLiveNow || startDbLive || startForceEmbed;
   const [showWelcomeHome, setShowWelcomeHome] = useState(false);
   
   // Chat state
@@ -128,7 +164,8 @@ export default function JoinAliens({ visible = true } = {}) {
     const etDow = etDate.getDay();
 
     let daysUntil, kind;
-    const isBeforeStreamEnd = etHour < 20;
+    // Treat same-day as the active broadcast window until 9 PM ET
+    const isBeforeStreamEnd = etHour < 21;
 
     if (etDow === 1 && isBeforeStreamEnd) {
       daysUntil = 0; kind = 'acoustic';
@@ -368,7 +405,7 @@ export default function JoinAliens({ visible = true } = {}) {
 
       {/* YouTube Live Embed (auto-detect) with countdown fallback */}
       <YouTubeLive
-        forceLive={isOverrideActive}
+        forceLive={forceLiveFlag}
         onStatusChange={setIsLive}
         pollMs={60_000}
         className=""

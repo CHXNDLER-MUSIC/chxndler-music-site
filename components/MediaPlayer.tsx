@@ -93,6 +93,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const [showApplePopover, setShowApplePopover] = useState(false);
   const [amEmbedUrl, setAmEmbedUrl] = useState<string | null>(null);
   const [ytEmbedUrl, setYtEmbedUrl] = useState<string | null>(null);
+  
+  // When opening the YouTube popover, pause main audio to avoid overlap
+  useEffect(() => {
+    if (!showYouTubePopover) return;
+    try { const a = audioRef.current; if (a && !a.paused) { a.pause(); setPlaying(false); } } catch {}
+    try { audioCoordinator.setActiveSource('sfx'); } catch {}
+  }, [showYouTubePopover]);
   const ytBtnRef = useRef<HTMLAnchorElement|null>(null);
   // Lyrics state
   const [lyricsOpen, setLyricsOpen] = useState(false);
@@ -1360,7 +1367,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                     try { uiClick(); } catch {}
                     try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
                     try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
+                    // Pause main audio before opening YouTube display
                     try { const a = audioRef.current; if (a) { a.pause(); setPlaying(false); } } catch {}
+                    try { audioCoordinator.setActiveSource('sfx'); } catch {}
                     try {
                       const isPerTrack = !!(cur as any)?.youtube;
                       const embed = toYouTubeEmbed(youtubeButtonUrl || '');

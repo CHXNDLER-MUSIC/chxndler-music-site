@@ -18,7 +18,6 @@ const HUDPanel = dynamic(() => import("@/components/HUDPanel"), { ssr: false });
 // const HeartverseSystemWrapper = ENABLE_HEARTVERSE_3D ? dynamic(() => import("@/components/holo/HeartverseSystemWrapper"), { ssr: false }) : null;
 const HoloHUD = dynamic(() => import("@/components/HoloHUD"), { ssr: false });
 import { skyFor, introSky } from "@/lib/sky";
-import { youtubeSkyFor, HOME_YOUTUBE_SKY } from "@/lib/sky-youtube";
 // MediaPlayer disabled - using unified audio system instead
 // const MediaPlayer = dynamic(() => import("@/components/MediaPlayer"), { ssr: false });
 import { sfx } from "@/lib/sfx";
@@ -466,7 +465,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     };
     setTimeout(step, TICK);
   }, []);
-  const SPACE_SKY = { webm: "", mp4: "", key: "space", youtubeUrl: "https://youtu.be/gHDxkhQ4FbY" };
+  const SPACE_SKY = { webm: "", mp4: "", key: "space" };
 
   // Spotlight follows Start button dimensions/position exactly
   const [spotlightPos, setSpotlightPos] = useState({ x: null, y: null, r: null });
@@ -969,28 +968,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
   // Compute YouTube sky URL as a stable useMemo to avoid re-computation on every render
   const computedYoutubeUrl = useMemo(() => {
-    // Prioritize element warp YouTube URL when warping to element planets
-    if (elementWarpYoutubeUrl) return elementWarpYoutubeUrl;
-
-    const slug = curTrack?.slug;
-    const mapped = slug ? youtubeSkyFor(slug) : undefined;
-
-    // If a song is selected (curTrack is set and we're not in home mode), show its sky
-    if (slug && mapped && !homeMode) {
-      return mapped;
-    }
-
-    // On the homepage: show lightspeed video as background before landing,
-    // then switch to calm space sky after landing.
-    if (homeMode) {
-      return isLanded ? HOME_YOUTUBE_SKY : 'https://youtu.be/KFssNa5WvKc';
-    }
-
-    // Fallback: if we have a mapped sky but conditions above didn't match
-    if (slug && mapped) {
-      return mapped;
-    }
-
+    // Remove all YouTube background usage; rely on local videos only
     return undefined;
   }, [elementWarpYoutubeUrl, curTrack?.slug, homeMode, isLanded]);
 
@@ -1464,6 +1442,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const handleStartClick = React.useCallback(async () => {
     if (process.env.NODE_ENV !== "production") console.log("🚀 START CLICKED");
 
+    // Helper to read latest DB live flag directly to avoid hook timing races
+    const fetchDbLive = async () => {
+      try {
+        const r = await fetch('/api/admin/go-live', { cache: 'no-store' });
+        if (!r.ok) return false;
+        const j = await r.json();
+        return !!j?.live;
+      } catch { return false; }
+    };
+
     // Suppress badge celebrations during warp sequence (15 seconds)
     suppressBadgeCelebrations(15000);
     // Also acquire the new celebration lock used by the realtime BadgeCelebrationController
@@ -1485,7 +1473,19 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       let needsOnboarding = false;
       let needsWelcomeHome = false;
 
+      // Helper: local/dev quick toggle for forcing live
+      const hasLocalLiveOverride = (() => {
+        try {
+          if (typeof window === 'undefined') return false;
+          const p = new URLSearchParams(window.location.search || '');
+          if (p.get('live') === '1' || p.get('goLive') === '1') return true;
+          return window.localStorage.getItem('GO_LIVE_DEV_OVERRIDE') === '1';
+        } catch { return false; }
+      })();
+
       if (!session?.user) {
+        const dbLive = await fetchDbLive();
+        try { if (typeof window !== 'undefined') (window).__CHX_LAST_DB_LIVE = !!dbLive; } catch {}
         // Helper: determine if we should open the live signal panel instead of Welcome Home
         const isInBroadcastWindow = () => {
           try {
@@ -1504,13 +1504,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             const etHour = get('hour') === 24 ? 0 : get('hour');
             const etDate = new Date(get('year'), get('month') - 1, get('day'));
             const etDow = etDate.getDay();
-            return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 20;
+            // Live broadcast window: Mon/Thu between 7 PM and 9 PM ET
+            return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 21;
           } catch {
             return false;
           }
         };
 
-        const shouldOpenSignalOnStart = !!liveOverrideActive || isInBroadcastWindow();
+        const shouldOpenSignalOnStart = !!hasLocalLiveOverride || !!liveOverrideActive || !!dbLive || isInBroadcastWindow();
 
         if (shouldOpenSignalOnStart) {
           // Live stream mode: open the live signal panel after warp instead of Welcome Home
@@ -1561,6 +1562,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
         // If user is logged in and profile is complete, prioritize Live Stream when live
         if (!needsOnboarding) {
+          const dbLive = await fetchDbLive();
+          try { if (typeof window !== 'undefined') (window).__CHX_LAST_DB_LIVE = !!dbLive; } catch {}
           const isInBroadcastWindow = () => {
             try {
               const now = new Date();
@@ -1578,12 +1581,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               const etHour = get('hour') === 24 ? 0 : get('hour');
               const etDate = new Date(get('year'), get('month') - 1, get('day'));
               const etDow = etDate.getDay();
-              return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 20;
+              // Live broadcast window: Mon/Thu between 7 PM and 9 PM ET
+              return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 21;
             } catch {
               return false;
             }
           };
-          const shouldOpenSignalOnStart = !!liveOverrideActive || isInBroadcastWindow();
+          const shouldOpenSignalOnStart = !!hasLocalLiveOverride || !!liveOverrideActive || !!dbLive || isInBroadcastWindow();
           if (shouldOpenSignalOnStart) {
             if (process.env.NODE_ENV !== "production") console.log("📡 LIVE PRIORITY: opening live signal after warp for logged-in user");
             try { (window).__CHX_PENDING_SIGNAL_OPEN = true; } catch {}
@@ -1670,10 +1674,68 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         buttonRevealTriggeredRef.current = true; // Mark as triggered to prevent duplicate
         setUiRevealLocked(false);
         setUiPhase("landed");
-        setBeamEnabled(true);
-        setBeamColor('blue');
         setWarpActive(false);
-        setShowHUD(true);
+
+        // Prefer Live Signal (pink) here too so backup path matches primary path
+        const isInBroadcastWindowNow = () => {
+          try {
+            const now = new Date();
+            const tz = 'America/New_York';
+            const parts = new Intl.DateTimeFormat('en-US', {
+              timeZone: tz,
+              year: 'numeric', month: '2-digit', day: '2-digit',
+              hour: '2-digit', minute: '2-digit', hour12: false,
+            }).formatToParts(now);
+            const get = (type) => parseInt(parts.find((p) => p.type === type)?.value ?? '0', 10);
+            const etHour = get('hour') === 24 ? 0 : get('hour');
+            const etDate = new Date(get('year'), get('month') - 1, get('day'));
+            const etDow = etDate.getDay();
+            return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 21;
+          } catch { return false; }
+        };
+        const hasLocal = (() => {
+          try {
+            if (typeof window === 'undefined') return false;
+            const p = new URLSearchParams(window.location.search || '');
+            if (p.get('live') === '1' || p.get('goLive') === '1') return true;
+            return window.localStorage.getItem('GO_LIVE_DEV_OVERRIDE') === '1';
+          } catch { return false; }
+        })();
+        const pendingFlag = (typeof window !== 'undefined' && (window).__CHX_PENDING_SIGNAL_OPEN) === true;
+        const preferPink = pendingFlag || hasLocal || !!liveOverrideActive || isInBroadcastWindowNow();
+
+        if (preferPink) {
+          setUiPhase('landing');
+          try { handleBeamToggle('pink'); } catch {}
+          try { if (typeof window !== 'undefined') delete (window).__CHX_PENDING_SIGNAL_OPEN; } catch {}
+          try { if (typeof window !== 'undefined') (window).__CHX_FORCE_LIVE_EMBED = true; } catch {}
+          // Live debug overlay
+          try {
+            if (debugEnabled) {
+              const db = (typeof window !== 'undefined' && window.__CHX_LAST_DB_LIVE) ? true : false;
+              const pflag = (typeof window !== 'undefined' && window.__CHX_PENDING_SIGNAL_OPEN) ? true : false;
+              const reason = pflag ? 'pending' : hasLocal ? 'local' : db ? 'db' : (liveOverrideActive ? 'hook' : (isInBroadcastWindowNow() ? 'schedule' : 'unknown'));
+              setLiveDebug({ ctx: 'backup-pink', reason, db, pflag, local: hasLocal, hook: !!liveOverrideActive, schedule: isInBroadcastWindowNow(), at: Date.now() });
+              if (liveDebugTimerRef.current) clearTimeout(liveDebugTimerRef.current);
+              liveDebugTimerRef.current = window.setTimeout(() => setLiveDebug(null), 5000);
+            }
+          } catch {}
+        } else {
+          // Default to blue HUD if not in live window/override
+          setBeamEnabled(true);
+          setBeamColor('blue');
+          setShowHUD(true);
+          // Live debug overlay (blue path)
+          try {
+            if (debugEnabled) {
+              const db = (typeof window !== 'undefined' && window.__CHX_LAST_DB_LIVE) ? true : false;
+              const pflag = (typeof window !== 'undefined' && window.__CHX_PENDING_SIGNAL_OPEN) ? true : false;
+              setLiveDebug({ ctx: 'backup-blue', reason: 'blue-default', db, pflag, local: hasLocal, hook: !!liveOverrideActive, schedule: isInBroadcastWindowNow(), at: Date.now() });
+              if (liveDebugTimerRef.current) clearTimeout(liveDebugTimerRef.current);
+              liveDebugTimerRef.current = window.setTimeout(() => setLiveDebug(null), 5000);
+            }
+          } catch {}
+        }
 
         // Play button sound
         try { sfx.play('button', 0.9); } catch {}
@@ -1866,6 +1928,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [uiUnlocked, homeMode, isPlaying]);
+
+  // If live override becomes active when we're already landed, auto-open the pink Live Signal
+  React.useEffect(() => {
+    try {
+      if (uiPhase === 'landed' && !uiRevealLocked && liveOverrideActive && !joinAlienOpen) {
+        handleBeamToggle('pink');
+      }
+    } catch {}
+  }, [uiPhase, uiRevealLocked, liveOverrideActive, joinAlienOpen, handleBeamToggle]);
 
   // Defensive: On initial page open, ensure no main/holo track audio exists or is playing
   React.useEffect(() => {
@@ -2266,6 +2337,29 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     return gradients[beamColor] || gradients.blue;
   }, [beamColor]);
 
+  // ── Live Debug Overlay ───────────────────────────────────────────────────
+  const [liveDebug, setLiveDebug] = useState(null);
+  const liveDebugTimerRef = React.useRef(0);
+  const debugEnabled = React.useMemo(() => {
+    try {
+      if (typeof window === 'undefined') return false;
+      const p = new URLSearchParams(window.location.search || '');
+      if (p.get('debugLive') === '1') return true;
+      return window.localStorage.getItem('LIVE_DEBUG') === '1';
+    } catch { return false; }
+  }, []);
+  // Console helper to toggle debug overlay quickly
+  React.useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        window.setLiveDebug = (flag) => {
+          try { window.localStorage.setItem('LIVE_DEBUG', flag ? '1' : '0'); } catch {}
+        };
+      }
+    } catch {}
+    return () => { try { if (liveDebugTimerRef.current) clearTimeout(liveDebugTimerRef.current); } catch {} };
+  }, []);
+
   // Memoize expensive style calculations  
   const blurWrapperStyle = useMemo(() => ({
     filter: cardModalOpen && !warpActive ? 'blur(2px)' : 'none', // No blur during warp
@@ -2288,6 +2382,32 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       transition: 'opacity 400ms ease-in-out'
     };
   }, [beamEnabled, showHUD, cardModalOpen, cockpitVisible, warpActive, isJournalOpen]);
+
+  // Helper: decide if pink Live Signal should be preferred right now
+  const preferPinkNow = React.useCallback(() => {
+    try {
+      const local = (() => {
+        if (typeof window === 'undefined') return false;
+        const p = new URLSearchParams(window.location.search || '');
+        if (p.get('live') === '1' || p.get('goLive') === '1') return true;
+        return window.localStorage.getItem('GO_LIVE_DEV_OVERRIDE') === '1';
+      })();
+      const pending = (typeof window !== 'undefined' && (window).__CHX_PENDING_SIGNAL_OPEN) === true;
+      const forceEmbed = (typeof window !== 'undefined' && (window).__CHX_FORCE_LIVE_EMBED) === true;
+      const db = (typeof window !== 'undefined' && (window).__CHX_LAST_DB_LIVE) === true;
+      const inWindow = (() => {
+        const now = new Date();
+        const tz = 'America/New_York';
+        const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(now);
+        const get = (t) => parseInt(parts.find((p) => p.type === t)?.value ?? '0', 10);
+        const etHour = get('hour') === 24 ? 0 : get('hour');
+        const etDate = new Date(get('year'), get('month') - 1, get('day'));
+        const etDow = etDate.getDay();
+        return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 21;
+      })();
+      return !!(forceEmbed || pending || local || db || liveOverrideActive || inWindow);
+    } catch { return false; }
+  }, [liveOverrideActive]);
 
   // Compute background-position for the lightbeam base PNG so it anchors under the blue button
   const [beamBaseBgPos, setBeamBaseBgPos] = useState(null);
@@ -2342,15 +2462,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           onBadgesClick={() => {}}
           onCloseBlueDisplay={() => { setShowHUD(false); setBeamEnabled(false); }}
           onOpenBlueDisplay={() => {
-            // Force open blue display without toggle logic
-          if (uiPhase === 'warping' || uiRevealLocked) { return; }
-          if (!showHUD && beamColor === 'blue') {
-            setBeamEnabled(true);
-            setShowHUD(true);
-          } else if (beamColor !== 'blue') {
-            handleBeamToggle('blue');
-          }
-        }}
+            // Prefer pink during live mode; otherwise open blue
+            if (preferPinkNow()) { try { handleBeamToggle('pink'); } catch {}; return; }
+            if (uiPhase === 'warping' || uiRevealLocked) { return; }
+            if (!showHUD && beamColor === 'blue') {
+              setBeamEnabled(true);
+              setShowHUD(true);
+            } else if (beamColor !== 'blue') {
+              handleBeamToggle('blue');
+            }
+          }}
           onOpenJournal={handleOpenJournal}
           onJournalCompleted={handleJournalCompleted}
           onBeamColorChange={handleBeamToggle}
@@ -2395,15 +2516,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         onDigitalBinderClick={handleDigitalBinderClick}
         onBadgesClick={handleBadgesClick}
         onCloseBlueDisplay={() => { setShowHUD(false); setBeamEnabled(false); }}
-          onOpenBlueDisplay={() => {
-            // Force open blue display without toggle logic
-          if (uiPhase === 'warping' || uiRevealLocked) { return; }
-          if (!showHUD && beamColor === 'blue') {
-            setBeamEnabled(true);
-            setShowHUD(true);
-          } else if (beamColor !== 'blue') {
-            handleBeamToggle('blue');
-          }
+        onOpenBlueDisplay={() => {
+            // Prefer pink during live mode; otherwise open blue
+            if (preferPinkNow()) { try { handleBeamToggle('pink'); } catch {}; return; }
+            if (uiPhase === 'warping' || uiRevealLocked) { return; }
+            if (!showHUD && beamColor === 'blue') {
+              setBeamEnabled(true);
+              setShowHUD(true);
+            } else if (beamColor !== 'blue') {
+              handleBeamToggle('blue');
+            }
         }}
         onOpenJournal={handleOpenJournal}
         onOpenHeartCoin={() => openHeartCoinModal('use')}
@@ -2462,9 +2584,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         offsetY="-1vh"
         // Use the current track's YouTube sky as soon as a selection is in progress
         // or playback has started; keep looping even if audio pauses.
-        youtubeUrl={computedYoutubeUrl}
-        // Use provided YouTube clip for lightspeed overlay on initial page load
-        lightspeedYoutubeUrl={'https://youtu.be/KFssNa5WvKc'}
+        youtubeUrl={undefined}
+        // Remove lightspeed YouTube clip fallback
+        lightspeedYoutubeUrl={undefined}
         onWarpSfxEnd={() => {
           // Simple cleanup - core UI transitions handled by phase state machine
           if (process.env.NODE_ENV !== "production") console.log("🎵 Warp SFX ended");
@@ -2567,46 +2689,112 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
             // Helper to reveal UI and optionally trigger play
             const revealUIAndPlay = () => {
+              // Decide target display BEFORE turning on any beam so we don't flash blue
+              const isInBroadcastWindowNow = () => {
+                try {
+                  const now = new Date();
+                  const tz = 'America/New_York';
+                  const parts = new Intl.DateTimeFormat('en-US', {
+                    timeZone: tz,
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', hour12: false,
+                  }).formatToParts(now);
+                  const get = (type) => parseInt(parts.find((p) => p.type === type)?.value ?? '0', 10);
+                  const etHour = get('hour') === 24 ? 0 : get('hour');
+                  const etDate = new Date(get('year'), get('month') - 1, get('day'));
+                  const etDow = etDate.getDay();
+                  return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 21;
+                } catch { return false; }
+              };
+              const hasLocal = (() => {
+                try {
+                  if (typeof window === 'undefined') return false;
+                  const p = new URLSearchParams(window.location.search || '');
+                  if (p.get('live') === '1' || p.get('goLive') === '1') return true;
+                  return window.localStorage.getItem('GO_LIVE_DEV_OVERRIDE') === '1';
+                } catch { return false; }
+              })();
+              const pendingFlag = (typeof window !== 'undefined' && (window).__CHX_PENDING_SIGNAL_OPEN) === true;
+              const preferPink = pendingFlag || hasLocal || !!liveOverrideActive || isInBroadcastWindowNow();
+
               setUiRevealLocked(false);
-              setBeamEnabled(true);
-              setBeamColor('blue');
               setWarpActive(false);
 
-              // Open HUD after beam starts
-              setTimeout(() => {
-                setShowHUD(true);
-                setUiPhase("landed");
-                if (process.env.NODE_ENV !== "production") console.log("✅ UI revealed: beam -> HUD");
+              if (preferPink) {
+                // Open pink Live Signal directly without showing blue first
+                // Ensure phase is not 'warping' before toggling
+                setUiPhase("landing");
+                setTimeout(() => {
+                  if (process.env.NODE_ENV !== "production") console.log('📡 UI reveal → opening Live Signal (pink)');
+                  try { handleBeamToggle('pink'); } catch {}
+                  try { if (typeof window !== 'undefined') delete (window).__CHX_PENDING_SIGNAL_OPEN; } catch {}
+                  try { if (typeof window !== 'undefined') (window).__CHX_FORCE_LIVE_EMBED = true; } catch {}
+                  setUiPhase("landed");
+                  // Redundant nudge in case another effect briefly flipped to blue
+                  setTimeout(() => { try { handleBeamToggle('pink'); } catch {} }, 450);
+                  // Live debug overlay
+                  try {
+                    if (debugEnabled) {
+                      const db = (typeof window !== 'undefined' && window.__CHX_LAST_DB_LIVE) ? true : false;
+                      const pflag = (typeof window !== 'undefined' && window.__CHX_PENDING_SIGNAL_OPEN) ? true : false;
+                      const reason = pflag ? 'pending' : hasLocal ? 'local' : db ? 'db' : (liveOverrideActive ? 'hook' : (isInBroadcastWindowNow() ? 'schedule' : 'unknown'));
+                      setLiveDebug({ ctx: 'reveal-pink', reason, db, pflag, local: hasLocal, hook: !!liveOverrideActive, schedule: isInBroadcastWindowNow(), at: Date.now() });
+                      if (liveDebugTimerRef.current) clearTimeout(liveDebugTimerRef.current);
+                      liveDebugTimerRef.current = window.setTimeout(() => setLiveDebug(null), 5000);
+                    }
+                  } catch {}
+                }, 100);
+              } else {
+                // Default path: blue beam → HUD
+                setBeamEnabled(true);
+                setBeamColor('blue');
+                // Open HUD after beam starts
+                setTimeout(() => {
+                  setShowHUD(true);
+                  setUiPhase("landed");
+                  if (process.env.NODE_ENV !== "production") console.log("✅ UI revealed: beam -> HUD");
 
-                // Check what to show after warp
-                if (typeof window !== 'undefined' && (window).__SHOW_WELCOME_HOME_AFTER_WARP) {
-                  // User not logged in - show WelcomeHomeModal
-                  if (process.env.NODE_ENV !== "production") console.log("🎯 WARP COMPLETE: User not logged in, showing WelcomeHomeModal");
-                  (window).__SHOW_WELCOME_HOME_AFTER_WARP = false;
-                  setTimeout(() => {
-                    setShowWelcomeHomeModal(true);
-                  }, 300);
-                } else if (onboardingModeRef.current) {
-                  // User logged in but profile incomplete - show name prompt
-                  if (process.env.NODE_ENV !== "production") console.log("🎯 ONBOARDING: UI revealed, opening name prompt");
-                  onboardingModeRef.current = false; // Reset flag
-                  setTimeout(() => {
-                    openNamePromptFromAuth();
-                  }, 300); // Brief delay after UI reveal
-                } else if (pendingTrackPlay) {
-                  // If a track is pending, trigger play after HUD opens
-                  const trackIndex = pendingTrackIndexRef.current;
-                  if (trackIndex !== null && trackIndex >= 0) {
-                    setChannelIdxWithLog(trackIndex);
-                    pendingTrackIndexRef.current = null;
+                  // Check what to show after warp
+                  if (typeof window !== 'undefined' && (window).__SHOW_WELCOME_HOME_AFTER_WARP) {
+                    // User not logged in - show WelcomeHomeModal
+                    if (process.env.NODE_ENV !== "production") console.log("🎯 WARP COMPLETE: User not logged in, showing WelcomeHomeModal");
+                    (window).__SHOW_WELCOME_HOME_AFTER_WARP = false;
+                    setTimeout(() => {
+                      setShowWelcomeHomeModal(true);
+                    }, 300);
+                  } else if (onboardingModeRef.current) {
+                    // User logged in but profile incomplete - show name prompt
+                    if (process.env.NODE_ENV !== "production") console.log("🎯 ONBOARDING: UI revealed, opening name prompt");
+                    onboardingModeRef.current = false; // Reset flag
+                    setTimeout(() => {
+                      openNamePromptFromAuth();
+                    }, 300); // Brief delay after UI reveal
+                  } else if (pendingTrackPlay) {
+                    // If a track is pending, trigger play after HUD opens
+                    const trackIndex = pendingTrackIndexRef.current;
+                    if (trackIndex !== null && trackIndex >= 0) {
+                      setChannelIdxWithLog(trackIndex);
+                      pendingTrackIndexRef.current = null;
+                    }
+                    // Trigger play/pause button
+                    setTimeout(() => {
+                      if (process.env.NODE_ENV !== "production") console.log("▶️ Triggering play");
+                      setPlaySignal((n) => n + 1);
+                    }, 100);
                   }
-                  // Trigger play/pause button
-                  setTimeout(() => {
-                    if (process.env.NODE_ENV !== "production") console.log("▶️ Triggering play");
-                    setPlaySignal((n) => n + 1);
-                  }, 100);
-                }
-              }, 150);
+                  // Live debug overlay (blue path)
+                  try {
+                    if (debugEnabled) {
+                      const db = (typeof window !== 'undefined' && window.__CHX_LAST_DB_LIVE) ? true : false;
+                      const pflag = (typeof window !== 'undefined' && window.__CHX_PENDING_SIGNAL_OPEN) ? true : false;
+                      const reason = 'blue-default';
+                      setLiveDebug({ ctx: 'reveal-blue', reason, db, pflag, local: hasLocal, hook: !!liveOverrideActive, schedule: isInBroadcastWindowNow(), at: Date.now() });
+                      if (liveDebugTimerRef.current) clearTimeout(liveDebugTimerRef.current);
+                      liveDebugTimerRef.current = window.setTimeout(() => setLiveDebug(null), 5000);
+                    }
+                  } catch {}
+                }, 150);
+              }
             };
 
             if (process.env.NODE_ENV !== "production") console.log("🔊 Playing button.mp3");
@@ -3014,6 +3202,33 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         }}
         onLaunch={handleStartClick}
       />
+
+      {/* Live Debug Overlay */}
+      {debugEnabled && liveDebug && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 10,
+            right: 10,
+            zIndex: 20000,
+            background: 'rgba(0,0,0,0.7)',
+            color: '#fff',
+            padding: '8px 10px',
+            borderRadius: 8,
+            border: '1px solid rgba(252,84,175,0.6)',
+            boxShadow: '0 0 14px rgba(252,84,175,0.35)',
+            fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace",
+            fontSize: 12,
+            pointerEvents: 'none'
+          }}
+        >
+          <div style={{ fontWeight: 700, color: '#FC54AF' }}>LIVE DEBUG</div>
+          <div>ctx: {String(liveDebug.ctx)}</div>
+          <div>reason: {String(liveDebug.reason)}</div>
+          <div>db: {String(liveDebug.db)} | local: {String(liveDebug.local)} | hook: {String(liveDebug.hook)}</div>
+          <div>pending: {String(liveDebug.pflag)} | schedule: {String(liveDebug.schedule)}</div>
+        </div>
+      )}
       </div> {/* Close blur wrapper */}
 
 
@@ -3219,7 +3434,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           onClose={() => setShowStarsModal(false)}
           onComplete={handleJournalCompleted}
           onOpenBlueDisplay={() => {
-            // Force open blue display without toggle logic
+            // Prefer pink during live mode; otherwise open blue
+            if (preferPinkNow()) { try { handleBeamToggle('pink'); } catch {}; return; }
             if (!showHUD && beamColor === 'blue') {
               setBeamEnabled(true);
               setShowHUD(true);

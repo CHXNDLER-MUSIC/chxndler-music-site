@@ -4,14 +4,41 @@ import { NextResponse } from "next/server";
 // Uses YouTube Data API v3 search.list with filters as requested.
 export async function GET() {
   const apiKey = process.env.YOUTUBE_API_KEY;
-  const channelId = process.env.YOUTUBE_CHANNEL_ID;
+  let channelId = process.env.YOUTUBE_CHANNEL_ID;
+  const channelHandleRaw = process.env.YOUTUBE_CHANNEL_HANDLE;
+  const channelHandle = channelHandleRaw?.startsWith('@') ? channelHandleRaw : (channelHandleRaw ? `@${channelHandleRaw}` : undefined);
 
-  if (!apiKey || !channelId) {
-    // Missing env vars; fail soft to offline state
+  if (!apiKey) {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("YouTube Live API missing env vars: YOUTUBE_API_KEY or YOUTUBE_CHANNEL_ID");
+      console.warn("YouTube Live API missing env var: YOUTUBE_API_KEY");
     }
-    // TODO: Set YOUTUBE_API_KEY and YOUTUBE_CHANNEL_ID in your environment
+    return NextResponse.json({ isLive: false, videoId: null });
+  }
+
+  // Resolve channel ID from handle if needed
+  try {
+    if (!channelId && channelHandle) {
+      const chParams = new URLSearchParams({ part: "id", forHandle: channelHandle, key: apiKey });
+      const chUrl = `https://www.googleapis.com/youtube/v3/channels?${chParams.toString()}`;
+      const chRes = await fetch(chUrl, { next: { revalidate: 60 } });
+      if (chRes.ok) {
+        const chData = await chRes.json();
+        const id = chData?.items?.[0]?.id;
+        if (id) channelId = id;
+      } else if (process.env.NODE_ENV !== "production") {
+        console.warn("YouTube API channel resolve failed:", chRes.status, await chRes.text().catch(() => "<body read error>"));
+      }
+    }
+  } catch (e) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("YouTube API channel resolve error:", e);
+    }
+  }
+
+  if (!channelId) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("YouTube Live API missing channel identifier: set YOUTUBE_CHANNEL_ID or YOUTUBE_CHANNEL_HANDLE");
+    }
     return NextResponse.json({ isLive: false, videoId: null });
   }
 
@@ -48,4 +75,3 @@ export async function GET() {
     return NextResponse.json({ isLive: false, videoId: null });
   }
 }
-

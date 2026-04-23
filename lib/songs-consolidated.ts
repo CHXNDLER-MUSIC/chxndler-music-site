@@ -185,7 +185,17 @@ function buildAudioSources(providedSrc: string | undefined, slug: string): Audio
 
 const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" | "sources">[] = [
   // Unreleased: ALONE (kept for warp/planet + UI; audio loads via Supabase by slug)
-  { title: "ALONE", hasLyrics: true },
+  // Add per-track YouTube so the YouTube button opens the correct video
+  { 
+    title: "ALONE", 
+    youtube: "https://youtu.be/ZTE6aFi_cqk", 
+    spotify: "https://open.spotify.com/track/3moEeEzk2lA9CtJ5ieiTrz?si=adae3599e6d84e2b",
+    apple: "https://music.apple.com/us/album/alone/1890354455?i=1890354456",
+    hasLyrics: true 
+  },
+  // Unreleased early access: ALONE (ACOUSTIC)
+  // Audio sources default to Supabase Storage paths: alone-acoustic.opus/mp3
+  { title: "ALONE (ACOUSTIC)", hasLyrics: true },
   { title: "BABY", spotify:"https://open.spotify.com/track/3UEVjChARWDbY4ruOIbIl3", apple:"https://music.apple.com/us/album/baby/1823220422?i=1823220423", youtube:"https://youtu.be/RqBs_MYhM6c", cover: "/covers/BABY.webp", src: "/tracks/baby.opus", hasLyrics: true, sections: [
     { time: 15.8, label: "Verse 1", kind: "verse" },
     { time: 47.4, label: "Chorus 1", kind: "chorus" },

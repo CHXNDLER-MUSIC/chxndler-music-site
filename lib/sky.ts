@@ -25,9 +25,9 @@ export function skyFor(slug?: string) {
   
   if (!slug) return DEFAULT_FALLBACK;
   
-  // Special mapping for space-music to use space-sky (YouTube embed)
+  // Special mapping for space-music: no YouTube fallback
   if (slug === "space-music") {
-    return { key: "space-sky", webm: "", mp4: "", youtubeUrl: "https://youtu.be/gHDxkhQ4FbY" };
+    return { key: "space-sky", webm: "", mp4: "" };
   }
   
   try {
@@ -160,8 +160,8 @@ export function getAllSkyMappings(): Record<string, SkyVideoInfo> {
     };
   });
   
-  // Ensure space sky is always available as fallback (YouTube embed)
-  result['space'] = { key: "space-sky", webm: "", mp4: "", youtubeUrl: "https://youtu.be/gHDxkhQ4FbY" };
+  // Ensure space sky is always available as fallback (no YouTube fallback)
+  result['space'] = { key: "space-sky", webm: "", mp4: "" };
   
   return result;
 }

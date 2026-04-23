@@ -363,7 +363,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
 
   return (
     <div
-      className="absolute inset-0 pointer-events-none"
+      className="absolute inset-0"
       // Wrapper contains interactive controls; do NOT hide from assistive tech
       // Decorative sub-elements are marked aria-hidden individually instead
       suppressHydrationWarning

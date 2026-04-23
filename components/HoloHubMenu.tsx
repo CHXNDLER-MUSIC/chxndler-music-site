@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
 import { appleEmbedHeight } from "@/lib/apple";
+import { audioCoordinator } from "@/lib/audio-coordinator";
 import InlineBrowserModal from "@/components/InlineBrowserModal";
 import LinkOutModal from "@/components/LinkOutModal";
 import { toAppleEmbed } from "@/lib/apple";
@@ -422,6 +423,12 @@ export default function HoloHubMenu({
             setInlineHeightPx(undefined);
             setInlineIframeHeightPx(undefined);
             setClickedButtonId(null);
+          } catch {}
+          // Pause background music so external YouTube audio won't overlap
+          try { audioCoordinator.setActiveSource('sfx'); } catch {}
+          try {
+            const main = document.querySelector('audio[data-audio-player="1"]') as HTMLAudioElement | null;
+            if (main) main.pause();
           } catch {}
           try { window.open(it.href!, '_blank', 'noopener,noreferrer'); } catch {}
           return;

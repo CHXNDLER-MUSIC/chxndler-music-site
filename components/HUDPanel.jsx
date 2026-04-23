@@ -48,6 +48,7 @@ import SimpleWaveform from "@/components/SimpleWaveform";
 import WaveformVisualizer, { ELEMENT_COLORS } from "@/components/WaveformVisualizer";
 import DevErrorLogger from "@/components/DevErrorLogger";
 import { toYouTubeEmbed } from "@/lib/youtube";
+import { audioCoordinator } from "@/lib/audio-coordinator";
 // 3D Planetarium system with Three.js
 const Pure3DPlanets = ENABLE_PLANETS
   ? dynamic(() => import("@/components/planetarium/Pure3DPlanets"), {
@@ -1477,6 +1478,18 @@ const HUDPanel = React.memo(function HUDPanel({
     return () => { document.removeEventListener('keydown', onKey); };
   }, [showYouTubePopover]);
 
+  // Pause background music when YouTube popover is shown
+  useEffect(() => {
+    if (!showYouTubePopover) return;
+    try { audioCoordinator.setActiveSource('sfx'); } catch {}
+    try {
+      const main = document.querySelector('audio[data-audio-player="1"]');
+      if (main && typeof (main.pause) === 'function') {
+        main.pause();
+      }
+    } catch {}
+  }, [showYouTubePopover]);
+
   useEffect(() => {
     if (!showSpotifyPopover) return;
     const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowSpotifyPopover(false); } };
@@ -2307,6 +2320,12 @@ const HUDPanel = React.memo(function HUDPanel({
     if (config.earlyAccessTiers.includes(tier)) return s;
     return { ...s, locked: true, unlockDate: config.unlockDate };
   });
+
+  // Only show released songs in the dropdown. Keep planets unchanged.
+  const dropdownSongs = React.useMemo(
+    () => (resolvedSongs || []).filter(s => s && (s.is_released === true)),
+    [resolvedSongs]
+  );
   
   // Initialize player store with holoSongs for 3D planet system
   useEffect(() => {
@@ -3217,8 +3236,8 @@ const HUDPanel = React.memo(function HUDPanel({
           }}>
               {/* Song dropdown only (outer container removed) */}
               <SongDropdown
-                items={resolvedSongs}
-                initialActiveId={active || resolvedSongs[0]?.id}
+                items={dropdownSongs}
+                initialActiveId={active || dropdownSongs[0]?.id}
                 currentId={currentId}
                 onChange={(id) => {
                   // Block time-locked tracks
@@ -3548,6 +3567,15 @@ const HUDPanel = React.memo(function HUDPanel({
                             try { setShowApplePopover(false); setAmEmbedUrl(null); } catch {}
                             try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
                             try { sfx.play('join-aliens', 0.9); } catch {}
+                            // Pause background music so YouTube audio plays uninterrupted
+                            try {
+                              // Prefer coordinated stop to avoid overlap with ambient/intro
+                              audioCoordinator.setActiveSource('sfx');
+                              const main = document.querySelector('audio[data-audio-player="1"]');
+                              if (main && typeof (main.pause) === 'function') {
+                                main.pause();
+                              }
+                            } catch {}
                             // If we have a per-track YouTube URL, show inline popover; otherwise open channel
                             try {
                               const embed = toYouTubeEmbed(youtubeUrl);
@@ -8074,8 +8102,8 @@ const HUDPanel = React.memo(function HUDPanel({
         }}>
             {/* Song dropdown only (outer container removed) */}
             <SongDropdown
-              items={resolvedSongs}
-              initialActiveId={active || resolvedSongs[0]?.id}
+              items={dropdownSongs}
+              initialActiveId={active || dropdownSongs[0]?.id}
               currentId={currentId}
               onChange={(id) => {
                 // Block time-locked tracks
