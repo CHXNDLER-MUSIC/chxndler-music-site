@@ -18,11 +18,7 @@ function cleanVideoId(value?: string | null): string | null {
   return /^[a-zA-Z0-9_-]{6,}$/.test(trimmed) ? trimmed : null;
 }
 
-function cleanChannelId(value?: string | null): string | null {
-  if (!value) return null;
-  const trimmed = value.trim();
-  return /^UC[a-zA-Z0-9_-]+$/.test(trimmed) ? trimmed : null;
-}
+// Keep NEXT_PUBLIC_YOUTUBE_CHANNEL_ID only for linking elsewhere, not for embeds here
 
 export default function YouTubeLive({
   pollMs = 60_000,
@@ -34,8 +30,6 @@ export default function YouTubeLive({
 }: Props) {
   const { isLive, videoId } = useYouTubeLive(pollMs);
   const live = forceLive || isLive;
-
-  const channelId = cleanChannelId(process.env.NEXT_PUBLIC_YOUTUBE_CHANNEL_ID);
   const safeVideoId = cleanVideoId(videoId);
 
   // Allow enabling debug mode via URL or env var as well
@@ -50,25 +44,22 @@ export default function YouTubeLive({
     return process.env.NEXT_PUBLIC_YOUTUBE_DEBUG === "1";
   }, [debug]);
 
-  // Original dynamic selection kept for reference, but the pink live display
-  // should embed a specific YouTube URL provided by the user.
-  const dynamicSrc = useMemo(() => {
+  // Simple, reliable rule:
+  // - When forceLive is true OR API says isLive=true
+  // - and a detected videoId exists
+  // - always embed that video's autoplay/muted URL with modest branding
+  const effectiveSrc = useMemo(() => {
     if (!live) return null;
-    if (forceLive && channelId) {
-      return `https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(channelId)}`;
-    }
-    if (!forceLive && safeVideoId) {
-      return `https://www.youtube.com/embed/${safeVideoId}`;
-    }
-    if (channelId) {
-      return `https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(channelId)}`;
-    }
-    return null;
-  }, [live, forceLive, channelId, safeVideoId]);
-
-  // Override with the requested embed URL for the live (pink) display
-  const overrideSrc = "https://www.youtube.com/embed/BPSrkP6k7Es?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1";
-  const effectiveSrc = live ? overrideSrc : null;
+    if (!safeVideoId) return null;
+    const params = new URLSearchParams({
+      autoplay: '1',
+      mute: '1',
+      playsinline: '1',
+      rel: '0',
+      modestbranding: '1',
+    });
+    return `https://www.youtube.com/embed/${safeVideoId}?${params.toString()}`;
+  }, [live, safeVideoId]);
 
   // Console debug logging when enabled
   useEffect(() => {
@@ -79,10 +70,9 @@ export default function YouTubeLive({
       forceLive,
       isLive,
       videoId: safeVideoId,
-      dynamicSrc,
       effectiveSrc,
     });
-  }, [debugEnabled, forceLive, isLive, safeVideoId, dynamicSrc, effectiveSrc]);
+  }, [debugEnabled, forceLive, isLive, safeVideoId, effectiveSrc]);
 
   const DebugPanel = (
     <div

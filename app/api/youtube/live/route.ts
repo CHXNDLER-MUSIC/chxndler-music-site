@@ -48,15 +48,14 @@ export async function GET() {
     eventType: "live",
     type: "video",
     videoEmbeddable: "true",
-    videoSyndicated: "true",
     key: apiKey,
     maxResults: "1",
-    order: "date",
+    // Keep request simple and aligned with YouTube docs
   });
 
   try {
     const url = `https://www.googleapis.com/youtube/v3/search?${params.toString()}`;
-    const res = await fetch(url, { next: { revalidate: 30 } });
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) {
       if (process.env.NODE_ENV !== "production") {
         console.error("YouTube API error status:", res.status, await res.text().catch(() => "<body read error>"));
