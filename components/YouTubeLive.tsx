@@ -50,26 +50,25 @@ export default function YouTubeLive({
     return process.env.NEXT_PUBLIC_YOUTUBE_DEBUG === "1";
   }, [debug]);
 
-  const src = useMemo(() => {
+  // Original dynamic selection kept for reference, but the pink live display
+  // should embed a specific YouTube URL provided by the user.
+  const dynamicSrc = useMemo(() => {
     if (!live) return null;
-
-    // When forcing live, ALWAYS use channel live embed, ignore videoId.
     if (forceLive && channelId) {
       return `https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(channelId)}`;
     }
-
-    // When not forcing, prefer detected live video if present.
     if (!forceLive && safeVideoId) {
       return `https://www.youtube.com/embed/${safeVideoId}`;
     }
-
-    // Otherwise, fall back to channel live embed (not a specific video).
     if (channelId) {
       return `https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(channelId)}`;
     }
-
     return null;
   }, [live, forceLive, channelId, safeVideoId]);
+
+  // Override with the requested embed URL for the live (pink) display
+  const overrideSrc = "https://www.youtube.com/embed/BPSrkP6k7Es?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1";
+  const effectiveSrc = live ? overrideSrc : null;
 
   // Console debug logging when enabled
   useEffect(() => {
@@ -80,9 +79,10 @@ export default function YouTubeLive({
       forceLive,
       isLive,
       videoId: safeVideoId,
-      src,
+      dynamicSrc,
+      effectiveSrc,
     });
-  }, [debugEnabled, forceLive, isLive, safeVideoId, src]);
+  }, [debugEnabled, forceLive, isLive, safeVideoId, dynamicSrc, effectiveSrc]);
 
   const DebugPanel = (
     <div
@@ -99,7 +99,7 @@ export default function YouTubeLive({
       <div>forceLive: {String(forceLive)}</div>
       <div>isLive: {String(isLive)}</div>
       <div>videoId: {safeVideoId || ""}</div>
-      <div>iframe src: {src || ""}</div>
+      <div>iframe src: {effectiveSrc || ""}</div>
       {safeVideoId && (
         <div style={{ marginTop: 4 }}>
           <a
@@ -116,12 +116,12 @@ export default function YouTubeLive({
   );
 
   if (!live) return <>{children}{debugEnabled && DebugPanel}</>;
-  if (!src) return <>{children}{debugEnabled && DebugPanel}</>;
+  if (!effectiveSrc) return <>{children}{debugEnabled && DebugPanel}</>;
 
   return (
     <>
       <iframe
-        src={src}
+        src={effectiveSrc}
         title="YouTube Live Stream"
         width="100%"
         height="100%"

@@ -2582,11 +2582,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         readyToReveal={isLanded}
         minDurationMs={3000}
         offsetY="-1vh"
-        // Use the current track's YouTube sky as soon as a selection is in progress
-        // or playback has started; keep looping even if audio pauses.
-        youtubeUrl={undefined}
-        // Remove lightspeed YouTube clip fallback
-        lightspeedYoutubeUrl={undefined}
+        // Show lightspeed sky before START; clear after landing
+        youtubeUrl={isIntro ? "https://youtu.be/KFssNa5WvKc" : undefined}
+        // Use specific YouTube clip for the lightspeed (warp) overlay during START
+        lightspeedYoutubeUrl={"https://youtu.be/KFssNa5WvKc"}
         onWarpSfxEnd={() => {
           // Simple cleanup - core UI transitions handled by phase state machine
           if (process.env.NODE_ENV !== "production") console.log("🎵 Warp SFX ended");

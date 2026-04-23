@@ -404,18 +404,34 @@ export default function JoinAliens({ visible = true } = {}) {
       {/* Removed NEXT LIVE SIGNAL label */}
 
       {/* YouTube Live Embed (auto-detect) with countdown fallback */}
-      <YouTubeLive
-        forceLive={forceLiveFlag}
-        onStatusChange={setIsLive}
-        pollMs={60_000}
-        className=""
+      <div
+        className="ytlive-wrap"
         style={{
           width: 'calc(100% + 16px)',
-          padding: '0',
-          // Tighter spacing below the pink line
-          margin: '2px -8px 4px'
+          margin: '2px -8px 4px',
+          position: 'relative',
+          overflow: 'hidden',
+          aspectRatio: '16 / 9',
+          borderRadius: 8,
         }}
       >
+        <YouTubeLive
+          forceLive={forceLiveFlag}
+          onStatusChange={setIsLive}
+          pollMs={60_000}
+          className=""
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            // Zoom in and crop black bars; align to top
+            height: '130%',
+            transform: 'translateY(-10%)',
+            border: '0',
+            display: 'block'
+          }}
+        >
         {/* ── Cinematic Countdown ─────────────────────────────────── */
         <div style={{
           display: 'flex',
@@ -1242,7 +1258,8 @@ export default function JoinAliens({ visible = true } = {}) {
           </div>
         </div>
         }
-      </YouTubeLive>
+        </YouTubeLive>
+      </div>
 
       
 
