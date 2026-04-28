@@ -611,7 +611,9 @@ export default function JoinUsPopup({ isOpen, onClose, onOpenChat }: Props) {
             <div
               style={{
                 position: 'absolute',
-                bottom: '60px',
+                // Raise the popup higher above the phone button so it doesn't sit too low
+                // Previously 60px; increased to improve visibility within the live stream display
+                bottom: '120px',
                 left: '0px',
                 width: '280px',
                 height: 'auto',

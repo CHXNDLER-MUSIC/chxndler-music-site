@@ -307,6 +307,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [welcomeHasPlayed, setWelcomeHasPlayed] = useState(false); // tracks if welcome has been played (resets on page refresh)
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
   const startButtonWarpRef = React.useRef(false); // prevents double warp when start button is clicked
+  // One-shot guard to auto-open pink after Start if live resolves slightly later
+  const allowLiveAutoOpenRef = React.useRef(false);
   // NOTE: cameFromMagicLinkRef is defined earlier in the file (before the auto-open useEffect that uses it)
   const [shouldShowWelcomeModal, setShouldShowWelcomeModal] = useState(false); // tracks if welcome modal should show after warp
   // Ensure song MP3 starts only after join-alien SFX finishes (played at warp end)
@@ -1441,6 +1443,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
   const handleStartClick = React.useCallback(async () => {
     if (process.env.NODE_ENV !== "production") console.log("🚀 START CLICKED");
+    // Enable one-shot auto-open window for live signal after this Start warp
+    allowLiveAutoOpenRef.current = true;
 
     // Helper to read latest DB live flag directly to avoid hook timing races
     const fetchDbLive = async () => {
@@ -1594,6 +1598,34 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           }
         }
       }
+
+      // Ensure Live Signal (pink) opens immediately after warp when any live signal is present
+      // regardless of onboarding state (one-shot pending flag consumed after reveal)
+      try {
+        const dbLiveFinal = await fetchDbLive();
+        try { if (typeof window !== 'undefined') (window).__CHX_LAST_DB_LIVE = !!dbLiveFinal; } catch {}
+        const isInBroadcastWindowNow = () => {
+          try {
+            const now = new Date();
+            const tz = 'America/New_York';
+            const parts = new Intl.DateTimeFormat('en-US', {
+              timeZone: tz,
+              year: 'numeric', month: '2-digit', day: '2-digit',
+              hour: '2-digit', minute: '2-digit', hour12: false,
+            }).formatToParts(now);
+            const get = (type) => parseInt(parts.find((p) => p.type === type)?.value ?? '0', 10);
+            const etHour = get('hour') === 24 ? 0 : get('hour');
+            const etDate = new Date(get('year'), get('month') - 1, get('day'));
+            const etDow = etDate.getDay();
+            return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 21;
+          } catch { return false; }
+        };
+        const shouldOpenSignalOnStartGlobal = !!hasLocalLiveOverride || !!liveOverrideActive || !!dbLiveFinal || isInBroadcastWindowNow();
+        if (shouldOpenSignalOnStartGlobal) {
+          if (process.env.NODE_ENV !== "production") console.log("📡 LIVE: queuing Live Signal open after warp (global)");
+          try { (window).__CHX_PENDING_SIGNAL_OPEN = true; } catch {}
+        }
+      } catch {}
 
       // Store flags for after warp completes
       onboardingModeRef.current = needsOnboarding;
@@ -1774,6 +1806,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           setTimeout(() => {
             try { handleBeamToggle('pink'); } catch {}
           }, 500);
+          // Consume one-shot auto-open since we're opening pink via pending flag
+          try { allowLiveAutoOpenRef.current = false; } catch {}
           try { delete (window).__CHX_PENDING_SIGNAL_OPEN; } catch {}
         }
 
@@ -1929,14 +1963,29 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [uiUnlocked, homeMode, isPlaying]);
 
-  // If live override becomes active when we're already landed, auto-open the pink Live Signal
+  // If go-live override flips on (or resolves) while already landed, open pink once.
+  // Uses rising-edge detection and a one-shot fallback window after Start.
+  const prevLiveOverrideRef = React.useRef(!!liveOverrideActive);
   React.useEffect(() => {
     try {
-      if (uiPhase === 'landed' && !uiRevealLocked && liveOverrideActive && !joinAlienOpen) {
+      const wasActive = prevLiveOverrideRef.current;
+      const nowActive = !!liveOverrideActive;
+      prevLiveOverrideRef.current = nowActive;
+      const canAutoOpenNow = (uiPhase === 'landed' && !uiRevealLocked && !joinAlienOpen);
+      // Primary: rising edge from false -> true
+      if (!wasActive && nowActive && canAutoOpenNow) {
         handleBeamToggle('pink');
+        allowLiveAutoOpenRef.current = false; // consume the one-shot if set
+        return;
+      }
+      // Fallback: if override already true (no edge seen) but Start granted a one-shot, use it once
+      if (nowActive && allowLiveAutoOpenRef.current && canAutoOpenNow) {
+        handleBeamToggle('pink');
+        allowLiveAutoOpenRef.current = false;
+        return;
       }
     } catch {}
-  }, [uiPhase, uiRevealLocked, liveOverrideActive, joinAlienOpen, handleBeamToggle]);
+  }, [liveOverrideActive, uiPhase, uiRevealLocked, joinAlienOpen, handleBeamToggle]);
 
   // Defensive: On initial page open, ensure no main/holo track audio exists or is playing
   React.useEffect(() => {
@@ -2582,8 +2631,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         readyToReveal={isLanded}
         minDurationMs={3000}
         offsetY="-1vh"
-        // Show lightspeed sky before START; clear after landing
-        youtubeUrl={isIntro ? "https://youtu.be/KFssNa5WvKc" : undefined}
+        // Use YouTube background on homepage (intro uses original sky, post-warp home uses new sky)
+        youtubeUrl={isIntro ? "https://youtu.be/KFssNa5WvKc" : (homeMode ? "https://youtu.be/gHDxkhQ4FbY" : undefined)}
         // Use specific YouTube clip for the lightspeed (warp) overlay during START
         lightspeedYoutubeUrl={"https://youtu.be/KFssNa5WvKc"}
         onWarpSfxEnd={() => {
@@ -2726,6 +2775,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 setTimeout(() => {
                   if (process.env.NODE_ENV !== "production") console.log('📡 UI reveal → opening Live Signal (pink)');
                   try { handleBeamToggle('pink'); } catch {}
+                  // We auto-opened via reveal; consume the one-shot fallback
+                  try { allowLiveAutoOpenRef.current = false; } catch {}
                   try { if (typeof window !== 'undefined') delete (window).__CHX_PENDING_SIGNAL_OPEN; } catch {}
                   try { if (typeof window !== 'undefined') (window).__CHX_FORCE_LIVE_EMBED = true; } catch {}
                   setUiPhase("landed");
@@ -3177,7 +3228,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         onJoinToggle={setJoinAlienOpen}
         onBeamColorChange={handleBeamToggle}
         closeAllSignal={uiCloseSignal}
-        suspendUI={isWarping}
+        suspendUI={isWarping || uiPhase === 'landing'}
         hideStartButton={false}
         isLightningPlanet={curTrack?.slug === 'lightning'}
         onPowerToggle={() => { 

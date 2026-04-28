@@ -78,6 +78,15 @@ export default function SkyboxVideo({
   const onBasePlayingRef = useRef(onBasePlaying);
   React.useEffect(() => { onFlyEndRef.current = onFlyEnd; }, [onFlyEnd]);
   React.useEffect(() => { onBasePlayingRef.current = onBasePlaying; }, [onBasePlaying]);
+
+  // Show lightspeed overlay synchronously before paint when allowWarp becomes true.
+  // This prevents the 1-frame gap where allowWarp=true but the overlay hasn't appeared yet,
+  // which would expose a flash of the base iframe remounting with a new URL.
+  React.useLayoutEffect(() => {
+    if (allowWarp) {
+      setShowLightspeed(true);
+    }
+  }, [allowWarp]);
   // Compute YouTube autoplay embed if provided
   const { ytEmbedUrl, ytThumbUrl } = React.useMemo(() => {
     try {
@@ -104,6 +113,11 @@ export default function SkyboxVideo({
     }
   }, [youtubeUrl, ytEmbedUrl]);
   const [ytReady, setYtReady] = React.useState(false);
+  // Reset ytReady when the YouTube URL changes so the thumbnail placeholder shows while
+  // the new iframe loads, instead of briefly exposing the blue iframe loading state.
+  React.useEffect(() => {
+    setYtReady(false);
+  }, [youtubeUrl]);
   // Lightspeed YouTube embed (optional)
   const { lsYtEmbedUrl, lsYtThumbUrl } = React.useMemo(() => {
     try {
@@ -379,7 +393,7 @@ export default function SkyboxVideo({
               style={{
                 position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
                 width: '177.78vh', height: '100vh', minWidth: '100vw', minHeight: '56.25vw',
-                opacity: showLightspeed ? 0 : 1,
+                opacity: (showLightspeed || !ytReady) ? 0 : 1,
                 filter: `brightness(${brightness})${flying ? ' saturate(1.1) blur(1.2px)' : ''}`,
                 transition: 'opacity 300ms ease, transform 650ms ease, filter 650ms ease',
               }}
@@ -433,7 +447,7 @@ export default function SkyboxVideo({
         {/* Lightspeed transition overlay (pre-mounted for instant playback; opacity toggled) */}
         {/* Lightspeed overlay: YouTube iframe if provided, else local MP4 */}
         {lsYtEmbedUrl ? (
-          <div className="absolute inset-0" style={{ pointerEvents: 'none', opacity: showLightspeed ? 1 : 0, transition: 'opacity 220ms ease' }}>
+          <div className="absolute inset-0" style={{ pointerEvents: 'none', opacity: showLightspeed ? 1 : 0, transition: showLightspeed ? 'none' : 'opacity 400ms ease' }}>
             {/* Poster until iframe ready */}
             {lsYtThumbUrl && !lsYtReady ? (
               <div aria-hidden style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '177.78vh', height: '100vh', minWidth: '100vw', minHeight: '56.25vw' }}>
@@ -459,7 +473,7 @@ export default function SkyboxVideo({
             className="absolute inset-0 h-full w-full"
             style={{
               opacity: showLightspeed ? 0.8 : 0,
-              transition: 'opacity 220ms ease',
+              transition: showLightspeed ? 'none' : 'opacity 400ms ease',
               pointerEvents: 'none',
               background: 'radial-gradient(circle at center, rgba(252, 84, 175, 0.3) 0%, rgba(252, 84, 175, 0.1) 50%, transparent 100%)',
               animation: showLightspeed ? 'pulse 0.6s ease-in-out infinite alternate' : 'none'

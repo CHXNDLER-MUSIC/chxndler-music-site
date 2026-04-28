@@ -411,7 +411,7 @@ export default function JoinAliens({ visible = true } = {}) {
           margin: '2px -8px 4px',
           position: 'relative',
           overflow: 'hidden',
-          aspectRatio: '16 / 9',
+          aspectRatio: (isLive || forceLiveFlag) ? '16 / 9' : undefined,
           borderRadius: 8,
         }}
       >
@@ -523,30 +523,17 @@ export default function JoinAliens({ visible = true } = {}) {
             alignItems: 'center',
             gap: '2px',
           }}>
-            {(() => {
-              const acoustic = { label: 'MONDAY \u2022 7:00 PM EST \u2022 ACOUSTIC SIGNAL', kind: 'acoustic' };
-              const electric = { label: 'THURSDAY \u2022 7:00 PM EST \u2022 ELECTRIC SIGNAL', kind: 'electric' };
-              const next = nextBroadcast?.kind === 'electric' ? electric : acoustic;
-              const other = next === acoustic ? electric : acoustic;
-              return [
-                { ...next, isNext: true },
-                { ...other, isNext: false },
-              ].map(({ label, isNext }, idx) => (
-                <div key={label} className={isNext ? 'next-broadcast-pulse' : ''} style={{
-                  fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
-                  fontSize: 'clamp(9px, 2.4vw, 12px)',
-                  fontWeight: isNext ? '700' : '500',
-                  letterSpacing: '0.2em',
-                  color: isNext ? '#00FFFF' : 'rgba(252, 84, 175, 0.45)',
-                  textAlign: 'center',
-                  lineHeight: 1.05,
-                  // Slightly more space between the two lines
-                  marginTop: idx === 1 ? '6px' : 0,
-                }}>
-                  {label}
-                </div>
-              ));
-            })()}
+            <div style={{
+              fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+              fontSize: 'clamp(9px, 2.4vw, 12px)',
+              fontWeight: '700',
+              letterSpacing: '0.2em',
+              color: '#00FFFF',
+              textAlign: 'center',
+              lineHeight: 1.05,
+            }}>
+              {'THURSDAY \u2022 7:00 PM EST \u2022 LIVE STREAM SIGNAL'}
+            </div>
           </div>
 
           {/* Divider above IRL panel (pink) */}
@@ -596,7 +583,7 @@ export default function JoinAliens({ visible = true } = {}) {
                     textShadow: '0 0 10px rgba(242,239,29,0.85)',
                     lineHeight: isIrlOpen ? 1 : 1.2
                   }}>
-                    NEXT IRL SIGNAL
+                    NEXT IN PERSON SIGNAL
                   </span>
                   {(() => {
                     if (isIrlOpen) return null; // Hide header details when dropdown is open
@@ -644,6 +631,8 @@ export default function JoinAliens({ visible = true } = {}) {
                 </div>
               </div>
             </motion.button>
+
+            {/* Phone form aligned below IRL drawer but outside its container — removed here */}
 
             <AnimatePresence initial={false}>
               {isIrlOpen && (
@@ -1344,196 +1333,148 @@ export default function JoinAliens({ visible = true } = {}) {
         </div>
       )}
 
-      {/* Stay Connected Section - fits below live embed */}
+      
+
+
+      {/* Stay Connected Section - below IRL drawer, outside its container */}
       {showPhoneForm && (
-      <div style={{
-        padding: '12px 12px 0',
-      }}>
-        {/* Header Text */}
-        <div
-          style={{
-            textAlign: 'center',
-            marginBottom: '8px',
-            color: '#00FFFF',
-            fontSize: '16px',
-            fontWeight: '600',
-            textShadow: '0 0 8px rgba(0, 255, 255, 0.6)'
-          }}
-        >
-          {'Stay connected to the Heartverse.'}
-        </div>
+        <div style={{ padding: '2px 12px 0', marginBottom: '88px' }}>
+          <div
+            style={{
+              textAlign: 'center',
+              marginBottom: '8px',
+              color: '#00FFFF',
+              fontSize: '16px',
+              fontWeight: '600',
+              textShadow: '0 0 8px rgba(0, 255, 255, 0.6)'
+            }}
+          >
+            {'Stay connected to the Heartverse.'}
+          </div>
 
-      {/* Error/Success Messages */}
-      {error && (
-        <div style={{
-          padding: '12px',
-          marginBottom: '16px',
-          background: 'rgba(255, 0, 0, 0.1)',
-          border: '1px solid rgba(255, 0, 0, 0.3)',
-          borderRadius: '8px',
-          color: '#ff6b6b',
-          fontSize: '14px',
-          textAlign: 'center'
-        }}>
-          {error}
-        </div>
-      )}
+          {error && (
+            <div style={{
+              padding: '12px',
+              marginBottom: '16px',
+              background: 'rgba(255, 0, 0, 0.1)',
+              border: '1px solid rgba(255, 0, 0, 0.3)',
+              borderRadius: '8px',
+              color: '#ff6b6b',
+              fontSize: '14px',
+              textAlign: 'center'
+            }}>
+              {error}
+            </div>
+          )}
 
-
-      {/* Phone Number Input */}
-      <div style={{ marginBottom: '12px', width: '80%', margin: '0 auto 12px auto' }}>
-        <input
-          id="signal-phone"
-          type="tel"
-          value={phone}
-          onChange={handlePhoneChange}
-          // Must start with + or a digit; no formatting like dashes
-          placeholder={profile?.phone ? profile.phone : "+1 5555555555 or your country code"}
-          disabled={status === "saving"}
-          style={{
-            width: '100%',
-            padding: '12px 16px',
-            background: 'rgba(0, 0, 0, 0.6)',
-            border: '2px solid #00FFFF',
-            boxShadow: '0 0 8px rgba(0, 255, 255, 0.5), 0 0 15px rgba(0, 255, 255, 0.3)',
-            borderRadius: '8px',
-            color: '#ffffff',
-            fontSize: '16px',
-            outline: 'none',
-            transition: 'border-color 200ms ease',
-            '&:focus': {
-              borderColor: '#00FFFF'
-            }
-          }}
-          onFocus={(e) => {
-            e.target.style.borderColor = '#00FFFF';
-            e.target.style.boxShadow = '0 0 0 2px rgba(0, 255, 255, 0.2)';
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = 'rgba(0, 255, 255, 0.4)';
-            e.target.style.boxShadow = 'none';
-          }}
-        />
-        {phone.length > 0 && !isValidPhone && (
-          <p className="text-pink-400 text-sm mt-2">
-            Please enter a valid phone number with country code.
-          </p>
-        )}
-      </div>
-
-      {/* Send Heart Signal Button / Create Profile Button */}
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
-      <button
-        onClick={heartSignalSent && !user ? () => {
-          try { sfx.play('click', 0.4); } catch {}
-          setShowWelcomeHome(true);
-        } : sendHeartSignal}
-        disabled={status === "saving" || (!heartSignalSent && !isValidPhone)}
-        style={{
-          width: '80%',
-          margin: '0 auto',
-          padding: '12px 24px',
-          background: 'transparent',
-          border: status === "saved" && heartSignalSent && !user
-            ? '2px solid #F2EF1D'  // Neon yellow for "Create your ALIEN profile"
-            : status === "saved"
-            ? '2px solid #00FF00'
-            : status === "saving" || (!heartSignalSent && !isValidPhone) 
-              ? '2px solid rgba(128, 128, 128, 0.3)' 
-              : '2px solid #00FFFF',
-          borderRadius: '8px',
-          color: status === "saved" && heartSignalSent && !user
-            ? '#F2EF1D'  // Neon yellow text for "Create your ALIEN profile"
-            : status === "saved"
-            ? '#00FF00'
-            : status === "saving" || (!heartSignalSent && !isValidPhone) 
-              ? 'rgba(128, 128, 128, 0.7)' 
-              : '#00FFFF',
-          fontSize: '16px',
-          fontWeight: '600',
-          cursor: status === "saving" || !isValidPhone ? 'not-allowed' : 'pointer',
-          transition: 'all 300ms ease',
-          boxShadow: status === "saved" && heartSignalSent && !user
-            ? '0 0 15px rgba(242, 239, 29, 0.5)'  // Neon yellow glow for "Create your ALIEN profile"
-            : status === "saved"
-            ? '0 0 15px rgba(0, 255, 0, 0.3)'
-            : status === "saving" || (!heartSignalSent && !isValidPhone) 
-              ? 'none' 
-              : '0 0 15px rgba(0, 255, 255, 0.3)',
-          textShadow: status === "saved" && heartSignalSent && !user
-            ? '0 0 10px #F2EF1D, 0 0 20px #F2EF1D, 0 0 30px #F2EF1D'  // Neon yellow text glow
-            : status === "saved"
-            ? '0 0 10px #00FF00, 0 0 20px #00FF00, 0 0 30px #00FF00'
-            : status === "saving" || (!heartSignalSent && !isValidPhone) 
-              ? 'none' 
-              : '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF',
-          outline: 'none'
-        }}
-        onMouseEnter={(e) => {
-          if (status === "saved" && heartSignalSent && !user) {
-            // Yellow hover effects for "Create your ALIEN profile" button
-            e.target.style.transform = 'translateY(-2px)';
-            e.target.style.background = 'rgba(242, 239, 29, 0.15)';
-            e.target.style.boxShadow = '0 0 40px rgba(242, 239, 29, 0.8), 0 0 60px rgba(242, 239, 29, 0.4), inset 0 0 30px rgba(242, 239, 29, 0.2)';
-            e.target.style.textShadow = '0 0 15px #F2EF1D, 0 0 25px #F2EF1D, 0 0 35px #F2EF1D, 0 0 45px #F2EF1D';
-            e.target.style.borderColor = '#F2EF1D';
-            try { sfx.play('hover.mp3', 0.3); } catch {}
-          } else if (status !== "saving" && isValidPhone && status !== "saved") {
-            // Cyan hover effects for normal state
-            e.target.style.transform = 'translateY(-2px)';
-            e.target.style.background = 'rgba(0, 255, 255, 0.15)';
-            e.target.style.boxShadow = '0 0 40px rgba(0, 255, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.4), inset 0 0 30px rgba(0, 255, 255, 0.2)';
-            e.target.style.textShadow = '0 0 15px #00FFFF, 0 0 25px #00FFFF, 0 0 35px #00FFFF, 0 0 45px #00FFFF';
-            e.target.style.borderColor = '#00E5FF';
-            try { sfx.play('hover.mp3', 0.3); } catch {}
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (status === "saved" && heartSignalSent && !user) {
-            // Reset to yellow style for "Create your ALIEN profile" button
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.background = 'transparent';
-            e.target.style.boxShadow = '0 0 15px rgba(242, 239, 29, 0.5)';
-            e.target.style.textShadow = '0 0 10px #F2EF1D, 0 0 20px #F2EF1D, 0 0 30px #F2EF1D';
-            e.target.style.borderColor = '#F2EF1D';
-          } else if (status !== "saving" && isValidPhone && status !== "saved") {
-            // Reset to cyan style for normal state
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.background = 'transparent';
-            e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
-            e.target.style.textShadow = '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF';
-            e.target.style.borderColor = '#00FFFF';
-          }
-        }}
-      >
-        {status === "saving" ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            <div 
+          <div style={{ marginBottom: '12px', width: '80%', margin: '0 auto 12px auto' }}>
+            <input
+              id="signal-phone"
+              type="tel"
+              value={phone}
+              onChange={handlePhoneChange}
+              placeholder={profile?.phone ? profile.phone : "+1 5555555555 or your country code"}
+              disabled={status === 'saving'}
               style={{
-                width: '16px',
-                height: '16px',
-                border: '2px solid rgba(255, 255, 255, 0.3)',
-                borderTop: '2px solid #ffffff',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite'
+                width: '100%',
+                padding: '12px 16px',
+                background: 'rgba(0, 0, 0, 0.6)',
+                border: '2px solid #00FFFF',
+                boxShadow: '0 0 8px rgba(0, 255, 255, 0.5), 0 0 15px rgba(0, 255, 255, 0.3)',
+                borderRadius: '8px',
+                color: '#ffffff',
+                fontSize: '16px',
+                outline: 'none',
+                transition: 'border-color 200ms ease'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#00FFFF';
+                e.target.style.boxShadow = '0 0 0 2px rgba(0, 255, 255, 0.2)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(0, 255, 255, 0.4)';
+                e.target.style.boxShadow = 'none';
               }}
             />
-            Sending...
+            {phone.length > 0 && !isValidPhone && (
+              <p className="text-pink-400 text-sm mt-2">
+                Please enter a valid phone number with country code.
+              </p>
+            )}
           </div>
-        ) : status === "saved" && heartSignalSent && !user ? (
-          "Signal received. Create your ALIEN profile."
-        ) : status === "saved" ? (
-          "Heart signal sent"
-        ) : (
-          "Send Heart Signal"
-        )}
-      </button>
-      </div>
-      </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <button
+              onClick={heartSignalSent && !user ? () => { try { sfx.play('click', 0.4); } catch {}; setShowWelcomeHome(true); } : sendHeartSignal}
+              disabled={status === 'saving' || (!heartSignalSent && !isValidPhone)}
+              style={{
+                width: '80%',
+                margin: '0 auto',
+                padding: '12px 24px',
+                background: 'transparent',
+                border: status === 'saved' && heartSignalSent && !user
+                  ? '2px solid #F2EF1D'
+                  : status === 'saved'
+                    ? '2px solid #00FF00'
+                    : status === 'saving' || (!heartSignalSent && !isValidPhone)
+                      ? '2px solid rgba(128, 128, 128, 0.3)'
+                      : '2px solid #00FFFF',
+                borderRadius: '8px',
+                color: status === 'saved' && heartSignalSent && !user
+                  ? '#F2EF1D'
+                  : status === 'saved'
+                    ? '#00FF00'
+                    : status === 'saving' || (!heartSignalSent && !isValidPhone)
+                      ? 'rgba(128, 128, 128, 0.7)'
+                      : '#00FFFF',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: status === 'saving' || !isValidPhone ? 'not-allowed' : 'pointer',
+                transition: 'all 300ms ease',
+                boxShadow: status === 'saved' && heartSignalSent && !user
+                  ? '0 0 15px rgba(242, 239, 29, 0.5)'
+                  : status === 'saved'
+                    ? '0 0 15px rgba(0, 255, 0, 0.3)'
+                    : status === 'saving' || (!heartSignalSent && !isValidPhone)
+                      ? 'none'
+                      : '0 0 15px rgba(0, 255, 255, 0.3)',
+                textShadow: status === 'saved' && heartSignalSent && !user
+                  ? '0 0 10px #F2EF1D, 0 0 20px #F2EF1D, 0 0 30px #F2EF1D'
+                  : status === 'saved'
+                    ? '0 0 10px #00FF00, 0 0 20px #00FF00, 0 0 30px #00FF00'
+                    : status === 'saving' || (!heartSignalSent && !isValidPhone)
+                      ? 'none'
+                      : '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF',
+                outline: 'none'
+              }}
+            >
+              {status === 'saving' ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <div 
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid rgba(255, 255, 255, 0.3)',
+                      borderTop: '2px solid #ffffff',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}
+                  />
+                  Sending...
+                </div>
+              ) : status === 'saved' && heartSignalSent && !user ? (
+                'Signal received. Create your ALIEN profile.'
+              ) : status === 'saved' ? (
+                'Heart signal sent'
+              ) : (
+                'Send Heart Signal'
+              )}
+            </button>
+          </div>
+        </div>
       )}
 
-
-      {/* Text Button - positioned in bottom left */}
+      {/* Text Button - positioned in bottom left (fixed to viewport) */}
       <button
         onClick={(e) => {
           e.preventDefault();
@@ -1550,7 +1491,7 @@ export default function JoinAliens({ visible = true } = {}) {
         title=""
         className="text-chat-button"
         style={{
-          position: 'absolute',
+          position: 'fixed',
           bottom: '15px',
           left: '10px',
           width: '60px',
@@ -1597,7 +1538,7 @@ export default function JoinAliens({ visible = true } = {}) {
       {/* Episodes Library - button + panel rendered directly in container */}
       <EpisodesLibrary isChatOpen={isChatOpen} visible={visible} />
 
-      {/* Phone Button - positioned to the left of $ button */}
+      {/* Phone Button - positioned to the left of $ button (fixed to viewport) */}
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
@@ -1612,7 +1553,7 @@ export default function JoinAliens({ visible = true } = {}) {
           setShowPhoneForm(opening);
         }}
         style={{
-          position: 'absolute',
+          position: 'fixed',
           bottom: '15px',
           right: '140px',
           width: '55px',
@@ -1631,7 +1572,7 @@ export default function JoinAliens({ visible = true } = {}) {
           outline: 'none',
           textShadow: '0 0 8px #00FFFF',
           boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
-          zIndex: 10
+          zIndex: 1200
         }}
         onMouseEnter={(e) => {
           try { sfx.play('hover', 0.3); } catch {}
@@ -1660,7 +1601,7 @@ export default function JoinAliens({ visible = true } = {}) {
       </button>
 
 
-      {/* $ Button - positioned to the left of Episodes button */}
+      {/* $ Button - positioned to the left of Episodes button (fixed to viewport) */}
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
@@ -1675,7 +1616,7 @@ export default function JoinAliens({ visible = true } = {}) {
           }
         }}
         style={{
-          position: 'absolute',
+          position: 'fixed',
           bottom: '15px',
           right: '75px',
           width: '55px',
@@ -1694,7 +1635,7 @@ export default function JoinAliens({ visible = true } = {}) {
           outline: 'none',
           textShadow: '0 0 8px #FC54AF',
           boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
-          zIndex: 10
+          zIndex: 1200
         }}
         onMouseEnter={(e) => {
           try { sfx.play('hover', 0.3); } catch {}
