@@ -410,8 +410,10 @@ export default function JoinAliens({ visible = true } = {}) {
           width: 'calc(100% + 16px)',
           margin: '2px -8px 4px',
           position: 'relative',
-          overflow: 'hidden',
+          overflow: (isLive || forceLiveFlag) ? 'hidden' : 'visible',
           aspectRatio: (isLive || forceLiveFlag) ? '16 / 9' : undefined,
+          height: (isLive || forceLiveFlag) ? undefined : 'fit-content',
+          maxHeight: (isLive || forceLiveFlag) ? undefined : 'fit-content',
           borderRadius: 8,
         }}
       >
@@ -437,10 +439,11 @@ export default function JoinAliens({ visible = true } = {}) {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: 'flex-start',
           // Reduce top padding so numbers are closer to the pink line
           padding: 'clamp(2px, 1.5vw, 8px) 12px 12px',
           width: '100%',
+          height: 'auto',
           boxSizing: 'border-box',
         }}>
           {/*  */}

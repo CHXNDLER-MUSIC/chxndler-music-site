@@ -1508,14 +1508,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             const etHour = get('hour') === 24 ? 0 : get('hour');
             const etDate = new Date(get('year'), get('month') - 1, get('day'));
             const etDow = etDate.getDay();
-            // Live broadcast window: Mon/Thu between 7 PM and 9 PM ET
-            return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 21;
+            // Live broadcast window: Thu between 7 PM and 8 PM ET
+            return etDow === 4 && etHour >= 19 && etHour < 20;
           } catch {
             return false;
           }
         };
 
-        const shouldOpenSignalOnStart = !!hasLocalLiveOverride || !!liveOverrideActive || !!dbLive || isInBroadcastWindow();
+        const shouldOpenSignalOnStart = !!hasLocalLiveOverride || isInBroadcastWindow();
 
         if (shouldOpenSignalOnStart) {
           // Live stream mode: open the live signal panel after warp instead of Welcome Home
@@ -1586,12 +1586,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               const etDate = new Date(get('year'), get('month') - 1, get('day'));
               const etDow = etDate.getDay();
               // Live broadcast window: Mon/Thu between 7 PM and 9 PM ET
-              return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 21;
+              return etDow === 4 && etHour >= 19 && etHour < 20;
             } catch {
               return false;
             }
           };
-          const shouldOpenSignalOnStart = !!hasLocalLiveOverride || !!liveOverrideActive || !!dbLive || isInBroadcastWindow();
+          const shouldOpenSignalOnStart = !!hasLocalLiveOverride || isInBroadcastWindow();
           if (shouldOpenSignalOnStart) {
             if (process.env.NODE_ENV !== "production") console.log("📡 LIVE PRIORITY: opening live signal after warp for logged-in user");
             try { (window).__CHX_PENDING_SIGNAL_OPEN = true; } catch {}
@@ -1617,10 +1617,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             const etHour = get('hour') === 24 ? 0 : get('hour');
             const etDate = new Date(get('year'), get('month') - 1, get('day'));
             const etDow = etDate.getDay();
-            return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 21;
+            return etDow === 4 && etHour >= 19 && etHour < 20;
           } catch { return false; }
         };
-        const shouldOpenSignalOnStartGlobal = !!hasLocalLiveOverride || !!liveOverrideActive || !!dbLiveFinal || isInBroadcastWindowNow();
+        const shouldOpenSignalOnStartGlobal = !!hasLocalLiveOverride || isInBroadcastWindowNow();
         if (shouldOpenSignalOnStartGlobal) {
           if (process.env.NODE_ENV !== "production") console.log("📡 LIVE: queuing Live Signal open after warp (global)");
           try { (window).__CHX_PENDING_SIGNAL_OPEN = true; } catch {}
@@ -1722,7 +1722,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             const etHour = get('hour') === 24 ? 0 : get('hour');
             const etDate = new Date(get('year'), get('month') - 1, get('day'));
             const etDow = etDate.getDay();
-            return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 21;
+            return etDow === 4 && etHour >= 19 && etHour < 20;
           } catch { return false; }
         };
         const hasLocal = (() => {
@@ -1733,8 +1733,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             return window.localStorage.getItem('GO_LIVE_DEV_OVERRIDE') === '1';
           } catch { return false; }
         })();
-        const pendingFlag = (typeof window !== 'undefined' && (window).__CHX_PENDING_SIGNAL_OPEN) === true;
-        const preferPink = pendingFlag || hasLocal || !!liveOverrideActive || isInBroadcastWindowNow();
+        const preferPink = hasLocal || isInBroadcastWindowNow();
 
         if (preferPink) {
           setUiPhase('landing');
@@ -1801,15 +1800,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           }
         } catch {}
 
-        // If we queued opening the live signal display, do that now
-        if (typeof window !== 'undefined' && (window).__CHX_PENDING_SIGNAL_OPEN) {
-          setTimeout(() => {
-            try { handleBeamToggle('pink'); } catch {}
-          }, 500);
-          // Consume one-shot auto-open since we're opening pink via pending flag
-          try { allowLiveAutoOpenRef.current = false; } catch {}
-          try { delete (window).__CHX_PENDING_SIGNAL_OPEN; } catch {}
-        }
+        // Clean up any stale pending signal flag; blue reveal already handled it
+        try { if (typeof window !== 'undefined') delete (window).__CHX_PENDING_SIGNAL_OPEN; } catch {}
 
         // Check what to show after warp
         if (typeof window !== 'undefined' && (window).__SHOW_WELCOME_HOME_AFTER_WARP) {
@@ -2452,7 +2444,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         const etHour = get('hour') === 24 ? 0 : get('hour');
         const etDate = new Date(get('year'), get('month') - 1, get('day'));
         const etDow = etDate.getDay();
-        return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 21;
+        return etDow === 4 && etHour >= 19 && etHour < 20;
       })();
       return !!(forceEmbed || pending || local || db || liveOverrideActive || inWindow);
     } catch { return false; }
@@ -2751,7 +2743,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   const etHour = get('hour') === 24 ? 0 : get('hour');
                   const etDate = new Date(get('year'), get('month') - 1, get('day'));
                   const etDow = etDate.getDay();
-                  return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 21;
+                  return etDow === 4 && etHour >= 19 && etHour < 20;
                 } catch { return false; }
               };
               const hasLocal = (() => {
@@ -2762,89 +2754,55 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   return window.localStorage.getItem('GO_LIVE_DEV_OVERRIDE') === '1';
                 } catch { return false; }
               })();
-              const pendingFlag = (typeof window !== 'undefined' && (window).__CHX_PENDING_SIGNAL_OPEN) === true;
-              const preferPink = pendingFlag || hasLocal || !!liveOverrideActive || isInBroadcastWindowNow();
-
               setUiRevealLocked(false);
               setWarpActive(false);
 
-              if (preferPink) {
-                // Open pink Live Signal directly without showing blue first
-                // Ensure phase is not 'warping' before toggling
-                setUiPhase("landing");
-                setTimeout(() => {
-                  if (process.env.NODE_ENV !== "production") console.log('📡 UI reveal → opening Live Signal (pink)');
-                  try { handleBeamToggle('pink'); } catch {}
-                  // We auto-opened via reveal; consume the one-shot fallback
-                  try { allowLiveAutoOpenRef.current = false; } catch {}
-                  try { if (typeof window !== 'undefined') delete (window).__CHX_PENDING_SIGNAL_OPEN; } catch {}
-                  try { if (typeof window !== 'undefined') (window).__CHX_FORCE_LIVE_EMBED = true; } catch {}
-                  setUiPhase("landed");
-                  // Redundant nudge in case another effect briefly flipped to blue
-                  setTimeout(() => { try { handleBeamToggle('pink'); } catch {} }, 450);
-                  // Live debug overlay
-                  try {
-                    if (debugEnabled) {
-                      const db = (typeof window !== 'undefined' && window.__CHX_LAST_DB_LIVE) ? true : false;
-                      const pflag = (typeof window !== 'undefined' && window.__CHX_PENDING_SIGNAL_OPEN) ? true : false;
-                      const reason = pflag ? 'pending' : hasLocal ? 'local' : db ? 'db' : (liveOverrideActive ? 'hook' : (isInBroadcastWindowNow() ? 'schedule' : 'unknown'));
-                      setLiveDebug({ ctx: 'reveal-pink', reason, db, pflag, local: hasLocal, hook: !!liveOverrideActive, schedule: isInBroadcastWindowNow(), at: Date.now() });
-                      if (liveDebugTimerRef.current) clearTimeout(liveDebugTimerRef.current);
-                      liveDebugTimerRef.current = window.setTimeout(() => setLiveDebug(null), 5000);
-                    }
-                  } catch {}
-                }, 100);
-              } else {
-                // Default path: blue beam → HUD
-                setBeamEnabled(true);
-                setBeamColor('blue');
-                // Open HUD after beam starts
-                setTimeout(() => {
-                  setShowHUD(true);
-                  setUiPhase("landed");
-                  if (process.env.NODE_ENV !== "production") console.log("✅ UI revealed: beam -> HUD");
+              // Always show blue display first; the liveOverrideActive effect handles
+              // switching to pink if needed (avoids stale-closure failures with handleBeamToggle)
+              setBeamEnabled(true);
+              setBeamColor('blue');
+              // Consume any pending live-signal one-shot so it doesn't auto-override blue
+              try { allowLiveAutoOpenRef.current = false; } catch {}
+              try { if (typeof window !== 'undefined') delete (window).__CHX_PENDING_SIGNAL_OPEN; } catch {}
+              setTimeout(() => {
+                setShowHUD(true);
+                setUiPhase("landed");
+                if (process.env.NODE_ENV !== "production") console.log("✅ UI revealed: beam -> HUD");
 
-                  // Check what to show after warp
-                  if (typeof window !== 'undefined' && (window).__SHOW_WELCOME_HOME_AFTER_WARP) {
-                    // User not logged in - show WelcomeHomeModal
-                    if (process.env.NODE_ENV !== "production") console.log("🎯 WARP COMPLETE: User not logged in, showing WelcomeHomeModal");
-                    (window).__SHOW_WELCOME_HOME_AFTER_WARP = false;
-                    setTimeout(() => {
-                      setShowWelcomeHomeModal(true);
-                    }, 300);
-                  } else if (onboardingModeRef.current) {
-                    // User logged in but profile incomplete - show name prompt
-                    if (process.env.NODE_ENV !== "production") console.log("🎯 ONBOARDING: UI revealed, opening name prompt");
-                    onboardingModeRef.current = false; // Reset flag
-                    setTimeout(() => {
-                      openNamePromptFromAuth();
-                    }, 300); // Brief delay after UI reveal
-                  } else if (pendingTrackPlay) {
-                    // If a track is pending, trigger play after HUD opens
-                    const trackIndex = pendingTrackIndexRef.current;
-                    if (trackIndex !== null && trackIndex >= 0) {
-                      setChannelIdxWithLog(trackIndex);
-                      pendingTrackIndexRef.current = null;
-                    }
-                    // Trigger play/pause button
-                    setTimeout(() => {
-                      if (process.env.NODE_ENV !== "production") console.log("▶️ Triggering play");
-                      setPlaySignal((n) => n + 1);
-                    }, 100);
+                // Check what to show after warp
+                if (typeof window !== 'undefined' && (window).__SHOW_WELCOME_HOME_AFTER_WARP) {
+                  if (process.env.NODE_ENV !== "production") console.log("🎯 WARP COMPLETE: User not logged in, showing WelcomeHomeModal");
+                  (window).__SHOW_WELCOME_HOME_AFTER_WARP = false;
+                  setTimeout(() => {
+                    setShowWelcomeHomeModal(true);
+                  }, 300);
+                } else if (onboardingModeRef.current) {
+                  if (process.env.NODE_ENV !== "production") console.log("🎯 ONBOARDING: UI revealed, opening name prompt");
+                  onboardingModeRef.current = false;
+                  setTimeout(() => {
+                    openNamePromptFromAuth();
+                  }, 300);
+                } else if (pendingTrackPlay) {
+                  const trackIndex = pendingTrackIndexRef.current;
+                  if (trackIndex !== null && trackIndex >= 0) {
+                    setChannelIdxWithLog(trackIndex);
+                    pendingTrackIndexRef.current = null;
                   }
-                  // Live debug overlay (blue path)
-                  try {
-                    if (debugEnabled) {
-                      const db = (typeof window !== 'undefined' && window.__CHX_LAST_DB_LIVE) ? true : false;
-                      const pflag = (typeof window !== 'undefined' && window.__CHX_PENDING_SIGNAL_OPEN) ? true : false;
-                      const reason = 'blue-default';
-                      setLiveDebug({ ctx: 'reveal-blue', reason, db, pflag, local: hasLocal, hook: !!liveOverrideActive, schedule: isInBroadcastWindowNow(), at: Date.now() });
-                      if (liveDebugTimerRef.current) clearTimeout(liveDebugTimerRef.current);
-                      liveDebugTimerRef.current = window.setTimeout(() => setLiveDebug(null), 5000);
-                    }
-                  } catch {}
-                }, 150);
-              }
+                  setTimeout(() => {
+                    if (process.env.NODE_ENV !== "production") console.log("▶️ Triggering play");
+                    setPlaySignal((n) => n + 1);
+                  }, 100);
+                }
+                try {
+                  if (debugEnabled) {
+                    const db = (typeof window !== 'undefined' && window.__CHX_LAST_DB_LIVE) ? true : false;
+                    const reason = 'blue-default';
+                    setLiveDebug({ ctx: 'reveal-blue', reason, db, pflag: false, local: hasLocal, hook: !!liveOverrideActive, schedule: isInBroadcastWindowNow(), at: Date.now() });
+                    if (liveDebugTimerRef.current) clearTimeout(liveDebugTimerRef.current);
+                    liveDebugTimerRef.current = window.setTimeout(() => setLiveDebug(null), 5000);
+                  }
+                } catch {}
+              }, 150);
             };
 
             if (process.env.NODE_ENV !== "production") console.log("🔊 Playing button.mp3");
