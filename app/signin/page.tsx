@@ -18,6 +18,7 @@ export default function SignInPage() {
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [resendSeconds, setResendSeconds] = useState(30);
   const [justSent, setJustSent] = useState(false);
+  const [showWarpFlash, setShowWarpFlash] = useState(false);
   const codeInputRef = useRef<HTMLInputElement | null>(null);
 
   async function signInWithGoogle() {
@@ -74,7 +75,7 @@ export default function SignInPage() {
     setLoading(true);
     setError(null);
     try {
-      const { error } = await supabaseClient.auth.verifyOtp({
+      const { data: verifyData, error } = await supabaseClient.auth.verifyOtp({
         email,
         token,
         type: "email",
@@ -82,7 +83,31 @@ export default function SignInPage() {
       if (error) throw error;
       setStep("success");
       setInfoMessage("Signal confirmed. Welcome home.");
-      setTimeout(() => router.replace(next), 600);
+
+      // Ensure profile row exists then check if user needs onboarding
+      let dest = next;
+      try {
+        const { error: rpcError } = await supabaseClient.rpc('ensure_profile');
+        if (rpcError) {
+          const uid = verifyData?.session?.user?.id;
+          const uemail = verifyData?.session?.user?.email;
+          if (uid) {
+            await supabaseClient
+              .from('profiles')
+              .upsert({ id: uid, email: uemail }, { onConflict: 'id', ignoreDuplicates: true });
+          }
+        }
+        const { data } = await supabaseClient.from('profiles').select('name').maybeSingle();
+        if (!data?.name) dest = '/onboarding?entry=start';
+      } catch {}
+
+      const goingToOnboarding = dest.startsWith('/onboarding');
+      if (goingToOnboarding) {
+        setShowWarpFlash(true);
+        try { new Audio('/audio/warp.mp3').play().catch(() => {}); } catch {}
+      }
+
+      setTimeout(() => router.replace(dest), goingToOnboarding ? 1400 : 600);
     } catch (e: any) {
       setError(e?.message || "Invalid or expired code. Try again.");
     } finally {
@@ -146,6 +171,7 @@ export default function SignInPage() {
 
   return (
     <main className="mx-auto max-w-md p-6">
+      {showWarpFlash && <div className="warp-flash" />}
       <div className={`relative rounded-2xl p-6 border border-gray-200 bg-white shadow transition-all duration-500 ${step === "success" ? "portalActive scale-105 opacity-0" : "opacity-100"}`}>
         <h1 className="text-2xl font-semibold mb-6">Join the Heartverse</h1>
 

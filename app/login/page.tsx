@@ -19,6 +19,8 @@ export default function LoginPage() {
   const [resendSeconds, setResendSeconds] = useState(30);
   const [justSent, setJustSent] = useState(false);
 
+  const [showWarpFlash, setShowWarpFlash] = useState(false);
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const codeInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -79,7 +81,7 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      const { error } = await supabaseClient.auth.verifyOtp({
+      const { data: verifyData, error } = await supabaseClient.auth.verifyOtp({
         email,
         token,
         type: "email",
@@ -91,14 +93,30 @@ export default function LoginPage() {
       // Ensure profile row exists then check if user needs onboarding
       let dest = next;
       try {
-        await supabaseClient.rpc('ensure_profile');
+        const { error: rpcError } = await supabaseClient.rpc('ensure_profile');
+        // Fallback: direct upsert if RPC is unavailable
+        if (rpcError) {
+          const uid = verifyData?.session?.user?.id;
+          const uemail = verifyData?.session?.user?.email;
+          if (uid) {
+            await supabaseClient
+              .from('profiles')
+              .upsert({ id: uid, email: uemail }, { onConflict: 'id', ignoreDuplicates: true });
+          }
+        }
         const { data } = await supabaseClient.from('profiles').select('name').maybeSingle();
         if (!data?.name) dest = '/onboarding?entry=start';
       } catch {}
 
+      const goingToOnboarding = dest.startsWith('/onboarding');
+      if (goingToOnboarding) {
+        setShowWarpFlash(true);
+        try { new Audio('/audio/warp.mp3').play().catch(() => {}); } catch {}
+      }
+
       setTimeout(() => {
         router.replace(dest);
-      }, 600);
+      }, goingToOnboarding ? 1400 : 600);
     } catch (e: any) {
       setError(e?.message || "Invalid or expired code. Try again.");
     } finally {
@@ -163,6 +181,7 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto max-w-md p-6">
+      {showWarpFlash && <div className="warp-flash" />}
       <div
         ref={containerRef}
         className={`relative rounded-2xl p-6 backdrop-blur-md border border-white/20 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)] transition-all duration-500 ${

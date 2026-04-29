@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
@@ -340,7 +339,8 @@ export default function JoinAliens({ visible = true } = {}) {
         opacity: visible ? 1 : 0,
         transform: visible ? 'scale(1)' : 'scale(0.95)',
         transition: 'all 300ms ease',
-        overflow: 'hidden',
+        overflowX: 'hidden',
+        overflowY: 'auto',
         boxSizing: 'border-box',
         display: 'block'
       }}
@@ -558,7 +558,6 @@ export default function JoinAliens({ visible = true } = {}) {
                 width: '100%',
                 border: '1px solid rgba(242,239,29,0.55)',
                 borderRadius: 12,
-                overflow: 'hidden'
               }}
             >
             <motion.button
@@ -638,31 +637,21 @@ export default function JoinAliens({ visible = true } = {}) {
 
             {/* Phone form aligned below IRL drawer but outside its container — removed here */}
 
-            {typeof document !== 'undefined' && createPortal(
-              <AnimatePresence>
+            <AnimatePresence>
                 {isIrlOpen && visible && (
                   <motion.div
-                    key="irl-portal"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
+                    key="irl-inline"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.3 }}
                     style={{
-                      position: 'fixed',
-                      top: 'calc(100vh - var(--light-beam-boundary) - var(--beam-height))',
-                      bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      width: 'calc(var(--display-width) + 32px)',
+                      width: '100%',
                       background: 'rgba(0,0,0,0.88)',
-                      border: '1px solid rgba(242,239,29,0.55)',
-                      borderTop: 'none',
+                      borderTop: '1px solid rgba(242,239,29,0.25)',
                       borderRadius: '0 0 12px 12px',
-                      overflowY: 'auto',
+                      overflowY: 'hidden',
                       overflowX: 'hidden',
-                      zIndex: 200,
-                      boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
-                      WebkitOverflowScrolling: 'touch',
                     }}
                   >
                     <div style={{ padding: 8 }}>
@@ -1259,9 +1248,7 @@ export default function JoinAliens({ visible = true } = {}) {
                     </div>
                   </motion.div>
                 )}
-              </AnimatePresence>,
-              document.body
-            )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
