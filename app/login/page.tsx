@@ -87,9 +87,17 @@ export default function LoginPage() {
       if (error) throw error;
       setStep("success");
       setInfoMessage("Signal confirmed. Welcome home.");
-      // Portal/warp confirmation (max 600ms)
+
+      // Ensure profile row exists then check if user needs onboarding
+      let dest = next;
+      try {
+        await supabaseClient.rpc('ensure_profile');
+        const { data } = await supabaseClient.from('profiles').select('name').maybeSingle();
+        if (!data?.name) dest = '/onboarding?entry=start';
+      } catch {}
+
       setTimeout(() => {
-        router.replace(next);
+        router.replace(dest);
       }, 600);
     } catch (e: any) {
       setError(e?.message || "Invalid or expired code. Try again.");

@@ -18,6 +18,16 @@ function parseHashParams(hash: string) {
   return { access_token, refresh_token };
 }
 
+async function resolveDestination(defaultPath: string): Promise<string> {
+  try {
+    await supabaseBrowser.rpc('ensure_profile');
+    const { data } = await supabaseBrowser.from('profiles').select('name').maybeSingle();
+    return !data?.name ? '/onboarding?entry=start' : defaultPath;
+  } catch {
+    return defaultPath;
+  }
+}
+
 export default function AuthCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -50,7 +60,8 @@ export default function AuthCallbackPage() {
           if (!cancelled) setStatus({ state: "success" });
           if (!cancelled) {
             try { sessionStorage.setItem('chx_login_warp', '1'); } catch {}
-            router.replace(nextPath || "/");
+            const dest = await resolveDestination(nextPath || "/");
+            if (!cancelled) router.replace(dest);
           }
           return;
         }
@@ -64,7 +75,8 @@ export default function AuthCallbackPage() {
           if (!cancelled) setStatus({ state: "success" });
           if (!cancelled) {
             try { sessionStorage.setItem('chx_login_warp', '1'); } catch {}
-            router.replace(nextPath || "/");
+            const dest = await resolveDestination(nextPath || "/");
+            if (!cancelled) router.replace(dest);
           }
           return;
         }
