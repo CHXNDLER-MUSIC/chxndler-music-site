@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
-  const [resendSeconds, setResendSeconds] = useState(30);
+  const [resendSeconds, setResendSeconds] = useState(60);
   const [justSent, setJustSent] = useState(false);
 
   const [showWarpFlash, setShowWarpFlash] = useState(false);
@@ -54,7 +54,7 @@ export default function LoginPage() {
       setStep("verify");
       setJustSent(true);
       setTimeout(() => setJustSent(false), 1000);
-      setResendSeconds(30);
+      setResendSeconds(60);
       // Focus the code input to surface system OTP suggestions
       setTimeout(() => { try { codeInputRef.current?.focus(); } catch {} }, 0);
     } catch (e: any) {
@@ -90,6 +90,10 @@ export default function LoginPage() {
       setStep("success");
       setInfoMessage("Signal confirmed. Welcome home.");
 
+      // Trigger warp effect immediately on confirmed login
+      setShowWarpFlash(true);
+      try { new Audio('/audio/warp.mp3').play().catch(() => {}); } catch {}
+
       // Ensure profile row exists then check if user needs onboarding
       let dest = next;
       try {
@@ -104,19 +108,17 @@ export default function LoginPage() {
               .upsert({ id: uid, email: uemail }, { onConflict: 'id', ignoreDuplicates: true });
           }
         }
-        const { data } = await supabaseClient.from('profiles').select('name').maybeSingle();
-        if (!data?.name) dest = '/onboarding?entry=start';
-      } catch {}
-
-      const goingToOnboarding = dest.startsWith('/onboarding');
-      if (goingToOnboarding) {
-        setShowWarpFlash(true);
-        try { new Audio('/audio/warp.mp3').play().catch(() => {}); } catch {}
+        // Use profile_complete — ensure_profile never sets this true, only onboarding does
+        const { data } = await supabaseClient.from('profiles').select('profile_complete').maybeSingle();
+        if (!data?.profile_complete) dest = '/onboarding?entry=start';
+      } catch {
+        // On any error, default to onboarding for safety
+        dest = '/onboarding?entry=start';
       }
 
       setTimeout(() => {
         router.replace(dest);
-      }, goingToOnboarding ? 1400 : 600);
+      }, 1400);
     } catch (e: any) {
       setError(e?.message || "Invalid or expired code. Try again.");
     } finally {
@@ -171,7 +173,7 @@ export default function LoginPage() {
       const { error } = await supabaseClient.auth.signInWithOtp({ email });
       if (error) throw error;
       setInfoMessage("New code sent.");
-      setResendSeconds(30);
+      setResendSeconds(60);
     } catch (e: any) {
       setError(e?.message || "Failed to resend code");
     } finally {
@@ -303,7 +305,13 @@ export default function LoginPage() {
                 </button>
 
                 <div className="flex items-center justify-between text-xs text-white/70">
-                  <span>{email}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setStep("request"); setCode(""); setError(null); setInfoMessage(null); setResendSeconds(60); }}
+                    className="underline opacity-60 hover:opacity-100 transition-opacity"
+                  >
+                    {email}
+                  </button>
                   <button
                     type="button"
                     onClick={resendCode}

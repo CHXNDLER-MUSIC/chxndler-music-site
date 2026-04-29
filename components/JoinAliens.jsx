@@ -66,6 +66,7 @@ export default function JoinAliens({ visible = true } = {}) {
   // Chat state
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isChatProfileOpen, setIsChatProfileOpen] = useState(false);
+  const [isEpisodesOpen, setIsEpisodesOpen] = useState(false);
   // IRL panel state
   const [isIrlOpen, setIsIrlOpen] = useState(false);
   const [showAllIrl, setShowAllIrl] = useState(false);
@@ -92,6 +93,25 @@ export default function JoinAliens({ visible = true } = {}) {
   const irlScrollRef = useRef(null);
   const [isDraggingIrl, setIsDraggingIrl] = useState(false);
   const irlDragRef = useRef({ startX: 0, startY: 0, startScrollLeft: 0, startScrollTop: 0, moved: false });
+
+  // Phone form overlay positioning
+  const containerRef = useRef(null);
+  const irlSectionRef = useRef(null);
+  const [irlSectionTop, setIrlSectionTop] = useState(null);
+
+  useEffect(() => {
+    const measure = () => {
+      if (!containerRef.current || !irlSectionRef.current) return;
+      const cRect = containerRef.current.getBoundingClientRect();
+      const iRect = irlSectionRef.current.getBoundingClientRect();
+      setIrlSectionTop(Math.round(iRect.top - cRect.top));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (containerRef.current) ro.observe(containerRef.current);
+    window.addEventListener('resize', measure);
+    return () => { ro.disconnect(); window.removeEventListener('resize', measure); };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -316,6 +336,7 @@ export default function JoinAliens({ visible = true } = {}) {
 
   return (
     <div
+      ref={containerRef}
       className={`signal-lost-container ${visible ? 'pointer-events-auto' : 'pointer-events-none'}`}
       style={{
         zIndex: 130,
@@ -325,7 +346,7 @@ export default function JoinAliens({ visible = true } = {}) {
         visibility: visible ? 'visible' : 'hidden',
         width: '100%',
         height: '100%',
-        minHeight: isChatOpen ? '0' : 'fit-content',
+        minHeight: 0,
         maxHeight: '100%',
         margin: '0',
         // Always reserve space for bottom-floating buttons (chat, episodes, $/phone)
@@ -342,7 +363,8 @@ export default function JoinAliens({ visible = true } = {}) {
         overflowX: 'hidden',
         overflowY: 'auto',
         boxSizing: 'border-box',
-        display: 'block'
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       {/* Heart Signal Title - Top */}
@@ -413,8 +435,12 @@ export default function JoinAliens({ visible = true } = {}) {
           position: 'relative',
           overflow: (isLive || forceLiveFlag) ? 'hidden' : 'visible',
           aspectRatio: (isLive || forceLiveFlag) ? '16 / 9' : undefined,
-          height: (isLive || forceLiveFlag) ? undefined : 'fit-content',
-          maxHeight: (isLive || forceLiveFlag) ? undefined : 'fit-content',
+          height: (isLive || forceLiveFlag) ? undefined : (isIrlOpen ? undefined : 'fit-content'),
+          maxHeight: (isLive || forceLiveFlag) ? undefined : 'none',
+          flex: (!isLive && !forceLiveFlag) ? (isIrlOpen ? '1 1 0' : '0 0 auto') : undefined,
+          minHeight: (!isLive && !forceLiveFlag) ? 0 : undefined,
+          display: (!isLive && !forceLiveFlag) ? 'flex' : undefined,
+          flexDirection: (!isLive && !forceLiveFlag) ? 'column' : undefined,
           borderRadius: 8,
         }}
       >
@@ -444,7 +470,8 @@ export default function JoinAliens({ visible = true } = {}) {
           // Reduce top padding so numbers are closer to the pink line
           padding: 'clamp(2px, 1.5vw, 8px) 12px 12px',
           width: '100%',
-          height: 'auto',
+          flex: isIrlOpen ? '1 1 0' : '0 0 auto',
+          minHeight: 0,
           boxSizing: 'border-box',
         }}>
           {/*  */}
@@ -540,17 +567,17 @@ export default function JoinAliens({ visible = true } = {}) {
             </div>
           </div>
 
-          {/* Divider above IRL panel (pink) */}
+          {/* Divider above IRL panel */}
           <div style={{
             width: '100%',
             height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(252, 84, 175, 0.5), transparent)',
+            background: 'linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.5), transparent)',
             marginTop: '2px',
             marginBottom: '2px',
           }} />
 
           {/* IRL SIGNAL — expandable neon dashboard drawer */}
-          <div style={{ width: 'calc(100% + 16px)', margin: '4px -8px 0', position: 'relative' }}>
+          <div ref={irlSectionRef} style={{ width: 'calc(100% + 16px)', margin: '4px -8px 0', position: 'relative', flex: isIrlOpen ? '1 1 0' : '0 0 auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             {/* Wrapper with single continuous border so contents stay inside */}
             <div
               className="irl-pulse"
@@ -558,6 +585,10 @@ export default function JoinAliens({ visible = true } = {}) {
                 width: '100%',
                 border: '1px solid rgba(242,239,29,0.55)',
                 borderRadius: 12,
+                flex: isIrlOpen ? '1 1 0' : '0 0 auto',
+                minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
             <motion.button
@@ -575,7 +606,8 @@ export default function JoinAliens({ visible = true } = {}) {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: 12,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                flexShrink: 0,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
@@ -641,16 +673,18 @@ export default function JoinAliens({ visible = true } = {}) {
                 {isIrlOpen && visible && (
                   <motion.div
                     key="irl-inline"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
                     style={{
+                      flex: 1,
+                      minHeight: 0,
                       width: '100%',
                       background: 'rgba(0,0,0,0.88)',
                       borderTop: '1px solid rgba(242,239,29,0.25)',
                       borderRadius: '0 0 12px 12px',
-                      overflowY: 'hidden',
+                      overflowY: 'auto',
                       overflowX: 'hidden',
                     }}
                   >
@@ -1258,227 +1292,401 @@ export default function JoinAliens({ visible = true } = {}) {
 
       
 
-      {/* Tip amount buttons - horizontal row below live embed */}
-      {showTipOptions && (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '16px',
-          padding: '6px 8px 4px',
-        }}>
-          {[
-            { amount: 3, showState: showPaymentOptions, setShow: setShowPaymentOptions, closeOthers: () => { setShowPaymentOptions5(false); setShowPaymentOptions10(false); } },
-            { amount: 5, showState: showPaymentOptions5, setShow: setShowPaymentOptions5, closeOthers: () => { setShowPaymentOptions(false); setShowPaymentOptions10(false); } },
-            { amount: 10, showState: showPaymentOptions10, setShow: setShowPaymentOptions10, closeOthers: () => { setShowPaymentOptions(false); setShowPaymentOptions5(false); } },
-          ].map(({ amount, showState, setShow, closeOthers }) => {
-            const stripeUrls = { 3: 'https://buy.stripe.com/bJeeVe5X3fZH9Nnchh4gg0P', 5: 'https://buy.stripe.com/3cIaEYbhn00JbVv4OP4gg0Q', 10: 'https://buy.stripe.com/4gM5kEdpv3cV9Nn6WX4gg0R' };
-            const venmoNotes = { 3: 'Fuel the Signal', 5: 'Boost the Transmission', 10: 'Ignite the Heartverse' };
-            return (
-              <div key={amount} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+      {/* Support Panel — slide-up overlay */}
+      <AnimatePresence>
+        {showTipOptions && irlSectionTop !== null && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="tip-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => { setShowTipOptions(false); setShowPaymentOptions(false); setShowPaymentOptions5(false); setShowPaymentOptions10(false); }}
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.45)', zIndex: 140 }}
+            />
+
+            {/* Slide-up panel */}
+            <motion.div
+              key="tip-panel"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 380, damping: 38 }}
+              style={{
+                position: 'absolute',
+                top: irlSectionTop,
+                left: 0,
+                right: 0,
+                bottom: 'calc(120px + env(safe-area-inset-bottom, 0px))',
+                background: 'rgba(0,0,0,0.92)',
+                backdropFilter: 'blur(18px)',
+                WebkitBackdropFilter: 'blur(18px)',
+                border: '1px solid rgba(252,84,175,0.4)',
+                borderBottom: 'none',
+                borderRadius: '12px 12px 0 0',
+                zIndex: 145,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                boxShadow: '0 -8px 32px rgba(252,84,175,0.12)',
+              }}
+            >
+              {/* Header */}
+              <div style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '12px 40px 10px',
+                borderBottom: '1px solid rgba(252,84,175,0.2)',
+                flexShrink: 0,
+              }}>
+                <span style={{
+                  fontFamily: "'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',monospace",
+                  fontSize: 14,
+                  letterSpacing: '0.18em',
+                  color: '#FC54AF',
+                  textShadow: '0 0 10px rgba(252,84,175,0.8)',
+                  textAlign: 'center',
+                }}>
+                  SUPPORT THE HEARTVERSE
+                </span>
                 <button
-                  onClick={() => {
-                    try { sfx.play('audio/click.mp3', 0.3); } catch {}
-                    if (showState) { setShow(false); } else { closeOthers(); setShow(true); setSelectedTipAmount(amount); }
-                  }}
+                  onClick={() => { setShowTipOptions(false); setShowPaymentOptions(false); setShowPaymentOptions5(false); setShowPaymentOptions10(false); }}
                   style={{
-                    width: '55px', height: '55px',
-                    background: 'rgba(252, 84, 175, 0.1)', border: '2px solid #FC54AF', borderRadius: '50%',
-                    color: '#FC54AF', fontSize: amount === 10 ? '14px' : '16px', fontWeight: 'bold',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 300ms ease', textShadow: '0 0 8px #FC54AF', boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+                    position: 'absolute',
+                    right: 10,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'rgba(255,255,255,0.55)',
+                    cursor: 'pointer',
+                    fontSize: 20,
+                    lineHeight: 1,
+                    padding: '0 4px',
                   }}
-                  onMouseEnter={(e) => { try { sfx.play('hover', 0.3); } catch {} e.target.style.background = 'rgba(252, 84, 175, 0.2)'; e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)'; e.target.style.transform = 'scale(1.05)'; }}
-                  onMouseLeave={(e) => { e.target.style.background = 'rgba(252, 84, 175, 0.1)'; e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)'; e.target.style.transform = 'scale(1)'; }}
                 >
-                  ${amount}
+                  ×
                 </button>
-                {showState && (
-                  <>
-                    <button
-                      onClick={() => {
-                        try { sfx.play('card-ding', 0.7); } catch {}
-                        window.open(stripeUrls[amount], '_blank');
-                        setShow(false);
-                      }}
-                      style={{
-                        padding: '0', width: '58px', height: '38px',
-                        background: 'rgba(252, 84, 175, 0.1)', border: '2px solid #FC54AF', borderRadius: '8px',
-                        cursor: 'pointer', transition: 'all 300ms ease', boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                      }}
-                      onMouseEnter={(e) => { try { sfx.play('audio/hover.mp3', 0.3); } catch {} e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)'; e.target.style.background = 'rgba(252, 84, 175, 0.2)'; e.target.style.transform = 'scale(1.05)'; }}
-                      onMouseLeave={(e) => { e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)'; e.target.style.background = 'rgba(252, 84, 175, 0.1)'; e.target.style.transform = 'scale(1)'; }}
-                    >
-                      <img src="/elements/credit-card.webp" alt="Credit Card" style={{ width: '54px', height: '34px', filter: 'brightness(0) saturate(100%) invert(19%) sepia(95%) saturate(1646%) hue-rotate(300deg) brightness(102%) contrast(98%)' }} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        try { sfx.play('card-ding', 0.7); } catch {}
-                        const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=${amount}&note=${encodeURIComponent(venmoNotes[amount])}`;
-                        const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=${amount}&note=${encodeURIComponent(venmoNotes[amount])}`;
-                        window.open(venmoUrl, '_blank');
-                        setTimeout(() => { window.open(webVenmoUrl, '_blank'); }, 1000);
-                        setShow(false);
-                      }}
-                      style={{
-                        padding: '0', width: '48px', height: '48px',
-                        background: 'rgba(0, 255, 255, 0.1)', border: '2px solid #00FFFF', borderRadius: '50%',
-                        cursor: 'pointer', transition: 'all 300ms ease', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                      }}
-                      onMouseEnter={(e) => { try { sfx.play('audio/hover.mp3', 0.3); } catch {} e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)'; e.target.style.background = 'rgba(0, 255, 255, 0.2)'; e.target.style.transform = 'scale(1.05)'; }}
-                      onMouseLeave={(e) => { e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)'; e.target.style.background = 'rgba(0, 255, 255, 0.1)'; e.target.style.transform = 'scale(1)'; }}
-                    >
-                      <img src="/elements/venmo.webp" alt="Venmo" style={{ width: '44px', height: '44px', filter: 'brightness(1) invert(0)' }} />
-                    </button>
-                  </>
-                )}
               </div>
-            );
-          })}
-        </div>
-      )}
+
+              {/* Content */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 20, padding: '16px', overflowY: 'auto' }}>
+                {/* Amount buttons row */}
+                <div style={{ display: 'flex', gap: 20, justifyContent: 'center' }}>
+                  {[
+                    { amount: 3, showState: showPaymentOptions, setShow: setShowPaymentOptions, closeOthers: () => { setShowPaymentOptions5(false); setShowPaymentOptions10(false); } },
+                    { amount: 5, showState: showPaymentOptions5, setShow: setShowPaymentOptions5, closeOthers: () => { setShowPaymentOptions(false); setShowPaymentOptions10(false); } },
+                    { amount: 10, showState: showPaymentOptions10, setShow: setShowPaymentOptions10, closeOthers: () => { setShowPaymentOptions(false); setShowPaymentOptions5(false); } },
+                  ].map(({ amount, showState, setShow, closeOthers }) => (
+                    <button
+                      key={amount}
+                      onClick={() => { try { sfx.play('audio/click.mp3', 0.3); } catch {} if (showState) { setShow(false); } else { closeOthers(); setShow(true); setSelectedTipAmount(amount); } }}
+                      style={{
+                        width: 64, height: 64,
+                        background: showState ? 'rgba(252,84,175,0.25)' : 'rgba(252,84,175,0.1)',
+                        border: `2px solid ${showState ? '#FC54AF' : 'rgba(252,84,175,0.6)'}`,
+                        borderRadius: '50%',
+                        color: '#FC54AF', fontSize: amount === 10 ? 14 : 16, fontWeight: 'bold',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 300ms ease',
+                        textShadow: '0 0 8px #FC54AF',
+                        boxShadow: showState ? '0 0 24px rgba(252,84,175,0.5)' : '0 0 15px rgba(252,84,175,0.3)',
+                      }}
+                    >
+                      ${amount}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Payment method buttons — shown when an amount is selected */}
+                {(() => {
+                  const stripeUrls = { 3: 'https://buy.stripe.com/bJeeVe5X3fZH9Nnchh4gg0P', 5: 'https://buy.stripe.com/3cIaEYbhn00JbVv4OP4gg0Q', 10: 'https://buy.stripe.com/4gM5kEdpv3cV9Nn6WX4gg0R' };
+                  const venmoNotes = { 3: 'Fuel the Signal', 5: 'Boost the Transmission', 10: 'Ignite the Heartverse' };
+                  const activeEntry = [
+                    { amount: 3, showState: showPaymentOptions, setShow: setShowPaymentOptions },
+                    { amount: 5, showState: showPaymentOptions5, setShow: setShowPaymentOptions5 },
+                    { amount: 10, showState: showPaymentOptions10, setShow: setShowPaymentOptions10 },
+                  ].find(e => e.showState);
+                  if (!activeEntry) return null;
+                  const { amount, setShow } = activeEntry;
+                  return (
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={amount}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 8 }}
+                        transition={{ duration: 0.18 }}
+                        style={{ display: 'flex', gap: 16, justifyContent: 'center', alignItems: 'center' }}
+                      >
+                        {/* Card / Stripe */}
+                        <button
+                          onClick={() => { try { sfx.play('card-ding', 0.7); } catch {} window.open(stripeUrls[amount], '_blank'); setShow(false); }}
+                          style={{
+                            padding: 0, width: 64, height: 42,
+                            background: 'rgba(252,84,175,0.1)', border: '2px solid #FC54AF', borderRadius: 8,
+                            cursor: 'pointer', transition: 'all 300ms ease', boxShadow: '0 0 15px rgba(252,84,175,0.3)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 0 25px rgba(252,84,175,0.6)'; e.currentTarget.style.background = 'rgba(252,84,175,0.2)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 0 15px rgba(252,84,175,0.3)'; e.currentTarget.style.background = 'rgba(252,84,175,0.1)'; }}
+                        >
+                          <img src="/elements/credit-card.webp" alt="Card" style={{ width: 58, height: 36, filter: 'brightness(0) saturate(100%) invert(19%) sepia(95%) saturate(1646%) hue-rotate(300deg) brightness(102%) contrast(98%)' }} />
+                        </button>
+                        {/* Venmo */}
+                        <button
+                          onClick={() => {
+                            try { sfx.play('card-ding', 0.7); } catch {}
+                            const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=${amount}&note=${encodeURIComponent(venmoNotes[amount])}`;
+                            const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=${amount}&note=${encodeURIComponent(venmoNotes[amount])}`;
+                            window.open(venmoUrl, '_blank');
+                            setTimeout(() => { window.open(webVenmoUrl, '_blank'); }, 1000);
+                            setShow(false);
+                          }}
+                          style={{
+                            padding: 0, width: 54, height: 54,
+                            background: 'rgba(0,255,255,0.1)', border: '2px solid #00FFFF', borderRadius: '50%',
+                            cursor: 'pointer', transition: 'all 300ms ease', boxShadow: '0 0 15px rgba(0,255,255,0.3)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 0 25px rgba(0,255,255,0.6)'; e.currentTarget.style.background = 'rgba(0,255,255,0.2)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 0 15px rgba(0,255,255,0.3)'; e.currentTarget.style.background = 'rgba(0,255,255,0.1)'; }}
+                        >
+                          <img src="/elements/venmo.webp" alt="Venmo" style={{ width: 48, height: 48 }} />
+                        </button>
+                      </motion.div>
+                    </AnimatePresence>
+                  );
+                })()}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       
 
 
-      {/* Stay Connected Section - below IRL drawer, outside its container */}
-      {showPhoneForm && (
-        <div style={{ padding: '2px 12px 0', marginBottom: '88px' }}>
-          <div
-            style={{
-              textAlign: 'center',
-              marginBottom: '8px',
-              color: '#00FFFF',
-              fontSize: '16px',
-              fontWeight: '600',
-              textShadow: '0 0 8px rgba(0, 255, 255, 0.6)'
-            }}
-          >
-            {'Stay connected to the Heartverse.'}
-          </div>
-
-          {error && (
-            <div style={{
-              padding: '12px',
-              marginBottom: '16px',
-              background: 'rgba(255, 0, 0, 0.1)',
-              border: '1px solid rgba(255, 0, 0, 0.3)',
-              borderRadius: '8px',
-              color: '#ff6b6b',
-              fontSize: '14px',
-              textAlign: 'center'
-            }}>
-              {error}
-            </div>
-          )}
-
-          <div style={{ marginBottom: '12px', width: '80%', margin: '0 auto 12px auto' }}>
-            <input
-              id="signal-phone"
-              type="tel"
-              value={phone}
-              onChange={handlePhoneChange}
-              placeholder={profile?.phone ? profile.phone : "+1 5555555555 or your country code"}
-              disabled={status === 'saving'}
+      {/* Phone Form — slide-up overlay */}
+      <AnimatePresence>
+        {showPhoneForm && irlSectionTop !== null && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="phone-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setShowPhoneForm(false)}
               style={{
-                width: '100%',
-                padding: '12px 16px',
-                background: 'rgba(0, 0, 0, 0.6)',
-                border: '2px solid #00FFFF',
-                boxShadow: '0 0 8px rgba(0, 255, 255, 0.5), 0 0 15px rgba(0, 255, 255, 0.3)',
-                borderRadius: '8px',
-                color: '#ffffff',
-                fontSize: '16px',
-                outline: 'none',
-                transition: 'border-color 200ms ease'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#00FFFF';
-                e.target.style.boxShadow = '0 0 0 2px rgba(0, 255, 255, 0.2)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(0, 255, 255, 0.4)';
-                e.target.style.boxShadow = 'none';
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0,0,0,0.45)',
+                zIndex: 140,
               }}
             />
-            {phone.length > 0 && !isValidPhone && (
-              <p className="text-pink-400 text-sm mt-2">
-                Please enter a valid phone number with country code.
-              </p>
-            )}
-          </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <button
-              onClick={heartSignalSent && !user ? () => { try { sfx.play('click', 0.4); } catch {}; setShowWelcomeHome(true); } : sendHeartSignal}
-              disabled={status === 'saving' || (!heartSignalSent && !isValidPhone)}
+            {/* Slide-up panel */}
+            <motion.div
+              key="phone-panel"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 380, damping: 38 }}
               style={{
-                width: '80%',
-                margin: '0 auto',
-                padding: '12px 24px',
-                background: 'transparent',
-                border: status === 'saved' && heartSignalSent && !user
-                  ? '2px solid #F2EF1D'
-                  : status === 'saved'
-                    ? '2px solid #00FF00'
-                    : status === 'saving' || (!heartSignalSent && !isValidPhone)
-                      ? '2px solid rgba(128, 128, 128, 0.3)'
-                      : '2px solid #00FFFF',
-                borderRadius: '8px',
-                color: status === 'saved' && heartSignalSent && !user
-                  ? '#F2EF1D'
-                  : status === 'saved'
-                    ? '#00FF00'
-                    : status === 'saving' || (!heartSignalSent && !isValidPhone)
-                      ? 'rgba(128, 128, 128, 0.7)'
-                      : '#00FFFF',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: status === 'saving' || !isValidPhone ? 'not-allowed' : 'pointer',
-                transition: 'all 300ms ease',
-                boxShadow: status === 'saved' && heartSignalSent && !user
-                  ? '0 0 15px rgba(242, 239, 29, 0.5)'
-                  : status === 'saved'
-                    ? '0 0 15px rgba(0, 255, 0, 0.3)'
-                    : status === 'saving' || (!heartSignalSent && !isValidPhone)
-                      ? 'none'
-                      : '0 0 15px rgba(0, 255, 255, 0.3)',
-                textShadow: status === 'saved' && heartSignalSent && !user
-                  ? '0 0 10px #F2EF1D, 0 0 20px #F2EF1D, 0 0 30px #F2EF1D'
-                  : status === 'saved'
-                    ? '0 0 10px #00FF00, 0 0 20px #00FF00, 0 0 30px #00FF00'
-                    : status === 'saving' || (!heartSignalSent && !isValidPhone)
-                      ? 'none'
-                      : '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF',
-                outline: 'none'
+                position: 'absolute',
+                top: irlSectionTop,
+                left: 0,
+                right: 0,
+                bottom: 'calc(120px + env(safe-area-inset-bottom, 0px))',
+                background: 'rgba(0,0,0,0.92)',
+                backdropFilter: 'blur(18px)',
+                WebkitBackdropFilter: 'blur(18px)',
+                border: '1px solid rgba(0,255,255,0.35)',
+                borderBottom: 'none',
+                borderRadius: '12px 12px 0 0',
+                zIndex: 145,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                boxShadow: '0 -8px 32px rgba(0,255,255,0.12)',
               }}
             >
-              {status === 'saving' ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  <div 
-                    style={{
-                      width: '16px',
-                      height: '16px',
-                      border: '2px solid rgba(255, 255, 255, 0.3)',
-                      borderTop: '2px solid #ffffff',
-                      borderRadius: '50%',
-                      animation: 'spin 1s linear infinite'
-                    }}
-                  />
-                  Sending...
-                </div>
-              ) : status === 'saved' && heartSignalSent && !user ? (
-                'Signal received. Create your ALIEN profile.'
-              ) : status === 'saved' ? (
-                'Heart signal sent'
-              ) : (
-                'Send Heart Signal'
-              )}
-            </button>
-          </div>
-        </div>
-      )}
+              {/* Header */}
+              <div style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '12px 40px 10px',
+                borderBottom: '1px solid rgba(0,255,255,0.2)',
+                flexShrink: 0,
+              }}>
+                <span style={{
+                  fontFamily: "'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',monospace",
+                  fontSize: 14,
+                  letterSpacing: '0.18em',
+                  color: '#00FFFF',
+                  textShadow: '0 0 10px rgba(0,255,255,0.8)',
+                  textAlign: 'center',
+                }}>
+                  STAY CONNECTED TO THE HEARTVERSE
+                </span>
+                <button
+                  onClick={() => setShowPhoneForm(false)}
+                  style={{
+                    position: 'absolute',
+                    right: 10,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'rgba(255,255,255,0.55)',
+                    cursor: 'pointer',
+                    fontSize: 20,
+                    lineHeight: 1,
+                    padding: '0 4px',
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Content */}
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                gap: 14,
+                padding: '16px 16px',
+                overflowY: 'auto',
+              }}>
+                {error && (
+                  <div style={{
+                    padding: '10px 12px',
+                    background: 'rgba(255,0,0,0.1)',
+                    border: '1px solid rgba(255,0,0,0.3)',
+                    borderRadius: '8px',
+                    color: '#ff6b6b',
+                    fontSize: '13px',
+                    textAlign: 'center',
+                  }}>
+                    {error}
+                  </div>
+                )}
+
+                <input
+                  id="signal-phone"
+                  type="tel"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  placeholder={profile?.phone ? profile.phone : "+1 5555555555 or your country code"}
+                  disabled={status === 'saving'}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'rgba(0,0,0,0.6)',
+                    border: '2px solid #00FFFF',
+                    boxShadow: '0 0 8px rgba(0,255,255,0.5), 0 0 15px rgba(0,255,255,0.3)',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    fontSize: '16px',
+                    outline: 'none',
+                    transition: 'border-color 200ms ease',
+                    boxSizing: 'border-box',
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#00FFFF';
+                    e.target.style.boxShadow = '0 0 0 2px rgba(0,255,255,0.2)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'rgba(0,255,255,0.4)';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                />
+                {phone.length > 0 && !isValidPhone && (
+                  <p className="text-pink-400 text-sm" style={{ margin: 0 }}>
+                    Please enter a valid phone number with country code.
+                  </p>
+                )}
+
+                <button
+                  onClick={heartSignalSent && !user ? () => { try { sfx.play('click', 0.4); } catch {}; setShowWelcomeHome(true); } : sendHeartSignal}
+                  disabled={status === 'saving' || (!heartSignalSent && !isValidPhone)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 24px',
+                    background: 'transparent',
+                    border: status === 'saved' && heartSignalSent && !user
+                      ? '2px solid #F2EF1D'
+                      : status === 'saved'
+                        ? '2px solid #00FF00'
+                        : status === 'saving' || (!heartSignalSent && !isValidPhone)
+                          ? '2px solid rgba(128,128,128,0.3)'
+                          : '2px solid #00FFFF',
+                    borderRadius: '8px',
+                    color: status === 'saved' && heartSignalSent && !user
+                      ? '#F2EF1D'
+                      : status === 'saved'
+                        ? '#00FF00'
+                        : status === 'saving' || (!heartSignalSent && !isValidPhone)
+                          ? 'rgba(128,128,128,0.7)'
+                          : '#00FFFF',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: status === 'saving' || !isValidPhone ? 'not-allowed' : 'pointer',
+                    transition: 'all 300ms ease',
+                    boxShadow: status === 'saved' && heartSignalSent && !user
+                      ? '0 0 15px rgba(242,239,29,0.5)'
+                      : status === 'saved'
+                        ? '0 0 15px rgba(0,255,0,0.3)'
+                        : status === 'saving' || (!heartSignalSent && !isValidPhone)
+                          ? 'none'
+                          : '0 0 15px rgba(0,255,255,0.3)',
+                    textShadow: status === 'saved' && heartSignalSent && !user
+                      ? '0 0 10px #F2EF1D, 0 0 20px #F2EF1D'
+                      : status === 'saved'
+                        ? '0 0 10px #00FF00, 0 0 20px #00FF00'
+                        : status === 'saving' || (!heartSignalSent && !isValidPhone)
+                          ? 'none'
+                          : '0 0 10px #00FFFF, 0 0 20px #00FFFF',
+                    outline: 'none',
+                  }}
+                >
+                  {status === 'saving' ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                      <div style={{
+                        width: '16px',
+                        height: '16px',
+                        border: '2px solid rgba(255,255,255,0.3)',
+                        borderTop: '2px solid #ffffff',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite',
+                      }} />
+                      Sending...
+                    </div>
+                  ) : status === 'saved' && heartSignalSent && !user ? (
+                    'Signal received. Create your ALIEN profile.'
+                  ) : status === 'saved' ? (
+                    'Heart signal sent'
+                  ) : (
+                    'Send Heart Signal'
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Text Button - positioned in bottom left (fixed to viewport) */}
       <button
@@ -1487,9 +1695,15 @@ export default function JoinAliens({ visible = true } = {}) {
           e.stopPropagation();
           if (process.env.NODE_ENV !== "production") console.log('Chat button clicked! Current state:', isChatOpen);
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
-          // Close phone form before opening chat
+          // Close phone form and tip panel before opening chat
           if (!isChatOpen && showPhoneForm) {
             setShowPhoneForm(false);
+          }
+          if (!isChatOpen && showTipOptions) {
+            setShowTipOptions(false);
+            setShowPaymentOptions(false);
+            setShowPaymentOptions5(false);
+            setShowPaymentOptions10(false);
           }
           setIsChatOpen(!isChatOpen);
           if (process.env.NODE_ENV !== "production") console.log('Setting chat state to:', !isChatOpen);
@@ -1542,7 +1756,7 @@ export default function JoinAliens({ visible = true } = {}) {
       </button>
 
       {/* Episodes Library - button + panel rendered directly in container */}
-      <EpisodesLibrary isChatOpen={isChatOpen} visible={visible} />
+      <EpisodesLibrary isChatOpen={isChatOpen} visible={visible} onOpenChange={setIsEpisodesOpen} />
 
       {/* Phone Button - positioned to the left of $ button (fixed to viewport) */}
       <button
@@ -1578,7 +1792,8 @@ export default function JoinAliens({ visible = true } = {}) {
           outline: 'none',
           textShadow: '0 0 8px #00FFFF',
           boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
-          zIndex: 1200
+          zIndex: (isChatOpen || isEpisodesOpen) ? 10 : 1200,
+          pointerEvents: (isChatOpen || isEpisodesOpen) ? 'none' : 'auto',
         }}
         onMouseEnter={(e) => {
           try { sfx.play('hover', 0.3); } catch {}
@@ -1641,7 +1856,8 @@ export default function JoinAliens({ visible = true } = {}) {
           outline: 'none',
           textShadow: '0 0 8px #FC54AF',
           boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
-          zIndex: 1200
+          zIndex: (isChatOpen || isEpisodesOpen) ? 10 : 1200,
+          pointerEvents: (isChatOpen || isEpisodesOpen) ? 'none' : 'auto',
         }}
         onMouseEnter={(e) => {
           try { sfx.play('hover', 0.3); } catch {}

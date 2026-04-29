@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { sfx } from "@/lib/sfx";
 import { useAudio } from "@/app/providers/AudioProvider";
 
@@ -325,8 +326,9 @@ function formatReleaseDate(isoDate: string): string {
 // ──────────────────────────────────────────────
 // COMPONENT
 // ──────────────────────────────────────────────
-export default function EpisodesLibrary({ isChatOpen = false, visible = true }: { isChatOpen?: boolean; visible?: boolean }) {
+export default function EpisodesLibrary({ isChatOpen = false, visible = true, onOpenChange }: { isChatOpen?: boolean; visible?: boolean; onOpenChange?: (open: boolean) => void }) {
   const [isOpen, setIsOpen] = useState(false);
+  const setIsOpenAndNotify = useCallback((val: boolean) => { setIsOpen(val); onOpenChange?.(val); }, [onOpenChange]);
   const [topTab, setTopTab] = useState<TopTab>("heartverse");
   const [liveSignalSection, setLiveSignalSection] = useState<LiveSignalSection>("acoustic");
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
@@ -357,7 +359,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true }: 
       if (e.key === "Escape") {
         stopVideo();
         if (wasPlayingRef.current) audio.play();
-        setIsOpen(false);
+        setIsOpenAndNotify(false);
         setActiveVideo(null);
       }
     }
@@ -469,7 +471,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true }: 
         className="episodes-trigger-btn"
         aria-label="Open Heartverse Library"
         title="Heartverse Library"
-        onClick={() => { playClick(); if (isOpen) stopVideo(); setIsOpen(!isOpen); }}
+        onClick={() => { playClick(); if (isOpen) stopVideo(); setIsOpenAndNotify(!isOpen); }}
         onMouseEnter={() => { playHover(); }}
         onMouseLeave={() => {}}
         style={{
@@ -505,8 +507,14 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true }: 
       </button>
 
       {/* ── Inline Panel (contained within parent) ── */}
+      <AnimatePresence>
       {isOpen && (
-        <div
+        <motion.div
+          key="episodes-panel"
+          initial={{ y: '100%' }}
+          animate={{ y: 0 }}
+          exit={{ y: '100%' }}
+          transition={{ type: 'spring', stiffness: 380, damping: 38 }}
           className="episodes-panel flex flex-col rounded-2xl border-2 border-[#FC54AF]/50 bg-black/90 backdrop-blur-xl overflow-hidden"
           role="dialog"
           aria-label="Heartverse Library"
@@ -539,7 +547,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true }: 
             <button
               type="button"
               aria-label="Close"
-              onClick={() => { playClick(); stopVideo(); if (wasPlayingRef.current) audio.play(); setIsOpen(false); setActiveVideo(null); }}
+              onClick={() => { playClick(); stopVideo(); if (wasPlayingRef.current) audio.play(); setIsOpenAndNotify(false); setActiveVideo(null); }}
               onMouseEnter={playHover}
               className="inline-flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-bold transition-all duration-200 hover:scale-110 episodes-close-btn"
               style={{ position: 'absolute', right: '12px' }}
@@ -854,8 +862,9 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true }: 
               )}
             </div>
           )}
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       <style jsx>{`
         @keyframes schedulePulse {
