@@ -18,6 +18,7 @@ const HUDPanel = dynamic(() => import("@/components/HUDPanel"), { ssr: false });
 // const HeartverseSystemWrapper = ENABLE_HEARTVERSE_3D ? dynamic(() => import("@/components/holo/HeartverseSystemWrapper"), { ssr: false }) : null;
 const HoloHUD = dynamic(() => import("@/components/HoloHUD"), { ssr: false });
 import { skyFor, introSky } from "@/lib/sky";
+import { youtubeSkyFor } from "@/lib/sky-youtube";
 // MediaPlayer disabled - using unified audio system instead
 // const MediaPlayer = dynamic(() => import("@/components/MediaPlayer"), { ssr: false });
 import { sfx } from "@/lib/sfx";
@@ -970,7 +971,17 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
   // Compute YouTube sky URL as a stable useMemo to avoid re-computation on every render
   const computedYoutubeUrl = useMemo(() => {
-    // Remove all YouTube background usage; rely on local videos only
+    // Prioritize element warp YouTube URL when warping to element planets
+    if (elementWarpYoutubeUrl) return elementWarpYoutubeUrl;
+
+    const slug = curTrack?.slug;
+    const mapped = slug ? youtubeSkyFor(slug) : undefined;
+
+    // Show per-song sky when a song is selected and not in home mode
+    if (slug && mapped && !homeMode) {
+      return mapped;
+    }
+
     return undefined;
   }, [elementWarpYoutubeUrl, curTrack?.slug, homeMode, isLanded]);
 
@@ -2623,8 +2634,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         readyToReveal={isLanded}
         minDurationMs={3000}
         offsetY="-1vh"
-        // Use YouTube background on homepage (intro uses original sky, post-warp home uses new sky)
-        youtubeUrl={isIntro ? "https://youtu.be/KFssNa5WvKc" : (homeMode ? "https://youtu.be/gHDxkhQ4FbY" : undefined)}
+        // Intro: lightspeed clip. Home: space background. Song: per-track YouTube sky.
+        youtubeUrl={isIntro ? "https://youtu.be/KFssNa5WvKc" : (homeMode ? "https://youtu.be/gHDxkhQ4FbY" : computedYoutubeUrl)}
         // Use specific YouTube clip for the lightspeed (warp) overlay during START
         lightspeedYoutubeUrl={"https://youtu.be/KFssNa5WvKc"}
         onWarpSfxEnd={() => {
