@@ -48,7 +48,10 @@ export default function AuthCallbackPage() {
             window.history.replaceState(null, "", window.location.pathname + window.location.search);
           }
           if (!cancelled) setStatus({ state: "success" });
-          if (!cancelled) router.replace(nextPath || "/");
+          if (!cancelled) {
+            try { sessionStorage.setItem('chx_login_warp', '1'); } catch {}
+            router.replace(nextPath || "/");
+          }
           return;
         }
 
@@ -59,7 +62,10 @@ export default function AuthCallbackPage() {
           if (error) throw error;
           if (!data?.session) throw new Error("No session returned after code exchange");
           if (!cancelled) setStatus({ state: "success" });
-          if (!cancelled) router.replace(nextPath || "/");
+          if (!cancelled) {
+            try { sessionStorage.setItem('chx_login_warp', '1'); } catch {}
+            router.replace(nextPath || "/");
+          }
           return;
         }
 

@@ -375,6 +375,16 @@ main {
 .cockpit-glow { box-shadow: 0 0 24px rgba(255,255,255,.55), inset 0 0 12px rgba(255,255,255,.25); }
 .pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
 @keyframes pulse-soft { 0%,100%{opacity:.9;filter:brightness(1)} 50%{opacity:1;filter:brightness(1.12)} }
+.get-card-pulse { animation: get-card-pulse 2.2s ease-in-out infinite; }
+@keyframes get-card-pulse {
+  0%,100% { box-shadow: 0 0 20px rgba(242,239,29,.55), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22); transform: scale(1); }
+  50%      { box-shadow: 0 0 36px rgba(242,239,29,.9),  inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22); transform: scale(1.05); }
+}
+.send-card-pulse { animation: send-card-pulse 2.2s ease-in-out infinite; }
+@keyframes send-card-pulse {
+  0%,100% { box-shadow: 0 0 20px rgba(252,84,175,.55), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22); transform: scale(1); }
+  50%      { box-shadow: 0 0 36px rgba(252,84,175,.9),  inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22); transform: scale(1.05); }
+}
 
 /* Windshield mask disabled: render full sky */
 

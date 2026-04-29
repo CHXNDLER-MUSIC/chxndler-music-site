@@ -184,6 +184,10 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   const [mounted, setMounted] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [hasRealCard, setHasRealCard] = useState(false);
+  const [showShipping, setShowShipping] = useState(false);
+  const [shippingForm, setShippingForm] = useState({ email: '', full_name: '', address_line1: '', address_line2: '', city: '', state: '', zip: '', country: '' });
+  const [shippingStatus, setShippingStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [shippingAttempted, setShippingAttempted] = useState(false);
   
   // Get current track info from unified audio provider
   const { currentTrack } = useAudio();
@@ -498,6 +502,14 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
   const computedCardSrc = localCardFromCover || getCardImageUrl(title);
   const explicitCardSrc = CARD_URLS[effectiveSlug];
 
+  // Open card when dispatched from HeartverseCardModal (only for the chxndler_home instance)
+  useEffect(() => {
+    if (slug !== 'chxndler_home') return;
+    const handler = () => setShowCard(true);
+    window.addEventListener('openChxndlerCardDirect', handler);
+    return () => window.removeEventListener('openChxndlerCardDirect', handler);
+  }, [slug]);
+
   useEffect(() => {
     setMounted(true);
     // If an explicit external card URL is defined, trust it
@@ -549,6 +561,30 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
     try { if (onCardOpen) onCardOpen(); } catch {}
   };
 
+  const handleShippingSubmit = async () => {
+    setShippingAttempted(true);
+    const { email, full_name, address_line1, city, state, zip, country } = shippingForm;
+    if (!email || !full_name || !address_line1 || !city || !state || !zip || !country) {
+      try { sfx.play('scroll', 0.5); } catch {}
+      return;
+    }
+    try {
+      setShippingStatus('saving');
+      const res = await fetch('/api/cards/order-chxndler', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(shippingForm),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed');
+      try { sfx.play('success', 0.7); } catch {}
+      setShippingStatus('success');
+    } catch (err) {
+      console.error('[order-chxndler] submit error:', err);
+      setShippingStatus('error');
+    }
+  };
+
   // Reset flip state and rotation when modal closes
   useEffect(() => {
     if (!showCard) {
@@ -556,6 +592,10 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       setCardRotation(0);
       setIsAnimatingFlip(false);
       setShowElementsPopover(false);
+      setShowShipping(false);
+      setShippingStatus('idle');
+      setShippingAttempted(false);
+      setShippingForm({ email: '', full_name: '', address_line1: '', address_line2: '', city: '', state: '', zip: '', country: '' });
     }
   }, [showCard]);
 
@@ -639,10 +679,11 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
         <div
           className="fixed z-[2147483647]"
           style={{
-            top: 'var(--profile-bar-boundary, 64px)',
+            top: '62px',
             bottom: 'calc(var(--light-beam-boundary) + var(--beam-height, 68px))',
-            left: 0,
-            right: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 'calc(var(--display-width) + 32px)',
           }}
           onClick={() => {
             try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
@@ -650,18 +691,19 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
           }}
         >
           <div
-            className="absolute inset-0 flex items-center justify-center p-4"
+            className="absolute inset-0 flex items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Blue container with card - fills the display area */}
+            {/* Blue container with card - matches blue display dimensions */}
             <div
               className="relative rounded-2xl p-4 flex flex-col items-center overflow-hidden"
               style={{
                 background: 'rgba(25, 227, 255, 0.45)',
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
                 boxShadow: '0 0 60px rgba(25, 227, 255, 0.45), inset 0 0 0 1px rgba(25, 227, 255, 0.35)',
-                width: 'var(--display-width, 90vw)',
+                width: '100%',
                 height: '100%',
-                maxWidth: '100%',
               }}
             >
               {/* Close Button */}
@@ -676,8 +718,30 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                 ×
               </button>
 
-              {/* Collect Card Button - Above the card */}
-              {hasRealCard && (
+              {/* GET YOUR CARD button - homepage only, above card */}
+              {slug === 'chxndler_home' && !showShipping && (
+                <div className="mb-3 flex justify-center">
+                  <button
+                    type="button"
+                    className="px-6 py-2 rounded-lg font-bold text-sm get-card-pulse"
+                    style={{
+                      background: 'radial-gradient(100% 100% at 50% 20%, rgba(255,255,210,0.95), #F2EF1D)',
+                      color: '#001014',
+                      border: '1px solid rgba(255,255,255,.24)',
+                    }}
+                    onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+                    onClick={() => {
+                      try { sfx.play('click', 0.7); } catch {}
+                      setShowShipping(true);
+                    }}
+                  >
+                    CLAIM THIS CARD
+                  </button>
+                </div>
+              )}
+
+              {/* COLLECT CARD button - song cards only, above card */}
+              {slug !== 'chxndler_home' && hasRealCard && (
                 <div className="mb-3 flex justify-center">
                   <button
                     type="button"
@@ -694,16 +758,12 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                       try { sfx.play('click', 0.7); } catch {}
                       setShowCard(false);
                       try {
-                        // Clear any stale window globals to prevent conflicts with event-based flow
-                        // The openHeartCoinCards event handler sets the correct tab state
                         delete (window as any).priceHeartCoinsInitialTab;
                         delete (window as any).priceHeartCoinsSelectedCard;
                         delete (window as any).priceHeartCoinsFromStore;
                       } catch {}
                       try {
-                        // Always use the title prop (displayed card), not currentTrack (playing song)
                         const cardTitle = title;
-                        // Prefer provided slug prop for precise mapping; fallback to title-derived slug
                         const eventSlug = (slug || cardTitle || '')
                           .toLowerCase()
                           .trim()
@@ -727,7 +787,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
               )}
 
               {/* Card Image */}
-              <div
+              {!(slug === 'chxndler_home' && showShipping) && <div
                 className="relative card-float-animation"
                 style={{
                   width: 'auto',
@@ -803,7 +863,159 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                     draggable={false}
                   />
                 </TiltSpinCard>
-              </div>
+              </div>}
+
+              {/* Shipping mode - form only, no card image (homepage only) */}
+              {slug === 'chxndler_home' && showShipping && (
+                <div style={{ flex: '1 1 0', minHeight: 0, overflowY: 'auto', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                  {shippingStatus === 'success' ? (
+                    <div className="text-center mt-4 flex flex-col gap-3 items-center">
+                      <img src="/elements/merch.webp" alt="merch" style={{ width: 100, height: 100, objectFit: 'contain' }} />
+                      <div className="font-bold text-2xl" style={{ color: '#00FF88', textShadow: '0 0 10px rgba(0,255,136,0.8)' }}>You're In</div>
+                      <div className="text-lg" style={{ color: 'rgba(255,255,255,0.9)' }}>Your CHXNDLER card is being sent.</div>
+                      <div className="text-lg" style={{ color: 'rgba(255,255,255,0.75)' }}>One contains a <span style={{ fontWeight: 'bold', color: '#F2EF1D', textShadow: '0 0 6px rgba(242,239,29,0.6)' }}>hidden signal</span>.</div>
+                      <div className="text-lg italic" style={{ color: 'rgba(255,255,255,0.7)' }}>If it's yours… we're making a song.</div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          try { sfx.play('click', 0.5); } catch {}
+                          setShowCard(false);
+                          setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('openWelcomeHomeModal'));
+                          }, 250);
+                        }}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                        className="send-card-pulse mt-2 w-full rounded-lg px-4 py-3 font-bold text-base border transition-all"
+                        style={{
+                          background: '#FF69B4',
+                          border: '1px solid rgba(255,105,180,0.8)',
+                          color: '#000',
+                          boxShadow: '0 0 14px rgba(255,105,180,0.6)',
+                        }}
+                      >
+                        Join the Heartverse
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {[
+                        { key: 'full_name', placeholder: 'Full Name', type: 'text', required: true },
+                        { key: 'address_line1', placeholder: 'Address Line 1', type: 'text', required: true },
+                        { key: 'address_line2', placeholder: 'Address Line 2 (Optional)', type: 'text', required: false },
+                      ].map(({ key, placeholder, type, required }) => (
+                        <input
+                          key={key}
+                          type={type}
+                          placeholder={placeholder}
+                          value={shippingForm[key as keyof typeof shippingForm]}
+                          onChange={(e) => setShippingForm(f => ({ ...f, [key]: e.target.value }))}
+                          className="w-full px-3 py-2 rounded text-white text-sm placeholder-white/50"
+                          style={{ background: 'rgba(255,255,255,0.1)', border: `1px solid ${shippingAttempted && required && !shippingForm[key as keyof typeof shippingForm] ? 'rgba(255,80,80,0.7)' : 'rgba(255,255,255,0.3)'}` }}
+                          disabled={shippingStatus === 'saving'}
+                        />
+                      ))}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                        {[
+                          { key: 'city', placeholder: 'City' },
+                          { key: 'state', placeholder: 'State' },
+                        ].map(({ key, placeholder }) => (
+                          <input
+                            key={key}
+                            type="text"
+                            placeholder={placeholder}
+                            value={shippingForm[key as keyof typeof shippingForm]}
+                            onChange={(e) => setShippingForm(f => ({ ...f, [key]: e.target.value }))}
+                            className="px-3 py-2 rounded text-white text-sm placeholder-white/50"
+                            style={{ background: 'rgba(255,255,255,0.1)', border: `1px solid ${shippingAttempted && !shippingForm[key as keyof typeof shippingForm] ? 'rgba(255,80,80,0.7)' : 'rgba(255,255,255,0.3)'}` }}
+                            disabled={shippingStatus === 'saving'}
+                          />
+                        ))}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                        {[
+                          { key: 'zip', placeholder: 'ZIP Code' },
+                          { key: 'country', placeholder: 'Country' },
+                        ].map(({ key, placeholder }) => (
+                          <input
+                            key={key}
+                            type="text"
+                            placeholder={placeholder}
+                            value={shippingForm[key as keyof typeof shippingForm]}
+                            onChange={(e) => setShippingForm(f => ({ ...f, [key]: e.target.value }))}
+                            className="px-3 py-2 rounded text-white text-sm placeholder-white/50"
+                            style={{ background: 'rgba(255,255,255,0.1)', border: `1px solid ${shippingAttempted && !shippingForm[key as keyof typeof shippingForm] ? 'rgba(255,80,80,0.7)' : 'rgba(255,255,255,0.3)'}` }}
+                            disabled={shippingStatus === 'saving'}
+                          />
+                        ))}
+                      </div>
+                      <input
+                        type="email"
+                        placeholder="Email"
+                        value={shippingForm.email}
+                        onChange={(e) => setShippingForm(f => ({ ...f, email: e.target.value }))}
+                        className="w-full px-3 py-2 rounded text-white text-sm placeholder-white/50"
+                        style={{ background: 'rgba(255,255,255,0.1)', border: `1px solid ${shippingAttempted && !shippingForm.email ? 'rgba(255,80,80,0.7)' : 'rgba(255,255,255,0.3)'}` }}
+                        disabled={shippingStatus === 'saving'}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleShippingSubmit}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+                        disabled={shippingStatus === 'saving'}
+                        className={`w-full mt-1 px-4 py-2 rounded-lg font-bold text-sm${shippingStatus === 'idle' ? ' send-card-pulse' : ' transition-all duration-200'}`}
+                        style={{
+                          background: shippingStatus === 'error' ? 'rgba(255,165,0,0.2)' : 'radial-gradient(100% 100% at 50% 20%, rgba(255,180,230,0.95), #FC54AF)',
+                          color: shippingStatus === 'error' ? '#FFB347' : '#fff',
+                          border: shippingStatus === 'error' ? '1px solid rgba(255,165,0,0.6)' : '1px solid rgba(255,255,255,.24)',
+                          opacity: shippingStatus === 'saving' ? 0.6 : 1,
+                        }}
+                      >
+                        {shippingStatus === 'saving' ? 'Saving...' : shippingStatus === 'error' ? 'RETRY' : 'SEND MY CARD 💌'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* BROWSE ALL CARDS button - homepage only, below card, blue */}
+              {slug === 'chxndler_home' && !showShipping && (
+                <div className="mt-3 flex justify-center">
+                  <button
+                    type="button"
+                    className="px-6 py-2 rounded-lg font-bold text-sm transition-all duration-200"
+                    style={{
+                      background: 'radial-gradient(100% 100% at 50% 20%, rgba(180,255,255,0.95), #19E3FF)',
+                      color: '#001014',
+                      boxShadow: '0 0 20px rgba(25,227,255,.6), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22)',
+                      border: '1px solid rgba(255,255,255,.24)',
+                    }}
+                    onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+                    onClick={(e) => {
+                      try { e.preventDefault(); } catch {}
+                      try { sfx.play('click', 0.7); } catch {}
+                      setShowCard(false);
+                      try {
+                        delete (window as any).priceHeartCoinsInitialTab;
+                        delete (window as any).priceHeartCoinsSelectedCard;
+                        delete (window as any).priceHeartCoinsFromStore;
+                      } catch {}
+                      try {
+                        const heartCoinEvent = new CustomEvent('openHeartCoinCards', {
+                          detail: {
+                            cardTitle: 'CHXNDLER',
+                            songSlug: 'chxndler',
+                            cardSrc: src,
+                            element: trackElement
+                          }
+                        });
+                        window.dispatchEvent(heartCoinEvent);
+                      } catch {}
+                    }}
+                  >
+                    BROWSE ALL CARDS
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>,

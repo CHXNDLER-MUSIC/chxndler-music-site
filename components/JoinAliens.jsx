@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
@@ -637,22 +638,35 @@ export default function JoinAliens({ visible = true } = {}) {
 
             {/* Phone form aligned below IRL drawer but outside its container — removed here */}
 
-            <AnimatePresence initial={false}>
-              {isIrlOpen && (
-                <motion.div
-                  key="irl-panel"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.35, ease: [0.2, 0.6, 0.2, 1] }}
-                  style={{
-                    overflow: 'hidden',
-                    background: 'linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.6))',
-                    boxShadow: 'inset 0 0 24px rgba(0,255,255,0.08)'
-                  }}
-                >
-                  <div style={{ padding: isIrlOpen ? 8 : 12 }}>
-                    {(() => {
+            {typeof document !== 'undefined' && createPortal(
+              <AnimatePresence>
+                {isIrlOpen && visible && (
+                  <motion.div
+                    key="irl-portal"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    transition={{ duration: 0.3 }}
+                    style={{
+                      position: 'fixed',
+                      top: 'calc(100vh - var(--light-beam-boundary) - var(--beam-height))',
+                      bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: 'calc(var(--display-width) + 32px)',
+                      background: 'rgba(0,0,0,0.88)',
+                      border: '1px solid rgba(242,239,29,0.55)',
+                      borderTop: 'none',
+                      borderRadius: '0 0 12px 12px',
+                      overflowY: 'auto',
+                      overflowX: 'hidden',
+                      zIndex: 200,
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
+                      WebkitOverflowScrolling: 'touch',
+                    }}
+                  >
+                    <div style={{ padding: 8 }}>
+                      {(() => {
                       const fmtFullDate = (d) => {
                         try { return new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(d); }
                         catch { return d.toDateString(); }
@@ -1241,11 +1255,13 @@ export default function JoinAliens({ visible = true } = {}) {
                           </div>
                         </div>
                       );
-                    })()}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                      })()}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>,
+              document.body
+            )}
             </div>
           </div>
         </div>

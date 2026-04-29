@@ -24,6 +24,7 @@ import JourneyModal from '@/components/JourneyModal';
 import SoulStarJournal from '@/components/SoulStarJournal';
 import ProfilePopover from '@/components/ProfilePopover';
 import AuthButton from '@/components/AuthButton';
+import HeartverseCardModal from '@/components/HeartverseCardModal';
 
 interface Profile {
   id: string;
@@ -102,6 +103,7 @@ export default function ProfileBar({
   // Heart popover states
   const [showHeartPopover, setShowHeartPopover] = useState(false);
   const [showQuests, setShowQuests] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
   const heartBtnRef = useRef<HTMLButtonElement>(null);
   const [heartPopoverPos, setHeartPopoverPos] = useState<{left: number, top: number, width?: number, height?: number} | null>(null);
 
@@ -433,9 +435,24 @@ export default function ProfileBar({
     >
       <div className="relative h-full">
 
-        {/* Auth Button - Positioned separately with more space from hamburger, centered vertically */}
-        <div className="absolute top-1/2 -translate-y-1/2 left-16 z-50 pointer-events-auto">
+        {/* Auth Button + Card Button - Positioned next to hamburger, centered vertically */}
+        <div className="absolute top-1/2 -translate-y-1/2 left-16 z-50 pointer-events-auto flex items-center">
           <AuthButton />
+          <button
+            onClick={() => { try { sfx.play('click', 0.4); } catch {}; setShowCardModal(true); }}
+            onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {}; }}
+            className="flex-shrink-0 rounded-lg font-bold text-sm px-3 py-1.5 border transition-all duration-150 ml-1"
+            style={{
+              background: 'rgba(255,105,180,0.12)',
+              border: '1px solid rgba(255,105,180,0.5)',
+              color: '#FF69B4',
+              textShadow: '0 0 6px rgba(255,105,180,0.7)',
+              boxShadow: '0 0 10px rgba(255,105,180,0.3)',
+              letterSpacing: '0.08em',
+            }}
+          >
+            CARD
+          </button>
         </div>
 
         {/* Main Flex Layout - Center and Right */}
@@ -1252,9 +1269,15 @@ export default function ProfileBar({
       />
 
       {/* Welcome Home Modal */}
-      <WelcomeHomeModal 
-        open={showWelcomeHome} 
-        onClose={() => setShowWelcomeHome(false)} 
+      <WelcomeHomeModal
+        open={showWelcomeHome}
+        onClose={() => setShowWelcomeHome(false)}
+      />
+
+      {/* Heartverse Card Modal */}
+      <HeartverseCardModal
+        open={showCardModal}
+        onClose={() => setShowCardModal(false)}
       />
 
     </div>

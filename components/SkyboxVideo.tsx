@@ -368,19 +368,24 @@ export default function SkyboxVideo({
 
   return (
     /* z-10 so it's above any page bg image; HUD slots are z>=30 */
-    <div className="fixed inset-0 z-10 pointer-events-none flex items-center justify-center">
+    /* Dark backdrop matches page background — any loading gap is invisible rather than flashing */
+    <div className="fixed inset-0 z-10 pointer-events-none flex items-center justify-center" style={{ background: '#020016' }}>
       <div className="h-full w-full">
         {/* Base background: YouTube iframe (if provided) else MP4/webm */}
         {ytEmbedUrl ? (
           <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>
-            {/* Poster image for instant paint while iframe initializes */}
-            {ytThumbUrl && !ytReady ? (
+            {/* Poster image — stays mounted and fades out when iframe is ready,
+                preventing an abrupt pop when transitioning from thumbnail to live video */}
+            {ytThumbUrl ? (
               <div
                 aria-hidden
                 style={{
                   position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
                   width: '177.78vh', height: '100vh', minWidth: '100vw', minHeight: '56.25vw',
                   filter: `brightness(${brightness})${flying ? ' saturate(1.1) blur(1.2px)' : ''}`,
+                  opacity: ytReady ? 0 : 1,
+                  transition: 'opacity 400ms ease',
+                  pointerEvents: 'none',
                 }}
               >
                 <img src={ytThumbUrl}

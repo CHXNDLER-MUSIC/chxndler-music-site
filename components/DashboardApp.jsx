@@ -969,21 +969,33 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     }
   }, [curTrack?.slug, homeMode]);
 
-  // Compute YouTube sky URL as a stable useMemo to avoid re-computation on every render
-  const computedYoutubeUrl = useMemo(() => {
-    // Prioritize element warp YouTube URL when warping to element planets
+  // Desired YouTube sky URL — what we ultimately want to show.
+  // Includes all three states: intro clip, home space background, per-song sky.
+  const desiredYoutubeUrl = useMemo(() => {
+    if (isIntro) return "https://youtu.be/KFssNa5WvKc";
     if (elementWarpYoutubeUrl) return elementWarpYoutubeUrl;
-
+    if (homeMode) return "https://youtu.be/gHDxkhQ4FbY";
     const slug = curTrack?.slug;
     const mapped = slug ? youtubeSkyFor(slug) : undefined;
+    return mapped || undefined;
+  }, [isIntro, elementWarpYoutubeUrl, homeMode, curTrack?.slug]);
 
-    // Show per-song sky when a song is selected and not in home mode
-    if (slug && mapped && !homeMode) {
-      return mapped;
+  // Committed YouTube sky URL — deferred until the warp lightspeed overlay is
+  // visually active (allowWarp=true), so the iframe never swaps while the raw
+  // page background is exposed (prevents pre-warp and post-warp blue flashes).
+  const [computedYoutubeUrl, setComputedYoutubeUrl] = useState(desiredYoutubeUrl);
+  useEffect(() => {
+    // allowWarp=true means the lightspeed overlay is now showing — safe to swap
+    // the iframe underneath it without any visible flash.
+    if (allowWarp) {
+      setComputedYoutubeUrl(desiredYoutubeUrl);
+      return;
     }
-
-    return undefined;
-  }, [elementWarpYoutubeUrl, curTrack?.slug, homeMode, isLanded]);
+    // No warp in progress — update immediately (e.g. landing, page load, home mode).
+    if (!warpActive) {
+      setComputedYoutubeUrl(desiredYoutubeUrl);
+    }
+  }, [desiredYoutubeUrl, allowWarp, warpActive]);
 
   // Log only when computedYoutubeUrl actually changes (not on every render)
   const prevYoutubeUrlRef = React.useRef(undefined);
@@ -1892,6 +1904,17 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
   }, [audioManager, profile, openElementSelection, openNamePrompt, setShowWelcomeHomeModal, router, liveOverrideActive]);
 
+  // Auto-trigger warp after login: if the auth callback set this flag, warp immediately on mount
+  React.useEffect(() => {
+    try {
+      if (typeof sessionStorage === 'undefined') return;
+      if (sessionStorage.getItem('chx_login_warp') !== '1') return;
+      sessionStorage.removeItem('chx_login_warp');
+      const t = setTimeout(() => { handleStartClick(); }, 300);
+      return () => clearTimeout(t);
+    } catch {}
+  }, [handleStartClick]);
+
   // Handle opening journal: opens journal view in Soul Sky popover
   const handleOpenJournal = React.useCallback(() => {
     setShouldOpenJournal(true);
@@ -2634,8 +2657,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         readyToReveal={isLanded}
         minDurationMs={3000}
         offsetY="-1vh"
-        // Intro: lightspeed clip. Home: space background. Song: per-track YouTube sky.
-        youtubeUrl={isIntro ? "https://youtu.be/KFssNa5WvKc" : (homeMode ? "https://youtu.be/gHDxkhQ4FbY" : computedYoutubeUrl)}
+        // Committed sky URL (deferred until warp overlay is active to prevent background flash)
+        youtubeUrl={computedYoutubeUrl}
         // Use specific YouTube clip for the lightspeed (warp) overlay during START
         lightspeedYoutubeUrl={"https://youtu.be/KFssNa5WvKc"}
         onWarpSfxEnd={() => {
