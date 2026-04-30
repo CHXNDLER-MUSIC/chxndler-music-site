@@ -2460,7 +2460,7 @@ const HUDPanel = React.memo(function HUDPanel({
                 background: 'rgba(0, 20, 30, 0.7)',
                 border: '1px solid rgba(61, 245, 255, 0.4)',
                 borderRadius: '8px',
-                padding: '6px 10px',
+                padding: '9px 16px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -2472,9 +2472,9 @@ const HUDPanel = React.memo(function HUDPanel({
               className="planets-toggle-btn"
               onMouseEnter={(e) => {
                 try { sfx.play('hover', 0.5); } catch {}
-                e.currentTarget.style.borderColor = 'rgba(61, 245, 255, 0.8)';
-                e.currentTarget.style.boxShadow = '0 0 16px rgba(61, 245, 255, 0.35)';
-                e.currentTarget.style.transform = 'scale(1.06)';
+                e.currentTarget.style.borderColor = 'rgba(61, 245, 255, 1)';
+                e.currentTarget.style.boxShadow = '0 0 24px rgba(61, 245, 255, 0.8), 0 0 48px rgba(61, 245, 255, 0.4)';
+                e.currentTarget.style.transform = 'scale(1.14)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = 'rgba(61, 245, 255, 0.4)';
@@ -3338,8 +3338,9 @@ const HUDPanel = React.memo(function HUDPanel({
                         onClick={handlePlayPause}
                         className="hud-play-btn-enhanced"
                         aria-label={audioManager.playing ? "Pause" : "Play"}
-                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                        style={{ marginTop: 1, marginLeft: -6, width: 36, height: 36, pointerEvents: 'auto' }}
+                        onMouseEnter={(e) => { try { sfx.play('hover', 0.35); } catch {} e.currentTarget.style.filter = 'drop-shadow(0 0 8px rgba(255,255,255,0.9)) drop-shadow(0 0 18px rgba(255,255,255,0.5)) brightness(1.4)'; e.currentTarget.style.transform = 'scale(1.2)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.filter = ''; e.currentTarget.style.transform = ''; }}
+                        style={{ marginTop: 1, marginLeft: -6, width: 36, height: 36, pointerEvents: 'auto', transition: 'filter 180ms ease, transform 180ms ease' }}
                         data-tour-id="music-power-button"
                       >
                         {audioManager.playing ? (
@@ -3374,14 +3375,15 @@ const HUDPanel = React.memo(function HUDPanel({
                           ref={lyricsBtnRef}
                           type="button"
                           className="hud-lyrics-btn"
-                          style={{ marginTop: 1, pointerEvents: 'auto', position: 'relative', zIndex: 2000 }}
+                          style={{ marginTop: 1, pointerEvents: 'auto', position: 'relative', zIndex: 2000, transition: 'filter 180ms ease, transform 180ms ease' }}
                           title={lyricsTitle}
                           aria-label={lyricsAria}
                           data-id="lyrics"
                           data-song={isHome ? 'CHXNDLER' : (currentSong?.title || '')}
                           aria-haspopup="dialog"
                           aria-expanded={showLyricsPopover}
-                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                          onMouseEnter={(e) => { try { sfx.play('hover', 0.35); } catch {} e.currentTarget.style.filter = 'drop-shadow(0 0 8px rgba(255,255,255,0.9)) drop-shadow(0 0 18px rgba(255,255,255,0.5)) brightness(1.4)'; e.currentTarget.style.transform = 'scale(1.2)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.filter = ''; e.currentTarget.style.transform = ''; }}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -3437,13 +3439,14 @@ const HUDPanel = React.memo(function HUDPanel({
                           rel="noopener noreferrer"
                           data-button-id="apple-music"
                           className="apple-btn-waveform-hud"
-                          style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto' }}
+                          style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', transition: 'filter 180ms ease, transform 180ms ease' }}
                           title={isAppleProfile ? "Open CHXNDLER on Apple Music" : "Open on Apple Music"}
                           aria-label={isAppleProfile ? "Open CHXNDLER on Apple Music" : `Open ${currentSong?.title || 'current track'} on Apple Music`}
                           data-song={currentSong?.title || ''}
                           data-slug={currentSong?.id || ''}
                           data-id="am"
-                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                          onMouseEnter={(e) => { try { sfx.play('hover', 0.35); } catch {} e.currentTarget.style.filter = 'drop-shadow(0 0 8px rgba(252,84,175,0.9)) drop-shadow(0 0 18px rgba(252,84,175,0.5)) brightness(1.4)'; e.currentTarget.style.transform = 'scale(1.2)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.filter = ''; e.currentTarget.style.transform = ''; }}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -3490,7 +3493,7 @@ const HUDPanel = React.memo(function HUDPanel({
                           rel="noopener noreferrer"
                           data-button-id="spotify"
                           className="spotify-btn-waveform-hud"
-                          style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', order: 3 }}
+                          style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', order: 3, transition: 'filter 180ms ease, transform 180ms ease' }}
                           title={isSpotifyProfile ? "Open CHXNDLER on Spotify" : "Open on Spotify"}
                           aria-label={isSpotifyProfile ? "Open CHXNDLER on Spotify" : `Open ${currentSong?.title || 'current track'} on Spotify`}
                           data-song={currentSong?.title || ''}
@@ -3514,7 +3517,8 @@ const HUDPanel = React.memo(function HUDPanel({
                               window.open(spotifyUrl, '_blank', 'noopener,noreferrer');
                             }
                           }}
-                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                          onMouseEnter={(e) => { try { sfx.play('hover', 0.35); } catch {} e.currentTarget.style.filter = 'drop-shadow(0 0 8px rgba(29,185,84,0.9)) drop-shadow(0 0 18px rgba(29,185,84,0.5)) brightness(1.4)'; e.currentTarget.style.transform = 'scale(1.2)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.filter = ''; e.currentTarget.style.transform = ''; }}
                         >
                           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                             <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
@@ -3536,7 +3540,7 @@ const HUDPanel = React.memo(function HUDPanel({
                           rel="noopener noreferrer"
                           data-button-id="youtube"
                           className="youtube-btn-waveform-hud"
-                          style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', order: 5, position: 'relative', zIndex: 1000 }}
+                          style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', order: 5, position: 'relative', zIndex: 1000, transition: 'filter 180ms ease, transform 180ms ease' }}
                           title={isYouTubeProfile ? "Open CHXNDLER on YouTube" : `Open ${currentSong?.title || 'current track'} on YouTube`}
                           aria-label={isYouTubeProfile ? "Open CHXNDLER on YouTube" : `Open ${currentSong?.title || 'current track'} on YouTube`}
                           data-song={currentSong?.title || ''}
@@ -3589,7 +3593,8 @@ const HUDPanel = React.memo(function HUDPanel({
                               try { window.open(youtubeUrl, '_blank', 'noopener,noreferrer'); } catch {}
                             }
                           }}
-                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                          onMouseEnter={(e) => { try { sfx.play('hover', 0.35); } catch {} e.currentTarget.style.filter = 'drop-shadow(0 0 8px rgba(255,0,0,0.9)) drop-shadow(0 0 18px rgba(255,0,0,0.5)) brightness(1.4)'; e.currentTarget.style.transform = 'scale(1.2)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.filter = ''; e.currentTarget.style.transform = ''; }}
                         >
                           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                             <path d="M10 8l6 4-6 4z" />
@@ -3600,8 +3605,9 @@ const HUDPanel = React.memo(function HUDPanel({
                       <button
                         data-button-id="volume-control"
                         className="hud-volume-btn"
-                        style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', touchAction: 'manipulation', order: 99, position: 'relative', zIndex: 3000 }}
-                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                        style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', touchAction: 'manipulation', order: 99, position: 'relative', zIndex: 3000, transition: 'filter 180ms ease, transform 180ms ease' }}
+                        onMouseEnter={(e) => { try { sfx.play('hover', 0.35); } catch {} e.currentTarget.style.filter = 'drop-shadow(0 0 8px rgba(255,255,255,0.9)) drop-shadow(0 0 18px rgba(255,255,255,0.5)) brightness(1.4)'; e.currentTarget.style.transform = 'scale(1.2)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.filter = ''; e.currentTarget.style.transform = ''; }}
                         onTouchStart={(e) => {
                           // Prevent touch events from propagating to underlying elements
                           e.stopPropagation();

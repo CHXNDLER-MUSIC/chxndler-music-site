@@ -974,7 +974,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const desiredYoutubeUrl = useMemo(() => {
     if (isIntro) return "https://youtu.be/KFssNa5WvKc";
     if (elementWarpYoutubeUrl) return elementWarpYoutubeUrl;
-    if (homeMode) return "https://youtu.be/gHDxkhQ4FbY";
+    if (homeMode) return "https://youtu.be/DkEeJbEYt_E";
     const slug = curTrack?.slug;
     const mapped = slug ? youtubeSkyFor(slug) : undefined;
     return mapped || undefined;

@@ -147,8 +147,9 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
       {/* Hamburger Button */}
       <button
         onClick={toggleMenu}
-        onMouseEnter={handleHover}
-        className="relative transition-all duration-300 hover:scale-105"
+        onMouseEnter={(e) => { handleHover(); e.currentTarget.style.transform = 'scale(1.18)'; e.currentTarget.style.filter = 'drop-shadow(0 0 10px rgba(255,255,255,0.9)) drop-shadow(0 0 22px rgba(255,255,255,0.5)) brightness(1.3)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.filter = ''; }}
+        className="relative transition-all duration-200"
         aria-label={isOpen ? "Close menu" : "Open menu"}
         data-tour-id="hamburger"
       >

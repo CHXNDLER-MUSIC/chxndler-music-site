@@ -1220,8 +1220,10 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
           box-shadow:
             0 18px 30px rgba(0,0,0,.6),
             inset 0 1px 0 rgba(255,255,255,.28),
-            inset 0 -8px 18px rgba(0,0,0,.65);
-          filter: brightness(1.04) saturate(1.06);
+            inset 0 -8px 18px rgba(0,0,0,.65),
+            0 0 22px rgba(61,245,255,0.75),
+            0 0 48px rgba(61,245,255,0.4);
+          filter: brightness(1.12) saturate(1.2);
         }
         .power-btn:active{ transform: scale(.96); }
         @keyframes powerPulse{ 0%,100%{ filter: brightness(1) } 50%{ filter: brightness(1.08) } }

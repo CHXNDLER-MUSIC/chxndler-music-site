@@ -1116,6 +1116,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       // Only reflection-related badges should celebrate here, but we suppress
       // all because checkAndAwardEligibleBadges marks awarded badges as seen
       // in localStorage, preventing future celebrations via the realtime handler.
+      //
+      // NOTE: Do NOT call enableBadgeCelebrations() here. The caller (handleSaveEntry
+      // in SoulStarJournal) sets its own 10-second suppression window that covers the
+      // ritual animation. Calling enableBadgeCelebrations() early would cancel that
+      // timer, causing HeartcoinBalanceProvider's allowCelebration:true badge check
+      // to slip through and show badge celebrations the user didn't just unlock.
+      // The 10-second auto-timeout in suppressBadgeCelebrations handles expiry.
       if (user?.id) {
         suppressBadgeCelebrations(10000);
         updateBadgeProgressCounters(user.id)
@@ -1125,9 +1132,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           })
           .catch(err => {
             if (process.env.NODE_ENV !== "production") console.warn('Failed to update badge progress after journal save:', err);
-          })
-          .finally(() => {
-            enableBadgeCelebrations();
           });
       }
 

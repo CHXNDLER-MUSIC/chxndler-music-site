@@ -244,9 +244,13 @@ export default function JoinAliens({ visible = true } = {}) {
     return () => clearInterval(id);
   }, [visible]);
 
-  // Close the upcoming shows list when panel closes
+  // Close the upcoming shows list when panel closes; scroll dropdown into view when opening
   useEffect(() => {
-    if (!isIrlOpen) setShowAllIrl(false);
+    if (!isIrlOpen) { setShowAllIrl(false); return; }
+    const t = setTimeout(() => {
+      irlSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 150);
+    return () => clearTimeout(t);
   }, [isIrlOpen]);
 
   // Reset expanded row when list is hidden
@@ -470,8 +474,7 @@ export default function JoinAliens({ visible = true } = {}) {
           // Reduce top padding so numbers are closer to the pink line
           padding: 'clamp(2px, 1.5vw, 8px) 12px 12px',
           width: '100%',
-          flex: isIrlOpen ? '1 1 0' : '0 0 auto',
-          minHeight: 0,
+          flex: '0 0 auto',
           boxSizing: 'border-box',
         }}>
           {/*  */}
@@ -576,8 +579,12 @@ export default function JoinAliens({ visible = true } = {}) {
             marginBottom: '2px',
           }} />
 
-          {/* IRL SIGNAL — expandable neon dashboard drawer */}
-          <div ref={irlSectionRef} style={{ width: 'calc(100% + 16px)', margin: '4px -8px 0', position: 'relative', flex: isIrlOpen ? '1 1 0' : '0 0 auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        </div>
+        }
+        </YouTubeLive>
+
+        {/* IRL SIGNAL — expandable neon dashboard drawer — sibling of countdown, grows downward */}
+        <div ref={irlSectionRef} style={{ width: 'calc(100% + 16px)', margin: '4px -8px 0', position: 'relative', flex: isIrlOpen ? '1 1 0' : '0 0 auto', minHeight: isIrlOpen ? 240 : 0, display: 'flex', flexDirection: 'column' }}>
             {/* Wrapper with single continuous border so contents stay inside */}
             <div
               className="irl-pulse"
@@ -679,7 +686,7 @@ export default function JoinAliens({ visible = true } = {}) {
                     transition={{ duration: 0.2 }}
                     style={{
                       flex: 1,
-                      minHeight: 0,
+                      minHeight: 200,
                       width: '100%',
                       background: 'rgba(0,0,0,0.88)',
                       borderTop: '1px solid rgba(242,239,29,0.25)',
@@ -1285,12 +1292,9 @@ export default function JoinAliens({ visible = true } = {}) {
               </AnimatePresence>
             </div>
           </div>
-        </div>
-        }
-        </YouTubeLive>
       </div>
 
-      
+
 
       {/* Support Panel — slide-up overlay */}
       <AnimatePresence>

@@ -1,8 +1,92 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
+
+const SIGNAL_END_DATE = new Date("2026-05-22T00:00:00Z");
+
+function getTimeLeft(target: Date) {
+  const diff = Math.max(0, target.getTime() - Date.now());
+  return {
+    days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+    hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+    minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+    seconds: Math.floor((diff % (1000 * 60)) / 1000),
+    expired: diff === 0,
+  };
+}
+
+function useCountdown(target: Date) {
+  const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(target));
+
+  useEffect(() => {
+    const interval = setInterval(() => setTimeLeft(getTimeLeft(target)), 1000);
+    return () => clearInterval(interval);
+  }, [target]);
+
+  return timeLeft;
+}
+
+function CountdownTimer() {
+  const { days, hours, minutes, seconds, expired } = useCountdown(SIGNAL_END_DATE);
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  return (
+    <div
+      className="flex flex-col items-center"
+      style={{
+        background: "rgba(0,0,12,0.75)",
+        border: "1px solid rgba(252,84,175,0.45)",
+        borderRadius: "999px",
+        boxShadow: "0 0 14px rgba(252,84,175,0.25), inset 0 0 8px rgba(252,84,175,0.08)",
+        padding: "10px 28px",
+        width: "fit-content",
+        maxWidth: "90%",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "10px",
+          letterSpacing: "0.15em",
+          color: "rgba(255,150,210,0.85)",
+          fontWeight: 600,
+          marginBottom: "4px",
+        }}
+      >
+        HIDDEN SIGNAL CLOSES IN
+      </div>
+
+      {expired ? (
+        <div
+          style={{
+            fontSize: "20px",
+            fontWeight: "bold",
+            color: "#FC54AF",
+            textShadow: "0 0 10px rgba(252,84,175,0.8)",
+            letterSpacing: "0.1em",
+          }}
+        >
+          SIGNAL LOST
+        </div>
+      ) : (
+        <div
+          style={{
+            fontSize: "22px",
+            fontWeight: "bold",
+            color: "#F2EF1D",
+            textShadow: "0 0 8px rgba(242,239,29,0.7), 0 0 18px rgba(242,239,29,0.3)",
+            letterSpacing: "0.08em",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {pad(days)} : {pad(hours)} : {pad(minutes)} : {pad(seconds)}
+        </div>
+      )}
+
+    </div>
+  );
+}
 
 type Props = {
   open: boolean;
@@ -10,7 +94,10 @@ type Props = {
 };
 
 export default function HeartverseCardModal({ open, onClose }: Props) {
+  const { expired } = useCountdown(SIGNAL_END_DATE);
+
   function handleGetCard() {
+    if (expired) return;
     try { sfx.play("click", 0.6); } catch {}
     onClose();
     setTimeout(() => {
@@ -139,18 +226,18 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
               <div
                 className="text-center mb-1"
                 style={{
-                  color: "#FF69B4",
-                  textShadow: "0 0 8px rgba(255,105,180,0.6)",
+                  color: "#F2EF1D",
+                  textShadow: "0 0 8px rgba(242,239,29,0.6)",
                   fontSize: "26px",
                   fontWeight: "bold",
                 }}
               >
-                CLAIM YOUR CHXNDLER CARD
+                CLAIM CHXNDLER CARD
               </div>
 
               {/* Divider */}
               <div
-                className="w-full h-px mb-6"
+                className="w-full h-px mb-4"
                 style={{
                   background:
                     "linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)",
@@ -159,7 +246,10 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
               />
 
               {/* Body */}
-              <div className="flex flex-col items-center space-y-8 px-2">
+              <div className="flex flex-col items-center space-y-6 px-2">
+                {/* Countdown */}
+                <CountdownTimer />
+
                 <p
                   className="text-center text-xl leading-loose"
                   style={{
@@ -167,7 +257,7 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
                     textShadow: "0 0 8px rgba(255,105,180,0.6)",
                   }}
                 >
-                  I'm sending CHXNDLER cards to Aliens. One contains a{" "}
+                  I'm sending CHXNDLER cards to Aliens.<br />One contains a{" "}
                   <span style={{ fontWeight: "bold", color: "#F2EF1D", textShadow: "0 0 6px rgba(242,239,29,0.6), 0 0 12px rgba(242,239,29,0.3)" }}>
                     hidden signal
                   </span>
@@ -176,15 +266,22 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
 
                 <button
                   onClick={handleGetCard}
-                  onMouseEnter={() => { try { sfx.play("hover", 0.35); } catch {} }}
+                  onMouseEnter={() => { if (!expired) try { sfx.play("hover", 0.35); } catch {} }}
+                  disabled={expired}
                   className="get-card-pulse w-full rounded-lg px-4 py-3 text-xl font-bold border"
                   style={{
-                    background: "radial-gradient(100% 100% at 50% 20%, #F5F270, #F2EF1D)",
-                    color: "#001014",
-                    border: "1px solid rgba(255,255,255,0.24)",
+                    background: expired
+                      ? "rgba(60,60,60,0.5)"
+                      : "radial-gradient(100% 100% at 50% 20%, #F5F270, #F2EF1D)",
+                    color: expired ? "rgba(255,255,255,0.3)" : "#001014",
+                    border: expired
+                      ? "1px solid rgba(255,255,255,0.1)"
+                      : "1px solid rgba(255,255,255,0.24)",
+                    cursor: expired ? "not-allowed" : "pointer",
+                    opacity: expired ? 0.5 : 1,
                   }}
                 >
-                  SEND ME MY CARD 💌
+                  {expired ? "SIGNAL LOST" : "SEND ME MY CARD 💌"}
                 </button>
               </div>
             </div>

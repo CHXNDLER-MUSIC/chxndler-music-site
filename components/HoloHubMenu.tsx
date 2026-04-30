@@ -892,9 +892,11 @@ export default function HoloHubMenu({
         }
         .hub:hover{ transform: scale(1.05); box-shadow:
             0 22px 44px rgba(0,0,0,.7),
-            inset 0 2px 0 rgba(255,255,255,.35), 
-            inset 0 -8px 18px rgba(0,0,0,.65);
-          filter: brightness(1.06) saturate(1.08);
+            inset 0 2px 0 rgba(255,255,255,.35),
+            inset 0 -8px 18px rgba(0,0,0,.65),
+            0 0 22px rgba(242,239,29,0.75),
+            0 0 48px rgba(242,239,29,0.4);
+          filter: brightness(1.12) saturate(1.2);
         }
         /* Selected/open state: calmer than hover */
         .hub.on{

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useLogOnChange } from "@/lib/useLogOnChange";
 import { createPortal } from "react-dom";
 import { supabaseBrowser as supabaseClient } from "@/lib/supabase/client";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useRouter } from "next/navigation";
@@ -46,7 +47,8 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  
+  const [showWarpFlash, setShowWarpFlash] = useState(false);
+
   const { profile, updateProfile } = useProfile();
   
   // Memoize profile status to prevent unnecessary re-renders
@@ -233,7 +235,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
     setLoading(true);
     setError(null);
     try {
-      const { error } = await supabaseClient.auth.verifyOtp({
+      const { data: verifyData, error } = await supabaseClient.auth.verifyOtp({
         email,
         token,
         type: "email",
@@ -241,10 +243,51 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       if (error) throw error;
       setStep("success");
       setInfoMessage(null);
-      // Go straight to the homepage experience: play welcome + space music and navigate home
+
+      // Sync session to the supabase-browser client so onboarding page (which uses that client) is authenticated
+      if (verifyData?.session) {
+        try {
+          await supabaseBrowser.auth.setSession({
+            access_token: verifyData.session.access_token,
+            refresh_token: verifyData.session.refresh_token,
+          });
+        } catch {}
+        // Also store in sessionStorage — reliable across SPA navigation even if client state diverges
+        try { sessionStorage.setItem('chx_at', verifyData.session.access_token); } catch {}
+        try { sessionStorage.setItem('chx_rt', verifyData.session.refresh_token); } catch {}
+      }
+
+      // Trigger warp effect immediately
+      setShowWarpFlash(true);
+      try { new Audio('/audio/warp.mp3').play().catch(() => {}); } catch {}
       try { audioHeartverse.playWelcomeHomeAndSpaceMusic(); } catch {}
-      try { router.replace('/'); } catch {}
-      // After success, ProfileContext should update and modal will close automatically
+
+      // Dispatch planet:warp so DashboardApp triggers the sky lightspeed visual.
+      // We are still on the home page here, so DashboardApp is mounted and listening.
+      // Dispatch without element/isOnboarding so the visual fires (no audio conflict).
+      try { window.dispatchEvent(new CustomEvent('planet:warp', { detail: {} })); } catch {}
+
+      // Ensure profile row exists then check if user needs onboarding
+      let dest = '/';
+      try {
+        const { error: rpcError } = await supabaseClient.rpc('ensure_profile');
+        if (rpcError) {
+          const uid = verifyData?.session?.user?.id;
+          const uemail = verifyData?.session?.user?.email;
+          if (uid) {
+            await supabaseClient
+              .from('profiles')
+              .upsert({ id: uid, email: uemail }, { onConflict: 'id', ignoreDuplicates: true });
+          }
+        }
+        // profile_complete is only set true by align_element_and_award_first_coin (final onboarding step)
+        const { data } = await supabaseClient.from('profiles').select('profile_complete').maybeSingle();
+        if (!data?.profile_complete) dest = '/onboarding?entry=start';
+      } catch {
+        dest = '/onboarding?entry=start';
+      }
+
+      setTimeout(() => { try { router.replace(dest); } catch {} }, 1400);
     } catch (e: any) {
       setError(e?.message || "Invalid or expired code. Try again.");
     } finally {
@@ -349,8 +392,8 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
 
   return createPortal(
     <>
-      {/* Audio is now managed by audioHeartverse controller */}
-      
+      {showWarpFlash && <div className="warp-flash" />}
+
       {/* Only show modal UI when open */}
       {open && (
         <>
@@ -529,7 +572,14 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
           ) : (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs" style={{ color: '#00FFFF' }}>
-                <span>{email}</span>
+                <button
+                  type="button"
+                  onClick={() => { setStep("request"); setCode(""); setError(null); setInfoMessage(null); setResendSeconds(0); }}
+                  className="underline opacity-60 hover:opacity-100 transition-opacity"
+                  style={{ color: '#00FFFF' }}
+                >
+                  {email}
+                </button>
                 <button
                   type="button"
                   onClick={resendCode}

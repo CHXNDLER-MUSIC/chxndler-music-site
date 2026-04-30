@@ -248,12 +248,14 @@ export default function AuthButton() {
         onMouseEnter={(e) => {
           if (!isDisabled && hasEnteredHeartverse) {
             try { sfx.play('hover', 0.8); } catch {}
-            e.currentTarget.style.transform = 'scale(1.15)';
+            e.currentTarget.style.transform = 'scale(1.4)';
+            e.currentTarget.style.textShadow = '0 0 10px rgba(255,255,255,1), 0 0 24px rgba(255,255,255,1), 0 0 48px rgba(255,255,255,0.8), 0 0 80px rgba(255,255,255,0.5)';
           }
         }}
         onMouseLeave={(e) => {
           if (!isDisabled && hasEnteredHeartverse) {
             e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.textShadow = '';
           }
         }}
       >

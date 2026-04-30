@@ -74,7 +74,6 @@ export default function HoloJoinButton({
             inset 0 2px 0 rgba(255,255,255,.25),
             inset 0 -6px 14px rgba(0,0,0,.7);
           transition: transform 120ms ease, box-shadow 180ms ease, filter 180ms ease;
-          animation: joinGlowPulse 2s ease-in-out infinite;
         }
         .hub::before{ content:""; position:absolute; inset:-2px; border-radius:9999px; pointer-events:none; box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 0 0 1px rgba(0,255,255,.06); }
         .hub::after{ content:""; position:absolute; left:16%; right:16%; top:10%; height:26%; border-radius:9999px; pointer-events:none; background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0)); filter: blur(1px); opacity:.85; }
@@ -84,8 +83,10 @@ export default function HoloJoinButton({
           box-shadow:
             0 20px 38px rgba(0,0,0,.65),
             inset 0 2px 0 rgba(255,255,255,.3),
-            inset 0 -8px 18px rgba(0,0,0,.7);
-          filter: brightness(1.04) saturate(1.08);
+            inset 0 -8px 18px rgba(0,0,0,.7),
+            0 0 22px rgba(252,84,175,0.75),
+            0 0 48px rgba(252,84,175,0.4);
+          filter: brightness(1.12) saturate(1.2);
         }
         .hub-icon{ width:${Math.round(size*0.62)}px; height:${Math.round(size*0.62)}px; object-fit: contain; filter: saturate(1.5) brightness(1.3) drop-shadow(0 0 14px ${hubColor}) drop-shadow(0 0 30px ${hubColor}) drop-shadow(0 0 50px ${hubColor}) drop-shadow(0 0 80px ${hubColor}); transition: filter 180ms ease, transform 180ms ease; }
         .hub:hover .hub-icon{ transform: scale(1.06); filter: saturate(1.18) brightness(1.06) drop-shadow(0 0 10px ${hubColor}) drop-shadow(0 0 22px ${hubColor}) drop-shadow(0 0 36px ${hubColor}); }

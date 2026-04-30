@@ -110,9 +110,20 @@ export default function LoginPage() {
         }
         // Use profile_complete — ensure_profile never sets this true, only onboarding does
         const { data } = await supabaseClient.from('profiles').select('profile_complete').maybeSingle();
-        if (!data?.profile_complete) dest = '/onboarding?entry=start';
+        if (!data?.profile_complete) {
+          // Store tokens so onboarding page can auth without two-client session split
+          if (verifyData?.session) {
+            try { sessionStorage.setItem('chx_at', verifyData.session.access_token); } catch {}
+            try { sessionStorage.setItem('chx_rt', verifyData.session.refresh_token); } catch {}
+          }
+          dest = '/onboarding?entry=start';
+        }
       } catch {
         // On any error, default to onboarding for safety
+        if (verifyData?.session) {
+          try { sessionStorage.setItem('chx_at', verifyData.session.access_token); } catch {}
+          try { sessionStorage.setItem('chx_rt', verifyData.session.refresh_token); } catch {}
+        }
         dest = '/onboarding?entry=start';
       }
 

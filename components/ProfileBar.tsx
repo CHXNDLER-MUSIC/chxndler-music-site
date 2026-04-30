@@ -19,6 +19,16 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useUIStore } from '@/store/useUIStore';
 import JoinUsPopup from '@/components/JoinUsPopup';
+
+const SIGNAL_END_DATE = new Date("2026-05-22T00:00:00Z");
+function getCardTimeLeft() {
+  const diff = Math.max(0, SIGNAL_END_DATE.getTime() - Date.now());
+  return {
+    hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+    minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+    seconds: Math.floor((diff % (1000 * 60)) / 1000),
+  };
+}
 import WelcomeHomeModal from '@/components/WelcomeHomeModal';
 import JourneyModal from '@/components/JourneyModal';
 import SoulStarJournal from '@/components/SoulStarJournal';
@@ -104,6 +114,11 @@ export default function ProfileBar({
   const [showHeartPopover, setShowHeartPopover] = useState(false);
   const [showQuests, setShowQuests] = useState(false);
   const [showCardModal, setShowCardModal] = useState(false);
+  const [cardTimeLeft, setCardTimeLeft] = useState(getCardTimeLeft);
+  useEffect(() => {
+    const id = setInterval(() => setCardTimeLeft(getCardTimeLeft()), 1000);
+    return () => clearInterval(id);
+  }, []);
   const heartBtnRef = useRef<HTMLButtonElement>(null);
   const [heartPopoverPos, setHeartPopoverPos] = useState<{left: number, top: number, width?: number, height?: number} | null>(null);
 
@@ -435,23 +450,47 @@ export default function ProfileBar({
     >
       <div className="relative h-full">
 
-        {/* Auth Button + Card Button - Positioned next to hamburger, centered vertically */}
+        {/* Auth Button - left side next to hamburger */}
         <div className="absolute top-1/2 -translate-y-1/2 left-16 z-50 pointer-events-auto flex items-center">
           <AuthButton />
+        </div>
+
+        {/* Card Button - horizontally centered in the bar */}
+        <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
           <button
             onClick={() => { try { sfx.play('click', 0.4); } catch {}; setShowCardModal(true); }}
             onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {}; }}
-            className="flex-shrink-0 rounded-lg font-bold text-sm px-3 py-1.5 border transition-all duration-150 ml-1"
+            className="card-btn-pulse flex-shrink-0 rounded-lg border flex flex-col items-center"
             style={{
-              background: 'rgba(255,105,180,0.12)',
-              border: '1px solid rgba(255,105,180,0.5)',
-              color: '#FF69B4',
-              textShadow: '0 0 6px rgba(255,105,180,0.7)',
-              boxShadow: '0 0 10px rgba(255,105,180,0.3)',
-              letterSpacing: '0.08em',
+              background: 'rgba(255,105,180,0.10)',
+              border: '1px solid rgba(242,239,29,0.7)',
+              padding: '3px 8px 4px',
+              gap: '1px',
             }}
           >
-            CARD
+            <img
+              src="/elements/relics.webp"
+              alt=""
+              style={{
+                width: 36,
+                height: 36,
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 0 5px rgba(252,84,175,0.85))',
+              }}
+            />
+            <span
+              style={{
+                fontSize: '10px',
+                fontWeight: 700,
+                color: '#F2EF1D',
+                letterSpacing: '0.05em',
+                textShadow: '0 0 6px rgba(242,239,29,0.8)',
+                fontVariantNumeric: 'tabular-nums',
+                lineHeight: 1,
+              }}
+            >
+              {String(cardTimeLeft.hours).padStart(2, '0')}:{String(cardTimeLeft.minutes).padStart(2, '0')}:{String(cardTimeLeft.seconds).padStart(2, '0')}
+            </span>
           </button>
         </div>
 

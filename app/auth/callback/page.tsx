@@ -18,11 +18,19 @@ function parseHashParams(hash: string) {
   return { access_token, refresh_token };
 }
 
-async function resolveDestination(defaultPath: string): Promise<string> {
+async function resolveDestination(session: any, defaultPath: string): Promise<string> {
   try {
     await supabaseBrowser.rpc('ensure_profile');
-    const { data } = await supabaseBrowser.from('profiles').select('name').maybeSingle();
-    return !data?.name ? '/onboarding?entry=start' : defaultPath;
+    const { data } = await supabaseBrowser.from('profiles').select('profile_complete').maybeSingle();
+    if (!data?.profile_complete) {
+      // Pass tokens so onboarding page can auth without two-client split
+      if (session?.access_token && session?.refresh_token) {
+        try { sessionStorage.setItem('chx_at', session.access_token); } catch {}
+        try { sessionStorage.setItem('chx_rt', session.refresh_token); } catch {}
+      }
+      return '/onboarding?entry=start';
+    }
+    return defaultPath;
   } catch {
     return defaultPath;
   }
@@ -60,7 +68,7 @@ export default function AuthCallbackPage() {
           if (!cancelled) setStatus({ state: "success" });
           if (!cancelled) {
             try { sessionStorage.setItem('chx_login_warp', '1'); } catch {}
-            const dest = await resolveDestination(nextPath || "/");
+            const dest = await resolveDestination(data.session, nextPath || "/");
             if (!cancelled) router.replace(dest);
           }
           return;
@@ -75,7 +83,7 @@ export default function AuthCallbackPage() {
           if (!cancelled) setStatus({ state: "success" });
           if (!cancelled) {
             try { sessionStorage.setItem('chx_login_warp', '1'); } catch {}
-            const dest = await resolveDestination(nextPath || "/");
+            const dest = await resolveDestination(data.session, nextPath || "/");
             if (!cancelled) router.replace(dest);
           }
           return;

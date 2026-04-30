@@ -63,10 +63,12 @@ export default function ElementalButton({ asChild = false, children, onClick, on
         }}
         onMouseEnter={(e) => {
           if (onHoverSound) onHoverSound();
-          e.currentTarget.style.transform = 'scale(1.05)';
+          e.currentTarget.style.transform = 'scale(1.18)';
+          e.currentTarget.style.filter = 'drop-shadow(0 0 8px rgba(147,51,234,0.9)) drop-shadow(0 0 16px rgba(147,51,234,0.5)) brightness(1.3)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.filter = '';
         }}
         // Spread only safe DOM props (filtered)
         {...restProps}

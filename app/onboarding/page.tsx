@@ -77,7 +77,28 @@ function OnboardingContent() {
   useEffect(() => {
     async function fetchUser() {
       try {
-        const { data: { session } } = await supabaseBrowser.auth.getSession();
+        // Primary path: tokens stored in sessionStorage by WelcomeHomeModal after OTP verify.
+        // This is the most reliable channel because sessionStorage persists across SPA
+        // navigation within the same tab, regardless of Supabase client instance identity.
+        const at = sessionStorage.getItem('chx_at');
+        const rt = sessionStorage.getItem('chx_rt');
+        if (at && rt) {
+          sessionStorage.removeItem('chx_at');
+          sessionStorage.removeItem('chx_rt');
+          const { data: ssData } = await supabaseBrowser.auth.setSession({ access_token: at, refresh_token: rt });
+          if (ssData?.session?.user?.id) {
+            setUserId(ssData.session.user.id);
+            if (process.env.NODE_ENV !== "production") console.log('[Onboarding] User ID from sessionStorage tokens:', ssData.session.user.id);
+            return;
+          }
+        }
+
+        // Fallback: getSession — works when the same client instance already has the session.
+        let { data: { session } } = await supabaseBrowser.auth.getSession();
+        if (!session) {
+          await new Promise(r => setTimeout(r, 500));
+          ({ data: { session } } = await supabaseBrowser.auth.getSession());
+        }
         if (session?.user?.id) {
           setUserId(session.user.id);
           if (process.env.NODE_ENV !== "production") console.log('[Onboarding] User ID fetched:', session.user.id);
