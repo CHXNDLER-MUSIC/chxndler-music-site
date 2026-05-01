@@ -1820,9 +1820,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             const welcomeAudio = new Audio(welcomeAudioPath);
             welcomeAudio.volume = 0.9;
             if (welcomeType === 'heartverse') {
-              try { if (typeof window !== 'undefined') window.__SHOW_WELCOME_HOME_AFTER_WARP = false; } catch {}
-              welcomeAudio.addEventListener('ended', () => { try { setShowWelcomeHomeModal(true); } catch {} });
-              welcomeAudio.play().catch(() => { try { setShowWelcomeHomeModal(true); } catch {} });
+              // WelcomeHomeModal opens via __SHOW_WELCOME_HOME_AFTER_WARP in revealUIAndPlay
+              welcomeAudio.addEventListener('ended', () => {
+                try { sfx.play('button', 0.9); } catch {}
+                try { setBeamColor('yellow'); } catch {}
+                try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
+              });
+              welcomeAudio.play().catch(() => {
+                try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
+              });
             } else {
               welcomeAudio.play().catch(() => {});
             }
@@ -2750,9 +2756,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 const welcomeAudio = new Audio(welcomeAudioPath);
                 welcomeAudio.volume = 0.9;
                 if (welcomeType === 'heartverse') {
-                  try { if (typeof window !== 'undefined') window.__SHOW_WELCOME_HOME_AFTER_WARP = false; } catch {}
-                  welcomeAudio.addEventListener('ended', () => { try { setShowWelcomeHomeModal(true); } catch {} });
-                  welcomeAudio.play().catch(() => { try { setShowWelcomeHomeModal(true); } catch {} });
+                  // WelcomeHomeModal opens via __SHOW_WELCOME_HOME_AFTER_WARP in revealUIAndPlay (right after beam/HUD reveal)
+                  welcomeAudio.addEventListener('ended', () => {
+                    try { sfx.play('button', 0.9); } catch {}
+                    try { setBeamColor('yellow'); } catch {}
+                    try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
+                  });
+                  welcomeAudio.play().catch(() => {
+                    try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
+                  });
                 } else {
                   welcomeAudio.play().catch((e) => { if (process.env.NODE_ENV !== "production") console.warn('Welcome audio failed:', e); });
                 }

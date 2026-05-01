@@ -430,6 +430,13 @@ export default function ProfileBar({
     return () => window.removeEventListener('openDigitalBinder', handleOpenDigitalBinder);
   }, [onCloseBlueDisplay]);
 
+  // Listen for openHeartverseCard event (triggered after welcome-to-the-heartverse.mp3 ends)
+  useEffect(() => {
+    const handleOpenHeartverseCard = () => setShowCardModal(true);
+    window.addEventListener('openHeartverseCard', handleOpenHeartverseCard);
+    return () => window.removeEventListener('openHeartverseCard', handleOpenHeartverseCard);
+  }, []);
+
 
   // ProfileBarWrapper already handles hasEnteredHeartverse check
   // This component should always render when called (never dim/hide based on other conditions)

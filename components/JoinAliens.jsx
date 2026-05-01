@@ -60,9 +60,6 @@ export default function JoinAliens({ visible = true } = {}) {
   }, []);
   const startDbLive = (typeof window !== 'undefined' && (window).__CHX_LAST_DB_LIVE === true);
   const startForceEmbed = (typeof window !== 'undefined' && (window).__CHX_FORCE_LIVE_EMBED === true);
-  // Auto-switch when Thursday 7PM countdown reaches zero (kind === 'electric')
-  const isCountdownZero = countdownMs === 0 && nextBroadcast !== null && nextBroadcast.kind === 'electric';
-  const forceLiveFlag = isOverrideActive || isLocalLive || isPendingLive || dbLiveNow || startDbLive || startForceEmbed || isCountdownZero;
   const [showWelcomeHome, setShowWelcomeHome] = useState(false);
   
   // Chat state
@@ -87,6 +84,9 @@ export default function JoinAliens({ visible = true } = {}) {
   // ── Next-broadcast countdown ──────────────────────────────────────────────
   const [countdownMs, setCountdownMs] = useState(0);
   const [nextBroadcast, setNextBroadcast] = useState(null);
+  // Auto-switch when Thursday 7PM countdown reaches zero (kind === 'electric')
+  const isCountdownZero = countdownMs === 0 && nextBroadcast !== null && nextBroadcast.kind === 'electric';
+  const forceLiveFlag = isOverrideActive || isLocalLive || isPendingLive || dbLiveNow || startDbLive || startForceEmbed || isCountdownZero;
   const [shows, setShows] = useState([]);
   const [showsLoading, setShowsLoading] = useState(false);
   const [showsError, setShowsError] = useState(null);
