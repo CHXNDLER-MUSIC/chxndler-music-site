@@ -1819,7 +1819,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           if (welcomeAudioPath) {
             const welcomeAudio = new Audio(welcomeAudioPath);
             welcomeAudio.volume = 0.9;
-            welcomeAudio.play().catch(() => {});
+            if (welcomeType === 'heartverse') {
+              try { if (typeof window !== 'undefined') window.__SHOW_WELCOME_HOME_AFTER_WARP = false; } catch {}
+              welcomeAudio.addEventListener('ended', () => { try { setShowWelcomeHomeModal(true); } catch {} });
+              welcomeAudio.play().catch(() => { try { setShowWelcomeHomeModal(true); } catch {} });
+            } else {
+              welcomeAudio.play().catch(() => {});
+            }
           }
         } catch {}
 
@@ -2743,7 +2749,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               if (welcomeAudioPath) {
                 const welcomeAudio = new Audio(welcomeAudioPath);
                 welcomeAudio.volume = 0.9;
-                welcomeAudio.play().catch((e) => { if (process.env.NODE_ENV !== "production") console.warn('Welcome audio failed:', e); });
+                if (welcomeType === 'heartverse') {
+                  try { if (typeof window !== 'undefined') window.__SHOW_WELCOME_HOME_AFTER_WARP = false; } catch {}
+                  welcomeAudio.addEventListener('ended', () => { try { setShowWelcomeHomeModal(true); } catch {} });
+                  welcomeAudio.play().catch(() => { try { setShowWelcomeHomeModal(true); } catch {} });
+                } else {
+                  welcomeAudio.play().catch((e) => { if (process.env.NODE_ENV !== "production") console.warn('Welcome audio failed:', e); });
+                }
               }
             }
           } catch {}

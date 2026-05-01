@@ -60,7 +60,9 @@ export default function JoinAliens({ visible = true } = {}) {
   }, []);
   const startDbLive = (typeof window !== 'undefined' && (window).__CHX_LAST_DB_LIVE === true);
   const startForceEmbed = (typeof window !== 'undefined' && (window).__CHX_FORCE_LIVE_EMBED === true);
-  const forceLiveFlag = isOverrideActive || isLocalLive || isPendingLive || dbLiveNow || startDbLive || startForceEmbed;
+  // Auto-switch when Thursday 7PM countdown reaches zero (kind === 'electric')
+  const isCountdownZero = countdownMs === 0 && nextBroadcast !== null && nextBroadcast.kind === 'electric';
+  const forceLiveFlag = isOverrideActive || isLocalLive || isPendingLive || dbLiveNow || startDbLive || startForceEmbed || isCountdownZero;
   const [showWelcomeHome, setShowWelcomeHome] = useState(false);
   
   // Chat state
@@ -450,8 +452,8 @@ export default function JoinAliens({ visible = true } = {}) {
       >
         <YouTubeLive
           forceLive={forceLiveFlag}
-          onStatusChange={setIsLive}
-          pollMs={60_000}
+          onStatusChange={(live) => setIsLive(live)}
+          pollMs={forceLiveFlag ? 15_000 : 60_000}
           className=""
           style={{
             position: 'absolute',
@@ -465,122 +467,166 @@ export default function JoinAliens({ visible = true } = {}) {
             display: 'block'
           }}
         >
-        {/* ── Cinematic Countdown ─────────────────────────────────── */
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          // Reduce top padding so numbers are closer to the pink line
-          padding: 'clamp(2px, 1.5vw, 8px) 12px 12px',
-          width: '100%',
-          flex: '0 0 auto',
-          boxSizing: 'border-box',
-        }}>
-          {/*  */}
-
-          {/* HH : MM : SS countdown */}
-          {(() => {
-            const totalSec = Math.floor(countdownMs / 1000);
-            const h = Math.floor(totalSec / 3600);
-            const m = Math.floor((totalSec % 3600) / 60);
-            const s = totalSec % 60;
-            const pad = (n) => String(n).padStart(2, '0');
-
-            const digitStyle = {
-              fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
-              fontSize: 'clamp(30px, 9.5vw, 60px)',
-              fontWeight: '700',
-              lineHeight: 1,
-              color: '#00FFFF',
-              textShadow: '0 0 8px #00FFFF, 0 0 20px rgba(0,255,255,0.5), 0 0 40px rgba(0,255,255,0.25)',
-              animation: 'countdownPulse 2s ease-in-out infinite',
-              letterSpacing: '0.05em',
-            };
-
-            const separatorStyle = {
-              fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
-              fontSize: 'clamp(22px, 7.5vw, 44px)',
-              fontWeight: '300',
-              color: 'rgba(0, 255, 255, 0.35)',
-              padding: '0 clamp(4px, 2vw, 12px)',
-              lineHeight: 1,
-              alignSelf: 'flex-start',
-            };
-
-            const labelStyle = {
-              fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
-              fontSize: 'clamp(8px, 1.8vw, 10px)',
-              fontWeight: '500',
-              letterSpacing: '0.25em',
-              color: 'rgba(0, 255, 255, 0.4)',
-              marginTop: '4px',
-              textAlign: 'center',
-            };
-
-            return (
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'center',
-              }}>
-                {/* Hours */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <span style={digitStyle}>{pad(h)}</span>
-                  <span style={labelStyle}>HRS</span>
-                </div>
-
-                <span style={separatorStyle}>:</span>
-
-                {/* Minutes */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <span style={digitStyle}>{pad(m)}</span>
-                  <span style={labelStyle}>MIN</span>
-                </div>
-
-                <span style={separatorStyle}>:</span>
-
-                {/* Seconds */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <span style={digitStyle}>{pad(s)}</span>
-                  <span style={labelStyle}>SEC</span>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Weekly schedule */}
+        {forceLiveFlag ? (
+          /* ── Live / Connecting State ────────────────────────────────── */
           <div style={{
-            marginTop: 'clamp(6px, 2vw, 10px)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '2px',
-          }}>
-            <div style={{
-              fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
-              fontSize: 'clamp(9px, 2.4vw, 12px)',
-              fontWeight: '700',
-              letterSpacing: '0.2em',
-              color: '#00FFFF',
-              textAlign: 'center',
-              lineHeight: 1.05,
-            }}>
-              {'THURSDAY \u2022 7:00 PM EST \u2022 LIVE STREAM SIGNAL'}
-            </div>
-          </div>
-
-          {/* Divider above IRL panel */}
-          <div style={{
+            justifyContent: 'center',
             width: '100%',
-            height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.5), transparent)',
-            marginTop: '2px',
-            marginBottom: '2px',
-          }} />
+            height: '100%',
+            minHeight: 100,
+            padding: '20px 12px',
+            boxSizing: 'border-box',
+            background: 'rgba(0,0,0,0.85)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                background: '#FC54AF',
+                boxShadow: '0 0 8px #FC54AF, 0 0 20px #FC54AF, 0 0 40px rgba(252,84,175,0.5)',
+                animation: 'signalBlink 1.2s ease-in-out infinite',
+                flexShrink: 0,
+              }} />
+              <span style={{
+                fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+                fontSize: 'clamp(14px, 3.5vw, 22px)',
+                fontWeight: 700,
+                color: '#FC54AF',
+                textShadow: '0 0 10px #FC54AF, 0 0 20px #FC54AF, 0 0 40px rgba(252,84,175,0.4)',
+                letterSpacing: '0.15em',
+              }}>
+                LIVE SIGNAL ACTIVE
+              </span>
+            </div>
+            <span style={{
+              fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+              fontSize: 'clamp(9px, 2.2vw, 12px)',
+              color: 'rgba(252,84,175,0.55)',
+              letterSpacing: '0.25em',
+              fontWeight: 500,
+            }}>
+              CONNECTING TO STREAM...
+            </span>
+          </div>
+        ) : (
+          /* ── Cinematic Countdown ────────────────────────────────────── */
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            padding: 'clamp(2px, 1.5vw, 8px) 12px 12px',
+            width: '100%',
+            flex: '0 0 auto',
+            boxSizing: 'border-box',
+          }}>
 
-        </div>
-        }
+            {/* HH : MM : SS countdown */}
+            {(() => {
+              const totalSec = Math.floor(countdownMs / 1000);
+              const h = Math.floor(totalSec / 3600);
+              const m = Math.floor((totalSec % 3600) / 60);
+              const s = totalSec % 60;
+              const pad = (n) => String(n).padStart(2, '0');
+
+              const digitStyle = {
+                fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+                fontSize: 'clamp(30px, 9.5vw, 60px)',
+                fontWeight: '700',
+                lineHeight: 1,
+                color: '#00FFFF',
+                textShadow: '0 0 8px #00FFFF, 0 0 20px rgba(0,255,255,0.5), 0 0 40px rgba(0,255,255,0.25)',
+                animation: 'countdownPulse 2s ease-in-out infinite',
+                letterSpacing: '0.05em',
+              };
+
+              const separatorStyle = {
+                fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+                fontSize: 'clamp(22px, 7.5vw, 44px)',
+                fontWeight: '300',
+                color: 'rgba(0, 255, 255, 0.35)',
+                padding: '0 clamp(4px, 2vw, 12px)',
+                lineHeight: 1,
+                alignSelf: 'flex-start',
+              };
+
+              const labelStyle = {
+                fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+                fontSize: 'clamp(8px, 1.8vw, 10px)',
+                fontWeight: '500',
+                letterSpacing: '0.25em',
+                color: 'rgba(0, 255, 255, 0.4)',
+                marginTop: '4px',
+                textAlign: 'center',
+              };
+
+              return (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'center',
+                }}>
+                  {/* Hours */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <span style={digitStyle}>{pad(h)}</span>
+                    <span style={labelStyle}>HRS</span>
+                  </div>
+
+                  <span style={separatorStyle}>:</span>
+
+                  {/* Minutes */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <span style={digitStyle}>{pad(m)}</span>
+                    <span style={labelStyle}>MIN</span>
+                  </div>
+
+                  <span style={separatorStyle}>:</span>
+
+                  {/* Seconds */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <span style={digitStyle}>{pad(s)}</span>
+                    <span style={labelStyle}>SEC</span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Weekly schedule */}
+            <div style={{
+              marginTop: 'clamp(6px, 2vw, 10px)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '2px',
+            }}>
+              <div style={{
+                fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+                fontSize: 'clamp(9px, 2.4vw, 12px)',
+                fontWeight: '700',
+                letterSpacing: '0.2em',
+                color: '#00FFFF',
+                textAlign: 'center',
+                lineHeight: 1.05,
+              }}>
+                {'THURSDAY \u2022 7:00 PM EST \u2022 LIVE STREAM SIGNAL'}
+              </div>
+            </div>
+
+            {/* Divider above IRL panel */}
+            <div style={{
+              width: '100%',
+              height: '1px',
+              background: 'linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.5), transparent)',
+              marginTop: '2px',
+              marginBottom: '2px',
+            }} />
+
+          </div>
+        )}
         </YouTubeLive>
 
         {/* IRL SIGNAL — expandable neon dashboard drawer — sibling of countdown, grows downward */}
@@ -1801,19 +1847,19 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         onMouseEnter={(e) => {
           try { sfx.play('hover', 0.3); } catch {}
-          e.target.style.transform = 'scale(1.1)';
-          e.target.style.background = 'rgba(0, 255, 255, 0.2)';
-          e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
-          e.target.style.textShadow = '0 0 15px #00FFFF, 0 0 25px #00FFFF';
+          e.currentTarget.style.transform = 'scale(1.1)';
+          e.currentTarget.style.background = 'rgba(0, 255, 255, 0.2)';
+          e.currentTarget.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
+          e.currentTarget.style.textShadow = '0 0 15px #00FFFF, 0 0 25px #00FFFF';
         }}
         onMouseLeave={(e) => {
-          e.target.style.transform = 'scale(1)';
-          e.target.style.background = 'rgba(0, 255, 255, 0.1)';
-          e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
-          e.target.style.textShadow = '0 0 8px #00FFFF';
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.background = 'rgba(0, 255, 255, 0.1)';
+          e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
+          e.currentTarget.style.textShadow = '0 0 8px #00FFFF';
         }}
       >
-        <img 
+        <img
           src="/elements/phone.webp" 
           alt="Phone" 
           style={{

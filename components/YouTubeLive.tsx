@@ -10,6 +10,7 @@ type Props = {
   style?: React.CSSProperties;
   children?: React.ReactNode;
   debug?: boolean;
+  onStatusChange?: (isLive: boolean, videoId: string | null) => void;
 };
 
 function cleanVideoId(value?: string | null): string | null {
@@ -27,10 +28,15 @@ export default function YouTubeLive({
   style,
   children,
   debug = false,
+  onStatusChange,
 }: Props) {
   const { isLive, videoId } = useYouTubeLive(pollMs);
   const live = forceLive || isLive;
   const safeVideoId = cleanVideoId(videoId);
+
+  useEffect(() => {
+    onStatusChange?.(live, safeVideoId);
+  }, [live, safeVideoId, onStatusChange]);
 
   // Allow enabling debug mode via URL or env var as well
   const debugEnabled = useMemo(() => {

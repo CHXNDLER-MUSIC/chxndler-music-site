@@ -210,9 +210,10 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       const errorMsg = e?.message || "Failed to send heart signal";
       const lower = errorMsg.toLowerCase();
       if ((e?.status === 429) || (lower.includes("rate") && lower.includes("limit"))) {
-        // Supabase rate limited: allow user to enter their most recent code
+        // Supabase rate limit — could be the 60s per-user cooldown or a project-level email quota.
+        // Move to verify so they can use any code already in their inbox.
         setError(null);
-        setInfoMessage("You requested a code recently. Use the latest code in your inbox or wait ~60s to request another.");
+        setInfoMessage("Check your inbox for the most recent code and enter it below.");
         setStep("verify");
         setJustSent(false);
         setResendSeconds(60);
@@ -369,8 +370,8 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       setResendSeconds(60);
     } catch (e: any) {
       const msg = e?.message || "Failed to resend code";
-      if ((msg || "").toLowerCase().includes("rate") && (msg || "").toLowerCase().includes("limit")) {
-        setError("Please wait ~60s before requesting another code.");
+      if ((e?.status === 429) || ((msg || "").toLowerCase().includes("rate") && (msg || "").toLowerCase().includes("limit"))) {
+        setError("Sending limit reached. Check your inbox for an existing code, or try again later.");
         setResendSeconds(60);
       } else {
         setError(msg);
