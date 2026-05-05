@@ -385,6 +385,21 @@ main {
   0%,100% { box-shadow: 0 0 20px rgba(252,84,175,.55), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22); transform: scale(1); }
   50%      { box-shadow: 0 0 36px rgba(252,84,175,.9),  inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22); transform: scale(1.05); }
 }
+.heart-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: 13px;
+  pointer-events: none;
+  user-select: none;
+  animation: heart-burst 0.7s ease-out forwards;
+  z-index: 20;
+}
+@keyframes heart-burst {
+  0%   { opacity: 1; transform: translate(-50%, -50%) translateX(0) translateY(0) scale(0.3); }
+  55%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) translateX(var(--tx)) translateY(var(--ty)) scale(1); }
+}
 .card-btn-pulse { animation: card-btn-pulse 2.4s ease-in-out infinite; transition: transform 0.18s ease, box-shadow 0.18s ease; }
 .card-btn-pulse:hover { animation: none; transform: scale(1.05) !important; box-shadow: 0 0 20px rgba(242,239,29,.8), 0 0 36px rgba(242,239,29,.4) !important; }
 @keyframes card-btn-pulse {

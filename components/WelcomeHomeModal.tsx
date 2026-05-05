@@ -3,12 +3,14 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useLogOnChange } from "@/lib/useLogOnChange";
 import { createPortal } from "react-dom";
-import { supabaseBrowser as supabaseClient } from "@/lib/supabase/client";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useRouter } from "next/navigation";
-import { audioHeartverse } from "@/lib/audio-heartverse";
+import { useAudio } from "@/app/providers/AudioProvider";
+
+// Single client alias — every auth call in this file must use supabaseBrowser directly
+const supabaseClient = supabaseBrowser;
 
 type Props = {
   open: boolean;
@@ -34,8 +36,64 @@ const sanitizeEmail = (raw: string): string =>
 const isValidEmail = (email: string): boolean =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+function IsolatedOtpTest({ email, code }: { email: string; code: string }) {
+  const [result, setResult] = React.useState<string | null>(null);
+  const [running, setRunning] = React.useState(false);
+
+  async function runTest() {
+    const cleanCode = code.replace(/\D/g, '').trim();
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanCode || cleanCode.length !== 6 || !cleanEmail) {
+      setResult('Need valid email + 6-digit code first');
+      return;
+    }
+    setRunning(true);
+    setResult(null);
+    try {
+      const result = await supabaseBrowser.auth.verifyOtp({
+        email: cleanEmail,
+        token: cleanCode,
+        type: 'email',
+      });
+      console.log('[auth] verifyOtp FULL RESULT', result);
+      if (result.error) {
+        setResult(`ERROR: ${result.error.message}`);
+      } else if (result.data?.session) {
+        setResult(`OK — session returned for ${result.data.user?.email}`);
+      } else {
+        setResult('verifyOtp succeeded but no session returned');
+        console.warn('[auth] verifyOtp no session', result.data);
+      }
+    } catch (e: any) {
+      setResult(`THROW: ${e?.message}`);
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 8, padding: '6px 8px', border: '1px dashed #FF69B4', borderRadius: 6, background: 'rgba(255,105,180,0.05)' }}>
+      <div style={{ fontSize: 10, color: '#FF69B4', marginBottom: 4 }}>DEV: isolated verifyOtp test</div>
+      <button
+        type="button"
+        onClick={runTest}
+        disabled={running}
+        style={{ fontSize: 11, color: '#FF69B4', border: '1px solid #FF69B4', borderRadius: 4, padding: '2px 8px', background: 'transparent', cursor: 'pointer', opacity: running ? 0.5 : 1 }}
+      >
+        {running ? 'testing…' : 'Run verifyOtp only'}
+      </button>
+      {result && (
+        <div style={{ fontSize: 10, marginTop: 4, color: result.startsWith('OK') ? '#00FF00' : '#FF4444', wordBreak: 'break-all' }}>
+          {result}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }: Props) {
   const router = useRouter();
+  const audio = useAudio();
   const [email, setEmail] = useState("");
   type Step = "request" | "verify" | "success";
   const [step, setStep] = useState<Step>("request");
@@ -48,6 +106,9 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showWarpFlash, setShowWarpFlash] = useState(false);
+  const otpRequestInFlightRef = useRef(false);
+  // Stores the sanitized email actually sent to Supabase so verifyOtp uses the exact same string
+  const sentEmailRef = useRef("");
 
   const { profile, updateProfile } = useProfile();
   
@@ -129,29 +190,64 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
 
   async function signInWithEmail(e: React.FormEvent) {
     e.preventDefault();
+
+    // Log every attempt so we can detect double-fires
+    console.log("[auth] signInWithEmail ATTEMPT", {
+      email: email.trim().toLowerCase(),
+      timestamp: new Date().toISOString(),
+      inFlight: otpRequestInFlightRef.current,
+      cooldown: resendSeconds,
+    });
+
+    // Guard: block if a request is already in flight or cooldown is active
+    if (otpRequestInFlightRef.current) {
+      console.log("[auth] signInWithOtp BLOCKED — request already in flight");
+      return;
+    }
+    if (resendSeconds > 0) {
+      console.log("[auth] signInWithOtp BLOCKED — cooldown active", resendSeconds);
+      return;
+    }
+
+    // Guard: project-level 429 hard block stored in localStorage (15 min)
+    try {
+      const blockedUntil = parseInt(localStorage.getItem('otp_blocked_until') || '0', 10);
+      if (Date.now() < blockedUntil) {
+        const minutesLeft = Math.ceil((blockedUntil - Date.now()) / 60000);
+        setError(`Too many codes requested. Please wait ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''} before trying again.`);
+        return;
+      }
+    } catch {}
+
     setError(null);
     setInfoMessage(null);
     setLoading(true);
+    otpRequestInFlightRef.current = true;
 
     // Sanitize and validate email before sending to Supabase
     const cleanEmail = sanitizeEmail(email);
 
     // Client-side validation
     if (!isValidEmail(cleanEmail)) {
-      console.error("OTP validation error", {
+      if (process.env.NODE_ENV !== "production") console.warn("OTP validation error", {
         message: "Invalid email format",
         rawEmail: email,
-        rawEmailJson: JSON.stringify(email),
         cleanEmail,
-        cleanEmailJson: JSON.stringify(cleanEmail),
         lengths: { raw: email?.length, clean: cleanEmail?.length },
       });
       setError(`Email address "${cleanEmail}" is invalid. Please check and try again.`);
       setLoading(false);
+      otpRequestInFlightRef.current = false;
       return;
     }
 
     try {
+      // Store the exact email sent so verifyOtp uses the identical string
+      sentEmailRef.current = cleanEmail;
+      console.log("[auth] signInWithOtp called", {
+        email: cleanEmail,
+        timestamp: new Date().toISOString(),
+      });
       const { error } = await supabaseClient.auth.signInWithOtp({
         email: cleanEmail,
         options: {
@@ -161,13 +257,10 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       });
 
       if (error) {
-        // Log detailed debug info for troubleshooting
-        console.error("OTP error", {
+        if (process.env.NODE_ENV !== "production") console.warn("OTP error", {
           message: error?.message,
           rawEmail: email,
-          rawEmailJson: JSON.stringify(email),
           cleanEmail,
-          cleanEmailJson: JSON.stringify(cleanEmail),
           lengths: { raw: email?.length, clean: cleanEmail?.length },
         });
         throw error;
@@ -185,7 +278,6 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
         });
       } catch (trackingError) {
         if (process.env.NODE_ENV !== "production") console.log('Heart signal tracking failed:', trackingError);
-        // Don't fail the flow if tracking fails
       }
 
       // Play join aliens audio
@@ -200,23 +292,23 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       setCode("");
       setJustSent(true);
       setTimeout(() => setJustSent(false), 1000);
-      setResendSeconds(60);
-      // Focus the code input to surface system OTP suggestions
+      setResendSeconds(120);
       setTimeout(() => {
         try { codeInputRef.current?.focus(); } catch {}
       }, 0);
     } catch (e: any) {
-      // Show sanitized email in error message so users don't see invisible characters
       const errorMsg = e?.message || "Failed to send heart signal";
       const lower = errorMsg.toLowerCase();
-      if ((e?.status === 429) || (lower.includes("rate") && lower.includes("limit"))) {
-        // Supabase rate limit — could be the 60s per-user cooldown or a project-level email quota.
-        // Move to verify so they can use any code already in their inbox.
-        setError(null);
-        setInfoMessage("Check your inbox for the most recent code and enter it below.");
-        setStep("verify");
-        setJustSent(false);
-        setResendSeconds(60);
+      const is429 = (e?.status === 429) || (e?.statusCode === 429) ||
+        (lower.includes("rate") && lower.includes("limit")) ||
+        lower.includes("too many") ||
+        lower.includes("security purposes") ||
+        lower.includes("only request this");
+      if (is429) {
+        // Set a 15-minute project-level hard block in localStorage
+        try { localStorage.setItem('otp_blocked_until', (Date.now() + 15 * 60 * 1000).toString()); } catch {}
+        setError("Too many codes requested. Please wait 15 minutes before trying again.");
+        setResendSeconds(120);
       } else if (lower.includes("invalid")) {
         setError(`Email address "${cleanEmail}" is invalid. Please check and try again.`);
       } else {
@@ -224,6 +316,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       }
     } finally {
       setLoading(false);
+      otpRequestInFlightRef.current = false;
     }
   }
 
@@ -231,64 +324,61 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
   const codeSanitized = useMemo(() => code.replace(/\D/g, "").slice(0, 6), [code]);
 
   async function verifyCode(submitted?: string) {
-    const token = (submitted ?? codeSanitized).trim();
-    if (token.length !== 6 || !email) return;
+    // Strip non-digits from whatever was passed in or typed
+    const cleanCode = (submitted ?? code).replace(/\D/g, "").trim();
+    if (cleanCode.length !== 6 || !email) return;
     setLoading(true);
     setError(null);
     try {
-      const { data: verifyData, error } = await supabaseClient.auth.verifyOtp({
-        email,
-        token,
+      // Must match exactly what was sent to signInWithOtp
+      const normalizedEmail = sentEmailRef.current || email.trim().toLowerCase();
+
+      console.log("[auth] email being verified", normalizedEmail);
+      console.log("[auth] code being verified", cleanCode);
+
+      const result = await supabaseBrowser.auth.verifyOtp({
+        email: normalizedEmail,
+        token: cleanCode,
         type: "email",
       });
-      if (error) throw error;
+      console.log("[auth] verifyOtp FULL RESULT", result);
+
+      // Hard stop on error — do NOT call setSession/getUser after failure
+      if (result.error) {
+        console.error("[auth] verifyOtp FAILED — stopping here", result.error);
+        setError(result.error.message || "Invalid or expired code. Try again.");
+        return;
+      }
+
+      if (!result.data?.session || !result.data?.user) {
+        console.error("[auth] verifyOtp succeeded but no session/user returned", result.data);
+        setError("Verification succeeded but no session was returned. Please try again.");
+        return;
+      }
+
+      // Use the session + user returned directly from verifyOtp.
+      // Do NOT call setSession — @supabase/ssr's setSession internally calls _getUser,
+      // which returns 403 and clears the session that verifyOtp just established.
+      const { session, user } = result.data;
+      console.log("[auth] session + user from verifyOtp", { userId: user.id, email: user.email });
+
+      // Persist everything the name modal needs to identify the user without re-authing
+      try { sessionStorage.setItem('chx_at', session.access_token); } catch {}
+      try { sessionStorage.setItem('chx_rt', session.refresh_token); } catch {}
+      try { sessionStorage.setItem('heartverse_user_id', user.id); } catch {}
+      try { sessionStorage.setItem('heartverse_user_email', user.email ?? ''); } catch {}
+
       setStep("success");
       setInfoMessage(null);
-
-      // Sync session to the supabase-browser client so onboarding page (which uses that client) is authenticated
-      if (verifyData?.session) {
-        try {
-          await supabaseBrowser.auth.setSession({
-            access_token: verifyData.session.access_token,
-            refresh_token: verifyData.session.refresh_token,
-          });
-        } catch {}
-        // Also store in sessionStorage — reliable across SPA navigation even if client state diverges
-        try { sessionStorage.setItem('chx_at', verifyData.session.access_token); } catch {}
-        try { sessionStorage.setItem('chx_rt', verifyData.session.refresh_token); } catch {}
-      }
-
-      // Trigger warp effect immediately
+      try { audio?.pause(); } catch {}
       setShowWarpFlash(true);
       try { new Audio('/audio/warp.mp3').play().catch(() => {}); } catch {}
-      try { audioHeartverse.playWelcomeHomeAndSpaceMusic(); } catch {}
-
-      // Dispatch planet:warp so DashboardApp triggers the sky lightspeed visual.
-      // We are still on the home page here, so DashboardApp is mounted and listening.
-      // Dispatch without element/isOnboarding so the visual fires (no audio conflict).
       try { window.dispatchEvent(new CustomEvent('planet:warp', { detail: {} })); } catch {}
 
-      // Ensure profile row exists then check if user needs onboarding
-      let dest = '/';
-      try {
-        const { error: rpcError } = await supabaseClient.rpc('ensure_profile');
-        if (rpcError) {
-          const uid = verifyData?.session?.user?.id;
-          const uemail = verifyData?.session?.user?.email;
-          if (uid) {
-            await supabaseClient
-              .from('profiles')
-              .upsert({ id: uid, email: uemail }, { onConflict: 'id', ignoreDuplicates: true });
-          }
-        }
-        // profile_complete is only set true by align_element_and_award_first_coin (final onboarding step)
-        const { data } = await supabaseClient.from('profiles').select('profile_complete').maybeSingle();
-        if (!data?.profile_complete) dest = '/onboarding?entry=start';
-      } catch {
-        dest = '/onboarding?entry=start';
-      }
-
-      setTimeout(() => { try { router.replace(dest); } catch {} }, 1400);
+      // Always show onboarding — WhatShouldWeCallYouModal auto-closes if user already has a real name
+      setTimeout(() => {
+        try { window.dispatchEvent(new CustomEvent('onboarding:start')); } catch {}
+      }, 1400);
     } catch (e: any) {
       setError(e?.message || "Invalid or expired code. Try again.");
     } finally {
@@ -354,31 +444,9 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
   }, [step]);
 
   async function resendCode() {
-    if (loading || resendSeconds > 0 || !email) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const { error } = await supabaseClient.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-      if (error) throw error;
-      setInfoMessage("New code sent.");
-      setResendSeconds(60);
-    } catch (e: any) {
-      const msg = e?.message || "Failed to resend code";
-      if ((e?.status === 429) || ((msg || "").toLowerCase().includes("rate") && (msg || "").toLowerCase().includes("limit"))) {
-        setError("Sending limit reached. Check your inbox for an existing code, or try again later.");
-        setResendSeconds(60);
-      } else {
-        setError(msg);
-      }
-    } finally {
-      setLoading(false);
-    }
+    if (loading || otpRequestInFlightRef.current || resendSeconds > 0 || !email) return;
+    // Single OTP path — delegate entirely to signInWithEmail
+    await signInWithEmail({ preventDefault: () => {} } as React.FormEvent);
   }
 
   // Safety check: Never show welcome modal for logged-in users
@@ -435,7 +503,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
         }}
       >
         <div
-          className={`welcome-hologram-container pointer-events-auto transition-all duration-500 ${step === 'success' ? 'portalActive scale-105 opacity-0' : 'opacity-100'}`}
+          className={`welcome-hologram-container transition-all duration-500 ${step === 'success' ? 'portalActive scale-105 opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
           style={{
             width: 'min(92vw, 700px)',
             height: '100%',
@@ -584,7 +652,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
                 <button
                   type="button"
                   onClick={resendCode}
-                  disabled={loading || resendSeconds > 0 || step !== 'verify'}
+                  disabled={loading || otpRequestInFlightRef.current || resendSeconds > 0 || step !== 'verify'}
                   className="underline disabled:no-underline disabled:opacity-50"
                   style={{ color: '#FF69B4' }}
                 >
@@ -648,7 +716,12 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
               )}
             </div>
           )}
-          
+
+          {/* DEV-ONLY: Isolated OTP test button */}
+          {process.env.NODE_ENV !== 'production' && step === 'verify' && (
+            <IsolatedOtpTest email={sentEmailRef.current || email} code={code} />
+          )}
+
           {/* Primary Button: changes by step; stays in place */}
           <div className="flex justify-center" style={{ marginTop: '8px' }}>
             <button
@@ -659,7 +732,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
                   verifyCode();
                 }
               }}
-              disabled={loading || (step === 'request' ? (email.length === 0 || resendSeconds > 0) : (codeSanitized.length !== 6 && !justSent))}
+              disabled={loading || otpRequestInFlightRef.current || (step === 'request' ? (email.length === 0 || resendSeconds > 0) : (codeSanitized.length !== 6 && !justSent))}
               className="w-full flex items-center justify-center rounded-lg px-3 py-2 text-lg font-medium transition disabled:opacity-50 border"
               style={step === 'verify' && !justSent && codeSanitized.length === 6 ? {
                 // Yellow glow for CONFIRM SIGNAL

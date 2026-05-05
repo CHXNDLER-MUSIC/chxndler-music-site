@@ -1435,6 +1435,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose, uiPhase, uiRevealLocked]);
 
+  // Ensure beam is pink whenever the live stream display is open
+  React.useEffect(() => {
+    if (joinAlienOpen) {
+      setBeamColor('pink');
+      setBeamEnabled(true);
+    }
+  }, [joinAlienOpen]);
+
   // Listen for profile popover toggle to show cyan light beam
   React.useEffect(() => {
     const handleProfilePopoverToggle = (e) => {
@@ -1824,10 +1832,21 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               welcomeAudio.addEventListener('ended', () => {
                 try { sfx.play('button', 0.9); } catch {}
                 try { setBeamColor('yellow'); } catch {}
-                try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
+                try { setShowWelcomeHomeModal(false); } catch {}
+                setTimeout(() => {
+                  try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
+                }, 400);
               });
               welcomeAudio.play().catch(() => {
-                try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
+                // Audio blocked/failed — the modal opens 150ms after this catch fires,
+                // so wait for it to appear and be visible before closing it and opening the card
+                setTimeout(() => {
+                  try { setBeamColor('yellow'); } catch {}
+                  try { setShowWelcomeHomeModal(false); } catch {}
+                  setTimeout(() => {
+                    try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
+                  }, 400);
+                }, 4000);
               });
             } else {
               welcomeAudio.play().catch(() => {});
@@ -1843,9 +1862,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           // User not logged in - show WelcomeHomeModal
           if (process.env.NODE_ENV !== "production") console.log("🎯 WARP COMPLETE: User not logged in, showing WelcomeHomeModal");
           (window).__SHOW_WELCOME_HOME_AFTER_WARP = false;
-          setTimeout(() => {
-            setShowWelcomeHomeModal(true);
-          }, 500);
+          setShowWelcomeHomeModal(true);
         } else if (onboardingModeRef.current) {
           // User logged in but profile incomplete - show name prompt
           if (process.env.NODE_ENV !== "production") console.log("🎯 ONBOARDING: Warp complete, opening name prompt");
@@ -2108,6 +2125,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       window.removeEventListener('tour:skipped', handleTourSkipped);
     };
   }, []);
+
+  // Listen for onboarding:start event fired after OTP login — show name prompt overlay
+  React.useEffect(() => {
+    const handleOnboardingStart = () => {
+      openNamePromptFromAuth();
+    };
+    window.addEventListener('onboarding:start', handleOnboardingStart);
+    return () => window.removeEventListener('onboarding:start', handleOnboardingStart);
+  }, [openNamePromptFromAuth]);
 
   // Listen for planet:warp event to trigger warp visual effect for element planets
   React.useEffect(() => {
@@ -2760,10 +2786,21 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   welcomeAudio.addEventListener('ended', () => {
                     try { sfx.play('button', 0.9); } catch {}
                     try { setBeamColor('yellow'); } catch {}
-                    try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
+                    try { setShowWelcomeHomeModal(false); } catch {}
+                    setTimeout(() => {
+                      try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
+                    }, 400);
                   });
                   welcomeAudio.play().catch(() => {
-                    try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
+                    // Audio blocked/failed — the modal opens 150ms after this catch fires,
+                    // so wait for it to appear and be visible before closing it and opening the card
+                    setTimeout(() => {
+                      try { setBeamColor('yellow'); } catch {}
+                      try { setShowWelcomeHomeModal(false); } catch {}
+                      setTimeout(() => {
+                        try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
+                      }, 400);
+                    }, 4000);
                   });
                 } else {
                   welcomeAudio.play().catch((e) => { if (process.env.NODE_ENV !== "production") console.warn('Welcome audio failed:', e); });
@@ -2831,9 +2868,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 if (typeof window !== 'undefined' && (window).__SHOW_WELCOME_HOME_AFTER_WARP) {
                   if (process.env.NODE_ENV !== "production") console.log("🎯 WARP COMPLETE: User not logged in, showing WelcomeHomeModal");
                   (window).__SHOW_WELCOME_HOME_AFTER_WARP = false;
-                  setTimeout(() => {
-                    setShowWelcomeHomeModal(true);
-                  }, 300);
+                  setShowWelcomeHomeModal(true);
                 } else if (onboardingModeRef.current) {
                   if (process.env.NODE_ENV !== "production") console.log("🎯 ONBOARDING: UI revealed, opening name prompt");
                   onboardingModeRef.current = false;

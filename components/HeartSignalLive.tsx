@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabaseClient } from '@/lib/supabaseClient';
-import { createAnonClient } from '@/lib/supabase-anon';
+import { supabaseBrowser as supabaseClient } from '@/lib/supabase-browser';
 import ProfileModal from '@/components/chat/ProfileModal';
 import { useProfile } from '@/contexts/ProfileContext';
 import { sfx } from '@/lib/sfx';
@@ -532,11 +531,8 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     const init = async () => {
       const { data: { session } } = await supabaseClient.auth.getSession();
 
-      if (session?.user) {
-        client = supabaseClient;
-      } else {
-        client = createAnonClient();
-      }
+      // supabaseBrowser works for both auth'd and logged-out users
+      client = supabaseClient;
 
       if (!mounted) return;
 

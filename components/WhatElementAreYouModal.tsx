@@ -43,19 +43,19 @@ export default function WhatElementAreYouModal() {
   // Track which card is being hovered
   const [hoveredCard, setHoveredCard] = useState<Element | null>(null);
 
-  // Check authentication when modal opens
-  // Uses getSession() to avoid AuthSessionMissingError when logged out
+  // Check authentication when modal opens.
+  // Never calls setSession — that triggers _getUser internally → 403 and wipes the OTP session.
   useEffect(() => {
     const checkAuth = async () => {
-      // Use getSession() first - does NOT throw when logged out
       const { data: { session } } = await supabaseBrowser.auth.getSession();
-      // If no session, user is null - this is expected for logged-out users
-      setCurrentUser(session?.user || null);
+      const userId = session?.user?.id || sessionStorage.getItem('heartverse_user_id');
+      if (userId) {
+        setCurrentUser(session?.user ?? { id: userId, email: sessionStorage.getItem('heartverse_user_email') ?? '' } as any);
+      }
     };
 
     if (showElementSelection) {
       checkAuth();
-      // Reset flipped cards when modal opens
       setFlippedCards(new Set());
       setHoveredCard(null);
     }
@@ -102,124 +102,139 @@ export default function WhatElementAreYouModal() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedElement) return;
-
-    const selectedElementData = ELEMENTS.find(el => el.key === selectedElement);
-    if (!selectedElementData) return;
+    if (!ELEMENTS.find(el => el.key === selectedElement)) return;
 
     setLoading(true);
     setError(null);
 
-    // Case a: No authenticated user
-    if (!currentUser) {
-      setError("You need to log in to create your ALIEN name before choosing your Element.");
-      setLoading(false);
-      return;
-    }
-
-    // Case b: Logged in user but no profile row
-    if (!profile) {
-      setError("Please complete your Heartverse profile and choose your ALIEN name first.");
-      setLoading(false);
-      return;
-    }
-
-    // Case c: Profile exists but no name
-    const alienName = profile?.name;
-    if (!alienName) {
-      setError("Choose your ALIEN name before selecting an Element.");
-      setLoading(false);
-      return;
-    }
-
     try {
-      // Play element-specific sound when aligning
-      const elementSound = ELEMENT_SOUNDS[selectedElement];
-      if (elementSound) {
-        const alignAudio = new Audio(elementSound);
-        alignAudio.volume = 0.8;
-        alignAudio.play().catch(e => { if (process.env.NODE_ENV !== "production") console.log('Element sound play failed:', e); });
-      }
+      // Never call setSession — it triggers _getUser → 403 and wipes the OTP session.
+      const { data: { session } } = await supabaseBrowser.auth.getSession();
+      const at = sessionStorage.getItem('chx_at');
 
-      // Map element key to Title Case for the RPC
-      const elementToTitleCase: Record<Element, string> = {
-        heart: 'Heart',
-        water: 'Water',
-        darkness: 'Darkness',
-        lightning: 'Lightning',
-      };
-      const mappedElement = elementToTitleCase[selectedElement];
+      console.log("[element] session", session);
+      console.log("[element] fallback userId", sessionStorage.getItem('heartverse_user_id'));
+      console.log("[element] selectedElement", selectedElement);
 
-      // Call RPC to align element and award first HeartCoin
-      if (process.env.NODE_ENV !== "production") console.log('🎯 Calling align_element_and_award_first_coin RPC with element:', mappedElement);
-      const { data: alignResult, error: alignError } = await supabaseBrowser.rpc(
-        'align_element_and_award_first_coin',
-        {
-          p_element: mappedElement,
-          p_display_name: alienName
-        }
-      );
+      const userId = session?.user?.id || sessionStorage.getItem('heartverse_user_id');
+      const userEmail = session?.user?.email || sessionStorage.getItem('heartverse_user_email') || '';
 
-      if (alignError) {
-        console.error('Error aligning element:', alignError);
-        setError(alignError.message || 'Failed to align element');
+      if (!userId) {
+        setError("You need to log in before choosing your Element.");
         setLoading(false);
         return;
       }
 
-      if (process.env.NODE_ENV !== "production") console.log('🎯 Align result:', alignResult);
+      // Alien name from profile context; fall back gracefully so element selection isn't blocked
+      const alienName = profile?.name || 'Alien';
 
-      // Set profile image URL to the selected element's icon
-      const selectedElementIcon = ELEMENTS.find(el => el.key === selectedElement)?.icon;
-      if (selectedElementIcon && currentUser?.id) {
-        if (process.env.NODE_ENV !== "production") console.log('🖼️ Setting profile image URL to:', selectedElementIcon);
-        await supabaseBrowser
-          .from('profiles')
-          .update({ profile_image_url: selectedElementIcon })
-          .eq('id', currentUser.id);
+      // Play element sound
+      const elementSound = ELEMENT_SOUNDS[selectedElement];
+      if (elementSound) {
+        new Audio(elementSound).play().catch(() => {});
       }
 
-      // Close element selection modal
-      closeElementSelection();
+      const elementToTitleCase: Record<Element, string> = {
+        heart: 'Heart', water: 'Water', darkness: 'Darkness', lightning: 'Lightning',
+      };
+      const mappedElement = elementToTitleCase[selectedElement];
 
-      // Trigger profile refresh to update the UI
+      // Try the RPC first (awards first HeartCoin). Fall back to a direct update if it fails.
+      let rpcSucceeded = false;
+      if (session) {
+        const { data: alignResult, error: alignError } = await supabaseBrowser.rpc(
+          'align_element_and_award_first_coin',
+          { p_element: mappedElement, p_display_name: alienName }
+        );
+        if (process.env.NODE_ENV !== "production") console.log('🎯 RPC result:', { alignResult, alignError });
+        if (!alignError) rpcSucceeded = true;
+      }
+
+      if (!rpcSucceeded) {
+        // RPC unavailable or session gone — update element directly
+        const updatePayload = {
+          element: selectedElement,
+          profile_complete: true,
+          updated_at: new Date().toISOString(),
+        };
+
+        let updateData: any = null;
+        let updateError: any = null;
+
+        if (session) {
+          const result = await supabaseBrowser
+            .from('profiles')
+            .update(updatePayload)
+            .eq('id', userId)
+            .select();
+          updateData = result.data;
+          updateError = result.error;
+        } else if (at) {
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+          const res = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': anonKey,
+              'Authorization': `Bearer ${at}`,
+              'Prefer': 'return=representation',
+            },
+            body: JSON.stringify(updatePayload),
+          });
+          if (!res.ok) {
+            const body = await res.text();
+            throw new Error(`Element update failed (${res.status}): ${body}`);
+          }
+          updateData = await res.json().catch(() => null);
+        } else {
+          throw new Error('No session and no access token — cannot update element.');
+        }
+
+        console.log("[element] update result", { data: updateData, error: updateError });
+        if (updateError) throw new Error(updateError.message);
+      }
+
+      // Set profile image to the selected element icon
+      const selectedElementIcon = ELEMENTS.find(el => el.key === selectedElement)?.icon;
+      if (selectedElementIcon) {
+        const imgPayload = { profile_image_url: selectedElementIcon };
+        if (session) {
+          await supabaseBrowser.from('profiles').update(imgPayload).eq('id', userId);
+        } else if (at) {
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+          await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': anonKey,
+              'Authorization': `Bearer ${at}`,
+            },
+            body: JSON.stringify(imgPayload),
+          });
+        }
+      }
+
+      // Final cleanup — identity keys no longer needed after element is set
+      try { sessionStorage.removeItem('heartverse_user_id'); } catch {}
+      try { sessionStorage.removeItem('heartverse_user_email'); } catch {}
+
+      closeElementSelection();
       triggerProfileRefresh();
 
-      // DO NOT call triggerHeartCoinCelebration here!
-      // The HeartcoinBalanceProvider will detect the transaction via realtime subscription
-      // and trigger the celebration automatically. Calling it here causes duplicates.
-      if (process.env.NODE_ENV !== "production") console.log('🪙 Alignment successful! HeartCoin celebration will be triggered by realtime subscription');
+      if (process.env.NODE_ENV !== "production") console.log('🪙 Alignment successful! HeartCoin celebration triggered by realtime subscription');
+      startOnboardingSequence(userId);
 
-      // Start the onboarding reward sequence (HeartCoin -> Wanderer badge -> Tour prompt)
-      // This orchestrates the celebrations in sequence and shows the tour prompt when done
-      startOnboardingSequence(currentUser.id);
-
-      // Refresh profile to get updated data (profile_complete will be set)
       await refreshProfile();
 
-      if (process.env.NODE_ENV !== "production") console.log('Profile completed! Name:', alienName, 'Element:', selectedElement);
-
-      // Trigger warp to Heartverse center planet and play heart.mp3
-      if (process.env.NODE_ENV !== "production") console.log('🚀 Triggering warp to Heartverse');
-
-      // Dispatch warp event to center planet
       window.dispatchEvent(new CustomEvent('planet:warp', {
         detail: { element: 'center', isCenterPlanet: true, isOnboarding: true }
       }));
 
-      // Play heart.mp3 track through audio manager
       setTimeout(() => {
-        try {
-          if (audio?.playTrack) {
-            if (process.env.NODE_ENV !== "production") console.log('🎵 Playing heart.mp3');
-            audio.playTrack('heart');
-          }
-        } catch (e) {
-          if (process.env.NODE_ENV !== "production") console.log('Failed to play heart.mp3:', e);
-        }
+        try { if (audio?.playTrack) audio.playTrack('heart'); } catch {}
       }, 500);
-
-      // Tour prompt will be shown after onboarding sequence completes
-      // The onboardingSequence orchestrator handles: HeartCoin → Wanderer badge → Tour prompt
     } catch (e: any) {
       setError(e?.message || "Failed to save element selection");
       setLoading(false);

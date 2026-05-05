@@ -188,6 +188,8 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   const [shippingForm, setShippingForm] = useState({ email: '', full_name: '', address_line1: '', address_line2: '', city: '', state: '', zip: '', country: '' });
   const [shippingStatus, setShippingStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [shippingAttempted, setShippingAttempted] = useState(false);
+  const [sendCardPressed, setSendCardPressed] = useState(false);
+  const [heartParticles, setHeartParticles] = useState<{id: number, x: number, y: number}[]>([]);
   
   // Get current track info from unified audio provider
   const { currentTrack } = useAudio();
@@ -957,21 +959,46 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                         style={{ background: 'rgba(255,255,255,0.1)', border: `1px solid ${shippingAttempted && !shippingForm.email ? 'rgba(255,80,80,0.7)' : 'rgba(255,255,255,0.3)'}` }}
                         disabled={shippingStatus === 'saving'}
                       />
-                      <button
-                        type="button"
-                        onClick={handleShippingSubmit}
-                        onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
-                        disabled={shippingStatus === 'saving'}
-                        className={`w-full mt-1 px-4 py-2 rounded-lg font-bold text-sm${shippingStatus === 'idle' ? ' send-card-pulse' : ' transition-all duration-200'}`}
-                        style={{
-                          background: shippingStatus === 'error' ? 'rgba(255,165,0,0.2)' : 'radial-gradient(100% 100% at 50% 20%, rgba(255,180,230,0.95), #FC54AF)',
-                          color: shippingStatus === 'error' ? '#FFB347' : '#fff',
-                          border: shippingStatus === 'error' ? '1px solid rgba(255,165,0,0.6)' : '1px solid rgba(255,255,255,.24)',
-                          opacity: shippingStatus === 'saving' ? 0.6 : 1,
-                        }}
-                      >
-                        {shippingStatus === 'saving' ? 'Saving...' : shippingStatus === 'error' ? 'RETRY' : 'SEND MY CARD 💌'}
-                      </button>
+                      <div className="relative w-full mt-1">
+                        {heartParticles.map(p => (
+                          <span
+                            key={p.id}
+                            className="heart-particle"
+                            style={{ '--tx': `${p.x}px`, '--ty': `${p.y}px` } as React.CSSProperties}
+                          >💗</span>
+                        ))}
+                        <motion.button
+                          animate={sendCardPressed ? { scale: 0.91 } : { scale: 1 }}
+                          transition={{ duration: 0.12, ease: 'easeOut' }}
+                          type="button"
+                          onClick={() => {
+                            try { sfx.play('heart-coin', 0.8); } catch {}
+                            setSendCardPressed(true);
+                            setTimeout(() => setSendCardPressed(false), 180);
+                            const now = Date.now();
+                            const particles = Array.from({ length: 8 }, (_, i) => {
+                              const angle = (360 / 8) * i + (Math.random() * 30 - 15);
+                              const rad = angle * Math.PI / 180;
+                              const dist = 36 + Math.random() * 18;
+                              return { id: now + i, x: Math.cos(rad) * dist, y: Math.sin(rad) * dist };
+                            });
+                            setHeartParticles(prev => [...prev, ...particles]);
+                            setTimeout(() => setHeartParticles(prev => prev.filter(p => !particles.some(q => q.id === p.id))), 750);
+                            handleShippingSubmit();
+                          }}
+                          onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+                          disabled={shippingStatus === 'saving'}
+                          className={`w-full px-4 py-2 rounded-lg font-bold text-sm${shippingStatus === 'idle' && !sendCardPressed ? ' send-card-pulse' : ' transition-all duration-200'}`}
+                          style={{
+                            background: shippingStatus === 'error' ? 'rgba(255,165,0,0.2)' : 'radial-gradient(100% 100% at 50% 20%, rgba(255,180,230,0.95), #FC54AF)',
+                            color: shippingStatus === 'error' ? '#FFB347' : '#fff',
+                            border: shippingStatus === 'error' ? '1px solid rgba(255,165,0,0.6)' : '1px solid rgba(255,255,255,.24)',
+                            opacity: shippingStatus === 'saving' ? 0.6 : 1,
+                          }}
+                        >
+                          {shippingStatus === 'saving' ? 'Saving...' : shippingStatus === 'error' ? 'RETRY' : 'SEND MY CARD 💌'}
+                        </motion.button>
+                      </div>
                     </div>
                   )}
                 </div>

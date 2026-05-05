@@ -69,7 +69,7 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-04-29T23:00:00Z",
+    releaseDate: "2026-05-06T23:00:00Z",
   },
   {
     id: "hv-008",
@@ -77,15 +77,15 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-05-13T23:00:00Z",
+    releaseDate: "2026-05-20T23:00:00Z",
   },
   {
     id: "hv-006",
-    title: "Heartverse 08: I Got Cheated On Last Night",
+    title: "Heartverse 08: Hosting at Home",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-05-27T23:00:00Z",
+    releaseDate: "2026-06-03T23:00:00Z",
   },
 
   // ── Live Signal – Acoustic Session ──
@@ -151,14 +151,14 @@ const VIDEOS: Video[] = [
     title: "Acoustic Signal 08",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "acoustic",
-    releaseDate: "2026-04-28T12:00:00",
+    releaseDate: "2026-05-02T12:00:00",
   },
   {
     id: "lsp-009",
     title: "Acoustic Signal 09",
     youtubeUrl: "https://youtu.be/lGexpoJfwJ4",
     type: "acoustic",
-    releaseDate: "2026-05-05T12:00:00",
+    releaseDate: "2026-05-16T12:00:00",
     postDescription: "Setlist\n00:00 Heartverse\n00:58 What's My Age Again? (Blink 182)\n03:25 Sugar We're Going Down (Fall Out Boy)\n06:36 HOUSE PARTY\n10:31 Complicated (Avril Lavigne)\n13:06 Jamie All Over (Mayday Parade)\n17:06 Dear Maria, Count Me In (All Time Low)\n24:15 Teenage Dirtbag (Wheatus)\n24:51 Scotty Doesn't Know (Lustra)\n27:57 WE'RE JUST FRIENDS",
   },
   {
@@ -166,7 +166,7 @@ const VIDEOS: Video[] = [
     title: "Acoustic Signal 10",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "acoustic",
-    releaseDate: "2026-04-29T12:00:00",
+    releaseDate: "2026-05-30T12:00:00",
   },
 
   // ── Live Signal – Electric Set ──
@@ -224,28 +224,28 @@ const VIDEOS: Video[] = [
     title: "Electric Signal 07",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "electric",
-    releaseDate: "2026-05-02T12:00:00",
+    releaseDate: "2026-05-09T12:00:00",
   },
   {
     id: "lsf-008",
     title: "Electric Signal 08",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "electric",
-    releaseDate: "2026-05-16T12:00:00",
+    releaseDate: "2026-05-23T12:00:00",
   },
   {
     id: "lsf-009",
     title: "Electric Signal 09",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "electric",
-    releaseDate: "2026-05-30T12:00:00",
+    releaseDate: "2026-06-06T12:00:00",
   },
   {
     id: "lsf-010",
     title: "Electric Signal 10",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "electric",
-    releaseDate: "2026-06-13T12:00:00",
+    releaseDate: "2026-06-20T12:00:00",
   },
 ];
 

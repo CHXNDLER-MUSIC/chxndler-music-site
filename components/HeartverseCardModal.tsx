@@ -37,9 +37,9 @@ function CountdownTimer() {
       className="flex flex-col items-center"
       style={{
         background: "rgba(0,0,12,0.75)",
-        border: "1px solid rgba(252,84,175,0.45)",
+        border: "1px solid rgba(242,239,29,0.45)",
         borderRadius: "999px",
-        boxShadow: "0 0 14px rgba(252,84,175,0.25), inset 0 0 8px rgba(252,84,175,0.08)",
+        boxShadow: "0 0 14px rgba(242,239,29,0.25), inset 0 0 8px rgba(242,239,29,0.08)",
         padding: "10px 28px",
         width: "fit-content",
         maxWidth: "90%",
@@ -49,7 +49,7 @@ function CountdownTimer() {
         style={{
           fontSize: "10px",
           letterSpacing: "0.15em",
-          color: "rgba(255,150,210,0.85)",
+          color: "rgba(252,84,175,0.85)",
           fontWeight: 600,
           marginBottom: "4px",
         }}
@@ -62,8 +62,8 @@ function CountdownTimer() {
           style={{
             fontSize: "20px",
             fontWeight: "bold",
-            color: "#FC54AF",
-            textShadow: "0 0 10px rgba(252,84,175,0.8)",
+            color: "#F2EF1D",
+            textShadow: "0 0 10px rgba(242,239,29,0.8)",
             letterSpacing: "0.1em",
           }}
         >
@@ -74,8 +74,8 @@ function CountdownTimer() {
           style={{
             fontSize: "22px",
             fontWeight: "bold",
-            color: "#F2EF1D",
-            textShadow: "0 0 8px rgba(242,239,29,0.7), 0 0 18px rgba(242,239,29,0.3)",
+            color: "#FC54AF",
+            textShadow: "0 0 8px rgba(252,84,175,0.7), 0 0 18px rgba(252,84,175,0.3)",
             letterSpacing: "0.08em",
             fontVariantNumeric: "tabular-nums",
           }}
@@ -135,7 +135,7 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
                 width: "min(120vw, 700px)",
                 height: "200px",
                 background:
-                  "radial-gradient(ellipse 80% 100% at 50% 0%, rgba(255,105,180,0.7) 0%, rgba(255,105,180,0.4) 30%, rgba(255,105,180,0.1) 60%, transparent 100%)",
+                  "radial-gradient(ellipse 80% 100% at 50% 0%, rgba(242,239,29,0.7) 0%, rgba(242,239,29,0.4) 30%, rgba(242,239,29,0.1) 60%, transparent 100%)",
                 filter: "blur(100px)",
               }}
             />
@@ -161,11 +161,11 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
                 padding: "18px 14px",
                 borderRadius: 18,
                 background: "rgba(0,0,0,0.6)",
-                border: "1px solid rgba(255,105,180,0.55)",
+                border: "1px solid rgba(242,239,29,0.55)",
                 boxShadow:
-                  "0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)",
+                  "0 -8px 25px rgba(242,239,29,0.4), 0 -4px 15px rgba(242,239,29,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(242,239,29,0.45)",
                 backdropFilter: "blur(12px) saturate(140%)",
-                color: "#FF69B4",
+                color: "#F2EF1D",
                 position: "relative",
               }}
             >
@@ -179,7 +179,7 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
                   width: "120%",
                   height: "30px",
                   background:
-                    "radial-gradient(ellipse 60% 100% at 50% 0%, rgba(255,105,180,0.6) 0%, rgba(255,105,180,0.3) 40%, transparent 80%)",
+                    "radial-gradient(ellipse 60% 100% at 50% 0%, rgba(242,239,29,0.6) 0%, rgba(242,239,29,0.3) 40%, transparent 80%)",
                   filter: "blur(30px)",
                   pointerEvents: "none",
                   zIndex: -1,
@@ -196,7 +196,7 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
                   width: "80%",
                   height: "20px",
                   background:
-                    "radial-gradient(ellipse 70% 100% at 50% 100%, rgba(255,105,180,0.4) 0%, rgba(255,105,180,0.2) 50%, transparent 100%)",
+                    "radial-gradient(ellipse 70% 100% at 50% 100%, rgba(242,239,29,0.4) 0%, rgba(242,239,29,0.2) 50%, transparent 100%)",
                   filter: "blur(25px)",
                   pointerEvents: "none",
                   zIndex: -1,
@@ -209,10 +209,10 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
                 onMouseEnter={() => { try { sfx.play("hover", 0.35); } catch {} }}
                 className="absolute top-2 right-4 hover:scale-110 cursor-pointer w-8 h-8 rounded-full border flex items-center justify-center transition-transform duration-150"
                 style={{
-                  color: "#FF69B4",
-                  borderColor: "rgba(255,105,180,0.8)",
-                  boxShadow: "0 0 15px rgba(255,105,180,0.8), 0 0 25px rgba(255,105,180,0.5)",
-                  background: "rgba(255,105,180,0.1)",
+                  color: "#F2EF1D",
+                  borderColor: "rgba(242,239,29,0.8)",
+                  boxShadow: "0 0 15px rgba(242,239,29,0.8), 0 0 25px rgba(242,239,29,0.5)",
+                  background: "rgba(242,239,29,0.1)",
                   backdropFilter: "blur(2px)",
                 }}
               >
@@ -230,6 +230,7 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
                   textShadow: "0 0 8px rgba(242,239,29,0.6)",
                   fontSize: "26px",
                   fontWeight: "bold",
+                  fontFamily: "'Orbitron', 'OrbitronLocal', sans-serif",
                 }}
               >
                 CLAIM CHXNDLER CARD
@@ -240,8 +241,8 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
                 className="w-full h-px mb-4"
                 style={{
                   background:
-                    "linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)",
-                  boxShadow: "0 0 4px rgba(255,105,180,0.6)",
+                    "linear-gradient(90deg, transparent, rgba(242,239,29,0.8) 20%, rgba(242,239,29,1) 50%, rgba(242,239,29,0.8) 80%, transparent)",
+                  boxShadow: "0 0 4px rgba(242,239,29,0.6)",
                 }}
               />
 
@@ -253,12 +254,12 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
                 <p
                   className="text-center text-xl leading-loose"
                   style={{
-                    color: "#FF69B4",
-                    textShadow: "0 0 8px rgba(255,105,180,0.6)",
+                    color: "#F2EF1D",
+                    textShadow: "0 0 8px rgba(242,239,29,0.6)",
                   }}
                 >
                   I'm sending CHXNDLER cards to Aliens.<br />One contains a{" "}
-                  <span style={{ fontWeight: "bold", color: "#F2EF1D", textShadow: "0 0 6px rgba(242,239,29,0.6), 0 0 12px rgba(242,239,29,0.3)" }}>
+                  <span style={{ fontWeight: "bold", color: "#FC54AF", textShadow: "0 0 6px rgba(252,84,175,0.6), 0 0 12px rgba(252,84,175,0.3)" }}>
                     hidden signal
                   </span>
                   .<br />Find it, and I'll write and produce a song just for you.

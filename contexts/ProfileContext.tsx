@@ -972,14 +972,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     options?: { sharePublic?: boolean }
   ): Promise<JournalEntry | null> => {
     try {
+      // Guard: avoid 403 on /auth/v1/user when not logged in
+      const { data: { session: journalSession } } = await supabaseBrowser.auth.getSession();
+      if (!journalSession?.user) {
+        throw new Error('You must be logged in to save a journal entry. Please sign in and try again.');
+      }
       const { data: { user }, error: userError } = await supabaseBrowser.auth.getUser();
-
       if (userError) {
-        console.error('Error getting user:', userError);
         throw new Error(`Authentication error: ${userError.message}`);
       }
       if (!user) {
-        console.error('No user session found');
         throw new Error('You must be logged in to save a journal entry. Please sign in and try again.');
       }
 

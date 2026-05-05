@@ -455,15 +455,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   // Ensures we upsert completed=true, completed_at, completion_percent
   const markSongCompleted = async (songUuid: string, completionPercent: number = 1): Promise<void> => {
     try {
-      // Ensure authenticated user
-      const { data: userData, error: userErr } = await supabaseBrowser.auth.getUser();
-      const user = userData?.user || null;
-      if (userErr) {
-        console.error('[MARK COMPLETE] getUser error', userErr);
+      // Guard: skip entirely when not logged in — avoids 403 on /auth/v1/user
+      const { data: { session: markSession } } = await supabaseBrowser.auth.getSession();
+      if (!markSession?.user) {
+        if (process.env.NODE_ENV !== "production") console.log('[MARK COMPLETE] skipped: no session');
         return;
       }
-      if (!user) {
-        if (process.env.NODE_ENV !== "production") console.log('[MARK COMPLETE] skipped: no authenticated user');
+      const { data: userData, error: userErr } = await supabaseBrowser.auth.getUser();
+      const user = userData?.user || null;
+      if (userErr || !user) {
+        if (process.env.NODE_ENV !== "production") console.log('[MARK COMPLETE] skipped: getUser returned no user');
         return;
       }
 

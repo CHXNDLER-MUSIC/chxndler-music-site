@@ -243,27 +243,6 @@ const HUDPanel = React.memo(function HUDPanel({
     const s = Math.floor(seconds % 60);
     return `${m}:${String(s).padStart(2, '0')}`;
   };
-  // Lightweight animation tick to force re-render while audio is playing
-  // Ensures the HUD progress bar advances even if underlying events are throttled
-  const [animTick, setAnimTick] = useState(0);
-  useEffect(() => {
-    let rafId = null;
-    let active = true;
-    const loop = () => {
-      if (!active) return;
-      // Nudge a re-render; calculation reads currentTime/duration directly each render
-      setAnimTick((t) => (t + 1) % 1000000);
-      rafId = requestAnimationFrame(loop);
-    };
-    // Only tick when audio is actively playing to avoid unnecessary renders
-    if (audioManager?.playing) {
-      rafId = requestAnimationFrame(loop);
-    }
-    return () => {
-      active = false;
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, [audioManager?.playing]);
   const [volume, setVolume] = useState(1.0);
   const lastNonZeroVolumeRef = useRef(1.0);
   const hudVolumeSfxLastRef = useRef(0);

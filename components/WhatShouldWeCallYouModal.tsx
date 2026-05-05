@@ -84,15 +84,18 @@ export default function WhatShouldWeCallYouModal() {
   }, [showNamePrompt, namePromptFromAuth, mounted, authChecked]);
 
 
-  // Check authentication and prefill name when modal opens
-  // Uses getSession() to avoid AuthSessionMissingError when logged out
+  // Check authentication and prefill name when modal opens.
+  // Never calls setSession — that internally triggers _getUser → 403 and wipes the OTP session.
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Use getSession() first - does NOT throw when logged out
         const { data: { session } } = await supabaseBrowser.auth.getSession();
-        // If no session, user is null - this is expected for logged-out users
-        setCurrentUser(session?.user || null);
+        // If client session exists, use it. Otherwise fall back to sessionStorage identity
+        // set by WelcomeHomeModal right after verifyOtp.
+        const userId = session?.user?.id || sessionStorage.getItem('heartverse_user_id');
+        if (userId) {
+          setCurrentUser(session?.user ?? { id: userId, email: sessionStorage.getItem('heartverse_user_email') ?? '' } as any);
+        }
       } finally {
         setAuthChecked(true);
       }
@@ -100,12 +103,10 @@ export default function WhatShouldWeCallYouModal() {
 
     if (showNamePrompt) {
       checkAuth();
-      // Prefill with current profile name ONLY if it's a real user-entered name
-      // Don't prefill auto-generated names (email prefix, "alien", etc.)
       if (profile?.name && isRealName(profile.name, profile.email)) {
         setName(profile.name);
       } else {
-        setName(''); // Clear any auto-generated name
+        setName('');
       }
     }
   }, [showNamePrompt, profile?.name, profile?.email]);
@@ -113,33 +114,89 @@ export default function WhatShouldWeCallYouModal() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
-      // Validate that name is not empty
       const trimmedName = name.trim();
-      if (!trimmedName) {
-        setError("Please enter a name");
+
+      // Never call setSession here — it triggers _getUser internally → 403 → clears session.
+      // Just read whatever the client has; fall back to sessionStorage identity from verifyOtp.
+      const { data: { session } } = await supabaseBrowser.auth.getSession();
+      const at = sessionStorage.getItem('chx_at');
+
+      console.log("[profile] session", session);
+      console.log("[profile] fallback userId", sessionStorage.getItem('heartverse_user_id'));
+      console.log("[profile] fallback email", sessionStorage.getItem('heartverse_user_email'));
+
+      const userId = session?.user?.id || sessionStorage.getItem('heartverse_user_id');
+      const userEmail = session?.user?.email || sessionStorage.getItem('heartverse_user_email') || '';
+
+      if (!userId) {
+        setError("You must be logged in to update your name.");
         return;
       }
 
-      // Play join-alien.mp3 sound
-      const audio = new Audio('/audio/join-alien.mp3');
-      audio.play().catch(e => debugModal('Audio play failed:', e));
-      
-      // Save the name but don't complete onboarding yet - still need element selection
-      await updateProfileName(trimmedName);
-      // Refresh profile to ensure UI updates
+      console.log("[profile] user before upsert", { userId, userEmail });
+
+      const payload = {
+        id: userId,
+        email: userEmail,
+        name: trimmedName,
+        profile_complete: true,
+        updated_at: new Date().toISOString(),
+      };
+      console.log("[profile] upsert payload", payload);
+
+      let upsertError: any = null;
+      let upsertData: any = null;
+
+      if (session) {
+        // Client is authenticated — use the Supabase client directly
+        const result = await supabaseBrowser
+          .from('profiles')
+          .upsert(payload, { onConflict: 'id' })
+          .select();
+        upsertData = result.data;
+        upsertError = result.error;
+      } else if (at) {
+        // Client session is gone but we have the raw access token from verifyOtp.
+        // Use a direct authenticated fetch so we never call setSession.
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+        const res = await fetch(`${supabaseUrl}/rest/v1/profiles`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': anonKey,
+            'Authorization': `Bearer ${at}`,
+            'Prefer': 'resolution=merge-duplicates,return=representation',
+          },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const body = await res.text();
+          throw new Error(`Profile upsert failed (${res.status}): ${body}`);
+        }
+        upsertData = await res.json().catch(() => null);
+      } else {
+        throw new Error('No session and no access token — cannot upsert profile.');
+      }
+
+      console.log("[profile] upsert result", { data: upsertData, error: upsertError });
+      if (upsertError) throw new Error(upsertError.message);
+
+      // Clean up tokens but keep user identity keys for the element modal
+      // (WhatElementAreYouModal reads heartverse_user_id and heartverse_user_email next)
+      try { sessionStorage.removeItem('chx_at'); } catch {}
+      try { sessionStorage.removeItem('chx_rt'); } catch {}
+
+      try { new Audio('/audio/join-alien.mp3').play().catch(() => {}); } catch {}
+
       await refreshProfile();
-      
-      // Force profile refresh in other components
-      try {
-        window.dispatchEvent(new CustomEvent('auth:profile-updated'));
-      } catch {}
-      
-      // Close name prompt and open element selection
+      try { window.dispatchEvent(new CustomEvent('auth:profile-updated')); } catch {}
+
       closeNamePrompt();
       openElementSelection();
     } catch (e: any) {

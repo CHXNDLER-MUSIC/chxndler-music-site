@@ -260,6 +260,30 @@ export default function JoinAliens({ visible = true } = {}) {
     if (!showAllIrl) setExpandedIrlIndex(null);
   }, [showAllIrl]);
 
+  useEffect(() => {
+    if (!showTipOptions) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        try { sfx.play('close', 0.4); } catch {}
+        setShowTipOptions(false); setShowPaymentOptions(false); setShowPaymentOptions5(false); setShowPaymentOptions10(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showTipOptions]);
+
+  useEffect(() => {
+    if (!showPhoneForm) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        try { sfx.play('close', 0.4); } catch {}
+        setShowPhoneForm(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showPhoneForm]);
+
   // Controlled input: only allow digits and plus sign
   function handlePhoneChange(e) {
     const newVal = e.target.value;
@@ -1353,7 +1377,7 @@ export default function JoinAliens({ visible = true } = {}) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              onClick={() => { setShowTipOptions(false); setShowPaymentOptions(false); setShowPaymentOptions5(false); setShowPaymentOptions10(false); }}
+              onClick={() => { try { sfx.play('close', 0.4); } catch {} setShowTipOptions(false); setShowPaymentOptions(false); setShowPaymentOptions5(false); setShowPaymentOptions10(false); }}
               style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.45)', zIndex: 140 }}
             />
 
@@ -1366,7 +1390,7 @@ export default function JoinAliens({ visible = true } = {}) {
               transition={{ type: 'spring', stiffness: 380, damping: 38 }}
               style={{
                 position: 'absolute',
-                top: irlSectionTop,
+                top: 0,
                 left: 0,
                 right: 0,
                 bottom: 'calc(120px + env(safe-area-inset-bottom, 0px))',
@@ -1404,7 +1428,8 @@ export default function JoinAliens({ visible = true } = {}) {
                   SUPPORT THE HEARTVERSE
                 </span>
                 <button
-                  onClick={() => { setShowTipOptions(false); setShowPaymentOptions(false); setShowPaymentOptions5(false); setShowPaymentOptions10(false); }}
+                  onClick={() => { try { sfx.play('close', 0.4); } catch {} setShowTipOptions(false); setShowPaymentOptions(false); setShowPaymentOptions5(false); setShowPaymentOptions10(false); }}
+                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                   style={{
                     position: 'absolute',
                     right: 10,
@@ -1532,7 +1557,7 @@ export default function JoinAliens({ visible = true } = {}) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              onClick={() => setShowPhoneForm(false)}
+              onClick={() => { try { sfx.play('close', 0.4); } catch {} setShowPhoneForm(false); }}
               style={{
                 position: 'absolute',
                 top: 0,
@@ -1553,7 +1578,7 @@ export default function JoinAliens({ visible = true } = {}) {
               transition={{ type: 'spring', stiffness: 380, damping: 38 }}
               style={{
                 position: 'absolute',
-                top: irlSectionTop,
+                top: 0,
                 left: 0,
                 right: 0,
                 bottom: 'calc(120px + env(safe-area-inset-bottom, 0px))',
@@ -1591,7 +1616,8 @@ export default function JoinAliens({ visible = true } = {}) {
                   STAY CONNECTED TO THE HEARTVERSE
                 </span>
                 <button
-                  onClick={() => setShowPhoneForm(false)}
+                  onClick={() => { try { sfx.play('close', 0.4); } catch {} setShowPhoneForm(false); }}
+                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                   style={{
                     position: 'absolute',
                     right: 10,
