@@ -469,7 +469,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     };
     setTimeout(step, TICK);
   }, []);
-  const SPACE_SKY = { webm: "", mp4: "", key: "space" };
+  const SPACE_SKY = { webm: "", mp4: "/skies/space.mp4", key: "space" };
 
   // Spotlight follows Start button dimensions/position exactly
   const [spotlightPos, setSpotlightPos] = useState({ x: null, y: null, r: null });
@@ -936,23 +936,32 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       staticMap.set(song.id, song);
     });
 
+    const PLANET_EXCLUDED_TITLES = [
+      'welcome to the heartverse',
+      'you are home',
+      'space music',
+      'welcome back',
+    ];
+
     // Build from database songs (includes ALL songs)
-    const list = dbSongs.map(song => {
-      const staticData = staticMap.get(song.slug) || {};
-      const element = (song.element || 'heart').toLowerCase();
-      return {
-        id: song.slug,
-        title: song.title,
-        icon: element,
-        color: ELEMENT_COLORS[element] || ELEMENT_COLORS.heart,
-        is_released: song.is_released,
-        // Enrich with static data if available
-        spotify: staticData.spotify,
-        apple: staticData.apple,
-        youtube: staticData.youtube,
-        hasLyrics: staticData.hasLyrics
-      };
-    });
+    const list = dbSongs
+      .filter(song => !PLANET_EXCLUDED_TITLES.includes((song.title || '').toLowerCase()))
+      .map(song => {
+        const staticData = staticMap.get(song.slug) || {};
+        const element = (song.element || 'heart').toLowerCase();
+        return {
+          id: song.slug,
+          title: song.title,
+          icon: element,
+          color: ELEMENT_COLORS[element] || ELEMENT_COLORS.heart,
+          is_released: song.is_released,
+          // Enrich with static data if available
+          spotify: staticData.spotify,
+          apple: staticData.apple,
+          youtube: staticData.youtube,
+          hasLyrics: staticData.hasLyrics
+        };
+      });
     // Ensure alphabetical order by title for consistent UI ordering
     return list.sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
   }, [staticHudSongs, dbSongs]);
@@ -975,7 +984,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const desiredYoutubeUrl = useMemo(() => {
     if (isIntro) return undefined; // use local lightspeed.mp4 via srcMp4
     if (elementWarpYoutubeUrl) return elementWarpYoutubeUrl;
-    if (homeMode) return "https://youtu.be/DkEeJbEYt_E";
+    if (homeMode) return undefined;
     const slug = curTrack?.slug;
     const mapped = slug ? youtubeSkyFor(slug) : undefined;
     return mapped || undefined;

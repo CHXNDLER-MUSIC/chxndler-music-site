@@ -86,7 +86,12 @@ export default function JoinAliens({ visible = true } = {}) {
   const [nextBroadcast, setNextBroadcast] = useState(null);
   // Auto-switch when Thursday 7PM countdown reaches zero (kind === 'electric')
   const isCountdownZero = countdownMs === 0 && nextBroadcast !== null && nextBroadcast.kind === 'electric';
-  const forceLiveFlag = isOverrideActive || isLocalLive || isPendingLive || dbLiveNow || startDbLive || startForceEmbed || isCountdownZero;
+  // Once the DB has responded and confirmed not live, suppress stale window globals
+  // (startDbLive / startForceEmbed / isPendingLive) so they don't keep forceLiveFlag true.
+  const dbConfirmedNotLive = dbLoaded && !dbLiveNow && !isOverrideActive;
+  const forceLiveFlag = isOverrideActive || isLocalLive || dbLiveNow
+    || (!dbConfirmedNotLive && (isPendingLive || startDbLive || startForceEmbed))
+    || isCountdownZero;
   const [shows, setShows] = useState([]);
   const [showsLoading, setShowsLoading] = useState(false);
   const [showsError, setShowsError] = useState(null);
