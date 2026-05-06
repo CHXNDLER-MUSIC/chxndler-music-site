@@ -1323,7 +1323,10 @@ export default function ProfileBar({
       {/* Heartverse Card Modal */}
       <HeartverseCardModal
         open={showCardModal}
-        onClose={() => setShowCardModal(false)}
+        onClose={() => {
+          setShowCardModal(false);
+          try { onOpenBlueDisplay?.(); } catch {}
+        }}
       />
 
     </div>

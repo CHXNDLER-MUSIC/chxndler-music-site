@@ -11,7 +11,7 @@ import { sfx } from "@/lib/sfx";
 import type { Element } from "@/lib/planets";
 import { ELEMENT_COLORS } from "@/lib/planets";
 // HeartCoin celebration is now handled by HeartcoinBalanceProvider via realtime subscription
-import { startOnboardingSequence } from '@/utils/onboardingSequence';
+import { startOnboardingSequence, ONBOARDING_SEQUENCE_COMPLETE } from '@/utils/onboardingSequence';
 
 // Element sound mappings
 const ELEMENT_SOUNDS: Record<Element, string> = {
@@ -216,25 +216,38 @@ export default function WhatElementAreYouModal() {
         }
       }
 
-      // Final cleanup — identity keys no longer needed after element is set
+      // Final cleanup — all onboarding tokens no longer needed
       try { sessionStorage.removeItem('heartverse_user_id'); } catch {}
       try { sessionStorage.removeItem('heartverse_user_email'); } catch {}
+      try { sessionStorage.removeItem('chx_at'); } catch {}
+      try { sessionStorage.removeItem('chx_rt'); } catch {}
+
+      // Start the sequence BEFORE refreshProfile so sequenceActive=true when
+      // TourContext's auto-start effect fires on the profile update.
+      // This prevents the welcome modal from appearing immediately (before the warp).
+      startOnboardingSequence(userId);
 
       closeElementSelection();
       triggerProfileRefresh();
-
-      if (process.env.NODE_ENV !== "production") console.log('🪙 Alignment successful! HeartCoin celebration triggered by realtime subscription');
-      startOnboardingSequence(userId);
-
       await refreshProfile();
 
+      // Fire warp so the animation starts right away
       window.dispatchEvent(new CustomEvent('planet:warp', {
-        detail: { element: 'center', isCenterPlanet: true, isOnboarding: true }
+        detail: { element: selectedElement }
       }));
 
+      // Start element audio slightly after warp begins
       setTimeout(() => {
-        try { if (audio?.playTrack) audio.playTrack('heart'); } catch {}
+        try { if (audio?.playTrack) audio.playTrack(selectedElement); } catch {}
       }, 500);
+
+      // After warp completes, dispatch sequence-complete directly so the tour
+      // prompt appears immediately at landing rather than after the sequence's
+      // HeartCoin/badge fallback timeouts (~11s).
+      const WARP_DURATION_MS = 3500;
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent(ONBOARDING_SEQUENCE_COMPLETE, { detail: { userId } }));
+      }, WARP_DURATION_MS);
     } catch (e: any) {
       setError(e?.message || "Failed to save element selection");
       setLoading(false);

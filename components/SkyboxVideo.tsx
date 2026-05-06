@@ -21,6 +21,7 @@ export default function SkyboxVideo({
   onWarpSfxEnd,
   youtubeUrl,
   lightspeedYoutubeUrl,
+  lightspeedSrcMp4,
 }:{
   brightness?: number;
   srcWebm?: string;
@@ -38,6 +39,7 @@ export default function SkyboxVideo({
   onWarpSfxEnd?: () => void; // callback after warp SFX finishes
   youtubeUrl?: string;      // optional YouTube URL to use as background instead of MP4
   lightspeedYoutubeUrl?: string; // optional YouTube URL for lightspeed overlay instead of local MP4
+  lightspeedSrcMp4?: string; // optional local MP4 for lightspeed overlay
 }) {
   // Default to visible to avoid missing sky if loadeddata doesn't fire
   const [ready, setReady] = useState(true);
@@ -472,8 +474,26 @@ export default function SkyboxVideo({
               />
             </div>
           </div>
+        ) : lightspeedSrcMp4 ? (
+          <video
+            ref={lsRef}
+            muted playsInline preload="auto" controls={false}
+            controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
+            disablePictureInPicture
+            // @ts-ignore
+            disableRemotePlayback
+            tabIndex={-1}
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{
+              opacity: showLightspeed ? 1 : 0,
+              transition: showLightspeed ? 'none' : 'opacity 400ms ease',
+              pointerEvents: 'none',
+            }}
+          >
+            <source src={lightspeedSrcMp4} type="video/mp4" />
+          </video>
         ) : (
-          /* CSS-based warp effect — no local MP4 exists, avoid 404 for /skies/lightspeed.mp4 */
+          /* CSS-based warp effect fallback when no local MP4 provided */
           <div
             className="absolute inset-0 h-full w-full"
             style={{

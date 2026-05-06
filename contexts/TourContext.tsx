@@ -150,10 +150,11 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     const onSequenceComplete = () => {
       if (process.env.NODE_ENV !== "production") console.log('[Tour] Onboarding sequence complete');
 
-      // Show tour if user hasn't completed it yet
       const completed = profile?.has_seen_tour || isCompleted();
-      if (!completed && !isDisabled()) {
-        if (process.env.NODE_ENV !== "production") console.log('[Tour] Showing tour after onboarding sequence');
+      // Guard: don't re-show if already visible or tour is already active
+      // (the sequence dispatches this event a second time after its own timeouts)
+      if (!completed && !isDisabled() && !active && !welcomeVisible) {
+        if (process.env.NODE_ENV !== "production") console.log('[Tour] Showing tour prompt after warp');
         clearDisabled();
         setWelcomeVisible(true);
       }
@@ -161,7 +162,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener(ONBOARDING_SEQUENCE_COMPLETE, onSequenceComplete);
     return () => window.removeEventListener(ONBOARDING_SEQUENCE_COMPLETE, onSequenceComplete);
-  }, [profile, isCompleted, isDisabled, clearDisabled]);
+  }, [profile, active, welcomeVisible, isCompleted, isDisabled, clearDisabled]);
 
   const value = useMemo(() => ({ active, start, skip, restart, disable, enable }), [active, start, skip, restart, disable, enable]);
 

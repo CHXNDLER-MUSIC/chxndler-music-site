@@ -62,8 +62,7 @@ export function skyFor(slug?: string) {
 }
 
 // Use the lightspeed warp as the initial looping sky
-// Use YouTube-based lightspeed overlay by default; avoid 404 for missing local mp4
-export const introSky = { key: "lightspeed", webm: "", mp4: "" };
+export const introSky = { key: "lightspeed", webm: "", mp4: "/skies/lightspeed.mp4" };
 
 /**
  * Verifies if a track has a corresponding sky video

@@ -36,60 +36,6 @@ const sanitizeEmail = (raw: string): string =>
 const isValidEmail = (email: string): boolean =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-function IsolatedOtpTest({ email, code }: { email: string; code: string }) {
-  const [result, setResult] = React.useState<string | null>(null);
-  const [running, setRunning] = React.useState(false);
-
-  async function runTest() {
-    const cleanCode = code.replace(/\D/g, '').trim();
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanCode || cleanCode.length !== 6 || !cleanEmail) {
-      setResult('Need valid email + 6-digit code first');
-      return;
-    }
-    setRunning(true);
-    setResult(null);
-    try {
-      const result = await supabaseBrowser.auth.verifyOtp({
-        email: cleanEmail,
-        token: cleanCode,
-        type: 'email',
-      });
-      console.log('[auth] verifyOtp FULL RESULT', result);
-      if (result.error) {
-        setResult(`ERROR: ${result.error.message}`);
-      } else if (result.data?.session) {
-        setResult(`OK — session returned for ${result.data.user?.email}`);
-      } else {
-        setResult('verifyOtp succeeded but no session returned');
-        console.warn('[auth] verifyOtp no session', result.data);
-      }
-    } catch (e: any) {
-      setResult(`THROW: ${e?.message}`);
-    } finally {
-      setRunning(false);
-    }
-  }
-
-  return (
-    <div style={{ marginTop: 8, padding: '6px 8px', border: '1px dashed #FF69B4', borderRadius: 6, background: 'rgba(255,105,180,0.05)' }}>
-      <div style={{ fontSize: 10, color: '#FF69B4', marginBottom: 4 }}>DEV: isolated verifyOtp test</div>
-      <button
-        type="button"
-        onClick={runTest}
-        disabled={running}
-        style={{ fontSize: 11, color: '#FF69B4', border: '1px solid #FF69B4', borderRadius: 4, padding: '2px 8px', background: 'transparent', cursor: 'pointer', opacity: running ? 0.5 : 1 }}
-      >
-        {running ? 'testing…' : 'Run verifyOtp only'}
-      </button>
-      {result && (
-        <div style={{ fontSize: 10, marginTop: 4, color: result.startsWith('OK') ? '#00FF00' : '#FF4444', wordBreak: 'break-all' }}>
-          {result}
-        </div>
-      )}
-    </div>
-  );
-}
 
 const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }: Props) {
   const router = useRouter();
@@ -372,13 +318,16 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       setInfoMessage(null);
       try { audio?.pause(); } catch {}
       setShowWarpFlash(true);
+      // Mark warp sound as played so SkyboxVideo doesn't double-play it
+      try { if (typeof window !== 'undefined') (window as any).__WARP_SOUND_PLAYED = true; } catch {}
       try { new Audio('/audio/warp.mp3').play().catch(() => {}); } catch {}
-      try { window.dispatchEvent(new CustomEvent('planet:warp', { detail: {} })); } catch {}
-
-      // Always show onboarding — WhatShouldWeCallYouModal auto-closes if user already has a real name
+      // Dispatch warp with center element — DashboardApp will set center sky, play center.MP3,
+      // and fire onboarding:start after the warp animation finishes (~3.8s)
+      try { window.dispatchEvent(new CustomEvent('planet:warp', { detail: { element: 'center', isOtpLogin: true } })); } catch {}
+      // Fallback: if DashboardApp fails to fire onboarding:start, do it ourselves after 6s
       setTimeout(() => {
         try { window.dispatchEvent(new CustomEvent('onboarding:start')); } catch {}
-      }, 1400);
+      }, 6000);
     } catch (e: any) {
       setError(e?.message || "Invalid or expired code. Try again.");
     } finally {
@@ -715,11 +664,6 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
                 </div>
               )}
             </div>
-          )}
-
-          {/* DEV-ONLY: Isolated OTP test button */}
-          {process.env.NODE_ENV !== 'production' && step === 'verify' && (
-            <IsolatedOtpTest email={sentEmailRef.current || email} code={code} />
           )}
 
           {/* Primary Button: changes by step; stays in place */}

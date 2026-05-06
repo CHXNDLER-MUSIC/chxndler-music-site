@@ -187,10 +187,8 @@ export default function WhatShouldWeCallYouModal() {
       console.log("[profile] upsert result", { data: upsertData, error: upsertError });
       if (upsertError) throw new Error(upsertError.message);
 
-      // Clean up tokens but keep user identity keys for the element modal
-      // (WhatElementAreYouModal reads heartverse_user_id and heartverse_user_email next)
-      try { sessionStorage.removeItem('chx_at'); } catch {}
-      try { sessionStorage.removeItem('chx_rt'); } catch {}
+      // Keep chx_at / chx_rt alive — WhatElementAreYouModal needs the raw access token
+      // next (Supabase session may be gone by then). Element modal handles final cleanup.
 
       try { new Audio('/audio/join-alien.mp3').play().catch(() => {}); } catch {}
 

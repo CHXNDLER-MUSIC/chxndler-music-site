@@ -262,6 +262,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [playSignal, setPlaySignal] = useState(0);
   const [toggleSignal, setToggleSignal] = useState(0);
   const [flySignal, setFlySignal] = useState(0);
+  const [otpWarpReady, setOtpWarpReady] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showHUD, setShowHUD] = useState(false);
   const [showStarsModal, setShowStarsModal] = useState(false);
@@ -972,7 +973,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   // Desired YouTube sky URL — what we ultimately want to show.
   // Includes all three states: intro clip, home space background, per-song sky.
   const desiredYoutubeUrl = useMemo(() => {
-    if (isIntro) return "https://youtu.be/KFssNa5WvKc";
+    if (isIntro) return undefined; // use local lightspeed.mp4 via srcMp4
     if (elementWarpYoutubeUrl) return elementWarpYoutubeUrl;
     if (homeMode) return "https://youtu.be/DkEeJbEYt_E";
     const slug = curTrack?.slug;
@@ -1828,7 +1829,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             const welcomeAudio = new Audio(welcomeAudioPath);
             welcomeAudio.volume = 0.9;
             if (welcomeType === 'heartverse') {
-              // WelcomeHomeModal opens via __SHOW_WELCOME_HOME_AFTER_WARP in revealUIAndPlay
+              // Open modal immediately (simultaneously with audio start)
+              try { setShowWelcomeHomeModal(true); } catch {}
+              if (typeof window !== 'undefined') (window).__SHOW_WELCOME_HOME_AFTER_WARP = false;
               welcomeAudio.addEventListener('ended', () => {
                 try { sfx.play('button', 0.9); } catch {}
                 try { setBeamColor('yellow'); } catch {}
@@ -1838,8 +1841,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 }, 400);
               });
               welcomeAudio.play().catch(() => {
-                // Audio blocked/failed — the modal opens 150ms after this catch fires,
-                // so wait for it to appear and be visible before closing it and opening the card
                 setTimeout(() => {
                   try { setBeamColor('yellow'); } catch {}
                   try { setShowWelcomeHomeModal(false); } catch {}
@@ -2138,9 +2139,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   // Listen for planet:warp event to trigger warp visual effect for element planets
   React.useEffect(() => {
     const handlePlanetWarp = (e) => {
-      const { element, isDailyElement, isCenterPlanet, audioPath, isOnboarding } = e.detail || {};
+      const { element, isDailyElement, isCenterPlanet, audioPath, isOnboarding, isOtpLogin } = e.detail || {};
       if (process.env.NODE_ENV === "development") {
-        if (process.env.NODE_ENV !== "production") console.log('🌍 planet:warp event received:', { element, isDailyElement, isCenterPlanet, audioPath, isOnboarding });
+        if (process.env.NODE_ENV !== "production") console.log('🌍 planet:warp event received:', { element, isDailyElement, isCenterPlanet, audioPath, isOnboarding, isOtpLogin });
       }
 
       // During onboarding, still play the Heartverse music but skip warp visual effects
@@ -2171,10 +2172,17 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       }
 
       // Set YouTube sky for element planets (WATER, CENTER, HEART, DARKNESS, LIGHTNING)
-      // User can update this URL later
       const elementPlanets = ['water', 'center', 'heart', 'darkness', 'lightning'];
       if (element && elementPlanets.includes(String(element).toLowerCase())) {
-        setElementWarpYoutubeUrl('https://youtu.be/xS-a7rWzYYw');
+        const elementKey = String(element).toLowerCase();
+        const elementSkyMap = {
+          center: 'https://youtu.be/DpXmA7BIUXQ',
+          darkness: 'https://youtu.be/G-kIeLLnAnw',
+          lightning: 'https://youtu.be/ddybU02vS3E',
+          water: 'https://youtu.be/0OefEEINmiI',
+          heart: 'https://youtu.be/vuBdXCOLwYU',
+        };
+        setElementWarpYoutubeUrl(elementSkyMap[elementKey] || 'https://youtu.be/xS-a7rWzYYw');
       }
 
       // Mark user as having selected something to suppress welcome home modal
@@ -2224,6 +2232,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           setWarpActive(false);
           setAllowWarp(false);
         }, WARP_DURATION_MS + 500);
+
+        // OTP login: reveal center sky then show the name prompt after warp finishes
+        if (isOtpLogin) {
+          setTimeout(() => {
+            setOtpWarpReady(true);
+          }, WARP_DURATION_MS + 400);
+          setTimeout(() => {
+            try { window.dispatchEvent(new CustomEvent('onboarding:start')); } catch {}
+          }, WARP_DURATION_MS + 800);
+        }
       }, 100); // Small delay for visual smoothness
     };
 
@@ -2692,13 +2710,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         allowWarp={allowWarp}
         // Keep the lightspeed overlay visible until overlay UI appears
         holdLightspeed={true}
-        readyToReveal={isLanded}
+        readyToReveal={isLanded || otpWarpReady}
         minDurationMs={3000}
         offsetY="-1vh"
         // Committed sky URL (deferred until warp overlay is active to prevent background flash)
         youtubeUrl={computedYoutubeUrl}
-        // Use specific YouTube clip for the lightspeed (warp) overlay during START
-        lightspeedYoutubeUrl={"https://youtu.be/KFssNa5WvKc"}
+        // Use local lightspeed.mp4 for the warp overlay
+        lightspeedSrcMp4={"/skies/lightspeed.mp4"}
         onWarpSfxEnd={() => {
           // Simple cleanup - core UI transitions handled by phase state machine
           if (process.env.NODE_ENV !== "production") console.log("🎵 Warp SFX ended");
@@ -2782,7 +2800,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 const welcomeAudio = new Audio(welcomeAudioPath);
                 welcomeAudio.volume = 0.9;
                 if (welcomeType === 'heartverse') {
-                  // WelcomeHomeModal opens via __SHOW_WELCOME_HOME_AFTER_WARP in revealUIAndPlay (right after beam/HUD reveal)
+                  // Open modal immediately (simultaneously with audio start)
+                  try { setShowWelcomeHomeModal(true); } catch {}
+                  if (typeof window !== 'undefined') (window).__SHOW_WELCOME_HOME_AFTER_WARP = false;
                   welcomeAudio.addEventListener('ended', () => {
                     try { sfx.play('button', 0.9); } catch {}
                     try { setBeamColor('yellow'); } catch {}
@@ -2792,8 +2812,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                     }, 400);
                   });
                   welcomeAudio.play().catch(() => {
-                    // Audio blocked/failed — the modal opens 150ms after this catch fires,
-                    // so wait for it to appear and be visible before closing it and opening the card
                     setTimeout(() => {
                       try { setBeamColor('yellow'); } catch {}
                       try { setShowWelcomeHomeModal(false); } catch {}
