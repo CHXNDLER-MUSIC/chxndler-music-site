@@ -309,6 +309,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [welcomeHasPlayed, setWelcomeHasPlayed] = useState(false); // tracks if welcome has been played (resets on page refresh)
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
   const startButtonWarpRef = React.useRef(false); // prevents double warp when start button is clicked
+  const pendingElementWarpRef = React.useRef(null); // element key set in handleStartClick for logged-in element warp
+  const elementWarpUsedRef = React.useRef(false); // true after first element-planet warp; resets on page reload
   // One-shot guard to auto-open pink after Start if live resolves slightly later
   const allowLiveAutoOpenRef = React.useRef(false);
   // NOTE: cameFromMagicLinkRef is defined earlier in the file (before the auto-open useEffect that uses it)
@@ -1581,7 +1583,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         if (process.env.NODE_ENV !== "production") console.log("🚀 Fetching profile_complete from Supabase for user:", session.user.id);
         const { data: profileData, error: profileError } = await supabaseClient
           .from('profiles')
-          .select('profile_complete')
+          .select('profile_complete, element')
           .eq('id', session.user.id)
           .single();
 
@@ -1601,6 +1603,30 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           if (process.env.NODE_ENV !== "production") console.log("🚀 profile_complete is true - proceeding with normal warp");
           // Logged in with complete profile → Welcome-Back
           welcomeAudioTypeRef.current = 'back';
+          // If user has a chosen element and hasn't done the element warp yet this session,
+          // warp to their element planet. Subsequent STARTs go to space + space-music.
+          if (profileData?.element && !elementWarpUsedRef.current) {
+            const elementKey = String(profileData.element).toLowerCase();
+            const elementSkyMapStart = {
+              center: 'https://youtu.be/DpXmA7BIUXQ',
+              darkness: 'https://youtu.be/G-kIeLLnAnw',
+              lightning: 'https://youtu.be/ddybU02vS3E',
+              water: 'https://youtu.be/0OefEEINmiI',
+              heart: 'https://youtu.be/vuBdXCOLwYU',
+            };
+            if (elementSkyMapStart[elementKey]) {
+              pendingElementWarpRef.current = elementKey;
+              setElementWarpYoutubeUrl(elementSkyMapStart[elementKey]);
+              const elementName = elementKey.toUpperCase();
+              setCurTrack({
+                slug: elementKey,
+                title: elementName === 'CENTER' ? 'HEARTVERSE' : elementName,
+                icon: elementKey,
+                isElement: true,
+              });
+              // Keep welcomeAudioTypeRef as 'back' — Welcome-Back.mp3 is played in onWarpSfxEnd
+            }
+          }
         }
 
         if (process.env.NODE_ENV !== "production") console.log("🚀 Profile data:", profileData, "needsOnboarding:", needsOnboarding, "welcomeAudioType:", welcomeAudioTypeRef.current);
@@ -1953,6 +1979,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       return () => clearTimeout(t);
     } catch {}
   }, [handleStartClick]);
+
 
   // Handle opening journal: opens journal view in Soul Sky popover
   const handleOpenJournal = React.useCallback(() => {
@@ -2771,7 +2798,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           // If landing on home (no song pending), start music via main player
           // and play welcome track as independent one-shot audio based on auth/profile state
           try {
-            if (!pendingTrackPlay && !userSelected && !spaceMusicTriggered) {
+            if (!pendingTrackPlay && !userSelected && !spaceMusicTriggered && !pendingElementWarpRef.current) {
               spaceMusicTriggered = true;
               // Clear the audio block flag so music can play
               if (typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = false; }
@@ -2954,9 +2981,34 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             } catch {}
             // Leave homepage mode so PlanetSystem doesn't force show-all
             try { setHomeMode(false); } catch {}
+          } else if (pendingElementWarpRef.current) {
+            // Element planet warp via Start button: keep homeMode=true so HUDPanel shows
+            // general CHXNDLER buttons (not element-specific). elementWarpYoutubeUrl still
+            // drives the sky because it has priority in desiredYoutubeUrl.
+            // NOTE: do NOT clear pendingElementWarpRef here — onFlyEnd reads it to gate setPendingHomePower
+            const elementKey = pendingElementWarpRef.current;
+            // Mark element warp as used so subsequent STARTs warp to space instead
+            elementWarpUsedRef.current = true;
+            try {
+              playerStore.getState().setMain(elementKey);
+              playerStore.getState().setPlanetDisplayMode('single');
+              playerStore.getState().setPlanetsVisible(true);
+            } catch {}
+            // homeMode stays true (set in handleStartClick) — this keeps general buttons
+            try { audioManager.playTrack(elementKey); } catch {}
+            // Play Welcome-Back VO alongside element music
+            const elementWelcomeType = welcomeAudioTypeRef.current;
+            welcomeAudioTypeRef.current = null;
+            if (elementWelcomeType === 'back') {
+              try {
+                const wb = new Audio('/tracks/Welcome-Back.mp3');
+                wb.volume = 0.9;
+                wb.play().catch(() => {});
+              } catch {}
+            }
           } else {
             // Start button warp back to CHXNDLER (homepage): show ALL planets
-            
+
             try {
               playerStore.getState().setPlanetDisplayMode('all');
               playerStore.getState().setPlanetsVisible(true);
@@ -3131,14 +3183,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           // Conditional warp destination:
           // - Start button: always go to CHXNDLER homepage
           // - Song selection: go to that song
-          if (startButtonWarpRef.current || (!pendingTrackPlay && !userSelected)) {
+          if (!pendingElementWarpRef.current && (startButtonWarpRef.current || (!pendingTrackPlay && !userSelected))) {
             // Start button was pressed OR no track/user selection pending - go to homepage
             setPendingHomePower(true);
           } else {
             // Song selection - proceed to that song (handled by onBasePlaying)
             // Only start UI fade-in and audio sequencing when the base sky MP4 is confirmed playing via onBasePlaying
           }
-          
+          // Clear element warp ref now that all guards have been checked
+          pendingElementWarpRef.current = null;
+
           // Mark that the user has entered the Heartverse after warp completes
           try { enterHeartverse(); } catch { setHasEnteredHeartverse(true); }
         }}
@@ -3432,8 +3486,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   inConsole
                   songs={hudSongs}
                   onSongChange={onSongChange}
-                  track={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack}
-                  currentId={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack?.slug}
+                  track={(homeMode && !userSelected && !pendingTrackPlay && !curTrack?.isElement) ? undefined : curTrack}
+                  currentId={(homeMode && !userSelected && !pendingTrackPlay && !curTrack?.isElement) ? undefined : curTrack?.slug}
                   playing={(homeMode && !userSelected && !pendingTrackPlay) ? ambientPlaying : isPlaying}
                   showAllPlanets={homeMode}
                   hidePlanetsUntilPlaying={hidePlanetsForSelection}

@@ -2719,9 +2719,10 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
               <button
                 onClick={async () => {
                   if (!profile || !user) return;
-                  
+
                   const currentElement = getCurrentElementData();
-                  
+                  setSaving(true);
+
                   try {
                     // Update user's element in profile (profiles table only)
                     const { error } = await supabaseBrowser
@@ -2740,15 +2741,22 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                     // Refresh profile context to update UI immediately
                     await refreshProfile();
                     setSelectedImageUrl(currentElement.url);
-                    
+
                     try { sfx.play('star', 0.6); } catch {}
                     try { sfx.play('flip', 0.6); } catch {}
                     try { sfx.play('success', 0.8); } catch {}
-                    
+
                     // Close the element info panel
                     setShowElementInfo(false);
+
+                    // Trigger warp effect after aligning with new element
+                    window.dispatchEvent(new CustomEvent('planet:warp', {
+                      detail: { element: currentElement.name }
+                    }));
                   } catch (error) {
                     console.error('Error aligning with element:', error);
+                  } finally {
+                    setSaving(false);
                   }
                 }}
                 disabled={saving || getCurrentElementData().name === profile?.element}

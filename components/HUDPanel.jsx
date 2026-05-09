@@ -2568,21 +2568,33 @@ const HUDPanel = React.memo(function HUDPanel({
                   }}
                 >
                   {/* Show 3D planets using Three.js */}
-                  <Pure3DPlanets
-                    songs={resolvedSongs || []}
-                    songsByElement={{}}
-                    zoomLevel={1}
-                    onPlanetSelect={handlePlanetSelectWithRewards}
-                    onSongChange={onSongChange}
-                    quality="high"
-                    focusElement={focusElement}
-                    focusSongId={currentId || null}
-                    glowingElement={planetRewards.elementOfDay || null}
-                    glowActive={!planetRewards.claimedToday}
-                    hasClaimedElementOfDay={planetRewards.claimedToday}
-                    isClaimingReward={planetRewards.isClaimingReward}
-                    onDailyPlanetClick={planetRewards.claimPlanetReward}
-                  />
+                  {(() => {
+                    const _elementPlanetIds = ['heart', 'water', 'lightning', 'darkness'];
+                    const _currentIsElement = currentId && _elementPlanetIds.includes(String(currentId).toLowerCase());
+                    // When the user's chosen element is active, route it through focusElement (camera flies
+                    // to the element planet's position). For song planets use focusSongId instead.
+                    const _resolvedFocusElement = _currentIsElement
+                      ? String(currentId).toLowerCase()
+                      : focusElement;
+                    const _resolvedFocusSongId = _currentIsElement ? null : (currentId || null);
+                    return (
+                      <Pure3DPlanets
+                        songs={resolvedSongs || []}
+                        songsByElement={{}}
+                        zoomLevel={1}
+                        onPlanetSelect={handlePlanetSelectWithRewards}
+                        onSongChange={onSongChange}
+                        quality="high"
+                        focusElement={_resolvedFocusElement}
+                        focusSongId={_resolvedFocusSongId}
+                        glowingElement={planetRewards.elementOfDay || null}
+                        glowActive={!planetRewards.claimedToday}
+                        hasClaimedElementOfDay={planetRewards.claimedToday}
+                        isClaimingReward={planetRewards.isClaimingReward}
+                        onDailyPlanetClick={planetRewards.claimPlanetReward}
+                      />
+                    );
+                  })()}
                 </ErrorBoundary>
               ) : null}
               </div>
@@ -2994,8 +3006,9 @@ const HUDPanel = React.memo(function HUDPanel({
                 } catch { return undefined; }
               })();
 
-              // On homepage (no currentId), always show the CHXNDLER brand cover
-              if (!currentId) {
+              // On homepage (no currentId) or element planet warp, show the CHXNDLER brand cover
+              const _isElementPlanetCover = currentId && ['heart', 'water', 'lightning', 'darkness', 'center'].includes(String(currentId).toLowerCase());
+              if (!currentId || _isElementPlanetCover) {
                 const src = DEFAULT_COVER;
                 const title = 'CHXNDLER';
                 const trackingSong = 'chxndler_home';
@@ -3256,10 +3269,12 @@ const HUDPanel = React.memo(function HUDPanel({
                 <div className="hud-main-stack" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, overflow: 'visible' }}>
                 {/* Top controls: Play/Pause with Lyrics immediately to the right */}
                 {(() => {
-                  const isHome = !currentId;
+                  const isHome = !currentId || ['heart', 'water', 'lightning', 'darkness', 'center'].includes(String(currentId).toLowerCase());
+                  const _isElementPlanet = currentId && ['heart', 'water', 'lightning', 'darkness', 'center'].includes(String(currentId).toLowerCase());
                   const currentSong = resolvedSongs.find(s => s.id === active);
-                  // Prefer currentId for slug fallback so lyrics open even if list hasn’t reconciled yet
-                  const slug = isHome ? 'homepage' : (currentSong?.slug || currentSong?.id || currentId || active || 'homepage');
+                  // Prefer currentId for slug fallback so lyrics open even if list hasn't reconciled yet
+                  // Element planet warp (returning user) → welcome-back.md; plain home → homepage.md
+                  const slug = _isElementPlanet ? 'welcome-back' : (isHome ? 'homepage' : (currentSong?.slug || currentSong?.id || currentId || active || 'homepage'));
                   // Allow lyrics when a selection exists even if DB song isn't in resolved list yet
                   const hasLyrics = isHome ? true : (currentSong ? (currentSong.hasLyrics !== false) : true);
                   const lyricsTitle = isHome ? 'Lyrics for CHXNDLER' : `Lyrics for ${currentSong?.title || 'current track'}`;
@@ -3867,7 +3882,7 @@ const HUDPanel = React.memo(function HUDPanel({
 
                 {/* Slide Lyrics, Store, and HEART coin to the left (before streaming icons) */}
                 {(() => {
-                  const isHome = !currentId;
+                  const isHome = !currentId || ['heart', 'water', 'lightning', 'darkness', 'center'].includes(String(currentId).toLowerCase());
                   const currentSong = resolvedSongs.find(s => s.id === active);
                   if (isHome) {
                       // Homepage: lyrics popover for CHXNDLER + YouTube disabled
@@ -4508,9 +4523,9 @@ const HUDPanel = React.memo(function HUDPanel({
                               style={{ fontSize: 12, opacity: 0.95 }}
                               className={heartTierDetails === 'wanderer' ? 'neon-blue' : heartTierDetails === 'dreamer' ? 'neon-yellow' : 'neon-pink'}
                             >
-                              {heartTierDetails === 'wanderer' && 'You’ve just arrived in the Heartverse — drawn here by the signal.'}
-                              {heartTierDetails === 'dreamer' && 'You’re part of the crew now — traveling through sound and starlight.'}
-                              {heartTierDetails === 'lover' && 'You’ve reached the center — the pulse that powers it all.'}
+                              {heartTierDetails === 'wanderer' && "You've just arrived in the Heartverse — drawn here by the signal."}
+                              {heartTierDetails === 'dreamer' && "You're part of the crew now — traveling through sound and starlight."}
+                              {heartTierDetails === 'lover' && "You've reached the center — the pulse that powers it all."}
                             </div>
                             <ul style={{ marginTop: 4, paddingLeft: 16, fontSize: 12, lineHeight: 1.45 }}>
                               {heartTierDetails === 'wanderer' && (
@@ -6691,7 +6706,8 @@ const HUDPanel = React.memo(function HUDPanel({
                 ) : null}
 
                 {typeof document !== 'undefined' && showLyricsPopover ? (() => {
-                  const isHome = !currentId;
+                  const isHome = !currentId || ['heart', 'water', 'lightning', 'darkness', 'center'].includes(String(currentId).toLowerCase());
+                  const _isElementPlanetLyrics = currentId && ['heart', 'water', 'lightning', 'darkness', 'center'].includes(String(currentId).toLowerCase());
                   const currentSong = resolvedSongs.find(s => s.id === active);
                   return createPortal(
                     <div
@@ -6755,11 +6771,13 @@ const HUDPanel = React.memo(function HUDPanel({
                       {/* Section header */}
                       <div className="lyrics-header">
                         {(() => {
-                          const title = isHome
-                            ? 'CHXNDLER'
-                            // Prefer resolved currentSong title, then playing track title,
-                            // then lookup by currentId, else fallback.
-                            : (currentSong?.title || track?.title || (resolvedSongs.find(s => s.id === currentId)?.title) || 'UNKNOWN');
+                          const title = _isElementPlanetLyrics
+                            ? 'WELCOME BACK'
+                            : isHome
+                              ? 'CHXNDLER'
+                              // Prefer resolved currentSong title, then playing track title,
+                              // then lookup by currentId, else fallback.
+                              : (currentSong?.title || track?.title || (resolvedSongs.find(s => s.id === currentId)?.title) || 'UNKNOWN');
                           return (
                             <>LYRICS — {title}</>
                           );
@@ -6770,9 +6788,65 @@ const HUDPanel = React.memo(function HUDPanel({
                     ) : lyricsError ? (
                       <div style={{ fontSize: 18, color: '#ff7b7b' }}>{lyricsError}</div>
                     ) : (
-                      <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.65, fontSize: 18, color: '#F6F4A9', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(246,244,169,0.6)', paddingTop: '8px', paddingBottom: '8px' }}>{lyricsContent || 'No lyrics available.'}</div>
+                      <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.65, fontSize: 18, color: '#F6F4A9', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(246,244,169,0.6)', paddingTop: '8px', paddingBottom: '8px' }}>
+                        {(_isElementPlanetLyrics && profile?.name
+                          ? (lyricsContent || '').replace(/^YO[ \t]*/, `YO ${profile.name.toUpperCase()}`)
+                          : lyricsContent) || 'No lyrics available.'}
+                      </div>
                     )}
-                    {null}
+                    {_isElementPlanetLyrics && !lyricsLoading && !lyricsError && (() => {
+                      const now = new Date();
+                      const tz = 'America/New_York';
+                      const etParts = new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false }).formatToParts(now);
+                      const get = (type) => parseInt(etParts.find(p => p.type === type)?.value ?? '0', 10);
+                      const etY = get('year'), etM = get('month'), etD = get('day'), etH = get('hour') === 24 ? 0 : get('hour');
+                      const dow = new Date(etY, etM - 1, etD).getDay();
+                      const daysUntil = (dow === 4 && etH < 21) ? 0 : (((4 - dow + 7) % 7) || 7);
+                      const t = new Date(etY, etM - 1, etD + daysUntil);
+                      let start = new Date(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate(), 23, 0, 0));
+                      const chk = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', hour12: false }).format(start), 10);
+                      if (chk !== 19) start = new Date(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate() + 1, 0, 0, 0));
+                      const end = new Date(start.getTime() + 7200000);
+                      const fmt = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+                      const calUrl = `https://calendar.google.com/calendar/r/eventedit?text=CHXNDLER+LIVE+STREAM&dates=${fmt(start)}/${fmt(end)}&details=Electric+Session+%E2%80%94+Live+Stream+Signal&location=Online`;
+                      return (
+                        <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center' }}>
+                          <a
+                            href={calUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => { try { sfx.play('click', 0.4); } catch {} }}
+                            onMouseEnter={(e) => {
+                              try { sfx.play('hover', 0.35); } catch {};
+                              e.currentTarget.style.background = 'rgba(242,239,29,0.18)';
+                              e.currentTarget.style.boxShadow = '0 0 26px rgba(242,239,29,0.7), 0 0 48px rgba(242,239,29,0.4)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'rgba(242,239,29,0.08)';
+                              e.currentTarget.style.boxShadow = '0 0 18px rgba(242,239,29,0.45), 0 0 32px rgba(242,239,29,0.25)';
+                            }}
+                            style={{
+                              display: 'inline-block',
+                              padding: '8px 24px',
+                              borderRadius: 8,
+                              border: '2px solid rgba(242,239,29,0.85)',
+                              background: 'rgba(242,239,29,0.08)',
+                              color: '#F2EF1D',
+                              fontSize: 14,
+                              fontWeight: 700,
+                              letterSpacing: '0.12em',
+                              textDecoration: 'none',
+                              textShadow: '0 0 10px rgba(242,239,29,0.9), 0 0 20px rgba(242,239,29,0.6)',
+                              boxShadow: '0 0 18px rgba(242,239,29,0.45), 0 0 32px rgba(242,239,29,0.25)',
+                              cursor: 'pointer',
+                              transition: 'background 0.2s ease, box-shadow 0.2s ease',
+                            }}
+                          >
+                            ADD TO CALENDAR
+                          </a>
+                        </div>
+                      );
+                    })()}
                     </div>,
                     document.body
                   );
