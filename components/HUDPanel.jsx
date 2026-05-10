@@ -6806,9 +6806,10 @@ const HUDPanel = React.memo(function HUDPanel({
                       let start = new Date(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate(), 23, 0, 0));
                       const chk = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', hour12: false }).format(start), 10);
                       if (chk !== 19) start = new Date(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate() + 1, 0, 0, 0));
-                      const end = new Date(start.getTime() + 7200000);
+                      const end = new Date(start.getTime() + 3600000);
                       const fmt = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-                      const calUrl = `https://calendar.google.com/calendar/r/eventedit?text=CHXNDLER+LIVE+STREAM&dates=${fmt(start)}/${fmt(end)}&details=Electric+Session+%E2%80%94+Live+Stream+Signal&location=Online`;
+                      const calDesc = "Welcome to the Heartverse transmission.\nSongs about growing up, falling apart, falling in love, and learning how to become human.\nCome hang with the Aliens 👽";
+                      const calUrl = `https://calendar.google.com/calendar/r/eventedit?text=${encodeURIComponent('CHXNDLER Live Stream Signal')}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(calDesc)}&location=Online&recur=RRULE%3AFREQ%3DWEEKLY`;
                       return (
                         <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center' }}>
                           <a

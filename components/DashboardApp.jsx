@@ -311,6 +311,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const startButtonWarpRef = React.useRef(false); // prevents double warp when start button is clicked
   const pendingElementWarpRef = React.useRef(null); // element key set in handleStartClick for logged-in element warp
   const elementWarpUsedRef = React.useRef(false); // true after first element-planet warp; resets on page reload
+  const elementAmbientRef = React.useRef(null); // looping Audio element for element-planet ambient
   // One-shot guard to auto-open pink after Start if live resolves slightly later
   const allowLiveAutoOpenRef = React.useRef(false);
   // NOTE: cameFromMagicLinkRef is defined earlier in the file (before the auto-open useEffect that uses it)
@@ -740,15 +741,35 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     if (idx < 0 && slug.length >= 2) {
       idx = tracks.findIndex(t => (t.title || '').toLowerCase().includes(slug.replace(/-/g, ' ')));
     }
-    
-    if (idx < 0) {
+
+    // Last resort: song may exist in DB (hudSongs) but not in static tracks (e.g. MAKE BELIEVE).
+    // Build a minimal synthetic track so the warp sequence can proceed.
+    let synthTrack = null;
+    if (idx < 0 && hudSongs?.length) {
+      const hudSong = hudSongs.find(s => (s.id || '').toLowerCase() === slug);
+      if (hudSong) {
+        synthTrack = {
+          slug,
+          title: hudSong.title || slug,
+          spotify: hudSong.spotify || null,
+          apple: hudSong.apple || null,
+          youtube: hudSong.youtube || null,
+          hasLyrics: hudSong.hasLyrics || false,
+          element: (hudSong.icon || 'heart'),
+          sources: [],
+          theme: {},
+        };
+      }
+    }
+
+    if (idx < 0 && !synthTrack) {
       console.error('[WARP] start - early return: track not found', { id, slug });
       if (process.env.NODE_ENV !== "production") console.warn('DashboardApp: onSongChange - track not found for id:', id, 'slug:', slug);
       if (process.env.NODE_ENV !== "production") console.log('[WARP] Available tracks:', tracks.map(t => ({title: t.title, slug: t.slug})));
       return;
     }
-    if (process.env.NODE_ENV !== "production") console.log('[WARP] Track found at index:', idx, 'selectedTrack:', tracks[idx]?.slug);
-    const selectedTrack = tracks[idx];
+    if (process.env.NODE_ENV !== "production") console.log('[WARP] Track found at index:', idx, 'selectedTrack:', idx >= 0 ? tracks[idx]?.slug : synthTrack?.slug);
+    const selectedTrack = idx >= 0 ? tracks[idx] : synthTrack;
     if (process.env.NODE_ENV === "development") {
       if (process.env.NODE_ENV !== "production") console.log('🎵 Song selected:', selectedTrack.title);
       if (process.env.NODE_ENV !== "production") console.log('🎵 Current state before update:', { userSelected, homeMode, pendingTrackPlay, curTrack: curTrack?.slug });
@@ -820,7 +841,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     setPendingOverlayReveal(false);
 
     // Get track and update links immediately to avoid race conditions
-    const t = tracks[idx];
+    const t = idx >= 0 ? tracks[idx] : synthTrack;
     setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple });
     
     // Update player store so HoloAudioBridge plays the correct song
@@ -986,7 +1007,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const desiredYoutubeUrl = useMemo(() => {
     if (isIntro) return undefined; // use local lightspeed.mp4 via srcMp4
     if (elementWarpYoutubeUrl) return elementWarpYoutubeUrl;
-    if (homeMode) return undefined;
+    if (homeMode) return 'https://youtu.be/DkEeJbEYt_E';
     const slug = curTrack?.slug;
     const mapped = slug ? youtubeSkyFor(slug) : undefined;
     return mapped || undefined;
@@ -1489,6 +1510,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Enable one-shot auto-open window for live signal after this Start warp
     allowLiveAutoOpenRef.current = true;
 
+    // Reset warp reveal state so the sky doesn't unhide prematurely on repeat STARTs
+    setLandingRevealReady(false);
+    // Reset element warp state on every START so the sky reverts correctly
+    setElementWarpYoutubeUrl(null);
+    if (elementAmbientRef.current) {
+      elementAmbientRef.current.pause();
+      elementAmbientRef.current = null;
+    }
+
     // Helper to read latest DB live flag directly to avoid hook timing races
     const fetchDbLive = async () => {
       try {
@@ -1843,9 +1873,21 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           const welcomeType = welcomeAudioTypeRef.current;
           welcomeAudioTypeRef.current = null; // Clear immediately to prevent duplicate plays
 
-          // Play heart.MP3 for onboarding users (profile_complete = false), space-music for others
+          // Play element ambient, heart (onboarding), or space-music
+          const elementAmbientFiles = { heart: '/audio/heart-pulse.MP3', lightning: '/audio/lightning-spark.MP3', water: '/audio/water-ripple.MP3', darkness: '/audio/shadow-glow.MP3' };
           if (welcomeType === 'home') {
             audioManager?.playTrack('heart');
+          } else if (pendingElementWarpRef.current && elementAmbientFiles[pendingElementWarpRef.current]) {
+            elementWarpUsedRef.current = true;
+            const ambientSrc = elementAmbientFiles[pendingElementWarpRef.current];
+            try {
+              if (elementAmbientRef.current) { elementAmbientRef.current.pause(); }
+              const a = new Audio(ambientSrc);
+              a.loop = true;
+              a.volume = 0.5;
+              elementAmbientRef.current = a;
+              a.play().catch(() => {});
+            } catch {}
           } else {
             audioManager?.playTrack('space-music');
           }
@@ -2746,7 +2788,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         allowWarp={allowWarp}
         // Keep the lightspeed overlay visible until overlay UI appears
         holdLightspeed={true}
-        readyToReveal={isLanded || otpWarpReady}
+        readyToReveal={isLanded || otpWarpReady || landingRevealReady}
         minDurationMs={3000}
         offsetY="-1vh"
         // Committed sky URL (deferred until warp overlay is active to prevent background flash)
@@ -2995,7 +3037,19 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               playerStore.getState().setPlanetsVisible(true);
             } catch {}
             // homeMode stays true (set in handleStartClick) — this keeps general buttons
-            try { audioManager.playTrack(elementKey); } catch {}
+            // Play element-specific ambient audio from local files (loop)
+            const elementAmbientFiles = { heart: '/audio/heart-pulse.MP3', lightning: '/audio/lightning-spark.MP3', water: '/audio/water-ripple.MP3', darkness: '/audio/shadow-glow.MP3' };
+            const ambientSrc = elementAmbientFiles[elementKey];
+            if (ambientSrc) {
+              try {
+                if (elementAmbientRef.current) { elementAmbientRef.current.pause(); }
+                const a = new Audio(ambientSrc);
+                a.loop = true;
+                a.volume = 0.5;
+                elementAmbientRef.current = a;
+                a.play().catch(() => {});
+              } catch {}
+            }
             // Play Welcome-Back VO alongside element music
             const elementWelcomeType = welcomeAudioTypeRef.current;
             welcomeAudioTypeRef.current = null;

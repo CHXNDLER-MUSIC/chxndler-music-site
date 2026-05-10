@@ -135,6 +135,13 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
     'chxndler': getCardImageUrl('CHXNDLER'),
     'chxndler_home': getCardImageUrl('CHXNDLER'),
 
+    // Element planet cards
+    'water': getCardImageUrl('WATER'),
+    'heart': getCardImageUrl('HEART'),
+    'lightning': getCardImageUrl('LIGHTNING'),
+    'darkness': getCardImageUrl('DARKNESS'),
+    'center': getCardImageUrl('CHXNDLER'),
+
     // Cards by song
     'baby': getCardImageUrl('BABY'),
     'feeling-this': getCardImageUrl('FEELING THIS'),

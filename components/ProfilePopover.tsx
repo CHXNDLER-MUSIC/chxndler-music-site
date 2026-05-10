@@ -296,8 +296,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
 
   // Helper to get element image URL
   const getElementImageUrl = (element: string | null): string => {
-    if (!element) return elementIcons.heart; // Default to heart
-    return elementIcons[element as keyof typeof elementIcons] || elementIcons.heart;
+    if (!element) return elementIcons.heart;
+    const key = element.toLowerCase();
+    return elementIcons[key as keyof typeof elementIcons] || elementIcons.heart;
   };
 
   // Get all 4 core element options for the selection menu
@@ -362,7 +363,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
       }
     };
 
-    return elementData[elementName] || elementData.heart;
+    return elementData[elementName?.toLowerCase()] || elementData.heart;
   };
 
   // Fetch all relics from database
@@ -1231,7 +1232,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                       }
                       // Set the current element index to match the user's element
                       const elements = getAllElements();
-                      const userElementIndex = elements.findIndex(el => el.name === profile.element);
+                      const userElementIndex = elements.findIndex(el => el.label === profile.element);
                       if (userElementIndex !== -1) {
                         setCurrentElementIndex(userElementIndex);
                       }
@@ -2654,7 +2655,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   {getAllElements().map((element, index) => {
                     const elementData = getElementInfo(element.name);
                     const isCurrentlyViewed = getCurrentElementData().name === element.name;
-                    const isUserElement = profile?.element === element.name;
+                    const isUserElement = profile?.element === element.label;
                     
                     return (
                       <button
@@ -2725,16 +2726,17 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
 
                   try {
                     // Update user's element in profile (profiles table only)
+                    // DB constraint requires capitalized values matching element labels
                     const { error } = await supabaseBrowser
                       .from('profiles')
                       .update({
-                        element: currentElement.name,
+                        element: currentElement.label,
                         profile_image_url: currentElement.url
                       })
                       .eq('id', user.id);
 
                     if (error) {
-                      console.error('Error updating profile element:', error);
+                      console.error('Error updating profile element:', error.message, error.code, error.details, error.hint);
                       return;
                     }
 
@@ -2746,8 +2748,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                     try { sfx.play('flip', 0.6); } catch {}
                     try { sfx.play('success', 0.8); } catch {}
 
-                    // Close the element info panel
+                    // Close the element info panel and the popover
                     setShowElementInfo(false);
+                    onClose();
 
                     // Trigger warp effect after aligning with new element
                     window.dispatchEvent(new CustomEvent('planet:warp', {
@@ -2759,7 +2762,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                     setSaving(false);
                   }
                 }}
-                disabled={saving || getCurrentElementData().name === profile?.element}
+                disabled={saving || getCurrentElementData().label === profile?.element}
                 className="mt-1 w-full py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   background: `linear-gradient(135deg, ${getElementInfo(getCurrentElementData().name).color}40, ${getElementInfo(getCurrentElementData().name).color}25)`,
@@ -2768,9 +2771,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   textShadow: `0 0 12px ${getElementInfo(getCurrentElementData().name).color}, 0 0 24px ${getElementInfo(getCurrentElementData().name).color}80`,
                   boxShadow: `0 0 20px ${getElementInfo(getCurrentElementData().name).color}70`
                 }}
-                title={getCurrentElementData().name === profile?.element ? "Already aligned with this element" : "Align with this element's energy"}
+                title={getCurrentElementData().label === profile?.element ? "Already aligned with this element" : "Align with this element's energy"}
               >
-                {saving ? 'ALIGNING...' : (getCurrentElementData().name === profile?.element ? 'ALIGNED' : 'ALIGN')}
+                {saving ? 'ALIGNING...' : (getCurrentElementData().label === profile?.element ? 'ALIGNED' : 'ALIGN')}
               </button>
             </div>
           )}

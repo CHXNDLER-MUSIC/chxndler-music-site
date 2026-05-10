@@ -2362,15 +2362,15 @@ export default function JoinAliens({ visible = true } = {}) {
         @keyframes countdownPulse {
           0%, 100% {
             text-shadow:
-              0 0 8px #00FFFF,
-              0 0 20px rgba(0, 255, 255, 0.5),
-              0 0 40px rgba(0, 255, 255, 0.25);
+              0 0 8px #FC54AF,
+              0 0 20px rgba(252, 84, 175, 0.5),
+              0 0 40px rgba(252, 84, 175, 0.25);
           }
           50% {
             text-shadow:
-              0 0 4px #00FFFF,
-              0 0 12px rgba(0, 255, 255, 0.35),
-              0 0 24px rgba(0, 255, 255, 0.15);
+              0 0 4px #FC54AF,
+              0 0 12px rgba(252, 84, 175, 0.35),
+              0 0 24px rgba(252, 84, 175, 0.15);
           }
         }
         
