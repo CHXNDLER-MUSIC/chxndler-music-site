@@ -1830,7 +1830,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             return window.localStorage.getItem('GO_LIVE_DEV_OVERRIDE') === '1';
           } catch { return false; }
         })();
-        const preferPink = hasLocal || isInBroadcastWindowNow();
+        const preferPink = liveOverrideActiveRef.current || hasLocal || isInBroadcastWindowNow();
 
         if (preferPink) {
           setUiPhase('landing');
@@ -1912,18 +1912,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               welcomeAudio.addEventListener('ended', () => {
                 try { sfx.play('button', 0.9); } catch {}
                 try { setBeamColor('yellow'); } catch {}
-                try { setShowWelcomeHomeModal(false); } catch {}
-                setTimeout(() => {
-                  try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
-                }, 400);
+                // Open card — keep the modal open so it stays visible behind the card
+                try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
               });
               welcomeAudio.play().catch(() => {
                 setTimeout(() => {
                   try { setBeamColor('yellow'); } catch {}
-                  try { setShowWelcomeHomeModal(false); } catch {}
-                  setTimeout(() => {
-                    try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
-                  }, 400);
+                  try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
                 }, 4000);
               });
             } else {
@@ -2100,11 +2095,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   // If go-live override flips on (or resolves) while already landed, open pink once.
   // Uses rising-edge detection and a one-shot fallback window after Start.
   const prevLiveOverrideRef = React.useRef(!!liveOverrideActive);
+  const liveOverrideActiveRef = React.useRef(!!liveOverrideActive);
   React.useEffect(() => {
     try {
       const wasActive = prevLiveOverrideRef.current;
       const nowActive = !!liveOverrideActive;
       prevLiveOverrideRef.current = nowActive;
+      liveOverrideActiveRef.current = nowActive;
       const canAutoOpenNow = (uiPhase === 'landed' && !uiRevealLocked && !joinAlienOpen);
       // Primary: rising edge from false -> true
       if (!wasActive && nowActive && canAutoOpenNow) {
@@ -2884,18 +2881,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   welcomeAudio.addEventListener('ended', () => {
                     try { sfx.play('button', 0.9); } catch {}
                     try { setBeamColor('yellow'); } catch {}
-                    try { setShowWelcomeHomeModal(false); } catch {}
-                    setTimeout(() => {
-                      try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
-                    }, 400);
+                    // Open card — keep the modal open so it stays visible behind the card
+                    try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
                   });
                   welcomeAudio.play().catch(() => {
                     setTimeout(() => {
                       try { setBeamColor('yellow'); } catch {}
-                      try { setShowWelcomeHomeModal(false); } catch {}
-                      setTimeout(() => {
-                        try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
-                      }, 400);
+                      try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
                     }, 4000);
                   });
                 } else {
@@ -2947,20 +2939,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               })();
               setUiRevealLocked(false);
               setWarpActive(false);
-
-              // Always show blue display first; the liveOverrideActive effect handles
-              // switching to pink if needed (avoids stale-closure failures with handleBeamToggle)
-              setBeamEnabled(true);
-              setBeamColor('blue');
-              // Consume any pending live-signal one-shot so it doesn't auto-override blue
               try { allowLiveAutoOpenRef.current = false; } catch {}
               try { if (typeof window !== 'undefined') delete (window).__CHX_PENDING_SIGNAL_OPEN; } catch {}
-              setTimeout(() => {
-                setShowHUD(true);
-                setUiPhase("landed");
-                if (process.env.NODE_ENV !== "production") console.log("✅ UI revealed: beam -> HUD");
 
-                // Check what to show after warp
+              const preferPinkReveal = liveOverrideActiveRef.current || hasLocal || isInBroadcastWindowNow();
+
+              // Post-reveal checks shared by both pink and blue paths
+              const runPostRevealChecks = (ctx) => {
                 if (typeof window !== 'undefined' && (window).__SHOW_WELCOME_HOME_AFTER_WARP) {
                   if (process.env.NODE_ENV !== "production") console.log("🎯 WARP COMPLETE: User not logged in, showing WelcomeHomeModal");
                   (window).__SHOW_WELCOME_HOME_AFTER_WARP = false;
@@ -2968,9 +2953,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 } else if (onboardingModeRef.current) {
                   if (process.env.NODE_ENV !== "production") console.log("🎯 ONBOARDING: UI revealed, opening name prompt");
                   onboardingModeRef.current = false;
-                  setTimeout(() => {
-                    openNamePromptFromAuth();
-                  }, 300);
+                  setTimeout(() => { openNamePromptFromAuth(); }, 300);
                 } else if (pendingTrackPlay) {
                   const trackIndex = pendingTrackIndexRef.current;
                   if (trackIndex !== null && trackIndex >= 0) {
@@ -2985,13 +2968,33 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 try {
                   if (debugEnabled) {
                     const db = (typeof window !== 'undefined' && window.__CHX_LAST_DB_LIVE) ? true : false;
-                    const reason = 'blue-default';
-                    setLiveDebug({ ctx: 'reveal-blue', reason, db, pflag: false, local: hasLocal, hook: !!liveOverrideActive, schedule: isInBroadcastWindowNow(), at: Date.now() });
+                    setLiveDebug({ ctx, reason: ctx === 'reveal-pink' ? 'live-override' : 'blue-default', db, pflag: false, local: hasLocal, hook: liveOverrideActiveRef.current, schedule: isInBroadcastWindowNow(), at: Date.now() });
                     if (liveDebugTimerRef.current) clearTimeout(liveDebugTimerRef.current);
                     liveDebugTimerRef.current = window.setTimeout(() => setLiveDebug(null), 5000);
                   }
                 } catch {}
-              }, 150);
+              };
+
+              if (preferPinkReveal) {
+                // Live override active — open pink directly, no blue flash
+                setBeamColor('pink');
+                setBeamEnabled(true);
+                setJoinAlienOpen(true);
+                setTimeout(() => {
+                  setUiPhase("landed");
+                  if (process.env.NODE_ENV !== "production") console.log("✅ UI revealed: pink (live override)");
+                  runPostRevealChecks('reveal-pink');
+                }, 150);
+              } else {
+                setBeamEnabled(true);
+                setBeamColor('blue');
+                setTimeout(() => {
+                  setShowHUD(true);
+                  setUiPhase("landed");
+                  if (process.env.NODE_ENV !== "production") console.log("✅ UI revealed: beam -> HUD");
+                  runPostRevealChecks('reveal-blue');
+                }, 150);
+              }
             };
 
             if (process.env.NODE_ENV !== "production") console.log("🔊 Playing button.mp3");

@@ -673,6 +673,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
                 if (step === 'request') {
                   if (email.length > 0) signInWithEmail({ preventDefault: () => {} } as any);
                 } else if (step === 'verify') {
+                  try { new Audio('/audio/alien-wave.MP3').play().catch(() => {}); } catch {}
                   verifyCode();
                 }
               }}

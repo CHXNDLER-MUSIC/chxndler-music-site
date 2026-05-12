@@ -3006,12 +3006,21 @@ const HUDPanel = React.memo(function HUDPanel({
                 } catch { return undefined; }
               })();
 
-              // On homepage (no currentId) or element planet warp, show the CHXNDLER brand cover
-              const _isElementPlanetCover = currentId && ['heart', 'water', 'lightning', 'darkness', 'center'].includes(String(currentId).toLowerCase());
+              // On homepage (no currentId) or element planet warp, show the appropriate cover
+              const _elementKey = currentId ? String(currentId).toLowerCase() : null;
+              const _isElementPlanetCover = _elementKey && ['heart', 'water', 'lightning', 'darkness', 'center'].includes(_elementKey);
+              const ELEMENT_COVERS = {
+                water:     { src: '/elements/water.webp',     title: 'WATER',     slug: 'water'        },
+                heart:     { src: '/elements/heart.webp',     title: 'HEART',     slug: 'heart'        },
+                lightning: { src: '/elements/lightning.webp', title: 'LIGHTNING', slug: 'lightning'    },
+                darkness:  { src: '/elements/darkness.webp',  title: 'DARKNESS',  slug: 'darkness'     },
+                center:    { src: DEFAULT_COVER,              title: 'CHXNDLER',  slug: 'chxndler_home'},
+              };
               if (!currentId || _isElementPlanetCover) {
-                const src = DEFAULT_COVER;
-                const title = 'CHXNDLER';
-                const trackingSong = 'chxndler_home';
+                const elementData = (_isElementPlanetCover && ELEMENT_COVERS[_elementKey]) || { src: DEFAULT_COVER, title: 'CHXNDLER', slug: 'chxndler_home' };
+                const src = elementData.src;
+                const title = elementData.title;
+                const trackingSong = elementData.slug;
                 return (
                   <div
                     className="cover-art-glow"
@@ -6789,9 +6798,22 @@ const HUDPanel = React.memo(function HUDPanel({
                       <div style={{ fontSize: 18, color: '#ff7b7b' }}>{lyricsError}</div>
                     ) : (
                       <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.65, fontSize: 18, color: '#F6F4A9', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(246,244,169,0.6)', paddingTop: '8px', paddingBottom: '8px' }}>
-                        {(_isElementPlanetLyrics && profile?.name
-                          ? (lyricsContent || '').replace(/^YO[ \t]*/, `YO ${profile.name.toUpperCase()}`)
-                          : lyricsContent) || 'No lyrics available.'}
+                        {(() => {
+                          const raw = (_isElementPlanetLyrics && profile?.name
+                            ? (lyricsContent || '').replace(/^YO[ \t]*/, `YO ${profile.name.toUpperCase()}`)
+                            : lyricsContent) || 'No lyrics available.';
+                          const TOKEN = 'THURSDAY 7PM EST';
+                          if (!raw.includes(TOKEN)) return raw;
+                          const parts = raw.split(TOKEN);
+                          return parts.map((part, i) => (
+                            <React.Fragment key={i}>
+                              {part}
+                              {i < parts.length - 1 && (
+                                <span style={{ color: '#ffffff', textShadow: '0 0 6px rgba(255,255,255,0.9)' }}>{TOKEN}</span>
+                              )}
+                            </React.Fragment>
+                          ));
+                        })()}
                       </div>
                     )}
                     {_isElementPlanetLyrics && !lyricsLoading && !lyricsError && (() => {

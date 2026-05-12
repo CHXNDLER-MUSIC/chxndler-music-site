@@ -7,6 +7,7 @@ import JoinAliens from "@/components/JoinAliens";
 import { LINKS } from "@/config/cockpit";
 import { useAudio } from "@/app/providers/AudioProvider";
 import { useProfile } from "@/hooks/useProfile";
+import { useGoLiveOverride } from "@/hooks/useGoLiveOverride";
 import { sfx } from "@/lib/sfx";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 import { triggerCardCelebration } from "@/utils/cardCelebration";
@@ -84,6 +85,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   // Get user and profile data to determine welcome text
   const { user, profile, needsOnboarding } = useProfile();
   const audioManager = useAudio();
+  const { isOverrideActive: isLive } = useGoLiveOverride();
   
   // Determine welcome text based on user status
   const getWelcomeText = () => {
@@ -755,7 +757,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
           return (
             <div style={{ pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none' }}>
               {/* Signal button for live stream */}
-              <HoloJoinButton size={joinSize} hubColor="#FC54AF" onClick={handleSignalToggle} label="Live Stream" iconSrc="/elements/antennas.webp" isActive={joinAlienOpen} dataTourId="signal-button" />
+              <HoloJoinButton size={joinSize} hubColor="#FC54AF" onClick={handleSignalToggle} label="Live Stream" iconSrc="/elements/antennas.webp" isActive={joinAlienOpen} isLive={isLive} dataTourId="signal-button" />
             </div>
           );
         })()}

@@ -12,6 +12,8 @@ import type { Element } from "@/lib/planets";
 import { ELEMENT_COLORS } from "@/lib/planets";
 // HeartCoin celebration is now handled by HeartcoinBalanceProvider via realtime subscription
 import { startOnboardingSequence, ONBOARDING_SEQUENCE_COMPLETE } from '@/utils/onboardingSequence';
+import { suppressNextHeartcoinCelebration } from '@/utils/heartcoinCelebration';
+import { suppressBadgeCelebrations } from '@/utils/celebrationQueue';
 
 // Element sound mappings
 const ELEMENT_SOUNDS: Record<Element, string> = {
@@ -104,8 +106,16 @@ export default function WhatElementAreYouModal() {
     if (!selectedElement) return;
     if (!ELEMENTS.find(el => el.key === selectedElement)) return;
 
+    // Play alien-wave sound on ALIGN
+    try { new Audio('/audio/alien-wave.MP3').play().catch(() => {}); } catch {}
+
     setLoading(true);
     setError(null);
+
+    // Suppress auto-celebrations synchronously; they will be triggered manually
+    // after the tour prompt (skip or Got it!) via runRewardSequence.
+    suppressNextHeartcoinCelebration();
+    suppressBadgeCelebrations(120000);
 
     try {
       // Never call setSession — it triggers _getUser → 403 and wipes the OTP session.
@@ -153,7 +163,7 @@ export default function WhatElementAreYouModal() {
       if (!rpcSucceeded) {
         // RPC unavailable or session gone — update element directly
         const updatePayload = {
-          element: selectedElement,
+          element: mappedElement,
           profile_complete: true,
           updated_at: new Date().toISOString(),
         };
@@ -236,10 +246,10 @@ export default function WhatElementAreYouModal() {
         detail: { element: selectedElement }
       }));
 
-      // Start element audio slightly after warp begins
+      // Start element audio after warp completes (not before) — 3600ms = warp 3500ms + small buffer
       setTimeout(() => {
         try { if (audio?.playTrack) audio.playTrack(selectedElement); } catch {}
-      }, 500);
+      }, 3600);
 
       // After warp completes, dispatch sequence-complete directly so the tour
       // prompt appears immediately at landing rather than after the sequence's

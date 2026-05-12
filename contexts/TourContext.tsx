@@ -6,7 +6,7 @@ import { useMenuState } from "@/contexts/MenuStateContext";
 import OnboardingTour from "@/components/OnboardingTour";
 import { sfx } from "@/lib/sfx";
 import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
-import { ONBOARDING_SEQUENCE_COMPLETE, isOnboardingSequenceActive } from "@/utils/onboardingSequence";
+import { ONBOARDING_SEQUENCE_COMPLETE, isOnboardingSequenceActive, runRewardSequence } from "@/utils/onboardingSequence";
 
 type TourContextValue = {
   active: boolean;
@@ -70,7 +70,11 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     setEndModalVisible(false);
     markCompleted();
     try { await updateProfile({ has_seen_tour: true }); } catch {}
-  }, [markCompleted, updateProfile]);
+    // Run reward sequence (HeartCoin → badge → claim card) after tour completion
+    if (isOnboardingSequenceActive() && profile?.id) {
+      runRewardSequence(profile.id);
+    }
+  }, [markCompleted, updateProfile, profile]);
 
   const skip = useCallback(async () => {
     if (process.env.NODE_ENV !== "production") console.log('Tour skip function called');
@@ -79,16 +83,20 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     markCompleted();
     markDisabled();
     try { await updateProfile({ has_seen_tour: true }); } catch {}
-    
-    // Trigger warp effect when skipping tour
-    try {
-      if (process.env.NODE_ENV !== "production") console.log('Dispatching tour:skipped event');
-      window.dispatchEvent(new CustomEvent('tour:skipped'));
-      if (process.env.NODE_ENV !== "production") console.log('tour:skipped event dispatched successfully');
-    } catch (e) {
-      if (process.env.NODE_ENV !== "production") console.log('Could not dispatch tour:skipped event:', e);
+
+    if (isOnboardingSequenceActive() && profile?.id) {
+      // Onboarding: run HeartCoin → badge → claim card sequence
+      runRewardSequence(profile.id);
+    } else {
+      // Non-onboarding: trigger warp effect as before
+      try {
+        if (process.env.NODE_ENV !== "production") console.log('Dispatching tour:skipped event');
+        window.dispatchEvent(new CustomEvent('tour:skipped'));
+      } catch (e) {
+        if (process.env.NODE_ENV !== "production") console.log('Could not dispatch tour:skipped event:', e);
+      }
     }
-  }, [markCompleted, markDisabled, updateProfile]);
+  }, [markCompleted, markDisabled, updateProfile, profile]);
 
   const restart = useCallback(() => {
     setEndModalVisible(false);

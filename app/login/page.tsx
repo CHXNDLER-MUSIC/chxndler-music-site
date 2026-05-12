@@ -297,7 +297,7 @@ export default function LoginPage() {
 
                 <button
                   type="button"
-                  onClick={() => verifyCode()}
+                  onClick={() => { try { new Audio('/audio/alien-wave.MP3').play().catch(() => {}); } catch {} verifyCode(); }}
                   disabled={loading || codeSanitized.length !== 6 || step === "success"}
                   className="w-full inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition disabled:opacity-50 border"
                   style={step === "verify" && !justSent ? {

@@ -10,6 +10,7 @@ export default function HoloJoinButton({
   label = "Signal",
   iconSrc = "/elements/antennas.webp",
   isActive = false,
+  isLive = false,
   dataTourId,
 }: {
   onClick?: () => void;
@@ -19,6 +20,7 @@ export default function HoloJoinButton({
   label?: string;
   iconSrc?: string;
   isActive?: boolean;
+  isLive?: boolean;
   dataTourId?: string;
 }) {
   const sfxRef = useRef<HTMLAudioElement | null>(null);
@@ -35,7 +37,7 @@ export default function HoloJoinButton({
     <div className="join-wrap" style={{ width: size, height: size }}>
       <button
         type="button"
-        className={`hub ${isActive ? "hub-active" : ""}`}
+        className={`hub${isActive ? " hub-active" : ""}${isLive && !isActive ? " hub-live" : ""}`}
         aria-label={label}
         draggable={false}
         onDragStart={(e) => { try { e.preventDefault(); } catch {} }}
@@ -105,6 +107,11 @@ export default function HoloJoinButton({
           filter: brightness(1.5) saturate(1.6);
         }
         
+        /* Live override: pulse the button before the display is open */
+        .hub-live {
+          animation: joinGlowPulse 2.2s ease-in-out infinite;
+        }
+
         /* Glow + scale pulse for the Live Stream button (matches Start button breathing) */
         @keyframes joinGlowPulse {
           0%, 100% {
