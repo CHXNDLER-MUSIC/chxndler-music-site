@@ -9,6 +9,7 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
  */
 export function useGoLiveOverride() {
   const [isOverrideActive, setIsOverrideActive] = useState(false);
+  const [overrideVideoId, setOverrideVideoId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,8 +41,14 @@ export function useGoLiveOverride() {
         const res = await fetch('/api/admin/go-live', { cache: 'no-store' });
         if (res.ok) {
           const json = await res.json();
+          const dbLive = !!json?.live;
+          // If DB says not live, clear any stale localStorage override so it doesn't override the DB
+          if (!dbLive && typeof window !== 'undefined') {
+            try { window.localStorage.removeItem('GO_LIVE_DEV_OVERRIDE'); } catch {}
+          }
           const local = (typeof window !== 'undefined' && window.localStorage.getItem('GO_LIVE_DEV_OVERRIDE') === '1');
-          setIsOverrideActive(local || !!json?.live);
+          setIsOverrideActive(local || dbLive);
+          if (json?.videoId) setOverrideVideoId(json.videoId);
           setLoading(false);
           return; // Done
         }
@@ -53,15 +60,20 @@ export function useGoLiveOverride() {
         .select("key, value")
         .in("key", ["go_live_override", "live"]) 
         .then(({ data, error }) => {
-          const local = (typeof window !== 'undefined' && window.localStorage.getItem('GO_LIVE_DEV_OVERRIDE') === '1');
           if (!error && Array.isArray(data)) {
             const anyTrue = data.some((row) => {
               const v = typeof row?.value === 'string' ? row.value.toLowerCase() : row?.value;
               return v === 'true' || v === true || v === '1' || v === 1;
             });
+            // If DB says not live, clear stale localStorage override
+            if (!anyTrue && typeof window !== 'undefined') {
+              try { window.localStorage.removeItem('GO_LIVE_DEV_OVERRIDE'); } catch {}
+            }
+            const local = (typeof window !== 'undefined' && window.localStorage.getItem('GO_LIVE_DEV_OVERRIDE') === '1');
             setIsOverrideActive(local || anyTrue);
           } else {
             // If we couldn't read, at least honor local override
+            const local = (typeof window !== 'undefined' && window.localStorage.getItem('GO_LIVE_DEV_OVERRIDE') === '1');
             setIsOverrideActive(!!local);
           }
           setLoading(false);
@@ -76,16 +88,20 @@ export function useGoLiveOverride() {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "app_settings", filter: "key=eq.go_live_override" },
         (payload) => {
+          const dbLive = payload.new.value === "true" || payload.new.value === '1' || payload.new.value === true || payload.new.value?.live === true;
+          if (!dbLive && typeof window !== 'undefined') { try { window.localStorage.removeItem('GO_LIVE_DEV_OVERRIDE'); } catch {} }
           const local = (typeof window !== 'undefined' && window.localStorage.getItem('GO_LIVE_DEV_OVERRIDE') === '1');
-          setIsOverrideActive(local || payload.new.value === "true" || payload.new.value === '1' || payload.new.value === true);
+          setIsOverrideActive(local || dbLive);
         }
       )
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "app_settings", filter: "key=eq.go_live_override" },
         (payload) => {
+          const dbLive = payload.new.value === "true" || payload.new.value === '1' || payload.new.value === true || payload.new.value?.live === true;
+          if (!dbLive && typeof window !== 'undefined') { try { window.localStorage.removeItem('GO_LIVE_DEV_OVERRIDE'); } catch {} }
           const local = (typeof window !== 'undefined' && window.localStorage.getItem('GO_LIVE_DEV_OVERRIDE') === '1');
-          setIsOverrideActive(local || payload.new.value === "true" || payload.new.value === '1' || payload.new.value === true);
+          setIsOverrideActive(local || dbLive);
         }
       )
       // Handle both UPDATE and INSERT for legacy key 'live'
@@ -93,16 +109,20 @@ export function useGoLiveOverride() {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "app_settings", filter: "key=eq.live" },
         (payload) => {
+          const dbLive = payload.new.value === "true" || payload.new.value === '1' || payload.new.value === true;
+          if (!dbLive && typeof window !== 'undefined') { try { window.localStorage.removeItem('GO_LIVE_DEV_OVERRIDE'); } catch {} }
           const local = (typeof window !== 'undefined' && window.localStorage.getItem('GO_LIVE_DEV_OVERRIDE') === '1');
-          setIsOverrideActive(local || payload.new.value === "true" || payload.new.value === '1' || payload.new.value === true);
+          setIsOverrideActive(local || dbLive);
         }
       )
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "app_settings", filter: "key=eq.live" },
         (payload) => {
+          const dbLive = payload.new.value === "true" || payload.new.value === '1' || payload.new.value === true;
+          if (!dbLive && typeof window !== 'undefined') { try { window.localStorage.removeItem('GO_LIVE_DEV_OVERRIDE'); } catch {} }
           const local = (typeof window !== 'undefined' && window.localStorage.getItem('GO_LIVE_DEV_OVERRIDE') === '1');
-          setIsOverrideActive(local || payload.new.value === "true" || payload.new.value === '1' || payload.new.value === true);
+          setIsOverrideActive(local || dbLive);
         }
       )
       .subscribe();
@@ -112,5 +132,5 @@ export function useGoLiveOverride() {
     };
   }, []);
 
-  return { isOverrideActive, loading };
+  return { isOverrideActive, overrideVideoId, loading };
 }

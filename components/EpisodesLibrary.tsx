@@ -168,6 +168,14 @@ const VIDEOS: Video[] = [
     type: "acoustic",
     releaseDate: "2026-05-30T12:00:00",
   },
+  {
+    id: "lsp-011",
+    title: "Acoustic Signal 11",
+    youtubeUrl: "https://youtu.be/aIsGwmTky9g",
+    type: "acoustic",
+    releaseDate: "2026-05-12T12:00:00",
+    postDescription: "Setlist\n00:00 Heartverse\n00:36 Peaches (Justin Bieber)\n02:26 Never (Lauv)\n05:32 Love (Kendrick Lamar)\n08:54 EMO GIRL (mgk)\n11:34 CHEERLEADER\n14:56 MAKE BELIEVE",
+  },
 
   // ── Live Signal – Electric Set ──
   // Releasing weekly on Thursdays at 8 PM starting 2/19/26.
@@ -222,9 +230,10 @@ const VIDEOS: Video[] = [
   {
     id: "lsf-007",
     title: "Electric Signal 07",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    youtubeUrl: "https://youtu.be/5rJL4p74l-g",
     type: "electric",
     releaseDate: "2026-05-09T12:00:00",
+    postDescription: "Setlist\n00:00 Heartverse\n00:18 SUGAR, WE'RE GOING DOWN (Fall Out Boy)\n03:52 WE'RE JUST FRIENDS\n07:29 WHAT'S MY AGE AGAIN? (Blink 182)\n09:56 I LIKE ME BETTER (Lauv)\n13:36 ALWAYS ON MY MIND\n17:25 LOVE ME",
   },
   {
     id: "lsf-008",

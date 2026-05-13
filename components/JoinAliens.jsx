@@ -15,7 +15,7 @@ import YouTubeLive from "@/components/YouTubeLive";
 
 export default function JoinAliens({ visible = true } = {}) {
   const { profile, savePhone, user } = useProfile();
-  const { isOverrideActive } = useGoLiveOverride();
+  const { isOverrideActive, overrideVideoId } = useGoLiveOverride();
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
@@ -80,6 +80,9 @@ export default function JoinAliens({ visible = true } = {}) {
   const [showPaymentOptions5, setShowPaymentOptions5] = useState(false);
   const [showPaymentOptions10, setShowPaymentOptions10] = useState(false);
   const [showPhoneForm, setShowPhoneForm] = useState(false);
+  const [showConcertsPanel, setShowConcertsPanel] = useState(false);
+  const [concertsShowAll, setConcertsShowAll] = useState(false);
+  const [concertsExpandedIdx, setConcertsExpandedIdx] = useState(null);
   
   // ── Next-broadcast countdown ──────────────────────────────────────────────
   const [countdownMs, setCountdownMs] = useState(0);
@@ -481,8 +484,9 @@ export default function JoinAliens({ visible = true } = {}) {
       >
         <YouTubeLive
           forceLive={forceLiveFlag}
+          overrideVideoId={overrideVideoId}
           onStatusChange={(live) => setIsLive(live)}
-          pollMs={forceLiveFlag ? 15_000 : 60_000}
+          pollMs={(isOverrideActive && !isLive) ? 5_000 : (forceLiveFlag ? 15_000 : 60_000)}
           className=""
           style={{
             position: 'absolute',
@@ -545,6 +549,42 @@ export default function JoinAliens({ visible = true } = {}) {
             marginTop: '4px',
             textAlign: 'center',
           };
+
+          if (liveOverride) {
+            return (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 'clamp(16px, 5vw, 32px) 12px',
+                width: '100%',
+                flex: '1 1 0',
+                boxSizing: 'border-box',
+                gap: 10,
+              }}>
+                <div style={{
+                  fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+                  fontSize: 'clamp(18px, 5.5vw, 28px)',
+                  fontWeight: '700',
+                  color: accent,
+                  textShadow: accentGlow,
+                  letterSpacing: '0.25em',
+                  animation: 'countdownPulse 1.5s ease-in-out infinite',
+                }}>
+                  ● STREAM IS LIVE
+                </div>
+                <div style={{
+                  fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+                  fontSize: 'clamp(9px, 2vw, 11px)',
+                  color: accentMuted,
+                  letterSpacing: '0.2em',
+                }}>
+                  CONNECTING TO VIDEO...
+                </div>
+              </div>
+            );
+          }
 
           return (
             <div style={{
@@ -610,7 +650,7 @@ export default function JoinAliens({ visible = true } = {}) {
         </YouTubeLive>
 
         {/* IRL SIGNAL — expandable neon dashboard drawer — sibling of countdown, grows downward */}
-        <div ref={irlSectionRef} style={{ width: 'calc(100% + 16px)', margin: '4px -8px 0', position: 'relative', flex: isIrlOpen ? '1 1 0' : '0 0 auto', minHeight: isIrlOpen ? 240 : 0, display: 'flex', flexDirection: 'column' }}>
+        <div ref={irlSectionRef} style={{ width: 'calc(100% + 16px)', margin: '4px -8px 0', position: 'relative', flex: isIrlOpen ? '1 1 0' : '0 0 auto', minHeight: isIrlOpen ? 240 : 0, display: forceLiveFlag ? 'none' : 'flex', flexDirection: 'column' }}>
             {/* Wrapper with single continuous border so contents stay inside */}
             <div
               className="irl-pulse"
@@ -756,19 +796,12 @@ export default function JoinAliens({ visible = true } = {}) {
                           startStr = ymd;
                           endStr = ymd;
                         }
-                        const calTitle = nextIrl.title || venueText || 'IRL Signal';
                         const calLocation = venueText;
-                        const costText = (nextIrl.signalType && nextIrl.signalType.toUpperCase().includes('FREE'))
-                          ? 'FREE'
-                          : (nextIrl.signalType || 'TBA');
-                        const description = [
-                          'Aliens… welcome to the Heartverse 👽',
-                          `I’m playing live at ${calLocation}.`,
-                          'Songs about love, feeling lost, and finding your community.',
-                          'Come be part of it.',
-                          `🎟 ${costText || 'Free'}`,
-                        ].join('\n');
-                        const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`CHXNDLER LIVE at ${calTitle}`)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(calLocation)}&details=${encodeURIComponent(description)}&ctz=America/New_York`;
+                        let costText = nextIrl.signalType || 'TBA';
+                        if (nextIrl.signalType && nextIrl.signalType.toUpperCase().indexOf('FREE') >= 0) { costText = 'FREE'; }
+                        const description = 'Aliens welcome to the Heartverse\nI\'m playing live at ' + calLocation + '.\nSongs about love, feeling lost, and finding your community.\nCome be part of it.\nCost: ' + (costText || 'Free');
+                        const calEventTitle = 'CHXNDLER live at ' + (venueText || 'IRL Signal');
+                        const calendarUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(calEventTitle) + '&dates=' + startStr + '/' + endStr + '&location=' + encodeURIComponent(calLocation) + '&details=' + encodeURIComponent(description) + '&ctz=America/New_York';
                         const rowStyle = { display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' };
                         const labelStyle = { fontWeight: 800, color: '#fff', letterSpacing: '0.04em', flexShrink: 0 };
                         const valueStyle = { color: 'rgba(255,255,255,0.9)', flex: 1, whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'anywhere', minWidth: 0 };
@@ -951,16 +984,16 @@ export default function JoinAliens({ visible = true } = {}) {
                                           startStr = ymd;
                                           endStr = ymd;
                                         }
-                                        const calTitle = row.title || title || 'IRL Signal';
-                                        const calLocation = title || '';
+                                        const calLocation = row.location || title || '';
                                         const description = [
                                           'Aliens… welcome to the Heartverse 👽',
-                                          `I’m playing live at ${calLocation}.`,
+                                          `I'm playing live at ${calLocation}.`,
                                           'Songs about love, feeling lost, and finding your community.',
                                           'Come be part of it.',
                                           `🎟 ${costText || 'Free'}`,
                                         ].join('\n');
-                                        const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`CHXNDLER LIVE at ${calTitle}`)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(calLocation)}&details=${encodeURIComponent(description)}&ctz=America/New_York`;
+                                        const calEventTitle = 'CHXNDLER live at ' + (calLocation || 'IRL Signal');
+                                        const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calEventTitle)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(calLocation)}&details=${encodeURIComponent(description)}&ctz=America/New_York`;
                                         const isOpen = expandedIrlIndex === idx;
                                         const cardStyleBase = {
                                           border: '1px solid rgba(0,255,255,0.25)',
@@ -1059,7 +1092,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                                           <path d="M12 21s-7-6.58-7-11a7 7 0 1 1 14 0c0 4.42-7 11-7 11z" stroke="#FC54AF" strokeWidth="1.6"/>
                                                           <circle cx="12" cy="10" r="2.5" stroke="#FC54AF" strokeWidth="1.6"/>
                                                         </svg>
-                                                        <span>Get Directions</span>
+                                                        <span>DIRECTIONS</span>
                                                       </span>
                                                     </a>
                                                     
@@ -1082,7 +1115,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                                           <rect x="3" y="5" width="18" height="16" rx="2" stroke="#00FFFF" strokeWidth="1.6"/>
                                                           <path d="M3 9h18M8 3v4M16 3v4" stroke="#00FFFF" strokeWidth="1.6" strokeLinecap="round"/>
                                                         </svg>
-                                                        <span>Add to Calendar</span>
+                                                        <span>+ CALENDAR</span>
                                                       </span>
                                                     </a>
                                                     <a
@@ -1109,7 +1142,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                                           <path d="M7 7h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" stroke="#F2EF1D" strokeWidth="1.6"/>
                                                           <path d="M8.5 12h7" stroke="#F2EF1D" strokeWidth="1.6" strokeLinecap="round"/>
                                                         </svg>
-                                                        <span>Get Tickets</span>
+                                                        <span>TICKETS</span>
                                                       </span>
                                                     </a>
                                                   </div>
@@ -1188,7 +1221,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                       <path d="M12 21s-7-6.58-7-11a7 7 0 1 1 14 0c0 4.42-7 11-7 11z" stroke="#FC54AF" strokeWidth="1.6"/>
                                       <circle cx="12" cy="10" r="2.5" stroke="#FC54AF" strokeWidth="1.6"/>
                                     </svg>
-                                    <span>Get Directions</span>
+                                    <span>DIRECTIONS</span>
                                   </span>
                                 </a>
                                 
@@ -1211,7 +1244,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                       <rect x="3" y="5" width="18" height="16" rx="2" stroke="#00FFFF" strokeWidth="1.6"/>
                                       <path d="M3 9h18M8 3v4M16 3v4" stroke="#00FFFF" strokeWidth="1.6" strokeLinecap="round"/>
                                     </svg>
-                                    <span>Add to Calendar</span>
+                                    <span>+ CALENDAR</span>
                                   </span>
                                 </a>
                                 <a
@@ -1241,7 +1274,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                       <path d="M7 7h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" stroke="#F2EF1D" strokeWidth="1.6"/>
                                       <path d="M8.5 12h7" stroke="#F2EF1D" strokeWidth="1.6" strokeLinecap="round"/>
                                     </svg>
-                                    <span>Get Tickets</span>
+                                    <span>TICKETS</span>
                                   </span>
                                 </a>
                               </div>
@@ -1276,7 +1309,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                     cursor: 'pointer'
                                   }}
                                 >
-                                  {nextIrl.url ? 'Get Tickets' : 'UPCOMING IRL SIGNALS'}
+                                  {nextIrl.url ? 'TICKETS' : 'UPCOMING IRL SIGNALS'}
                                 </a>
                               </div>
                             )}
@@ -1720,6 +1753,306 @@ export default function JoinAliens({ visible = true } = {}) {
         )}
       </AnimatePresence>
 
+      {/* Concerts Panel — slide-up overlay showing upcoming IRL signals */}
+      <AnimatePresence>
+        {showConcertsPanel && irlSectionTop !== null && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="concerts-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => { try { sfx.play('close', 0.4); } catch {} setShowConcertsPanel(false); }}
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.45)', zIndex: 140 }}
+            />
+
+            {/* Slide-up panel */}
+            <motion.div
+              key="concerts-panel"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 380, damping: 38 }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 'calc(120px + env(safe-area-inset-bottom, 0px))',
+                background: 'rgba(0,0,0,0.92)',
+                backdropFilter: 'blur(18px)',
+                WebkitBackdropFilter: 'blur(18px)',
+                border: '1px solid rgba(242,239,29,0.4)',
+                borderBottom: 'none',
+                borderRadius: '12px 12px 0 0',
+                zIndex: 145,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                boxShadow: '0 -8px 32px rgba(242,239,29,0.1)',
+              }}
+            >
+              {/* Header */}
+              <div style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '12px 40px 10px',
+                borderBottom: '1px solid rgba(242,239,29,0.25)',
+                flexShrink: 0,
+              }}>
+                {concertsExpandedIdx !== null && (
+                  <button
+                    onClick={() => { try { sfx.play('close', 0.4); } catch {} setConcertsExpandedIdx(null); }}
+                    onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                    style={{
+                      position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
+                      background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)',
+                      cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 4px',
+                    }}
+                  >←</button>
+                )}
+                <span style={{
+                  fontFamily: "'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',monospace",
+                  fontSize: 14,
+                  letterSpacing: '0.18em',
+                  color: '#F2EF1D',
+                  textShadow: '0 0 10px rgba(242,239,29,0.8)',
+                  textAlign: 'center',
+                }}>
+                  {concertsExpandedIdx !== null ? 'NEXT IN PERSON SIGNAL' : 'UPCOMING IRL SIGNALS'}
+                </span>
+                <button
+                  onClick={() => { try { sfx.play('close', 0.4); } catch {} setShowConcertsPanel(false); setConcertsExpandedIdx(null); }}
+                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                  style={{
+                    position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                    background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.55)',
+                    cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '0 4px',
+                  }}
+                >×</button>
+              </div>
+
+              {/* Content */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
+                {showsLoading && (
+                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, textAlign: 'center', paddingTop: 20 }}>
+                    Loading signals...
+                  </div>
+                )}
+                {!showsLoading && (() => {
+                  const nowMs = Date.now();
+                  const upcoming = (Array.isArray(shows) ? shows : [])
+                    .map((row) => ({ row, d: new Date(row.date) }))
+                    .filter(({ d }) => !isNaN(d.getTime()) && d.getTime() >= nowMs)
+                    .sort((a, b) => a.d.getTime() - b.d.getTime());
+
+                  if (upcoming.length === 0) {
+                    return (
+                      <div style={{
+                        border: '1px dashed rgba(242,239,29,0.35)', borderRadius: 10,
+                        padding: 16, textAlign: 'center',
+                        background: 'radial-gradient(100% 60% at 50% 0%, rgba(242,239,29,0.06) 0%, rgba(0,0,0,0) 70%)'
+                      }}>
+                        <div style={{ color: '#F2EF1D', letterSpacing: '0.18em', fontSize: 12, marginBottom: 6 }}>
+                          NO TERRESTRIAL COORDINATES DETECTED
+                        </div>
+                        <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>
+                          No IRL signals scheduled. Check back soon.
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  const fmtDate = (d) => {
+                    try { return new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(d); }
+                    catch { return d.toDateString(); }
+                  };
+                  const fmtDateShort = (d) => {
+                    try { return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(d); }
+                    catch { return d.toLocaleDateString(); }
+                  };
+                  const pad = (n) => String(n).padStart(2, '0');
+                  const toGCalDateUTC = (d0) => `${d0.getUTCFullYear()}${pad(d0.getUTCMonth()+1)}${pad(d0.getUTCDate())}T${pad(d0.getUTCHours())}${pad(d0.getUTCMinutes())}00Z`;
+
+                  // ── DETAIL VIEW ──────────────────────────────────────────
+                  if (concertsExpandedIdx !== null) {
+                    const item = upcoming[concertsExpandedIdx];
+                    if (!item) { setConcertsExpandedIdx(null); return null; }
+                    const { row, d } = item;
+                    const venue = row.location || '';
+                    const dateText = row.display_date || fmtDate(d);
+                    const timeText = row.time_label || '';
+                    const costText = (row.cost && String(row.cost).toUpperCase().includes('FREE')) ? 'FREE' : (row.cost || 'TBA');
+                    const ticketsUrl = row.tickets_url || '';
+                    const directionsUrl = row.directions && String(row.directions).startsWith('http')
+                      ? row.directions
+                      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue)}`;
+                    const hasTime = !isNaN(d.getHours());
+                    let startStr = '', endStr = '';
+                    if (hasTime) {
+                      const end = new Date(d.getTime() + 150 * 60 * 1000);
+                      startStr = toGCalDateUTC(d); endStr = toGCalDateUTC(end);
+                    } else {
+                      const ymd = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+                      startStr = ymd; endStr = ymd;
+                    }
+                    const calEventTitle = 'CHXNDLER live at ' + (venue || 'IRL Signal');
+                    const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calEventTitle)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(venue)}&ctz=America/New_York`;
+
+                    const iconStyle = { width: 18, height: 18, flexShrink: 0 };
+                    const rowStyle = { display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.07)' };
+                    const labelStyle = { fontWeight: 800, color: '#fff', fontSize: 14, marginRight: 4, flexShrink: 0 };
+                    const valueStyle = { color: 'rgba(255,255,255,0.88)', fontSize: 14 };
+
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                        {/* Info rows */}
+                        <div style={{ flex: 1 }}>
+                          {/* Location */}
+                          <div style={rowStyle}>
+                            <svg style={iconStyle} viewBox="0 0 24 24" fill="none">
+                              <path d="M12 21s-7-6.58-7-11a7 7 0 1 1 14 0c0 4.42-7 11-7 11z" stroke="#FC54AF" strokeWidth="1.8"/>
+                              <circle cx="12" cy="10" r="2.5" stroke="#FC54AF" strokeWidth="1.8"/>
+                            </svg>
+                            <span style={labelStyle}>Location:</span>
+                            <span style={valueStyle}>{venue || 'TBA'}</span>
+                          </div>
+                          {/* Date */}
+                          <div style={rowStyle}>
+                            <svg style={iconStyle} viewBox="0 0 24 24" fill="none">
+                              <rect x="3" y="5" width="18" height="16" rx="2" stroke="#00FFFF" strokeWidth="1.8"/>
+                              <path d="M3 9h18M8 3v4M16 3v4" stroke="#00FFFF" strokeWidth="1.8" strokeLinecap="round"/>
+                            </svg>
+                            <span style={labelStyle}>Date:</span>
+                            <span style={valueStyle}>{dateText}{timeText ? ` • ${timeText}` : ''}</span>
+                          </div>
+                          {/* Cost */}
+                          <div style={{ ...rowStyle, borderBottom: 'none' }}>
+                            <svg style={iconStyle} viewBox="0 0 24 24" fill="none">
+                              <path d="M7 7h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" stroke="#F2EF1D" strokeWidth="1.8"/>
+                              <path d="M8.5 12h7" stroke="#F2EF1D" strokeWidth="1.8" strokeLinecap="round"/>
+                            </svg>
+                            <span style={labelStyle}>Cost:</span>
+                            <span style={valueStyle}>{costText}</span>
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div style={{ display: 'flex', gap: 8, paddingTop: 8, flexWrap: 'wrap' }}>
+                          <a
+                            href={directionsUrl} target="_blank" rel="noopener noreferrer"
+                            onClick={() => { try { sfx.play('click', 0.4); } catch {} }}
+                            style={{
+                              flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                              padding: '10px 8px', borderRadius: 10, textDecoration: 'none',
+                              border: '1px solid rgba(252,84,175,0.6)', background: 'rgba(252,84,175,0.08)',
+                              color: '#FC54AF', fontWeight: 700, fontSize: 13,
+                            }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                              <path d="M12 21s-7-6.58-7-11a7 7 0 1 1 14 0c0 4.42-7 11-7 11z" stroke="#FC54AF" strokeWidth="1.8"/>
+                              <circle cx="12" cy="10" r="2.5" stroke="#FC54AF" strokeWidth="1.8"/>
+                            </svg>
+                            DIRECTIONS
+                          </a>
+                          <a
+                            href={calendarUrl} target="_blank" rel="noopener noreferrer"
+                            onClick={() => { try { sfx.play('click', 0.4); } catch {} }}
+                            style={{
+                              flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                              padding: '10px 8px', borderRadius: 10, textDecoration: 'none',
+                              border: '1px solid rgba(0,255,255,0.6)', background: 'rgba(0,255,255,0.08)',
+                              color: '#00FFFF', fontWeight: 700, fontSize: 13,
+                            }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                              <rect x="3" y="5" width="18" height="16" rx="2" stroke="#00FFFF" strokeWidth="1.8"/>
+                              <path d="M3 9h18M8 3v4M16 3v4" stroke="#00FFFF" strokeWidth="1.8" strokeLinecap="round"/>
+                            </svg>
+                            + CALENDAR
+                          </a>
+                          <a
+                            href={ticketsUrl || '#'} target={ticketsUrl ? '_blank' : undefined} rel="noopener noreferrer"
+                            onClick={(e) => { if (!ticketsUrl) e.preventDefault(); try { sfx.play('click', 0.4); } catch {} }}
+                            style={{
+                              flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                              padding: '10px 8px', borderRadius: 10, textDecoration: 'none',
+                              border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.05)',
+                              color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: 13,
+                              opacity: ticketsUrl ? 1 : 0.45,
+                            }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                              <path d="M7 7h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8"/>
+                              <path d="M8.5 12h7" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" strokeLinecap="round"/>
+                            </svg>
+                            TICKETS
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // ── LIST VIEW ────────────────────────────────────────────
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {upcoming.map(({ row, d }, idx) => {
+                        const title = row.title || row.location || '';
+                        const venue = row.location || '';
+                        const dateShort = row.display_date || fmtDateShort(d);
+                        const timeText = row.time_label || '';
+                        const isNext = idx === 0;
+                        return (
+                          <button
+                            key={row.id || idx}
+                            type="button"
+                            onClick={() => { try { sfx.play('click', 0.4); } catch {} setConcertsExpandedIdx(idx); }}
+                            onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                            style={{
+                              width: '100%', textAlign: 'left', cursor: 'pointer',
+                              border: `1px solid ${isNext ? 'rgba(242,239,29,0.45)' : 'rgba(255,255,255,0.1)'}`,
+                              borderRadius: 10, padding: '12px 14px',
+                              background: isNext ? 'rgba(242,239,29,0.05)' : 'rgba(255,255,255,0.02)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                              outline: 'none',
+                              transition: 'background 150ms ease, border-color 150ms ease',
+                            }}
+                          >
+                            <div style={{ minWidth: 0 }}>
+                              {isNext && (
+                                <div style={{
+                                  fontFamily: "'SF Mono','Fira Code',monospace",
+                                  fontSize: 9, letterSpacing: '0.22em', color: '#F2EF1D',
+                                  textShadow: '0 0 8px rgba(242,239,29,0.6)', marginBottom: 4,
+                                }}>NEXT SIGNAL</div>
+                              )}
+                              <div style={{ fontWeight: 700, fontSize: 14, color: '#fff', marginBottom: 2,
+                                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {title}
+                              </div>
+                              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
+                                {dateShort}{timeText ? ` • ${timeText}` : ''}
+                              </div>
+                            </div>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, opacity: 0.5 }}>
+                              <path d="M9 18l6-6-6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Text Button - positioned in bottom left (fixed to viewport) */}
       <button
         onClick={(e) => {
@@ -1790,6 +2123,69 @@ export default function JoinAliens({ visible = true } = {}) {
       {/* Episodes Library - button + panel rendered directly in container */}
       <EpisodesLibrary isChatOpen={isChatOpen} visible={visible} onOpenChange={setIsEpisodesOpen} />
 
+      {/* Concerts Button - positioned to the left of Phone button */}
+      <button
+        onClick={() => {
+          try { sfx.play('audio/click.mp3', 0.5); } catch {}
+          const opening = !showConcertsPanel;
+          if (opening) {
+            setShowPhoneForm(false);
+            setShowTipOptions(false);
+            setShowPaymentOptions(false);
+            setShowPaymentOptions5(false);
+            setShowPaymentOptions10(false);
+          }
+          setShowConcertsPanel(opening);
+        }}
+        style={{
+          position: 'fixed',
+          bottom: '15px',
+          right: '205px',
+          width: '55px',
+          height: '55px',
+          background: 'rgba(0, 255, 255, 0.1)',
+          border: '2px solid #00FFFF',
+          borderRadius: '50%',
+          color: '#00FFFF',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 300ms ease',
+          outline: 'none',
+          textShadow: '0 0 8px #00FFFF',
+          boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
+          zIndex: (isChatOpen || isEpisodesOpen) ? 10 : 1200,
+          pointerEvents: (isChatOpen || isEpisodesOpen) ? 'none' : 'auto',
+          overflow: 'hidden',
+        }}
+        onMouseEnter={(e) => {
+          try { sfx.play('hover', 0.3); } catch {}
+          e.currentTarget.style.transform = 'scale(1.1)';
+          e.currentTarget.style.background = 'rgba(0, 255, 255, 0.2)';
+          e.currentTarget.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.background = 'rgba(0, 255, 255, 0.1)';
+          e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
+        }}
+        aria-label="Concerts"
+      >
+        <img
+          src="/elements/concerts.png"
+          alt="Concerts"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            filter: 'brightness(1.2) saturate(1.2)'
+          }}
+        />
+      </button>
+
       {/* Phone Button - positioned to the left of $ button (fixed to viewport) */}
       <button
         onClick={() => {
@@ -1801,13 +2197,14 @@ export default function JoinAliens({ visible = true } = {}) {
             setShowPaymentOptions(false);
             setShowPaymentOptions5(false);
             setShowPaymentOptions10(false);
+            setShowConcertsPanel(false);
           }
           setShowPhoneForm(opening);
         }}
         style={{
           position: 'fixed',
           bottom: '15px',
-          right: '140px',
+          right: '75px',
           width: '55px',
           height: '55px',
           background: 'rgba(0, 255, 255, 0.1)',
@@ -1863,15 +2260,16 @@ export default function JoinAliens({ visible = true } = {}) {
           setShowPaymentOptions(false);
           setShowPaymentOptions5(false);
           setShowPaymentOptions10(false);
-          // Close phone form so they don't stack
+          // Close phone/concerts form so they don't stack
           if (opening) {
             setShowPhoneForm(false);
+            setShowConcertsPanel(false);
           }
         }}
         style={{
           position: 'fixed',
           bottom: '15px',
-          right: '75px',
+          right: '140px',
           width: '55px',
           height: '55px',
           background: 'rgba(252, 84, 175, 0.1)',

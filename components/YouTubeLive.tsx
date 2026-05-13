@@ -6,6 +6,7 @@ import { useYouTubeLive } from "@/hooks/useYouTubeLive";
 type Props = {
   pollMs?: number;
   forceLive?: boolean;
+  overrideVideoId?: string | null;
   className?: string;
   style?: React.CSSProperties;
   children?: React.ReactNode;
@@ -24,6 +25,7 @@ function cleanVideoId(value?: string | null): string | null {
 export default function YouTubeLive({
   pollMs = 60_000,
   forceLive = false,
+  overrideVideoId,
   className,
   style,
   children,
@@ -32,7 +34,8 @@ export default function YouTubeLive({
 }: Props) {
   const { isLive, videoId } = useYouTubeLive(pollMs);
   const live = forceLive || isLive;
-  const safeVideoId = cleanVideoId(videoId);
+  // Override from Supabase go_live_override takes priority over YouTube API detection
+  const safeVideoId = cleanVideoId(overrideVideoId) ?? cleanVideoId(videoId);
 
   useEffect(() => {
     onStatusChange?.(live, safeVideoId);

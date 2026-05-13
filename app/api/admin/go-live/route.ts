@@ -51,9 +51,14 @@ export async function GET() {
     }
 
     let live = false;
+    let videoId: string | null = null;
 
     if (goLiveRow && typeof goLiveRow.value !== 'undefined') {
       live = parseLiveValue(goLiveRow.value);
+      if (typeof goLiveRow.value === 'object' && goLiveRow.value !== null) {
+        const raw = goLiveRow.value.videoId;
+        if (typeof raw === 'string' && raw.trim()) videoId = raw.trim();
+      }
     } else {
       const { data: legacyRow, error: legacyError } = await sb
         .from('app_settings')
@@ -68,7 +73,7 @@ export async function GET() {
       live = parseLiveValue(legacyRow?.value);
     }
 
-    return NextResponse.json({ live });
+    return NextResponse.json({ live, videoId });
   } catch (err: any) {
     return NextResponse.json({ error: err.message ?? 'Unknown error' }, { status: 500 });
   }
