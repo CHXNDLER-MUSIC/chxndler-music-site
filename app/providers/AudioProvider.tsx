@@ -475,14 +475,17 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // Only set completed=true when this song is the Song of the Day.
+      // For non-SOTD songs, omit the flag so the backend trigger (which awards the
+      // SOTD HeartCoin on completed=true) never fires for the wrong song.
       const now = new Date().toISOString();
+      const isSotd = !!songOfDayIdRef.current && songUuid === songOfDayIdRef.current;
       const payload = pickWritableUsdp({
         user_id: user.id,
         song_id: songUuid,
         day,
-        completed: true,
-        completed_at: now,
         completion_percent: 1,
+        ...(isSotd ? { completed: true, completed_at: now } : {}),
       });
 
       if (process.env.NODE_ENV !== "production") console.log('[MARK COMPLETE] Upserting user_song_daily_progress', payload);
@@ -591,10 +594,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       });
 
       // 1) Upsert to user_song_daily_progress with completed=true and completed_at
+      // play_number:1 is included so onConflict matches the actual unique constraint
+      // (user_id, song_id, day, play_number) added in migration 20260113
       const progressPayload = pickWritableUsdp({
         user_id: user.id,
         song_id: songUuid,
         day: nyDayString,
+        play_number: 1,
         completed: true,
         completion_percent: 1,
         completed_at: nowIso,
@@ -603,28 +609,24 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] Upserting user_song_daily_progress payload', progressPayload);
       const { data: progressData, error: progressError } = await supabaseBrowser
         .from('user_song_daily_progress')
-        .upsert(progressPayload, { onConflict: 'user_id,song_id,day', ignoreDuplicates: false })
+        .upsert(progressPayload, { onConflict: 'user_id,song_id,day,play_number', ignoreDuplicates: false })
         .select();
 
       if (progressError) {
         const pErrCode = (progressError as any)?.code;
         const pErrMsg = (progressError as any)?.message ?? '';
-        const isHeartcoinDupe =
-          pErrCode === '23505' && pErrMsg.includes('heartcoin_tx_card_purchase_unique_idx');
-        if (!isHeartcoinDupe) {
-          console.error('[SOTD-COMPLETE] user_song_daily_progress upsert error', {
-            error: progressError,
-            code: pErrCode,
-            message: pErrMsg,
-            details: (progressError as any)?.details,
-            hint: (progressError as any)?.hint,
-            payload: progressPayload,
-          });
-          // Do not proceed to claim if progress write failed
-          return;
-        }
-        if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] heartcoin already awarded (duplicate trigger) — continuing', {
+        console.error('[SOTD-COMPLETE] user_song_daily_progress upsert error (continuing to claim anyway)', {
+          error: progressError,
           code: pErrCode,
+          message: pErrMsg,
+          details: (progressError as any)?.details,
+          hint: (progressError as any)?.hint,
+          payload: progressPayload,
+        });
+        // Do NOT return — still attempt claim insertion so the HeartCoin is awarded
+      } else {
+        if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] user_song_daily_progress upsert success', {
+          returned: progressData,
           songUuid,
           day: nyDayString,
         });

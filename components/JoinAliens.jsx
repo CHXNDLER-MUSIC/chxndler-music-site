@@ -666,7 +666,7 @@ export default function JoinAliens({ visible = true } = {}) {
             >
             <motion.button
               type="button"
-              onClick={() => { try { sfx.play('click', 0.35); } catch {} setIsIrlOpen((v) => !v); }}
+              onClick={() => { try { sfx.play('click', 0.35); } catch {} setShowPhoneForm(false); setShowTipOptions(false); setShowPaymentOptions(false); setShowPaymentOptions5(false); setShowPaymentOptions10(false); setConcertsExpandedIdx(0); setShowConcertsPanel(true); }}
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
               style={{

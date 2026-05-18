@@ -69,7 +69,7 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-05-06T23:00:00Z",
+    releaseDate: "2026-05-20T23:00:00Z",
   },
   {
     id: "hv-008",
@@ -77,7 +77,7 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-05-20T23:00:00Z",
+    releaseDate: "2026-06-03T23:00:00Z",
   },
   {
     id: "hv-006",
@@ -85,7 +85,7 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-06-03T23:00:00Z",
+    releaseDate: "2026-06-17T23:00:00Z",
   },
 
   // ── Live Signal – Acoustic Session ──
@@ -238,9 +238,10 @@ const VIDEOS: Video[] = [
   {
     id: "lsf-008",
     title: "Electric Signal 08",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    youtubeUrl: "https://youtu.be/9eJ5hZmCj2Q",
     type: "electric",
     releaseDate: "2026-05-23T12:00:00",
+    postDescription: "Setlist\n00:00 Heartverse\n00:33 CHEERLEADER\n04:03 Mean It (Lauv)\n08:21 I WOULD DIE FOR YOUR LOVE\n12:31 I LIKE ME BETTER (Lauv)\n14:31 Love\n16:36 Robbers\n21:10 AM I PRETTY WHEN I CRY",
   },
   {
     id: "lsf-009",
@@ -581,7 +582,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
               }}
               onMouseEnter={playHover}
             >
-              Episodes
+              Signals
             </button>
             <button
               className={`episodes-tab flex-1 py-1.5 px-2 text-xs font-semibold rounded-md transition-all duration-200 uppercase tracking-wide ${
@@ -601,21 +602,6 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
             </button>
           </div>
 
-          {/* ── New Episodes Schedule ── */}
-          {topTab === "heartverse" && (
-            <div
-              className="schedule-pulse-pink text-center mx-3 mt-1.5"
-              style={{
-                fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
-                fontSize: 'clamp(8px, 2vw, 10px)',
-                fontWeight: '600',
-                letterSpacing: '0.2em',
-                color: '#FC54AF',
-              }}
-            >
-              NEW EPISODES EVERY WEDNESDAY &bull; 7PM EST
-            </div>
-          )}
 
           {/* ── Live Signal Sub-Sections ── */}
           {topTab === "livesignal" && (
@@ -655,26 +641,6 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
             </div>
           )}
 
-          {/* ── Live Signal Schedule ── */}
-          {topTab === "livesignal" && (
-            <div
-              className={liveSignalSection === "acoustic" ? "schedule-pulse" : "schedule-pulse-yellow"}
-              style={{
-                textAlign: 'center',
-                margin: '6px 12px 0',
-                fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
-                fontSize: 'clamp(8px, 2vw, 10px)',
-                fontWeight: '600',
-                letterSpacing: '0.2em',
-                color: liveSignalSection === "acoustic" ? '#00FFFF' : '#F2EF1D',
-              }}
-            >
-              {liveSignalSection === "acoustic"
-                ? <>NEW EPISODES EVERY TUESDAY &bull; 12PM EST</>
-                : <>NEW EPISODES EVERY SATURDAY &bull; 12PM EST</>
-              }
-            </div>
-          )}
 
           {/* ── Video Player Area ── */}
           {activeVideo && (

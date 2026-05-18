@@ -2203,8 +2203,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   }, []);
 
   // Listen for onboarding:start event fired after OTP login — show name prompt overlay
+  // Only show if the user does not already have an element assigned (first-time users only)
   React.useEffect(() => {
     const handleOnboardingStart = () => {
+      if (profileRef.current?.element) {
+        if (process.env.NODE_ENV !== "production") console.log('[onboarding:start] User already has element, skipping name prompt');
+        return;
+      }
       openNamePromptFromAuth();
     };
     window.addEventListener('onboarding:start', handleOnboardingStart);
