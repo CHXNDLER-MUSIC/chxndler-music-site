@@ -2038,48 +2038,50 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         navigator.mediaSession.setActionHandler('nexttrack', null);
       }
 
-      // Note: Removed stale state check that was causing race conditions
-      // The check `state.currentTrack?.id !== normId` used closure state
-      // which could be stale, causing valid playback to be aborted
+      // Skip reload if selectTrack already pre-loaded this track — calling a.load() again
+      // resets readyState to 0 and discards the buffer, causing the canplay timeout.
+      const alreadyPreloaded = a.readyState >= 2 && a.src.includes(normId);
 
-      a.src = trackSource;
-      try {
-        a.load();
+      if (!alreadyPreloaded) {
+        a.src = trackSource;
+        try {
+          a.load();
 
-        // Wait for audio to be ready before playing
-        await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            cleanup();
-            reject(new Error('Audio load timeout'));
-          }, 10000); // 10 second timeout
+          // Wait for audio to be ready before playing
+          await new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              cleanup();
+              reject(new Error('Audio load timeout'));
+            }, 10000); // 10 second timeout
 
-          const onCanPlay = () => {
-            cleanup();
-            resolve();
-          };
-          const onError = (e: Event) => {
-            cleanup();
-            console.error('Audio load error:', e);
-            reject(new Error('Audio load failed'));
-          };
-          const cleanup = () => {
-            clearTimeout(timeout);
-            a.removeEventListener('canplay', onCanPlay);
-            a.removeEventListener('error', onError);
-          };
+            const onCanPlay = () => {
+              cleanup();
+              resolve();
+            };
+            const onError = (e: Event) => {
+              cleanup();
+              console.error('Audio load error:', e);
+              reject(new Error('Audio load failed'));
+            };
+            const cleanup = () => {
+              clearTimeout(timeout);
+              a.removeEventListener('canplay', onCanPlay);
+              a.removeEventListener('error', onError);
+            };
 
-          if (a.readyState >= 3) { // Already loaded
-            clearTimeout(timeout);
-            resolve();
-          } else {
-            a.addEventListener('canplay', onCanPlay, { once: true });
-            a.addEventListener('error', onError, { once: true });
-          }
-        });
-      } catch (loadErr) {
-        console.error('Failed to load track:', loadErr);
-        setState(s => ({ ...s, isLoading: false }));
-        return;
+            if (a.readyState >= 3) {
+              clearTimeout(timeout);
+              resolve();
+            } else {
+              a.addEventListener('canplay', onCanPlay, { once: true });
+              a.addEventListener('error', onError, { once: true });
+            }
+          });
+        } catch (loadErr) {
+          console.error('Failed to load track:', loadErr);
+          setState(s => ({ ...s, isLoading: false }));
+          return;
+        }
       }
 
       setState(s => ({ ...s, src: trackSource, currentTime: 0, duration: 0 }));

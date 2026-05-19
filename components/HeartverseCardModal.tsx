@@ -154,7 +154,7 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
             }}
           >
             <div
-              className="pointer-events-auto"
+              className="pointer-events-auto flex flex-col"
               style={{
                 width: "min(92vw, 700px)",
                 height: "100%",
@@ -247,7 +247,7 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
               />
 
               {/* Body */}
-              <div className="flex flex-col items-center space-y-6 px-2">
+              <div className="flex flex-col items-center space-y-6 px-2 flex-1">
                 {/* Countdown */}
                 <CountdownTimer />
 
@@ -264,7 +264,10 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
                   </span>
                   .<br />Find it, and I'll write and produce a song just for you.
                 </p>
+              </div>
 
+              {/* Button pinned to bottom */}
+              <div className="px-2 pt-4">
                 <button
                   onClick={handleGetCard}
                   onMouseEnter={() => { if (!expired) try { sfx.play("hover", 0.35); } catch {} }}

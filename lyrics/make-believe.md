@@ -14,10 +14,14 @@ You and me - can
 Share this dream - and
 Fantasy is reality 
 
-Close your eyes Let’s get married at the moon Hold on tight
+Close your eyes
+Let’s get married at the moon
+Hold on tight
 Plant a home and watch it bloom 
-Come with me We’ll start a business, risk it all
-Tiny feet Running circles through the hall 
+Come with me
+We’ll start a business, risk it all
+Tiny feet
+Running circles through the hall 
 
 Make believe - so
 You and me - can

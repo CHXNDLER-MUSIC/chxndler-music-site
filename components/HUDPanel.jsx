@@ -218,6 +218,7 @@ const HUDPanel = React.memo(function HUDPanel({
   const innerRef = useRef(null);
   // Refs to align the global track bar dynamically under the controls
   const sectionRef = useRef(null); // wraps the blue display; used as positioning context
+  const hudContainerRef = useRef(null); // inner relative div — actual CSS containing block for track bar
   const controlsRef = useRef(null); // the container with play/pause, volume, etc.
   const [trackBarBottom, setTrackBarBottom] = useState(null);
   const planetRef = useRef(null);
@@ -1460,13 +1461,7 @@ const HUDPanel = React.memo(function HUDPanel({
   // Pause background music when YouTube popover is shown
   useEffect(() => {
     if (!showYouTubePopover) return;
-    try { audioCoordinator.setActiveSource('sfx'); } catch {}
-    try {
-      const main = document.querySelector('audio[data-audio-player="1"]');
-      if (main && typeof (main.pause) === 'function') {
-        main.pause();
-      }
-    } catch {}
+    try { audioManager.pause(); } catch {}
   }, [showYouTubePopover]);
 
   useEffect(() => {
@@ -2340,18 +2335,17 @@ const HUDPanel = React.memo(function HUDPanel({
           // Only update if there's a significant change to prevent micro-adjustments
           setPlanetBottom(prev => Math.abs(prev - b) > 2 ? b : prev);
           // Also position the global track bar directly below the controls container
-          const sectionEl = sectionRef.current;
+          const hudEl = hudContainerRef.current;
           const controlsEl = controlsRef.current;
-          if (sectionEl && controlsEl) {
-            const sr = sectionEl.getBoundingClientRect();
+          if (hudEl && controlsEl) {
+            const hr = hudEl.getBoundingClientRect();
             const cr = controlsEl.getBoundingClientRect();
             // Visual gap between controls' bottom and the TOP of the bar
-            const TB_GAP = 32; // increase to lower bar further
+            const TB_GAP = 8; // px gap between controls bottom and track bar top
             const BAR_HEIGHT = 16; // matches style height of the bar
-            // Position bar so its TOP is TB_GAP below controls' bottom
-            // bottom CSS value is distance from section bottom to bar BOTTOM
-            // so subtract both gap and bar height from controls' bottom distance
-            const bottomPx = Math.round(sr.bottom - cr.bottom - (TB_GAP + BAR_HEIGHT));
+            // bottom CSS = distance from hudContainer's bottom edge to track bar's bottom edge
+            // track bar top should be at cr.bottom + TB_GAP (in screen coords)
+            const bottomPx = Math.round(hr.bottom - cr.bottom - TB_GAP - BAR_HEIGHT);
             setTrackBarBottom(prev => (prev == null || Math.abs(prev - bottomPx) > 1) ? bottomPx : prev);
           }
         } catch {}
@@ -2362,7 +2356,7 @@ const HUDPanel = React.memo(function HUDPanel({
     if (innerRef.current) ro.observe(innerRef.current);
     if (playerRef.current) ro.observe(playerRef.current);
     if (controlsRef.current) ro.observe(controlsRef.current);
-    if (sectionRef.current) ro.observe(sectionRef.current);
+    if (hudContainerRef.current) ro.observe(hudContainerRef.current);
     window.addEventListener('resize', measure);
     return () => { 
       clearTimeout(measureTimeout);
@@ -2399,7 +2393,7 @@ const HUDPanel = React.memo(function HUDPanel({
           >
           {/* Background removed: keep HUD box transparent */}
         {/* Single blue outline wrapping the HUD content (amped glow) */}
-        <div className={`relative rounded-2xl ${inConsole ? 'pt-0 pb-2 px-1' : 'pt-0 pb-4 px-4'}`} style={{
+        <div ref={hudContainerRef} className={`relative rounded-2xl ${inConsole ? 'pt-0 pb-2 px-1' : 'pt-0 pb-4 px-4'}`} style={{
           background: 'transparent',
           boxShadow: 'none',
           willChange: 'opacity, transform',
@@ -3308,8 +3302,8 @@ const HUDPanel = React.memo(function HUDPanel({
 
                   const isSpotifyProfile = isHome || !currentSong?.spotify;
                   const isAppleProfile = isHome || !currentSong?.apple;
-                  // Disable streaming buttons for unreleased songs (treat unknown as unreleased)
-                  const isReleased = isHome ? true : (currentSong?.is_released === true);
+                  // A song is "released" for button purposes if marked released OR if it has streaming links
+                  const isReleased = isHome ? true : (currentSong?.is_released === true || !!(currentSong?.spotify || currentSong?.apple || currentSong?.youtube));
                   const isYouTubeProfile = isHome || !currentSong?.youtube;
 
                   const isElementPlanet = ELEMENT_PLANETS.includes(String(active).toLowerCase()) ||
@@ -3575,14 +3569,7 @@ const HUDPanel = React.memo(function HUDPanel({
                             try { setShowSpotifyPopover(false); setSpEmbedUrl(null); } catch {}
                             try { sfx.play('join-aliens', 0.9); } catch {}
                             // Pause background music so YouTube audio plays uninterrupted
-                            try {
-                              // Prefer coordinated stop to avoid overlap with ambient/intro
-                              audioCoordinator.setActiveSource('sfx');
-                              const main = document.querySelector('audio[data-audio-player="1"]');
-                              if (main && typeof (main.pause) === 'function') {
-                                main.pause();
-                              }
-                            } catch {}
+                            try { audioManager.pause(); } catch {}
                             // If we have a per-track YouTube URL, show inline popover; otherwise open channel
                             try {
                               const embed = toYouTubeEmbed(youtubeUrl);

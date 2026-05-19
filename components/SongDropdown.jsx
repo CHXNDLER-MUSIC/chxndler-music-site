@@ -556,14 +556,16 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                       return;
                     }
                   } catch {}
-                  // Defer selection to click/touch-end. Block interaction if locked.
+                  // When locked, allow the click to fire so we can open Journey
+                }}
+                onClick={(e) => {
                   if (isNextDropLocked) {
                     e.preventDefault();
                     e.stopPropagation();
+                    try { setOpen(false); } catch {}
+                    try { window.dispatchEvent(new CustomEvent('openJourneyModal')); } catch {}
+                    return;
                   }
-                }}
-                onClick={(e) => {
-                  if (isNextDropLocked) { e.preventDefault(); e.stopPropagation(); return; }
                   try { setActiveId(nextDropId); } catch {}
                   try { setOpen(false); } catch {}
                   if (onChange) onChange(nextDropId);
@@ -605,7 +607,10 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                     const st = touchStateRef.current || {};
                     e.preventDefault();
                     e.stopPropagation();
-                    if (!isNextDropLocked && st && st.id === nextDropId && !st.moved) {
+                    if (isNextDropLocked && st && st.id === nextDropId && !st.moved) {
+                      setOpen(false);
+                      try { window.dispatchEvent(new CustomEvent('openJourneyModal')); } catch {}
+                    } else if (!isNextDropLocked && st && st.id === nextDropId && !st.moved) {
                       setActiveId(nextDropId);
                       setOpen(false);
                       if (onChange) onChange(nextDropId);

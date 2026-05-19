@@ -751,6 +751,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         synthTrack = {
           slug,
           title: hudSong.title || slug,
+          cover: hudSong.cover || null,
           spotify: hudSong.spotify || null,
           apple: hudSong.apple || null,
           youtube: hudSong.youtube || null,
@@ -837,6 +838,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     setUserSelected(true);
     // Exit home overview immediately so planets can hide during warp
     setHomeMode(false);
+    // Clear element sky so the song's own sky takes over (element sky has priority in desiredYoutubeUrl)
+    setElementWarpYoutubeUrl(null);
     // Clear any pending home overlay reveal since we're selecting a specific song
     setPendingOverlayReveal(false);
 
@@ -950,6 +953,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   // Build hudSongs from database (includes ALL songs, released and unreleased)
   // Use static data to supplement with spotify/apple/youtube links where available
   const hudSongs = React.useMemo(() => {
+    // Per-song link overrides for songs that live in the DB but not in static tracks
+    const SONG_LINK_OVERRIDES = {
+      'make-believe': {
+        spotify: 'https://open.spotify.com/track/39ArZKiv8TK2fkUIX0KbYV?si=f4086c9e755a4151',
+        apple: 'https://music.apple.com/us/album/make-believe-feat-arines/1890757188?i=1890757189',
+        youtube: 'https://youtu.be/lv9XF-nWbNc?si=vX5c4RDnnruxqrtk',
+        cover: '/covers/MAKE BELIEVE.webp',
+      },
+    };
+
     // If no database songs yet, fallback to static
     if (!dbSongs || dbSongs.length === 0) return staticHudSongs;
 
@@ -971,6 +984,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       .filter(song => !PLANET_EXCLUDED_TITLES.includes((song.title || '').toLowerCase()))
       .map(song => {
         const staticData = staticMap.get(song.slug) || {};
+        const linkOverride = SONG_LINK_OVERRIDES[song.slug] || {};
         const element = (song.element || 'heart').toLowerCase();
         return {
           id: song.slug,
@@ -978,10 +992,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           icon: element,
           color: ELEMENT_COLORS[element] || ELEMENT_COLORS.heart,
           is_released: song.is_released,
-          // Enrich with static data if available
-          spotify: staticData.spotify,
-          apple: staticData.apple,
-          youtube: staticData.youtube,
+          // Overrides take priority, then static data, then the standard /covers/<TITLE>.webp convention
+          cover: linkOverride.cover || staticData.cover || `/covers/${(song.title || '').normalize('NFD').replace(/[̀-ͯ]/g, '')}.webp`,
+          spotify: linkOverride.spotify || staticData.spotify,
+          apple: linkOverride.apple || staticData.apple,
+          youtube: linkOverride.youtube || staticData.youtube,
           hasLyrics: staticData.hasLyrics
         };
       });
@@ -1873,21 +1888,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           const welcomeType = welcomeAudioTypeRef.current;
           welcomeAudioTypeRef.current = null; // Clear immediately to prevent duplicate plays
 
-          // Play element ambient, heart (onboarding), or space-music
-          const elementAmbientFiles = { heart: '/audio/heart-pulse.MP3', lightning: '/audio/lightning-spark.MP3', water: '/audio/water-ripple.MP3', darkness: '/audio/shadow-glow.MP3' };
+          // Play element music, heart (onboarding), or space-music
           if (welcomeType === 'home') {
             audioManager?.playTrack('heart');
-          } else if (pendingElementWarpRef.current && elementAmbientFiles[pendingElementWarpRef.current]) {
+          } else if (pendingElementWarpRef.current) {
             elementWarpUsedRef.current = true;
-            const ambientSrc = elementAmbientFiles[pendingElementWarpRef.current];
-            try {
-              if (elementAmbientRef.current) { elementAmbientRef.current.pause(); }
-              const a = new Audio(ambientSrc);
-              a.loop = true;
-              a.volume = 0.5;
-              elementAmbientRef.current = a;
-              a.play().catch(() => {});
-            } catch {}
+            const backupElementKey = pendingElementWarpRef.current;
+            pendingElementWarpRef.current = null;
+            try { audioManager?.playTrack(backupElementKey); } catch {}
           } else {
             audioManager?.playTrack('space-music');
           }
@@ -3035,8 +3043,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             // Element planet warp via Start button: keep homeMode=true so HUDPanel shows
             // general CHXNDLER buttons (not element-specific). elementWarpYoutubeUrl still
             // drives the sky because it has priority in desiredYoutubeUrl.
-            // NOTE: do NOT clear pendingElementWarpRef here — onFlyEnd reads it to gate setPendingHomePower
+            // onFlyEnd reads the ref before onWarpSfxEnd runs, so we clear it here after use.
             const elementKey = pendingElementWarpRef.current;
+            pendingElementWarpRef.current = null; // clear now that we've captured the key
             // Mark element warp as used so subsequent STARTs warp to space instead
             elementWarpUsedRef.current = true;
             try {
@@ -3045,19 +3054,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               playerStore.getState().setPlanetsVisible(true);
             } catch {}
             // homeMode stays true (set in handleStartClick) — this keeps general buttons
-            // Play element-specific ambient audio from local files (loop)
-            const elementAmbientFiles = { heart: '/audio/heart-pulse.MP3', lightning: '/audio/lightning-spark.MP3', water: '/audio/water-ripple.MP3', darkness: '/audio/shadow-glow.MP3' };
-            const ambientSrc = elementAmbientFiles[elementKey];
-            if (ambientSrc) {
-              try {
-                if (elementAmbientRef.current) { elementAmbientRef.current.pause(); }
-                const a = new Audio(ambientSrc);
-                a.loop = true;
-                a.volume = 0.5;
-                elementAmbientRef.current = a;
-                a.play().catch(() => {});
-              } catch {}
-            }
+            // Play element-specific music track through the main AudioProvider player
+            try { audioManager?.playTrack(elementKey); } catch {}
             // Play Welcome-Back VO alongside element music
             const elementWelcomeType = welcomeAudioTypeRef.current;
             welcomeAudioTypeRef.current = null;
@@ -3252,9 +3250,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             // Song selection - proceed to that song (handled by onBasePlaying)
             // Only start UI fade-in and audio sequencing when the base sky MP4 is confirmed playing via onBasePlaying
           }
-          // Clear element warp ref now that all guards have been checked
-          pendingElementWarpRef.current = null;
-
           // Mark that the user has entered the Heartverse after warp completes
           try { enterHeartverse(); } catch { setHasEnteredHeartverse(true); }
         }}

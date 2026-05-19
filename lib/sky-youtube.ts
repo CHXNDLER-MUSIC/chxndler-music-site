@@ -34,6 +34,7 @@ export const YOUTUBE_SKIES: Record<string, string> = {
   'kid-forever': 'https://youtu.be/pVKgCGjKMN8',
   'little-black-heart': 'https://youtu.be/eDS0mj9IsQ0',
   'little-black-heart-acoustic': 'https://youtu.be/eDS0mj9IsQ0',
+  'letting-go': 'https://youtu.be/Meq_pYS7XbA',
   'ocean-girl': 'https://youtu.be/6baiJYNeXEM',
   'ocean-girl-acoustic': 'https://youtu.be/3W9axkul8IM',
   'ocean-girl-remix': 'https://youtu.be/hhTlDdfvZK8',
