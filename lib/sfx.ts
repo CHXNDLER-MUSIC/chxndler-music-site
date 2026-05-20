@@ -49,6 +49,7 @@ class SFXBus {
     "water-ripple": "/audio/water-ripple.MP3",
     "lightning-spark": "/audio/lightning-spark.MP3",
     "shadow-glow": "/audio/shadow-glow.MP3",
+    success: "/audio/success.MP3",
   };
 
   // --------------- AudioContext management ---------------

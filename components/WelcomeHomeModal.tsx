@@ -86,6 +86,11 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
     }
   }, [isLoggedIn]);
 
+  // Clear any stale otp_blocked_until on mount — this key is no longer used
+  useEffect(() => {
+    try { localStorage.removeItem('otp_blocked_until'); } catch {}
+  }, []);
+
   // Listen for closeWelcomeHomeModal event (e.g., when hamburger menu is clicked)
   useEffect(() => {
     const handleCloseWelcomeHomeModal = () => {
@@ -155,15 +160,6 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       return;
     }
 
-    // Guard: project-level 429 hard block stored in localStorage (15 min)
-    try {
-      const blockedUntil = parseInt(localStorage.getItem('otp_blocked_until') || '0', 10);
-      if (Date.now() < blockedUntil) {
-        const minutesLeft = Math.ceil((blockedUntil - Date.now()) / 60000);
-        setError(`Too many codes requested. Please wait ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''} before trying again.`);
-        return;
-      }
-    } catch {}
 
     setError(null);
     setInfoMessage(null);
@@ -238,7 +234,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       setCode("");
       setJustSent(true);
       setTimeout(() => setJustSent(false), 1000);
-      setResendSeconds(120);
+      setResendSeconds(15);
       setTimeout(() => {
         try { codeInputRef.current?.focus(); } catch {}
       }, 0);
@@ -251,10 +247,8 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
         lower.includes("security purposes") ||
         lower.includes("only request this");
       if (is429) {
-        // Set a 15-minute project-level hard block in localStorage
-        try { localStorage.setItem('otp_blocked_until', (Date.now() + 15 * 60 * 1000).toString()); } catch {}
-        setError("Too many codes requested. Please wait 15 minutes before trying again.");
-        setResendSeconds(120);
+        setError("Signal systems cooling down. Please try again in a moment.");
+        setResendSeconds(15);
       } else if (lower.includes("invalid")) {
         setError(`Email address "${cleanEmail}" is invalid. Please check and try again.`);
       } else {
@@ -583,7 +577,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
               />
               {resendSeconds > 0 && (
                 <div className="text-xs" style={{ color: '#00FFFF' }}>
-                  Please wait {resendSeconds}s before trying again.
+                  Resend signal in {resendSeconds}s
                 </div>
               )}
             </form>
@@ -605,7 +599,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
                   className="underline disabled:no-underline disabled:opacity-50"
                   style={{ color: '#FF69B4' }}
                 >
-                  {resendSeconds > 0 ? `Resend code in ${resendSeconds}s` : 'Resend code'}
+                  {resendSeconds > 0 ? `Resend signal in ${resendSeconds}s` : 'RESEND SIGNAL'}
                 </button>
               </div>
               <input

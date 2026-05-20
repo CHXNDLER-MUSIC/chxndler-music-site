@@ -244,7 +244,7 @@ export default function Pure3DPlanets({
 
         // Start position: far above the center planet in group-local space
         const tp = flyInTargetLocalPosRef.current;
-        flyInStartLocalPosRef.current = new THREE.Vector3(tp.x * 0.05, tp.y + 70, tp.z * 0.05);
+        flyInStartLocalPosRef.current = new THREE.Vector3(tp.x * 0.05, tp.y + 120, tp.z * 0.05);
 
         // Move the sprite to its start position
         newest.sprite.position.copy(flyInStartLocalPosRef.current);
@@ -277,7 +277,7 @@ export default function Pure3DPlanets({
         });
         const trailSprite = new THREE.Sprite(trailMat);
         trailSprite.position.copy(flyInStartLocalPosRef.current);
-        trailSprite.scale.set(0.5, 1, 1);
+        trailSprite.scale.set(1.2, 1, 1);
 
         if (cardStarGroupRef.current) {
           cardStarGroupRef.current.add(trailSprite);
@@ -1369,7 +1369,7 @@ export default function Pure3DPlanets({
 
       // ── Star fly-in: approach phase (new order lands after warp) ──
       if (flyInSpriteRef.current && flyInPhaseRef.current === 'approach' && flyInStartLocalPosRef.current && flyInTargetLocalPosRef.current) {
-        const approachDuration = 1400; // ms
+        const approachDuration = 2800; // ms — slow deliberate comet arc
         const t = Math.min((Date.now() - flyInStartMsRef.current) / approachDuration, 1);
         // Ease-out cubic: fast start, smooth deceleration
         const eased = 1 - Math.pow(1 - t, 3);
@@ -1398,11 +1398,11 @@ export default function Pure3DPlanets({
           flyInTrailSpriteRef.current.position.copy(trailCenter);
 
           // Stretch along travel direction; thin perpendicular
-          flyInTrailSpriteRef.current.scale.set(0.45, trailLength, 1);
+          flyInTrailSpriteRef.current.scale.set(1.0, trailLength, 1);
 
-          // Opacity: fully visible when fast, fades as star decelerates
+          // Opacity: stays visible at lower speeds for a more dramatic tail
           const trailMat = flyInTrailSpriteRef.current.material as THREE.SpriteMaterial;
-          trailMat.opacity = speed * 0.85;
+          trailMat.opacity = Math.min(0.3 + speed * 0.7, 1.0);
 
           // Align with screen-space travel direction so gradient points correctly
           // Convert the current star position and target to NDC, then get angle
@@ -1438,18 +1438,28 @@ export default function Pure3DPlanets({
         }
       }
 
-      // ── Star fly-in: landing flash (brief pulse after arrival) ──
+      // ── Star fly-in: landing shine (dramatic burst after arrival) ──
       if (flyInSpriteRef.current && flyInPhaseRef.current === 'landing') {
-        const landDuration = 500; // ms
+        const landDuration = 1000; // ms — extended shine
         const t = Math.min((Date.now() - flyInStartMsRef.current) / landDuration, 1);
 
-        // Scale spike: rises and falls in an arc (sin curve peaks at mid-point)
+        // Scale spike: large initial burst, settles to resting size
         const spike = Math.sin(t * Math.PI);
-        flyInSpriteRef.current.scale.set(2.2 + spike * 2.0, 2.2 + spike * 2.0, 1);
-        (flyInSpriteRef.current.material as THREE.SpriteMaterial).opacity = 1.0;
+        const sc = 2.2 + spike * 6.5;
+        flyInSpriteRef.current.scale.set(sc, sc, 1);
+
+        // Fade from full brightness to steady twinkle
+        const mat = flyInSpriteRef.current.material as THREE.SpriteMaterial;
+        mat.opacity = t < 0.5 ? 1.0 : 1.0 - (t - 0.5) * 0.5;
+
+        // Warm gold tint at peak, white otherwise
+        const peak = spike;
+        mat.color.setRGB(1.0, 1.0 - peak * 0.15, 1.0 - peak * 0.35);
 
         if (t >= 1) {
           flyInSpriteRef.current.scale.set(2.2, 2.2, 1);
+          mat.color.setRGB(1, 1, 1);
+          mat.opacity = 0.9;
           flyInPhaseRef.current = null;
           flyInSpriteRef.current = null;
           flyInStartLocalPosRef.current = null;

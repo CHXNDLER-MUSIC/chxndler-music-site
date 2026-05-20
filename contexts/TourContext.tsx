@@ -193,57 +193,131 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
         onMenuToggle={setMenuOpen}
       />
 
-      {/* Welcome modal before starting the tour */}
+      {/* Welcome prompt before starting the tour — embedded in the blue hologram display */}
       {welcomeVisible && (
-        <div className="fixed inset-0 z-[999999] flex items-center justify-center transition-opacity duration-300">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={(e) => e.stopPropagation()} />
+        <>
+          {/* Hologram base glow */}
           <div
-            className="relative z-[1000000] w-full max-w-md mx-4 rounded-2xl p-8 text-center pointer-events-auto"
+            className="fixed flex justify-center"
             style={{
-              background: 'linear-gradient(180deg, rgba(56,182,255,0.18), rgba(56,182,255,0.12))',
-              border: '1px solid rgba(56,182,255,0.35)',
-              boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 60px rgba(56,182,255,0.5)'
+              zIndex: 9999999,
+              pointerEvents: 'none',
+              left: 0,
+              right: 0,
+              top: 'var(--profile-bar-boundary, 64px)',
+              bottom: 'calc(var(--light-beam-boundary, 120px) + var(--beam-height, 0px))',
+              alignItems: 'flex-start',
+              paddingTop: '200px',
             }}
           >
-            <h2
-              className="text-2xl font-bold text-white mb-4"
-              style={{ textShadow: '0 0 18px rgba(56,182,255,0.7)' }}
-            >
-              Should I show you around?
-            </h2>
-
-            <button
-              onClick={() => {
-                try { sfx.play('click', 0.5); } catch {}
-                start();
-              }}
-              onMouseEnter={() => {
-                try { sfx.play('hover', 0.3); } catch {}
-              }}
-              className="w-full px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] mb-3"
+            <div
               style={{
-                background: 'linear-gradient(135deg, rgba(252,84,175,0.85), rgba(252,84,175,0.65))',
-                border: '1px solid rgba(252,84,175,0.5)',
-                boxShadow: '0 6px 14px rgba(0,0,0,0.35), 0 0 20px rgba(252,84,175,0.45)'
+                width: 'min(120vw, 700px)',
+                height: '200px',
+                background: 'radial-gradient(ellipse 80% 100% at 50% 0%, rgba(0,255,255,0.7) 0%, rgba(0,255,255,0.4) 30%, rgba(0,255,255,0.1) 60%, transparent 100%)',
+                filter: 'blur(100px)',
               }}
-            >
-              Yes, show me around
-            </button>
-
-            <button
-              onClick={() => {
-                try { sfx.play('click', 0.5); } catch {}
-                setWelcomeVisible(false);
-              }}
-              onMouseEnter={() => {
-                try { sfx.play('hover', 0.3); } catch {}
-              }}
-              className="w-full text-white/80 hover:text-white text-sm underline"
-            >
-              Skip for now
-            </button>
+            />
           </div>
-        </div>
+
+          {/* Display container */}
+          <div
+            className="fixed flex justify-center pointer-events-none"
+            style={{
+              zIndex: 9999999,
+              left: 0,
+              right: 0,
+              top: 'var(--profile-bar-boundary, 64px)',
+              bottom: 'calc(var(--light-beam-boundary, 120px) + var(--beam-height, 0px))',
+              alignItems: 'flex-start',
+            }}
+          >
+            <div
+              className="pointer-events-auto flex flex-col"
+              style={{
+                width: 'min(92vw, 500px)',
+                height: '100%',
+                padding: '16px 24px 20px 24px',
+                borderRadius: 18,
+                background: 'rgba(0,0,0,0.6)',
+                border: '1px solid rgba(0,255,255,0.55)',
+                boxShadow: '0 -8px 25px rgba(0,255,255,0.4), 0 -4px 15px rgba(0,255,255,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(0,255,255,0.45)',
+                backdropFilter: 'blur(12px) saturate(140%)',
+                color: '#00FFFF',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Bottom glow */}
+              <div
+                className="absolute"
+                style={{
+                  bottom: '-15px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '120%',
+                  height: '30px',
+                  background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(0,255,255,0.6) 0%, rgba(0,255,255,0.3) 40%, transparent 80%)',
+                  filter: 'blur(30px)',
+                  pointerEvents: 'none',
+                  zIndex: -1,
+                }}
+              />
+              {/* Top bloom glow */}
+              <div
+                className="absolute"
+                style={{
+                  top: '-10px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '80%',
+                  height: '20px',
+                  background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(0,255,255,0.4) 0%, rgba(0,255,255,0.2) 50%, transparent 100%)',
+                  filter: 'blur(25px)',
+                  pointerEvents: 'none',
+                  zIndex: -1,
+                }}
+              />
+
+              {/* Content */}
+              <div className="flex flex-col items-center justify-center flex-1 text-center">
+                <h2
+                  className="text-2xl font-bold text-white mb-6"
+                  style={{ textShadow: '0 0 18px rgba(0,255,255,0.7)' }}
+                >
+                  Should I show you around?
+                </h2>
+
+                <button
+                  onClick={() => {
+                    try { sfx.play('click', 0.5); } catch {}
+                    start();
+                  }}
+                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                  className="w-full px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] mb-3"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(252,84,175,0.85), rgba(252,84,175,0.65))',
+                    border: '1px solid rgba(252,84,175,0.5)',
+                    boxShadow: '0 6px 14px rgba(0,0,0,0.35), 0 0 20px rgba(252,84,175,0.45)',
+                  }}
+                >
+                  Yes, show me around
+                </button>
+
+                <button
+                  onClick={() => {
+                    try { sfx.play('click', 0.5); } catch {}
+                    setWelcomeVisible(false);
+                  }}
+                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                  className="w-full text-white/80 hover:text-white text-sm underline"
+                >
+                  Skip for now
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </TourContext.Provider>
   );

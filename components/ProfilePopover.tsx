@@ -57,7 +57,7 @@ interface ProfilePopoverProps {
 
 export default function ProfilePopover({ isOpen, onClose, anchorElement, showRelicsOnOpen, showMerchOnOpen }: ProfilePopoverProps) {
   const { profile, user, updateProfile, refreshProfile } = useProfile();
-  const { start: startTour } = useTour();
+  const { start: startTour, showWelcome } = useTour();
   
   const [allRelics, setAllRelics] = useState<Relic[]>([]);
   const [allBadges, setAllBadges] = useState<Badge[]>([]);
@@ -867,12 +867,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
 
   // Handle starting the guided tour
   const handleStartTour = () => {
-    try {
-      sfx.play('click', 0.6);
-    } catch {}
-    
+    try { sfx.play('click', 0.6); } catch {}
     onClose();
-    startTour();
+    showWelcome();
   };
 
   // Handle sign out

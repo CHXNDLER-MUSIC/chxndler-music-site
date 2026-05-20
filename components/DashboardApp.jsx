@@ -2315,6 +2315,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         setAllowWarp(true);
         setFlySignal((n) => n + 1);
 
+        // For center planet warps, AudioProvider's markWarpCompleted() never fires,
+        // so we call playTrack directly after the warp duration instead.
+        if (isCenterPlanet) {
+          setTimeout(() => {
+            try { audioManager.playTrack('center').catch(() => {}); } catch {}
+          }, WARP_DURATION_MS);
+        }
+
         // Backup timer to reset warp state
         setTimeout(() => {
           setWarpActive(false);

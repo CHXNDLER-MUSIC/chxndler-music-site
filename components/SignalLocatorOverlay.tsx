@@ -10,6 +10,7 @@ import React, {
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { sfx } from "@/lib/sfx";
+import { useAudio } from "@/app/providers/AudioProvider";
 
 type Phase =
   | "idle"
@@ -45,6 +46,7 @@ const RING_CONFIG = [
 const MAX_STARS_VISIBLE = 48;
 
 export default function SignalLocatorOverlay() {
+  const audioManager = useAudio();
   const [phase, setPhase] = useState<Phase>("idle");
   const [orders, setOrders] = useState<CardOrder[]>([]);
   const [winner, setWinner] = useState<CardOrder | null>(null);
@@ -73,7 +75,8 @@ export default function SignalLocatorOverlay() {
         centerAudioRef.current = null;
       }
     } catch {}
-  }, []);
+    try { audioManager.stopAllAudio(); } catch {}
+  }, [audioManager]);
 
   const clearTimers = useCallback(() => {
     timersRef.current.forEach(clearTimeout);
@@ -138,14 +141,8 @@ export default function SignalLocatorOverlay() {
     after(t(seq), () => {
       setPhase("starfield");
       setWarpExiting(false);
-      // Start center.mp3 after warp fully completes
-      try {
-        const audio = new Audio("https://hjpaiolhhugwzblarfix.supabase.co/storage/v1/object/public/tracks/center.mp3");
-        audio.volume = 0.65;
-        audio.loop = true;
-        audio.play().catch(() => {});
-        centerAudioRef.current = audio;
-      } catch {}
+      // Play center.mp3 via AudioProvider (pre-unlocked, handles Supabase URL)
+      try { audioManager.playTrack('center').catch(() => {}); } catch {}
     });
 
     // Helper: fire a radar brightness flare + ring burst + SFX pulse together
@@ -187,7 +184,7 @@ export default function SignalLocatorOverlay() {
     shuffled.forEach((order, i) => {
       after(t(elimStart + (i + 1) * elimInterval), () => {
         setEliminatedIds((prev) => new Set([...prev, order.id]));
-        try { sfx.play("scroll", 0.12); } catch {}
+        try { sfx.play("click", 0.18); } catch {}
       });
     });
 
@@ -208,8 +205,11 @@ export default function SignalLocatorOverlay() {
     });
 
     seq += 1600;
-    after(t(seq), () => setPhase("cockpit"));
-  }, [after, clearTimers, stopCenterAudio]);
+    after(t(seq), () => {
+      setPhase("cockpit");
+      try { sfx.play('join-alien', 0.85); } catch {}
+    });
+  }, [after, clearTimers, stopCenterAudio, audioManager]);
 
   useEffect(() => {
     const handler = () => runAnimation();
@@ -324,7 +324,7 @@ export default function SignalLocatorOverlay() {
                 height: vmin * 0.26,
                 border: "2px solid rgba(252,84,175,0.9)",
                 borderRadius: "50%",
-                animation: "signal-shockwave 1.6s ease-out forwards",
+                animation: "signal-shockwave 3.2s ease-out forwards",
                 pointerEvents: "none",
                 zIndex: 20,
               }}
@@ -524,7 +524,7 @@ export default function SignalLocatorOverlay() {
 
               {/* Status lines */}
               <div style={{ fontSize: 10, letterSpacing: "0.14em", lineHeight: 1.9 }}>
-                <div style={{ color: "rgba(252,84,175,0.82)" }}>&gt; STATUS: HEARTBEAT DETECTED</div>
+                <div style={{ color: "rgba(252,84,175,0.82)" }}>&gt; STATUS: HEART SIGNAL SYNCHRONIZED</div>
                 <div style={{ color: "rgba(252,84,175,0.82)" }}>&gt; REWARD: PERSONAL TRANSMISSION</div>
               </div>
             </div>
@@ -540,6 +540,7 @@ export default function SignalLocatorOverlay() {
             >
               <button
                 onClick={() => {
+                  try { sfx.play("close", 0.5); } catch {}
                   stopCenterAudio();
                   setPhase("idle");
                   setEliminatedIds(new Set());

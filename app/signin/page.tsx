@@ -16,7 +16,7 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
-  const [resendSeconds, setResendSeconds] = useState(60);
+  const [resendSeconds, setResendSeconds] = useState(0);
   const [justSent, setJustSent] = useState(false);
   const [showWarpFlash, setShowWarpFlash] = useState(false);
   const codeInputRef = useRef<HTMLInputElement | null>(null);
@@ -50,11 +50,16 @@ export default function SignInPage() {
       setStep("verify");
       setJustSent(true);
       setTimeout(() => setJustSent(false), 1000);
-      setResendSeconds(60);
+      setResendSeconds(15);
       // Focus the code input to surface system OTP suggestions
       setTimeout(() => { try { codeInputRef.current?.focus(); } catch {} }, 0);
     } catch (e: any) {
-      setError(e?.message || "Failed to send code");
+      const msg = (e?.message || '').toLowerCase();
+      setError(
+        msg.includes('rate') || msg.includes('too many') || msg.includes('limit')
+          ? "Signal systems cooling down. Please try again in a moment."
+          : e?.message || "Failed to send code"
+      );
     } finally {
       setLoading(false);
     }
@@ -173,9 +178,14 @@ export default function SignInPage() {
       const { error } = await supabaseClient.auth.signInWithOtp({ email });
       if (error) throw error;
       setInfoMessage("New code sent.");
-      setResendSeconds(60);
+      setResendSeconds(15);
     } catch (e: any) {
-      setError(e?.message || "Failed to resend code");
+      const msg = (e?.message || '').toLowerCase();
+      setError(
+        msg.includes('rate') || msg.includes('too many') || msg.includes('limit')
+          ? "Signal systems cooling down. Please try again in a moment."
+          : e?.message || "Failed to resend code"
+      );
     } finally {
       setLoading(false);
     }
@@ -290,7 +300,7 @@ export default function SignInPage() {
               <div className="flex items-center justify-between text-xs text-gray-600">
                 <button
                   type="button"
-                  onClick={() => { setStep("request"); setCode(""); setError(null); setInfoMessage(null); setResendSeconds(60); }}
+                  onClick={() => { setStep("request"); setCode(""); setError(null); setInfoMessage(null); setResendSeconds(0); }}
                   className="underline opacity-60 hover:opacity-100 transition-opacity"
                 >
                   {email}
@@ -301,7 +311,7 @@ export default function SignInPage() {
                   disabled={loading || resendSeconds > 0 || step !== "verify"}
                   className="underline disabled:no-underline disabled:opacity-50"
                 >
-                  {resendSeconds > 0 ? `Resend code in ${resendSeconds}s` : "Resend code"}
+                  {resendSeconds > 0 ? `Resend signal in ${resendSeconds}s` : "RESEND SIGNAL"}
                 </button>
               </div>
             </div>

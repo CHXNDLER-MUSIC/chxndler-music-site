@@ -197,6 +197,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   const [shippingAttempted, setShippingAttempted] = useState(false);
   const [sendCardPressed, setSendCardPressed] = useState(false);
   const [heartParticles, setHeartParticles] = useState<{id: number, x: number, y: number}[]>([]);
+  const [showYoureIn, setShowYoureIn] = useState(false);
   
   // Get current track info from unified audio provider
   const { currentTrack } = useAudio();
@@ -578,14 +579,8 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       return;
     }
 
-    // Fire warp immediately on valid submit — close modal and warp to Heartverse
+    // Close modal and show the planetarium so the user sees the star fly-in
     setShowCard(false);
-    const warpFiredAt = Date.now();
-    try {
-      window.dispatchEvent(new CustomEvent('planet:warp', {
-        detail: { element: 'center', isCenterPlanet: true }
-      }));
-    } catch {}
 
     try {
       setShippingStatus('saving');
@@ -599,25 +594,26 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       try { sfx.play('success', 0.7); } catch {}
       setShippingStatus('success');
 
-      // Fire star event so the fly-in lands right as the warp overlay clears (~3000ms)
-      // Pure3DPlanets' handler has a 200ms rebuild buffer, so target (3000 - 200)ms from warp fire
-      const WARP_MS = 3000;
-      const elapsed = Date.now() - warpFiredAt;
-      const fireDelay = Math.max(0, WARP_MS - 200 - elapsed);
+      // Fire star event immediately so the fly-in animation plays in the planetarium
+      try {
+        window.dispatchEvent(new CustomEvent('chxndler-card:ordered', {
+          detail: {
+            id: data.order_id,
+            shipping_full_name: shippingForm.full_name,
+            created_at: new Date().toISOString(),
+          }
+        }));
+      } catch {}
+
+      // Show "You're In" overlay after the star animation completes (~4s: 200ms buffer + 2800ms approach + 1000ms shine)
       setTimeout(() => {
-        try {
-          window.dispatchEvent(new CustomEvent('chxndler-card:ordered', {
-            detail: {
-              id: data.order_id,
-              shipping_full_name: shippingForm.full_name,
-              created_at: new Date().toISOString(),
-            }
-          }));
-        } catch {}
-      }, fireDelay);
+        setShowYoureIn(true);
+      }, 4200);
     } catch (err) {
       console.error('[order-chxndler] submit error:', err);
       setShippingStatus('error');
+      // Re-open card on error so user can retry
+      setShowCard(true);
     }
   };
 
@@ -1581,6 +1577,143 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       <audio ref={flipCoverRef} src="/audio/flip.mp3" preload="none" />
       <audio ref={scrollAudioRef} src="/audio/scroll.mp3" preload="none" />
       <audio ref={chimeAudioRef} src="/audio/card-ding.mp3" preload="none" />
+
+      {/* "You're In" overlay — shown after star fly-in animation completes */}
+      {showYoureIn && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 2147483647,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {/* Blurred backdrop */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(0,0,0,0.55)',
+              backdropFilter: 'blur(12px)',
+            }}
+            onClick={() => setShowYoureIn(false)}
+          />
+
+          {/* Modal card */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              width: 'min(92vw, 540px)',
+              borderRadius: 24,
+              overflow: 'hidden',
+              background: 'linear-gradient(160deg, rgba(120,60,160,0.82) 0%, rgba(56,60,180,0.78) 40%, rgba(30,120,200,0.75) 100%)',
+              border: '1px solid rgba(255,105,180,0.35)',
+              boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 60px rgba(252,84,175,0.18)',
+              backdropFilter: 'blur(20px)',
+              padding: '40px 28px 32px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 16,
+              textAlign: 'center',
+            }}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setShowYoureIn(false)}
+              style={{
+                position: 'absolute',
+                top: 16,
+                right: 16,
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                color: '#fff',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 18,
+                fontWeight: 'bold',
+              }}
+            >
+              ×
+            </button>
+
+            {/* CHXNDLER mascot */}
+            <img
+              src="/elements/logo.webp"
+              alt="CHXNDLER"
+              style={{ width: 80, height: 80, objectFit: 'contain', borderRadius: '50%' }}
+            />
+
+            {/* "You're In" heading */}
+            <div
+              style={{
+                fontSize: 40,
+                fontWeight: 800,
+                background: 'linear-gradient(90deg, #F2EF1D, #00FF88)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                lineHeight: 1.1,
+              }}
+            >
+              You&apos;re In
+            </div>
+
+            {/* Body text */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.92)', margin: 0 }}>
+                Your CHXNDLER card is being sent.
+              </p>
+              <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.8)', margin: 0 }}>
+                One contains a{' '}
+                <span style={{ fontWeight: 700, color: '#F2EF1D', textShadow: '0 0 8px rgba(242,239,29,0.6)' }}>
+                  hidden signal
+                </span>
+                .
+              </p>
+              <p style={{ fontSize: 18, fontStyle: 'italic', color: 'rgba(255,255,255,0.7)', margin: 0 }}>
+                If it&apos;s yours&hellip; we&apos;re making a song.
+              </p>
+            </div>
+
+            {/* Join button */}
+            <button
+              onClick={() => {
+                try { sfx.play('click', 0.6); } catch {}
+                setShowYoureIn(false);
+                setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('openWelcomeHomeModal'));
+                }, 150);
+              }}
+              onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+              style={{
+                marginTop: 8,
+                width: '100%',
+                padding: '14px 0',
+                borderRadius: 14,
+                background: 'radial-gradient(100% 100% at 50% 20%, rgba(255,180,220,0.95), #FC54AF)',
+                border: '1px solid rgba(255,255,255,0.25)',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: 18,
+                cursor: 'pointer',
+                boxShadow: '0 0 20px rgba(252,84,175,0.5)',
+              }}
+            >
+              Join the Heartverse
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
 
     </motion.div>
   );

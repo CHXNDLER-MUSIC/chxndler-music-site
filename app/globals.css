@@ -385,7 +385,7 @@ main {
   0%,100% { box-shadow: 0 0 20px rgba(252,84,175,.55), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22); transform: scale(1); }
   50%      { box-shadow: 0 0 36px rgba(252,84,175,.9),  inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22); transform: scale(1.05); }
 }
-.locate-signal-pulse { animation: locate-signal-pulse 1.4s ease-in-out infinite; }
+.locate-signal-pulse { animation: locate-signal-pulse 2.8s ease-in-out infinite; }
 @keyframes locate-signal-pulse {
   0%,100% {
     box-shadow: 0 0 18px rgba(252,84,175,.75), 0 0 38px rgba(252,84,175,.45), 0 0 65px rgba(252,84,175,.2);
