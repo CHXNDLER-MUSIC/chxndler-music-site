@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
-
-const SIGNAL_END_DATE = new Date("2026-05-22T00:00:00Z");
+import { useHiddenSignalDate } from "@/hooks/useHiddenSignalDate";
 
 function getTimeLeft(target: Date) {
   const diff = Math.max(0, target.getTime() - Date.now());
@@ -28,8 +27,8 @@ function useCountdown(target: Date) {
   return timeLeft;
 }
 
-function CountdownTimer() {
-  const { days, hours, minutes, seconds, expired } = useCountdown(SIGNAL_END_DATE);
+function CountdownTimer({ endDate }: { endDate: Date }) {
+  const { days, hours, minutes, seconds, expired } = useCountdown(endDate);
   const pad = (n: number) => String(n).padStart(2, "0");
 
   return (
@@ -49,41 +48,26 @@ function CountdownTimer() {
         style={{
           fontSize: "10px",
           letterSpacing: "0.15em",
-          color: "rgba(252,84,175,0.85)",
+          color: expired ? "rgba(252,84,175,0.45)" : "rgba(252,84,175,0.85)",
           fontWeight: 600,
           marginBottom: "4px",
         }}
       >
-        HIDDEN SIGNAL CLOSES IN
+        {expired ? "HIDDEN SIGNAL CLOSED" : "HIDDEN SIGNAL CLOSES IN"}
       </div>
 
-      {expired ? (
-        <div
-          style={{
-            fontSize: "20px",
-            fontWeight: "bold",
-            color: "#F2EF1D",
-            textShadow: "0 0 10px rgba(242,239,29,0.8)",
-            letterSpacing: "0.1em",
-          }}
-        >
-          SIGNAL LOST
-        </div>
-      ) : (
-        <div
-          style={{
-            fontSize: "22px",
-            fontWeight: "bold",
-            color: "#FC54AF",
-            textShadow: "0 0 8px rgba(252,84,175,0.7), 0 0 18px rgba(252,84,175,0.3)",
-            letterSpacing: "0.08em",
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
-          {pad(days)} : {pad(hours)} : {pad(minutes)} : {pad(seconds)}
-        </div>
-      )}
-
+      <div
+        style={{
+          fontSize: "22px",
+          fontWeight: "bold",
+          color: expired ? "rgba(252,84,175,0.35)" : "#FC54AF",
+          textShadow: expired ? "none" : "0 0 8px rgba(252,84,175,0.7), 0 0 18px rgba(252,84,175,0.3)",
+          letterSpacing: "0.08em",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {pad(days)} : {pad(hours)} : {pad(minutes)} : {pad(seconds)}
+      </div>
     </div>
   );
 }
@@ -94,7 +78,17 @@ type Props = {
 };
 
 export default function HeartverseCardModal({ open, onClose }: Props) {
-  const { expired } = useCountdown(SIGNAL_END_DATE);
+  const { endDate } = useHiddenSignalDate();
+  const { expired } = useCountdown(endDate);
+  const [winnerReady, setWinnerReady] = useState(false);
+
+  useEffect(() => {
+    if (!expired || !open) return;
+    fetch("/api/cards/signal-winner")
+      .then((r) => r.json())
+      .then((d) => setWinnerReady(!!d.winner_exists))
+      .catch(() => {});
+  }, [expired, open]);
 
   function handleGetCard() {
     if (expired) return;
@@ -103,6 +97,14 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent("openChxndlerCardDirect"));
     }, 200);
+  }
+
+  function handleLocateSignal() {
+    try { sfx.play("click", 0.8); } catch {}
+    onClose();
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("locateSignal"));
+    }, 150);
   }
 
   function handleClose() {
@@ -167,6 +169,7 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
                 backdropFilter: "blur(12px) saturate(140%)",
                 color: "#F2EF1D",
                 position: "relative",
+                overflow: "hidden",
               }}
             >
               {/* Bottom glow */}
@@ -247,18 +250,19 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
               />
 
               {/* Body */}
-              <div className="flex flex-col items-center space-y-6 px-2 flex-1">
+              <div className="flex flex-col items-center space-y-3 px-2 flex-1">
                 {/* Countdown */}
-                <CountdownTimer />
+                <CountdownTimer endDate={endDate} />
 
                 <p
-                  className="text-center text-xl leading-loose"
+                  className="text-center text-xl"
                   style={{
                     color: "#F2EF1D",
                     textShadow: "0 0 8px rgba(242,239,29,0.6)",
+                    lineHeight: "1.6",
                   }}
                 >
-                  I'm sending CHXNDLER cards to Aliens.<br />One contains a{" "}
+                  I'm sending CHXNDLER cards to ALIENS.<br />One contains a{" "}
                   <span style={{ fontWeight: "bold", color: "#FC54AF", textShadow: "0 0 6px rgba(252,84,175,0.6), 0 0 12px rgba(252,84,175,0.3)" }}>
                     hidden signal
                   </span>
@@ -267,26 +271,49 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
               </div>
 
               {/* Button pinned to bottom */}
-              <div className="px-2 pt-4">
-                <button
-                  onClick={handleGetCard}
-                  onMouseEnter={() => { if (!expired) try { sfx.play("hover", 0.35); } catch {} }}
-                  disabled={expired}
-                  className="get-card-pulse w-full rounded-lg px-4 py-3 text-xl font-bold border"
-                  style={{
-                    background: expired
-                      ? "rgba(60,60,60,0.5)"
-                      : "radial-gradient(100% 100% at 50% 20%, #F5F270, #F2EF1D)",
-                    color: expired ? "rgba(255,255,255,0.3)" : "#001014",
-                    border: expired
-                      ? "1px solid rgba(255,255,255,0.1)"
-                      : "1px solid rgba(255,255,255,0.24)",
-                    cursor: expired ? "not-allowed" : "pointer",
-                    opacity: expired ? 0.5 : 1,
-                  }}
-                >
-                  {expired ? "SIGNAL LOST" : "SEND ME MY CARD 💌"}
-                </button>
+              <div className="px-2 pt-2">
+                {expired && winnerReady ? (
+                  <button
+                    onClick={handleLocateSignal}
+                    onMouseEnter={() => { try { sfx.play("hover", 0.35); } catch {} }}
+                    className="locate-signal-pulse w-full rounded-lg px-4 py-3 text-xl font-bold"
+                    style={{
+                      background: "#FC54AF",
+                      color: "#ffffff",
+                      border: "2px solid rgba(255,255,255,0.3)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    LOCATE SIGNAL
+                  </button>
+                ) : expired ? (
+                  <button
+                    disabled
+                    className="locate-signal-scanning w-full rounded-lg px-4 py-3 text-xl font-bold"
+                    style={{
+                      background: "rgba(252,84,175,0.05)",
+                      color: "rgba(252,84,175,0.35)",
+                      border: "1px solid rgba(252,84,175,0.2)",
+                      cursor: "not-allowed",
+                    }}
+                  >
+                    SCANNING FOR SIGNAL
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleGetCard}
+                    onMouseEnter={() => { try { sfx.play("hover", 0.35); } catch {} }}
+                    className="get-card-pulse w-full rounded-lg px-4 py-3 text-xl font-bold border"
+                    style={{
+                      background: "radial-gradient(100% 100% at 50% 20%, #F5F270, #F2EF1D)",
+                      color: "#001014",
+                      border: "1px solid rgba(255,255,255,0.24)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    SEND ME MY CARD 💌
+                  </button>
+                )}
               </div>
             </div>
           </div>

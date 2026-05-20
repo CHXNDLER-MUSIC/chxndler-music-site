@@ -363,6 +363,7 @@ const HUDPanel = React.memo(function HUDPanel({
 
   // YouTube popout state (waveform HUD)
   const [showYouTubePopover, setShowYouTubePopover] = useState(false);
+  const [ytPopoverPos, setYtPopoverPos] = useState(null);
   // Track last top-control pressed to avoid cross-triggering between YouTube and Apple
   const lastTopControlRef = useRef('');
   const lastTopControlAtRef = useRef(0);
@@ -1464,6 +1465,22 @@ const HUDPanel = React.memo(function HUDPanel({
     try { audioManager.pause(); } catch {}
   }, [showYouTubePopover]);
 
+  // Keep YouTube popover aligned to blue display on resize
+  useEffect(() => {
+    if (!showYouTubePopover) return;
+    const onResize = () => {
+      try {
+        const wrapper = innerRef.current?.parentElement || null;
+        if (wrapper) {
+          const rect = wrapper.getBoundingClientRect();
+          setYtPopoverPos({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
+        }
+      } catch {}
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [showYouTubePopover]);
+
   useEffect(() => {
     if (!showSpotifyPopover) return;
     const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowSpotifyPopover(false); } };
@@ -2130,10 +2147,11 @@ const HUDPanel = React.memo(function HUDPanel({
     };
   }, []);
 
-  // Close volume popover when blue display closes
+  // Close volume popover and dismiss planet popup when blue display closes
   useEffect(() => {
     if (!showHUD) {
       setShowHudVolumePopover(false);
+      try { window.dispatchEvent(new CustomEvent('planet:dismiss-popup')); } catch {}
     }
   }, [showHUD]);
 
@@ -3575,6 +3593,15 @@ const HUDPanel = React.memo(function HUDPanel({
                               const embed = toYouTubeEmbed(youtubeUrl);
                               if (!isYouTubeProfile && embed) {
                                 setYtEmbedUrl(`${embed}?autoplay=1`);
+                                try {
+                                  const wrapper = innerRef.current?.parentElement || null;
+                                  if (wrapper) {
+                                    const rect = wrapper.getBoundingClientRect();
+                                    setYtPopoverPos({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
+                                  } else {
+                                    setYtPopoverPos(null);
+                                  }
+                                } catch { setYtPopoverPos(null); }
                                 setShowYouTubePopover(true);
                               } else {
                                 window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
@@ -5901,16 +5928,27 @@ const HUDPanel = React.memo(function HUDPanel({
                       background: 'transparent',
                       backdropFilter: 'none',
                       zIndex: 2147483647,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
                     }}
                   >
                     <div
                       className="yt-popover"
                       onClick={(e) => { e.stopPropagation(); }}
-                      style={{
-                        position: 'relative',
+                      style={ytPopoverPos ? {
+                        position: 'fixed',
+                        left: ytPopoverPos.left,
+                        top: ytPopoverPos.top,
+                        width: ytPopoverPos.width,
+                        height: ytPopoverPos.height,
+                        background: 'rgba(3,10,20,0.92)',
+                        border: '1px solid rgba(25,227,255,0.6)',
+                        boxShadow: '0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(25,227,255,0.45)',
+                        borderRadius: 14,
+                        overflow: 'hidden',
+                      } : {
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -60%)',
                         width: 'min(84vw, 660px)',
                         aspectRatio: '16 / 9',
                         background: 'rgba(3,10,20,0.92)',
@@ -5918,8 +5956,6 @@ const HUDPanel = React.memo(function HUDPanel({
                         boxShadow: '0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(25,227,255,0.45)',
                         borderRadius: 14,
                         overflow: 'hidden',
-                        // Move higher on screen
-                        marginTop: -250
                       }}
                     >
                       <button

@@ -33,6 +33,12 @@ const HUD_GRID_SCROLL_SPEED = { x: 0.005, y: 0.002 }; // Subtle drift animation
 
 export type ElementType = 'heart' | 'water' | 'lightning' | 'darkness';
 
+interface CardOrder {
+  id: string | number;
+  shipping_full_name: string | null;
+  created_at: string;
+}
+
 // Popup state for clicked planets
 interface PlanetPopup {
   x: number;
@@ -122,6 +128,8 @@ export default function Pure3DPlanets({
 
   // Planet popup state
   const [planetPopup, setPlanetPopup] = useState<PlanetPopup | null>(null);
+  // Exposed ref so the dismiss-popup event handler can call clearSelectionEffects() from outside the Three.js effect
+  const clearSelectionEffectsRef = useRef<(() => void) | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const isCinematicRef = useRef(false); // Ref version for animation loop access
   const restCameraPositionRef = useRef<THREE.Vector3 | null>(null);
@@ -134,6 +142,21 @@ export default function Pure3DPlanets({
   const [sceneReady, setSceneReady] = useState(false);
   // Track currently focused song for highlight effects
   const focusedSongSlugRef = useRef<string | null>(null);
+
+  // Card order stars
+  const [cardOrders, setCardOrders] = useState<CardOrder[]>([]);
+  const [cardStarTooltip, setCardStarTooltip] = useState<{ x: number; y: number; name: string; date: string } | null>(null);
+  const cardStarSpritesRef = useRef<Array<{ sprite: THREE.Sprite; order: CardOrder }>>([]);
+  const cardStarGroupRef = useRef<THREE.Group | null>(null);
+
+  // Star fly-in animation (new order confirmation)
+  const flyInSpriteRef = useRef<THREE.Sprite | null>(null);
+  const flyInTrailSpriteRef = useRef<THREE.Sprite | null>(null);
+  const flyInPhaseRef = useRef<'approach' | 'landing' | null>(null);
+  const flyInStartMsRef = useRef<number>(0);
+  const flyInStartLocalPosRef = useRef<THREE.Vector3 | null>(null);
+  const flyInTargetLocalPosRef = useRef<THREE.Vector3 | null>(null);
+
   // Keep reference to glow sprite for focused song
   const songGlowSpriteRef = useRef<THREE.Sprite | null>(null);
 
@@ -182,10 +205,109 @@ export default function Pure3DPlanets({
     };
   }, []);
 
+  // Fetch CHXNDLER Card orders to render as stars around the center planet
+  useEffect(() => {
+    fetch('/api/cards/chxndler-orders')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setCardOrders(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
+
+  // Listen for new CHXNDLER Card orders → add star + trigger fly-in after warp completes
+  useEffect(() => {
+    if (!isClient) return;
+    const handler = (e: CustomEvent) => {
+      const { id, shipping_full_name, created_at } = e.detail || {};
+      if (!id) return;
+      const newOrder: CardOrder = {
+        id,
+        shipping_full_name: shipping_full_name || null,
+        created_at: created_at || new Date().toISOString(),
+      };
+      // Add to state — star creation effect rebuilds the group (hidden under warp overlay)
+      setCardOrders(prev => {
+        // Avoid duplicates if event fires twice
+        if (prev.some(o => String(o.id) === String(id))) return prev;
+        return [...prev, newOrder];
+      });
+
+      // Small buffer for React to rebuild the star group before starting fly-in
+      setTimeout(() => {
+        const sprites = cardStarSpritesRef.current;
+        if (sprites.length === 0) return;
+        // The newest star is the last entry (appended by the state update above)
+        const newest = sprites[sprites.length - 1];
+        if (String(newest.order.id) !== String(id)) return;
+
+        // Capture the star's current local position as the target
+        flyInTargetLocalPosRef.current = newest.sprite.position.clone();
+
+        // Start position: far above the center planet in group-local space
+        const tp = flyInTargetLocalPosRef.current;
+        flyInStartLocalPosRef.current = new THREE.Vector3(tp.x * 0.05, tp.y + 70, tp.z * 0.05);
+
+        // Move the sprite to its start position
+        newest.sprite.position.copy(flyInStartLocalPosRef.current);
+        newest.sprite.scale.set(5, 5, 1);
+        (newest.sprite.material as THREE.SpriteMaterial).opacity = 0;
+
+        // ── Build comet-tail trail sprite ──
+        // Linear gradient texture: bright at "bottom" (star end) → transparent at top (tail end)
+        const trailCanvas = document.createElement('canvas');
+        trailCanvas.width = 16;
+        trailCanvas.height = 128;
+        const tCtx = trailCanvas.getContext('2d')!;
+        const tGrad = tCtx.createLinearGradient(0, trailCanvas.height, 0, 0);
+        tGrad.addColorStop(0,   'rgba(255,255,255,0.95)');
+        tGrad.addColorStop(0.2, 'rgba(220,240,255,0.7)');
+        tGrad.addColorStop(0.6, 'rgba(180,220,255,0.25)');
+        tGrad.addColorStop(1,   'rgba(180,220,255,0)');
+        tCtx.fillStyle = tGrad;
+        tCtx.fillRect(0, 0, trailCanvas.width, trailCanvas.height);
+
+        const trailTexture = new THREE.CanvasTexture(trailCanvas);
+        trailTexture.needsUpdate = true;
+
+        const trailMat = new THREE.SpriteMaterial({
+          map: trailTexture,
+          transparent: true,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+          opacity: 0,
+        });
+        const trailSprite = new THREE.Sprite(trailMat);
+        trailSprite.position.copy(flyInStartLocalPosRef.current);
+        trailSprite.scale.set(0.5, 1, 1);
+
+        if (cardStarGroupRef.current) {
+          cardStarGroupRef.current.add(trailSprite);
+        }
+        flyInTrailSpriteRef.current = trailSprite;
+
+        flyInSpriteRef.current = newest.sprite;
+        flyInStartMsRef.current = Date.now();
+        flyInPhaseRef.current = 'approach';
+      }, 200);
+    };
+
+    window.addEventListener('chxndler-card:ordered', handler as EventListener);
+    return () => window.removeEventListener('chxndler-card:ordered', handler as EventListener);
+  }, [isClient]);
+
   // Sync popup ref with state for animation loop access
   useEffect(() => {
     planetPopupRef.current = planetPopup;
   }, [planetPopup]);
+
+  // Dismiss popup when the blue display closes
+  useEffect(() => {
+    const handleDismiss = () => {
+      setPlanetPopup(null);
+      clearSelectionEffectsRef.current?.();
+    };
+    window.addEventListener('planet:dismiss-popup', handleDismiss);
+    return () => window.removeEventListener('planet:dismiss-popup', handleDismiss);
+  }, []);
 
   // Sync isCinematic ref with state for animation loop access
   useEffect(() => {
@@ -847,6 +969,8 @@ export default function Pure3DPlanets({
       selectedPlanetBaseYRef.current = null;
       selectedElementIdRef.current = null;
     };
+    // Expose so the dismiss-popup event listener can call it from outside this effect
+    clearSelectionEffectsRef.current = clearSelectionEffects;
 
     // Helper to set up selection effects on a planet
     const setupSelectionEffects = (obj: THREE.Object3D, glowColor: string, elementId?: ElementType) => {
@@ -1065,8 +1189,27 @@ export default function Pure3DPlanets({
 
       setHoveredElement(foundHover);
 
+      // Check card order star hover
+      let foundStar: (typeof cardStarSpritesRef.current)[0] | null = null;
+      for (const hit of intersects) {
+        const match = cardStarSpritesRef.current.find(s => s.sprite === hit.object);
+        if (match) { foundStar = match; break; }
+      }
+      if (foundStar) {
+        const worldPos = new THREE.Vector3();
+        foundStar.sprite.getWorldPosition(worldPos);
+        const screenPos = projectToScreen(worldPos);
+        const displayName = foundStar.order.shipping_full_name || `Star #${foundStar.order.id}`;
+        const displayDate = new Date(foundStar.order.created_at).toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric', year: 'numeric'
+        });
+        setCardStarTooltip({ x: screenPos.x, y: screenPos.y, name: displayName, date: displayDate });
+      } else {
+        setCardStarTooltip(null);
+      }
+
       // Update cursor style
-      container.style.cursor = foundHover ? 'pointer' : 'default';
+      container.style.cursor = (foundHover || foundStar) ? 'pointer' : 'default';
 
       // Update desired camera position for hover bias
       if (!isCinematicRef.current && restCameraPositionRef.current && restCameraTargetRef.current) {
@@ -1086,6 +1229,7 @@ export default function Pure3DPlanets({
 
     const handleMouseLeave = () => {
       setHoveredElement(null);
+      setCardStarTooltip(null);
       container.style.cursor = 'default';
 
       // Return camera to rest position
@@ -1208,6 +1352,108 @@ export default function Pure3DPlanets({
         if (elementSprite) {
           const planetBaseScale = (elementSprite as any).userData?.baseScale || 9;
           elementSprite.scale.set(planetBaseScale, planetBaseScale, 1);
+        }
+      }
+
+      // Slowly rotate the card order star cluster around the center planet
+      if (cardStarGroupRef.current) {
+        cardStarGroupRef.current.rotation.y = elapsed * 0.04;
+      }
+      // Twinkle each card order star independently
+      cardStarSpritesRef.current.forEach(({ sprite }, i) => {
+        // Skip the sprite currently in fly-in animation — it drives its own opacity
+        if (sprite === flyInSpriteRef.current) return;
+        const twinkle = 0.45 + Math.sin(elapsed * 2.2 + i * 1.3) * 0.45;
+        (sprite.material as THREE.SpriteMaterial).opacity = twinkle;
+      });
+
+      // ── Star fly-in: approach phase (new order lands after warp) ──
+      if (flyInSpriteRef.current && flyInPhaseRef.current === 'approach' && flyInStartLocalPosRef.current && flyInTargetLocalPosRef.current) {
+        const approachDuration = 1400; // ms
+        const t = Math.min((Date.now() - flyInStartMsRef.current) / approachDuration, 1);
+        // Ease-out cubic: fast start, smooth deceleration
+        const eased = 1 - Math.pow(1 - t, 3);
+
+        flyInSpriteRef.current.position.lerpVectors(flyInStartLocalPosRef.current, flyInTargetLocalPosRef.current, eased);
+
+        // Scale: large at start (appears from far), settles to normal
+        const sc = 5 * (1 - eased) + 2.2 * eased;
+        flyInSpriteRef.current.scale.set(sc, sc, 1);
+
+        // Opacity: fades in quickly, then stays bright
+        const mat = flyInSpriteRef.current.material as THREE.SpriteMaterial;
+        mat.opacity = Math.min(1, t * 2.5);
+
+        // ── Comet tail: position, scale, opacity, and screen-space rotation ──
+        if (flyInTrailSpriteRef.current && flyInTargetLocalPosRef.current) {
+          const speed = 1 - eased;                   // 1 = fast, 0 = stopped
+          const trailLength = 1.5 + speed * 7;       // longer when faster
+
+          // Tail direction: opposite to travel vector (in local group space)
+          const travelDir = flyInTargetLocalPosRef.current.clone()
+            .sub(flyInStartLocalPosRef.current).normalize();
+          // Center the trail sprite half-way along the tail behind the star
+          const trailCenter = flyInSpriteRef.current.position.clone()
+            .sub(travelDir.clone().multiplyScalar(trailLength * 0.5));
+          flyInTrailSpriteRef.current.position.copy(trailCenter);
+
+          // Stretch along travel direction; thin perpendicular
+          flyInTrailSpriteRef.current.scale.set(0.45, trailLength, 1);
+
+          // Opacity: fully visible when fast, fades as star decelerates
+          const trailMat = flyInTrailSpriteRef.current.material as THREE.SpriteMaterial;
+          trailMat.opacity = speed * 0.85;
+
+          // Align with screen-space travel direction so gradient points correctly
+          // Convert the current star position and target to NDC, then get angle
+          const starWorld = flyInSpriteRef.current.position.clone();
+          if (cardStarGroupRef.current) starWorld.applyMatrix4(cardStarGroupRef.current.matrixWorld);
+          const targetWorld = flyInTargetLocalPosRef.current.clone();
+          if (cardStarGroupRef.current) targetWorld.applyMatrix4(cardStarGroupRef.current.matrixWorld);
+          const p1 = starWorld.clone().project(camera);
+          const p2 = targetWorld.clone().project(camera);
+          // +π/2 because sprite Y-axis is "up"; we want it pointing toward travel direction
+          trailMat.rotation = Math.atan2(p2.y - p1.y, p2.x - p1.x) + Math.PI / 2;
+        }
+
+        if (t >= 1) {
+          flyInSpriteRef.current.position.copy(flyInTargetLocalPosRef.current);
+
+          // Play landing chime the moment the star arrives
+          try { sfx.play('star', 0.75); } catch {}
+
+          // Dispose trail sprite
+          if (flyInTrailSpriteRef.current) {
+            if (cardStarGroupRef.current) cardStarGroupRef.current.remove(flyInTrailSpriteRef.current);
+            try {
+              const tm = flyInTrailSpriteRef.current.material as THREE.SpriteMaterial;
+              if (tm.map) tm.map.dispose();
+              tm.dispose();
+            } catch {}
+            flyInTrailSpriteRef.current = null;
+          }
+
+          flyInPhaseRef.current = 'landing';
+          flyInStartMsRef.current = Date.now();
+        }
+      }
+
+      // ── Star fly-in: landing flash (brief pulse after arrival) ──
+      if (flyInSpriteRef.current && flyInPhaseRef.current === 'landing') {
+        const landDuration = 500; // ms
+        const t = Math.min((Date.now() - flyInStartMsRef.current) / landDuration, 1);
+
+        // Scale spike: rises and falls in an arc (sin curve peaks at mid-point)
+        const spike = Math.sin(t * Math.PI);
+        flyInSpriteRef.current.scale.set(2.2 + spike * 2.0, 2.2 + spike * 2.0, 1);
+        (flyInSpriteRef.current.material as THREE.SpriteMaterial).opacity = 1.0;
+
+        if (t >= 1) {
+          flyInSpriteRef.current.scale.set(2.2, 2.2, 1);
+          flyInPhaseRef.current = null;
+          flyInSpriteRef.current = null;
+          flyInStartLocalPosRef.current = null;
+          flyInTargetLocalPosRef.current = null;
         }
       }
 
@@ -1533,6 +1779,99 @@ export default function Pure3DPlanets({
   // Only rebuild when songs are first loaded (length changes from 0)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient, shouldRenderPlanets, quality, songs.length]);
+
+  // Add/remove card order star sprites around the center planet whenever orders or scene readiness changes
+  useEffect(() => {
+    if (!isClient || !shouldRenderPlanets || !sceneRef.current || cardOrders.length === 0) return;
+
+    const scene = sceneRef.current;
+
+    // Draw a 5-pointed white star with a soft glow halo on a canvas
+    const starCanvas = document.createElement('canvas');
+    starCanvas.width = 64;
+    starCanvas.height = 64;
+    const ctx = starCanvas.getContext('2d')!;
+
+    // Soft radial glow behind the star
+    const glow = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    glow.addColorStop(0, 'rgba(255,255,255,0.7)');
+    glow.addColorStop(0.4, 'rgba(255,255,255,0.2)');
+    glow.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, 64, 64);
+
+    // 5-pointed star shape
+    ctx.save();
+    ctx.translate(32, 32);
+    ctx.fillStyle = 'rgba(255,255,255,1)';
+    ctx.beginPath();
+    const spikes = 5;
+    const outerR = 14;
+    const innerR = 6;
+    let rot = -Math.PI / 2;
+    const step = Math.PI / spikes;
+    ctx.moveTo(Math.cos(rot) * outerR, Math.sin(rot) * outerR);
+    for (let i = 0; i < spikes; i++) {
+      rot += step;
+      ctx.lineTo(Math.cos(rot) * innerR, Math.sin(rot) * innerR);
+      rot += step;
+      ctx.lineTo(Math.cos(rot) * outerR, Math.sin(rot) * outerR);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    const starTexture = new THREE.CanvasTexture(starCanvas);
+    starTexture.needsUpdate = true;
+
+    const group = new THREE.Group();
+    group.position.set(0, 0, 0);
+    const entries: typeof cardStarSpritesRef.current = [];
+
+    const sunY = 12;
+    const starRadius = 9;
+    const n = cardOrders.length;
+
+    cardOrders.forEach((order, i) => {
+      // Fibonacci sphere distribution for even spread
+      const phi = Math.acos(1 - 2 * (i + 0.5) / n);
+      const theta = Math.PI * (1 + Math.sqrt(5)) * (i + 0.5);
+
+      const x = Math.sin(phi) * Math.cos(theta) * starRadius;
+      const y = sunY + Math.cos(phi) * starRadius;
+      const z = Math.sin(phi) * Math.sin(theta) * starRadius;
+
+      const mat = new THREE.SpriteMaterial({
+        map: starTexture,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        opacity: 0.8,
+      });
+      const sprite = new THREE.Sprite(mat);
+      sprite.position.set(x, y, z);
+      sprite.scale.set(2.2, 2.2, 1);
+      (sprite as any).userData = { isCardStar: true, orderId: order.id };
+      group.add(sprite);
+      entries.push({ sprite, order });
+    });
+
+    scene.add(group);
+    cardStarGroupRef.current = group;
+    cardStarSpritesRef.current = entries;
+
+    return () => {
+      scene.remove(group);
+      entries.forEach(({ sprite }) => {
+        const mat = sprite.material as THREE.SpriteMaterial;
+        mat.dispose();
+      });
+      starTexture.dispose();
+      cardStarGroupRef.current = null;
+      cardStarSpritesRef.current = [];
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardOrders, isClient, shouldRenderPlanets]);
 
     // Toggle glow visibility when props change without rebuilding the scene
     // Use refs to track previous values and only log when actually changed
@@ -2277,6 +2616,37 @@ export default function Pure3DPlanets({
               {planetPopup.name}
             </span>
           </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Card order star hover tooltip */}
+      {cardStarTooltip && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            left: cardStarTooltip.x,
+            top: cardStarTooltip.y,
+            transform: 'translate(-50%, -100%) translateY(-12px)',
+            pointerEvents: 'none',
+            zIndex: 999998,
+            background: 'rgba(0,0,0,0.88)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.25)',
+            borderRadius: '8px',
+            padding: '7px 12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2px',
+            boxShadow: '0 0 14px rgba(255,255,255,0.12), 0 4px 16px rgba(0,0,0,0.5)',
+          }}
+        >
+          <span style={{ color: '#fff', fontWeight: 600, fontSize: '12px', whiteSpace: 'nowrap' }}>
+            ★ {cardStarTooltip.name}
+          </span>
+          <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', whiteSpace: 'nowrap' }}>
+            {cardStarTooltip.date}
+          </span>
         </div>,
         document.body
       )}

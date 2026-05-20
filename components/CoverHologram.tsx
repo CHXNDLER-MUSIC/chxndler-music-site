@@ -577,6 +577,16 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       try { sfx.play('scroll', 0.5); } catch {}
       return;
     }
+
+    // Fire warp immediately on valid submit — close modal and warp to Heartverse
+    setShowCard(false);
+    const warpFiredAt = Date.now();
+    try {
+      window.dispatchEvent(new CustomEvent('planet:warp', {
+        detail: { element: 'center', isCenterPlanet: true }
+      }));
+    } catch {}
+
     try {
       setShippingStatus('saving');
       const res = await fetch('/api/cards/order-chxndler', {
@@ -588,6 +598,23 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       if (!res.ok || !data.success) throw new Error(data.error || 'Failed');
       try { sfx.play('success', 0.7); } catch {}
       setShippingStatus('success');
+
+      // Fire star event so the fly-in lands right as the warp overlay clears (~3000ms)
+      // Pure3DPlanets' handler has a 200ms rebuild buffer, so target (3000 - 200)ms from warp fire
+      const WARP_MS = 3000;
+      const elapsed = Date.now() - warpFiredAt;
+      const fireDelay = Math.max(0, WARP_MS - 200 - elapsed);
+      setTimeout(() => {
+        try {
+          window.dispatchEvent(new CustomEvent('chxndler-card:ordered', {
+            detail: {
+              id: data.order_id,
+              shipping_full_name: shippingForm.full_name,
+              created_at: new Date().toISOString(),
+            }
+          }));
+        } catch {}
+      }, fireDelay);
     } catch (err) {
       console.error('[order-chxndler] submit error:', err);
       setShippingStatus('error');

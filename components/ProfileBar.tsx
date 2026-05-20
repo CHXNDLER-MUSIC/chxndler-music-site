@@ -19,10 +19,10 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useUIStore } from '@/store/useUIStore';
 import JoinUsPopup from '@/components/JoinUsPopup';
+import { useTour } from '@/contexts/TourContext';
 
-const SIGNAL_END_DATE = new Date("2026-05-22T00:00:00Z");
-function getCardTimeLeft() {
-  const diff = Math.max(0, SIGNAL_END_DATE.getTime() - Date.now());
+function getCardTimeLeft(endDate: Date) {
+  const diff = Math.max(0, endDate.getTime() - Date.now());
   return {
     hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
     minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
@@ -35,6 +35,8 @@ import SoulStarJournal from '@/components/SoulStarJournal';
 import ProfilePopover from '@/components/ProfilePopover';
 import AuthButton from '@/components/AuthButton';
 import HeartverseCardModal from '@/components/HeartverseCardModal';
+import SignalLocatorOverlay from '@/components/SignalLocatorOverlay';
+import { useHiddenSignalDate } from '@/hooks/useHiddenSignalDate';
 
 interface Profile {
   id: string;
@@ -84,6 +86,8 @@ export default function ProfileBar({
   // ALL HOOKS MUST BE DECLARED BEFORE ANY EARLY RETURNS
   // Use global UI state for profile bar visibility
   const { hasEnteredHeartverse, warpFullyComplete, setWarpFullyComplete } = useUIState();
+  const { start: startTour } = useTour();
+  const [showTourPrompt, setShowTourPrompt] = useState(false);
   // Use shared contexts for auth and profile data
   const { user, loading: authLoading } = useAuth();
   const { profile: contextProfile, loading: profileLoading, updateProfile, refreshProfile, isJournalOpen, setIsJournalOpen } = useProfile();
@@ -114,11 +118,12 @@ export default function ProfileBar({
   const [showHeartPopover, setShowHeartPopover] = useState(false);
   const [showQuests, setShowQuests] = useState(false);
   const [showCardModal, setShowCardModal] = useState(false);
-  const [cardTimeLeft, setCardTimeLeft] = useState(getCardTimeLeft);
+  const { endDate: signalEndDate } = useHiddenSignalDate();
+  const [cardTimeLeft, setCardTimeLeft] = useState(() => getCardTimeLeft(signalEndDate));
   useEffect(() => {
-    const id = setInterval(() => setCardTimeLeft(getCardTimeLeft()), 1000);
+    const id = setInterval(() => setCardTimeLeft(getCardTimeLeft(signalEndDate)), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [signalEndDate]);
   const heartBtnRef = useRef<HTMLButtonElement>(null);
   const [heartPopoverPos, setHeartPopoverPos] = useState<{left: number, top: number, width?: number, height?: number} | null>(null);
 
@@ -437,6 +442,15 @@ export default function ProfileBar({
     return () => window.removeEventListener('openHeartverseCard', handleOpenHeartverseCard);
   }, []);
 
+  // Change beam to yellow when card modal opens, reset when it closes
+  useEffect(() => {
+    if (showCardModal) {
+      try { onBeamColorChange?.('yellow-modal'); } catch {}
+    } else {
+      try { onBeamColorChange?.('off'); } catch {}
+    }
+  }, [showCardModal]);
+
 
   // ProfileBarWrapper already handles hasEnteredHeartverse check
   // This component should always render when called (never dim/hide based on other conditions)
@@ -516,9 +530,30 @@ export default function ProfileBar({
 
           {/* Right Side - HeartCoinButton only */}
           <div className="flex items-center flex-shrink-0 mr-0 space-x-2">
+            {/* Tour Button */}
+            <button
+              onClick={() => { try { sfx.play('click', 0.4); } catch {}; setShowTourPrompt(true); }}
+              onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {}; }}
+              className="flex-shrink-0 rounded-lg border flex items-center justify-center"
+              style={{
+                background: 'rgba(56,182,255,0.10)',
+                border: '1px solid rgba(56,182,255,0.55)',
+                padding: '4px 10px',
+                color: '#38B6FF',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textShadow: '0 0 6px rgba(56,182,255,0.8)',
+                boxShadow: '0 0 8px rgba(56,182,255,0.25)',
+                height: '36px',
+              }}
+            >
+              TOUR
+            </button>
+
             {/* Heart Coin Button with Count */}
             <div className="flex items-center space-x-0.5">
-              <HeartCoinButton 
+              <HeartCoinButton
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}
                 onOpenBlueDisplay={onOpenBlueDisplay}
@@ -1325,6 +1360,61 @@ export default function ProfileBar({
         open={showCardModal}
         onClose={() => setShowCardModal(false)}
       />
+
+      {/* Signal Locator cinematic overlay */}
+      <SignalLocatorOverlay />
+
+      {/* Tour prompt modal */}
+      {showTourPrompt && typeof window !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowTourPrompt(false)}
+          />
+          <div
+            className="relative z-[1000000] w-full max-w-md mx-4 rounded-2xl p-8 text-center pointer-events-auto"
+            style={{
+              background: 'linear-gradient(180deg, rgba(56,182,255,0.18), rgba(56,182,255,0.12))',
+              border: '1px solid rgba(56,182,255,0.35)',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 60px rgba(56,182,255,0.5)',
+            }}
+          >
+            <h2
+              className="text-2xl font-bold text-white mb-4"
+              style={{ textShadow: '0 0 18px rgba(56,182,255,0.7)' }}
+            >
+              Should I show you around?
+            </h2>
+            <button
+              onClick={() => {
+                try { sfx.play('click', 0.5); } catch {}
+                setShowTourPrompt(false);
+                startTour();
+              }}
+              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+              className="w-full px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] mb-3"
+              style={{
+                background: 'linear-gradient(135deg, rgba(252,84,175,0.85), rgba(252,84,175,0.65))',
+                border: '1px solid rgba(252,84,175,0.5)',
+                boxShadow: '0 6px 14px rgba(0,0,0,0.35), 0 0 20px rgba(252,84,175,0.45)',
+              }}
+            >
+              Yes, show me around
+            </button>
+            <button
+              onClick={() => {
+                try { sfx.play('click', 0.5); } catch {}
+                setShowTourPrompt(false);
+              }}
+              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+              className="w-full text-white/80 hover:text-white text-sm underline"
+            >
+              Skip for now
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
 
     </div>
   );

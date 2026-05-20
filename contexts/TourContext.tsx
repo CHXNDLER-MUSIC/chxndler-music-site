@@ -15,6 +15,7 @@ type TourContextValue = {
   restart: () => void;
   disable: () => void; // permanently until re-enabled
   enable: () => void;  // re-enable via settings
+  showWelcome: () => void; // show the "Let me show you around" prompt
 };
 
 const TourContext = createContext<TourContextValue | null>(null);
@@ -115,6 +116,11 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     clearDisabled();
   }, [clearDisabled]);
 
+  const showWelcome = useCallback(() => {
+    clearDisabled();
+    setWelcomeVisible(true);
+  }, [clearDisabled]);
+
   // Auto-start: after profile is complete, no previous completion/disable
   // BUT if onboarding sequence is active, defer to sequence-complete event
   useEffect(() => {
@@ -172,7 +178,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener(ONBOARDING_SEQUENCE_COMPLETE, onSequenceComplete);
   }, [profile, active, welcomeVisible, isCompleted, isDisabled, clearDisabled]);
 
-  const value = useMemo(() => ({ active, start, skip, restart, disable, enable }), [active, start, skip, restart, disable, enable]);
+  const value = useMemo(() => ({ active, start, skip, restart, disable, enable, showWelcome }), [active, start, skip, restart, disable, enable, showWelcome]);
 
   return (
     <TourContext.Provider value={value}>
@@ -203,7 +209,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
               className="text-2xl font-bold text-white mb-4"
               style={{ textShadow: '0 0 18px rgba(56,182,255,0.7)' }}
             >
-              Let me show you around
+              Should I show you around?
             </h2>
 
             <button
@@ -221,16 +227,13 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
                 boxShadow: '0 6px 14px rgba(0,0,0,0.35), 0 0 20px rgba(252,84,175,0.45)'
               }}
             >
-              Start tour
+              Yes, show me around
             </button>
 
             <button
               onClick={() => {
                 try { sfx.play('click', 0.5); } catch {}
-                if (process.env.NODE_ENV !== "production") console.log('Skip tour clicked');
                 setWelcomeVisible(false);
-                // Small delay to ensure modal closes before triggering warp
-                setTimeout(() => skip(), 100);
               }}
               onMouseEnter={() => {
                 try { sfx.play('hover', 0.3); } catch {}
