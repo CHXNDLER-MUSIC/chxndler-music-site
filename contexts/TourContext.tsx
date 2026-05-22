@@ -6,7 +6,7 @@ import { useMenuState } from "@/contexts/MenuStateContext";
 import OnboardingTour from "@/components/OnboardingTour";
 import { sfx } from "@/lib/sfx";
 import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
-import { ONBOARDING_SEQUENCE_COMPLETE, isOnboardingSequenceActive, runRewardSequence } from "@/utils/onboardingSequence";
+import { ONBOARDING_SEQUENCE_COMPLETE, runRewardSequence } from "@/utils/onboardingSequence";
 
 type TourContextValue = {
   active: boolean;
@@ -71,8 +71,9 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     setEndModalVisible(false);
     markCompleted();
     try { await updateProfile({ has_seen_tour: true }); } catch {}
-    // Run reward sequence (HeartCoin → badge → claim card) after tour completion
-    if (isOnboardingSequenceActive() && profile?.id) {
+    // Run reward sequence (HeartCoin → badge → claim card) after tour completion.
+    // DB flag prevents double-awarding even if the page was refreshed between ALIGN and here.
+    if (profile?.id) {
       runRewardSequence(profile.id);
     }
   }, [markCompleted, updateProfile, profile]);
@@ -81,21 +82,15 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     if (process.env.NODE_ENV !== "production") console.log('Tour skip function called');
     setActive(false);
     setEndModalVisible(false);
+    setWelcomeVisible(false);
     markCompleted();
     markDisabled();
     try { await updateProfile({ has_seen_tour: true }); } catch {}
 
-    if (isOnboardingSequenceActive() && profile?.id) {
-      // Onboarding: run HeartCoin → badge → claim card sequence
+    // Run reward sequence (HeartCoin → badge → claim card) whether skipping mid-tour
+    // or skipping the welcome prompt. DB flag prevents double-awarding.
+    if (profile?.id) {
       runRewardSequence(profile.id);
-    } else {
-      // Non-onboarding: trigger warp effect as before
-      try {
-        if (process.env.NODE_ENV !== "production") console.log('Dispatching tour:skipped event');
-        window.dispatchEvent(new CustomEvent('tour:skipped'));
-      } catch (e) {
-        if (process.env.NODE_ENV !== "production") console.log('Could not dispatch tour:skipped event:', e);
-      }
     }
   }, [markCompleted, markDisabled, updateProfile, profile]);
 
@@ -307,7 +302,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
                 <button
                   onClick={() => {
                     try { sfx.play('click', 0.5); } catch {}
-                    setWelcomeVisible(false);
+                    skip();
                   }}
                   onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
                   className="w-full text-white/80 hover:text-white text-sm underline"

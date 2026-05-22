@@ -2319,7 +2319,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         // so we call playTrack directly after the warp duration instead.
         if (isCenterPlanet) {
           setTimeout(() => {
-            try { audioManager.playTrack('center').catch(() => {}); } catch {}
+            try {
+              window.dispatchEvent(new CustomEvent('song:play-now', { detail: { slug: 'center', source: 'center-warp-backup' } }));
+            } catch {}
           }, WARP_DURATION_MS);
         }
 
