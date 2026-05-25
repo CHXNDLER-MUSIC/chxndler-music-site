@@ -15,6 +15,7 @@ export type Song = {
   spotify?: string;
   apple?: string;
   youtube?: string;
+  karaoke?: string;
   src?: string;         // Legacy: defaults to /tracks/<slug>.mp3 (deprecated in favor of sources)
   sources: AudioSource[]; // New: dual format support
   cover?: string;       // defaults to /cover/<slug>.png
@@ -187,15 +188,16 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
   // Unreleased: ALONE (kept for warp/planet + UI; audio loads via Supabase by slug)
   // Add per-track YouTube so the YouTube button opens the correct video
   { 
-    title: "ALONE", 
-    youtube: "https://youtu.be/ZTE6aFi_cqk", 
+    title: "ALONE",
+    youtube: "https://youtu.be/ZTE6aFi_cqk",
+    karaoke: "https://youtu.be/ca3a6wiERQE",
     spotify: "https://open.spotify.com/track/3moEeEzk2lA9CtJ5ieiTrz?si=adae3599e6d84e2b",
     apple: "https://music.apple.com/us/album/alone/1890354455?i=1890354456",
-    hasLyrics: true 
+    hasLyrics: true
   },
   // Unreleased early access: ALONE (ACOUSTIC)
   // Audio sources default to Supabase Storage paths: alone-acoustic.opus/mp3
-  { title: "ALONE (ACOUSTIC)", hasLyrics: true },
+  { title: "ALONE (ACOUSTIC)", karaoke: "https://youtu.be/07Vs6Dmi8tE", hasLyrics: true },
   { title: "BABY", spotify:"https://open.spotify.com/track/3UEVjChARWDbY4ruOIbIl3", apple:"https://music.apple.com/us/album/baby/1823220422?i=1823220423", youtube:"https://youtu.be/RqBs_MYhM6c", cover: "/covers/BABY.webp", src: "/tracks/baby.opus", hasLyrics: true, sections: [
     { time: 15.8, label: "Verse 1", kind: "verse" },
     { time: 47.4, label: "Chorus 1", kind: "chorus" },
@@ -204,7 +206,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 142.2, label: "Bridge", kind: "bridge" },
     { time: 157.8, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "BE MY BEE", spotify:"https://open.spotify.com/track/12iLygYksfcZ3nv6NkrnEr", apple:"https://music.apple.com/us/album/be-my-bee/1784058027?i=1784058028", cover:"/covers/BE MY BEE.webp", src: "/tracks/be-my-bee.opus", sections: [
+  { title: "BE MY BEE", spotify:"https://open.spotify.com/track/12iLygYksfcZ3nv6NkrnEr", karaoke: "https://youtu.be/ooTTnsrQqOc", apple:"https://music.apple.com/us/album/be-my-bee/1784058027?i=1784058028", cover:"/covers/BE MY BEE.webp", src: "/tracks/be-my-bee.opus", sections: [
     { time: 14.1, label: "Verse 1", kind: "verse" },
     { time: 45.7, label: "Chorus 1", kind: "chorus" },
     { time: 77.3, label: "Verse 2", kind: "verse" },
@@ -256,7 +258,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 104.2, label: "Chorus 2", kind: "chorus" },
     { time: 134.9, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "OCEAN GIRL", spotify:"https://open.spotify.com/album/37niwECG0TJMuYFQdrJE3y?si=S_Btj1hMRU-RsnsVL2PBmQ", apple:"https://music.apple.com/us/album/ocean-girl/1829503198?i=1829503199", youtube:"https://www.youtube.com/watch?v=GKfczFiNLn0", cover:"/covers/OCEAN GIRL.webp", src: "/tracks/ocean-girl.opus", sections: [
+  { title: "OCEAN GIRL", spotify:"https://open.spotify.com/album/37niwECG0TJMuYFQdrJE3y?si=S_Btj1hMRU-RsnsVL2PBmQ", apple:"https://music.apple.com/us/album/ocean-girl/1829503198?i=1829503199", youtube:"https://www.youtube.com/watch?v=GKfczFiNLn0", karaoke: "https://youtu.be/2FJyPj5andI", cover:"/covers/OCEAN GIRL.webp", src: "/tracks/ocean-girl.opus", sections: [
     { time: 16.7, label: "Verse 1", kind: "verse" },
     { time: 48.3, label: "Chorus 1", kind: "chorus" },
     { time: 79.9, label: "Verse 2", kind: "verse" },
@@ -264,7 +266,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 143.1, label: "Bridge", kind: "bridge" },
     { time: 158.7, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "OCEAN GIRL (ACOUSTIC)", spotify:"https://open.spotify.com/track/62KREyqgAQxmq3zqCT7oMh?si=506cf1906fac4275", apple:"https://music.apple.com/us/album/ocean-girl-acoustic/1830685266?i=1830685267", youtube:"https://www.youtube.com/watch?v=NsL3WC6L3fw", cover:"/covers/OCEAN GIRL (ACOUSTIC).webp", src: "/tracks/ocean-girl-acoustic.opus", sections: [
+  { title: "OCEAN GIRL (ACOUSTIC)", spotify:"https://open.spotify.com/track/62KREyqgAQxmq3zqCT7oMh?si=506cf1906fac4275", apple:"https://music.apple.com/us/album/ocean-girl-acoustic/1830685266?i=1830685267", youtube:"https://www.youtube.com/watch?v=NsL3WC6L3fw", karaoke: "https://youtu.be/9PXDM5HogoY", cover:"/covers/OCEAN GIRL (ACOUSTIC).webp", src: "/tracks/ocean-girl-acoustic.opus", sections: [
     { time: 14.2, label: "Verse 1", kind: "verse" },
     { time: 43.8, label: "Chorus 1", kind: "chorus" },
     { time: 73.4, label: "Verse 2", kind: "verse" },

@@ -476,44 +476,6 @@ export default function ProfileBar({
           <AuthButton />
         </div>
 
-        {/* Card Button - horizontally centered in the bar */}
-        <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
-          <button
-            onClick={() => { try { sfx.play('click', 0.4); } catch {}; setShowCardModal(true); }}
-            onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {}; }}
-            className="card-btn-pulse flex-shrink-0 rounded-lg border flex flex-col items-center"
-            style={{
-              background: 'rgba(255,105,180,0.10)',
-              border: '1px solid rgba(242,239,29,0.7)',
-              padding: '3px 8px 4px',
-              gap: '1px',
-            }}
-          >
-            <img
-              src="/elements/relics.webp"
-              alt=""
-              style={{
-                width: 36,
-                height: 36,
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 0 5px rgba(252,84,175,0.85))',
-              }}
-            />
-            <span
-              style={{
-                fontSize: '10px',
-                fontWeight: 700,
-                color: '#F2EF1D',
-                letterSpacing: '0.05em',
-                textShadow: '0 0 6px rgba(242,239,29,0.8)',
-                fontVariantNumeric: 'tabular-nums',
-                lineHeight: 1,
-              }}
-            >
-              {String(cardTimeLeft.hours).padStart(2, '0')}:{String(cardTimeLeft.minutes).padStart(2, '0')}:{String(cardTimeLeft.seconds).padStart(2, '0')}
-            </span>
-          </button>
-        </div>
 
         {/* Main Flex Layout - Center and Right */}
         <div className="flex items-center justify-between h-full pl-52 pr-2 min-w-0">
@@ -528,30 +490,46 @@ export default function ProfileBar({
             {/* Currently empty but structured for future pill UI */}
           </div>
 
-          {/* Right Side - HeartCoinButton only */}
-          <div className="flex items-center flex-shrink-0 mr-0 space-x-2">
-            {/* Tour Button */}
+          {/* Right Side - Card Button + HeartCoinButton */}
+          <div className="flex items-center flex-shrink-0 mr-0 gap-0">
+            {/* Card Button */}
             <button
-              onClick={() => { try { sfx.play('click', 0.4); } catch {}; setShowTourPrompt(true); }}
+              onClick={() => { try { sfx.play('click', 0.4); } catch {}; setShowCardModal(true); }}
               onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {}; }}
-              className="flex-shrink-0 rounded-lg border flex items-center justify-center"
+              className="card-btn-pulse flex-shrink-0 rounded-lg border flex flex-col items-center"
               style={{
-                background: 'rgba(56,182,255,0.10)',
-                border: '1px solid rgba(56,182,255,0.55)',
-                padding: '4px 10px',
-                color: '#38B6FF',
-                fontSize: '11px',
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                textShadow: '0 0 6px rgba(56,182,255,0.8)',
-                boxShadow: '0 0 8px rgba(56,182,255,0.25)',
-                height: '36px',
+                background: 'rgba(255,105,180,0.10)',
+                border: '1px solid rgba(242,239,29,0.7)',
+                padding: '1px 8px 2px',
+                gap: '1px',
+                marginLeft: '16px',
               }}
             >
-              TOUR
+              <img
+                src="/elements/relics.webp"
+                alt=""
+                style={{
+                  width: 34,
+                  height: 34,
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 0 5px rgba(252,84,175,0.85))',
+                }}
+              />
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: '#F2EF1D',
+                  letterSpacing: '0.05em',
+                  textShadow: '0 0 6px rgba(242,239,29,0.8)',
+                  fontVariantNumeric: 'tabular-nums',
+                  lineHeight: 1,
+                }}
+              >
+                {String(cardTimeLeft.hours).padStart(2, '0')}:{String(cardTimeLeft.minutes).padStart(2, '0')}:{String(cardTimeLeft.seconds).padStart(2, '0')}
+              </span>
             </button>
-
-            {/* Heart Coin Button with Count */}
+{/* Heart Coin Button with Count */}
             <div className="flex items-center space-x-0.5">
               <HeartCoinButton
                 onHoverSound={() => sfx.play('hover', 0.8)}
@@ -1421,10 +1399,17 @@ export default function ProfileBar({
             <div className="w-full h-px mb-6" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)', boxShadow: '0 0 4px rgba(0,255,255,0.6)' }} />
 
             <div className="w-full space-y-3 px-4">
+              <style>{`
+                @keyframes tour-pulse {
+                  0%, 100% { box-shadow: 0 0 15px rgba(252,84,175,0.4); opacity: 1; }
+                  50% { box-shadow: 0 0 28px rgba(252,84,175,0.75), 0 0 8px rgba(252,84,175,0.5) inset; opacity: 0.88; }
+                }
+                .tour-cta-pulse { animation: tour-pulse 2s ease-in-out infinite; }
+              `}</style>
               <button
                 onClick={() => { try { sfx.play('click', 0.5); } catch {}; setShowTourPrompt(false); startTour(); }}
                 onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                className="w-full flex items-center justify-center rounded-lg px-4 py-3 text-lg font-medium transition hover:scale-[1.02] active:scale-[0.98]"
+                className="tour-cta-pulse w-full flex items-center justify-center rounded-lg px-4 py-3 text-lg font-medium transition hover:scale-[1.02] active:scale-[0.98]"
                 style={{ background: 'rgba(252,84,175,0.2)', border: '1px solid rgba(252,84,175,0.6)', color: '#FC54AF', textShadow: '0 0 8px rgba(252,84,175,0.8)', boxShadow: '0 0 15px rgba(252,84,175,0.4)' }}
               >
                 Yes, show me around

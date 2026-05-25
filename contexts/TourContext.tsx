@@ -6,7 +6,7 @@ import { useMenuState } from "@/contexts/MenuStateContext";
 import OnboardingTour from "@/components/OnboardingTour";
 import { sfx } from "@/lib/sfx";
 import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
-import { ONBOARDING_SEQUENCE_COMPLETE, runRewardSequence } from "@/utils/onboardingSequence";
+import { ONBOARDING_SEQUENCE_COMPLETE, runRewardSequence, isOnboardingSequenceActive } from "@/utils/onboardingSequence";
 
 type TourContextValue = {
   active: boolean;

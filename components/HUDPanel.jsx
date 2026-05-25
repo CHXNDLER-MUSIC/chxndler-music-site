@@ -253,6 +253,7 @@ const HUDPanel = React.memo(function HUDPanel({
   const [lyricsLoading, setLyricsLoading] = useState(false);
   const [lyricsError, setLyricsError] = useState(null);
   const [lyricsContent, setLyricsContent] = useState('');
+  const [lyricsKaraokeMode, setLyricsKaraokeMode] = useState(false);
   const lyricsBtnRef = useRef(null);
   const [lyricsPopoverPos, setLyricsPopoverPos] = useState(null);
   const lyricsScrollRef = useRef(null);
@@ -1918,6 +1919,9 @@ const HUDPanel = React.memo(function HUDPanel({
       document.removeEventListener('keydown', onKey);
     };
   }, [showLyricsPopover]);
+
+  // Reset karaoke mode when lyrics popover closes
+  useEffect(() => { if (!showLyricsPopover) setLyricsKaraokeMode(false); }, [showLyricsPopover]);
 
   // Play subtle scroll SFX while scrolling lyrics (rate-limited)
   useEffect(() => {
@@ -6798,6 +6802,53 @@ const HUDPanel = React.memo(function HUDPanel({
                           <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                         </svg>
                       </button>
+                      {/* KARAOKE button — toggles embedded YouTube video inside the lyrics panel */}
+                      {(() => {
+                        const _isElementPlanetBtn = currentId && ['heart', 'water', 'lightning', 'darkness', 'center'].includes(String(currentId).toLowerCase());
+                        const hasKaraoke = !_isElementPlanetBtn && !!currentSong?.karaoke;
+                        const isActive = lyricsKaraokeMode && hasKaraoke;
+                        return (
+                          <button
+                            aria-label={hasKaraoke ? (lyricsKaraokeMode ? 'Show lyrics' : 'Watch karaoke video') : 'Karaoke not available'}
+                            title={hasKaraoke ? (lyricsKaraokeMode ? 'Back to lyrics' : 'Karaoke') : 'Karaoke coming soon'}
+                            disabled={!hasKaraoke}
+                            onMouseEnter={(e) => { if (!hasKaraoke) return; try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; } catch {} }}
+                            onMouseLeave={(e) => { if (!hasKaraoke) return; try { e.currentTarget.style.transform = 'scale(1.0)'; } catch {} }}
+                            onClick={() => {
+                              if (!hasKaraoke) return;
+                              try { sfx.play('click', 0.4); } catch {}
+                              const entering = !lyricsKaraokeMode;
+                              if (entering) { try { audioManager.pause(); } catch {} }
+                              setLyricsKaraokeMode(prev => !prev);
+                            }}
+                            style={{
+                              position: 'absolute',
+                              top: 48,
+                              right: 4,
+                              width: 52,
+                              height: 52,
+                              padding: 0,
+                              borderRadius: 9999,
+                              background: isActive ? 'rgba(242,239,29,0.18)' : 'rgba(0,0,0,0.35)',
+                              border: hasKaraoke ? '2px solid rgba(242,239,29,0.85)' : '2px solid rgba(120,120,120,0.5)',
+                              color: hasKaraoke ? '#F2EF1D' : '#666',
+                              display: 'inline-flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 2,
+                              boxShadow: isActive ? '0 0 22px rgba(242,239,29,1), 0 0 40px rgba(242,239,29,0.6)' : hasKaraoke ? '0 0 14px rgba(242,239,29,0.7), 0 0 26px rgba(242,239,29,0.4)' : 'none',
+                              cursor: hasKaraoke ? 'pointer' : 'not-allowed',
+                              opacity: hasKaraoke ? 1 : 0.45,
+                              transition: 'background 0.2s, box-shadow 0.2s',
+                              overflow: 'hidden',
+                              zIndex: 10,
+                            }}
+                          >
+                            <img src="/elements/karaoke.png" alt="" aria-hidden style={{ position: 'absolute', width: '140%', height: '140%', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', objectFit: 'cover', pointerEvents: 'none', filter: hasKaraoke ? 'drop-shadow(0 0 4px rgba(242,239,29,0.9))' : 'grayscale(1) brightness(0.5)' }} />
+                          </button>
+                        );
+                      })()}
                       {/* Moving glow background */}
                       <div className="lyrics-glow-bg"></div>
                       {/* Section header */}
@@ -6807,15 +6858,21 @@ const HUDPanel = React.memo(function HUDPanel({
                             ? 'WELCOME BACK'
                             : isHome
                               ? 'CHXNDLER'
-                              // Prefer resolved currentSong title, then playing track title,
-                              // then lookup by currentId, else fallback.
                               : (currentSong?.title || track?.title || (resolvedSongs.find(s => s.id === currentId)?.title) || 'UNKNOWN');
-                          return (
-                            <>LYRICS — {title}</>
-                          );
+                          return lyricsKaraokeMode ? <>KARAOKE — {title}</> : <>LYRICS — {title}</>;
                         })()}
                       </div>
-                    {lyricsLoading ? (
+                    {lyricsKaraokeMode && currentSong?.karaoke ? (
+                      <div style={{ marginTop: 8, borderRadius: 8, overflow: 'hidden', lineHeight: 0 }}>
+                        <iframe
+                          src={`${toYouTubeEmbed(currentSong.karaoke)}?autoplay=1`}
+                          title="Karaoke"
+                          allow="autoplay; encrypted-media; picture-in-picture"
+                          allowFullScreen
+                          style={{ width: '100%', aspectRatio: '16/9', border: 'none', display: 'block', borderRadius: 8 }}
+                        />
+                      </div>
+                    ) : lyricsLoading ? (
                       <div style={{ fontSize: 18, opacity: .99, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>Loading…</div>
                     ) : lyricsError ? (
                       <div style={{ fontSize: 18, color: '#ff7b7b' }}>{lyricsError}</div>

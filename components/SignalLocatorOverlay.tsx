@@ -47,6 +47,12 @@ const MAX_STARS_VISIBLE = 48;
 
 export default function SignalLocatorOverlay() {
   const audioManager = useAudio();
+  // Keep a stable ref so callbacks don't depend on audioManager directly.
+  // If audioManager were in deps, any AudioProvider state change would recreate
+  // runAnimation, trigger the useEffect cleanup, and call clearTimers() mid-sequence.
+  const audioManagerRef = useRef(audioManager);
+  useEffect(() => { audioManagerRef.current = audioManager; }, [audioManager]);
+
   const [phase, setPhase] = useState<Phase>("idle");
   const [orders, setOrders] = useState<CardOrder[]>([]);
   const [winner, setWinner] = useState<CardOrder | null>(null);
@@ -75,8 +81,8 @@ export default function SignalLocatorOverlay() {
         centerAudioRef.current = null;
       }
     } catch {}
-    try { audioManager.stopAllAudio(); } catch {}
-  }, [audioManager]);
+    try { audioManagerRef.current.stopAllAudio(); } catch {}
+  }, []);
 
   const clearTimers = useCallback(() => {
     timersRef.current.forEach(clearTimeout);
@@ -142,7 +148,7 @@ export default function SignalLocatorOverlay() {
       setPhase("starfield");
       setWarpExiting(false);
       // Play center.mp3 via AudioProvider (pre-unlocked, handles Supabase URL)
-      try { audioManager.playTrack('center').catch(() => {}); } catch {}
+      try { audioManagerRef.current.playTrack('center').catch(() => {}); } catch {}
     });
 
     // Helper: fire a radar brightness flare + ring burst + SFX pulse together
@@ -209,7 +215,7 @@ export default function SignalLocatorOverlay() {
       setPhase("cockpit");
       try { sfx.play('join-alien', 0.85); } catch {}
     });
-  }, [after, clearTimers, stopCenterAudio, audioManager]);
+  }, [after, clearTimers, stopCenterAudio]);
 
   useEffect(() => {
     const handler = () => runAnimation();

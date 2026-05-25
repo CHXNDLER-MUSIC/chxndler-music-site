@@ -257,12 +257,50 @@ const VIDEOS: Video[] = [
     type: "electric",
     releaseDate: "2026-06-20T12:00:00",
   },
+
+  // ── Karaoke ──
+  {
+    id: "kar-001",
+    title: "ALONE (ACOUSTIC)",
+    youtubeUrl: "https://youtu.be/07Vs6Dmi8tE",
+    type: "karaoke",
+  },
+  {
+    id: "kar-002",
+    title: "ALONE",
+    youtubeUrl: "https://youtu.be/ca3a6wiERQE",
+    type: "karaoke",
+  },
+  {
+    id: "kar-003",
+    title: "BE MY BEE",
+    youtubeUrl: "https://youtu.be/ooTTnsrQqOc",
+    type: "karaoke",
+  },
+  {
+    id: "kar-004",
+    title: "LETTING GO",
+    youtubeUrl: "https://youtu.be/0rqWRJ-Lors",
+    type: "karaoke",
+  },
+  {
+    id: "kar-005",
+    title: "OCEAN GIRL",
+    youtubeUrl: "https://youtu.be/2FJyPj5andI",
+    type: "karaoke",
+  },
+  {
+    id: "kar-006",
+    title: "OCEAN GIRL (ACOUSTIC)",
+    youtubeUrl: "https://youtu.be/9PXDM5HogoY",
+    type: "karaoke",
+  },
 ];
 
 // ──────────────────────────────────────────────
 // TYPES
 // ──────────────────────────────────────────────
-type VideoType = "heartverse" | "acoustic" | "electric";
+type VideoType = "heartverse" | "acoustic" | "electric" | "karaoke";
 
 interface Video {
   id: string;
@@ -275,7 +313,7 @@ interface Video {
   locked?: boolean;
 }
 
-type TopTab = "heartverse" | "livesignal";
+type TopTab = "heartverse" | "livesignal" | "karaoke";
 type LiveSignalSection = "acoustic" | "electric";
 
 // ──────────────────────────────────────────────
@@ -401,6 +439,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
   // Filter videos based on current tab/section
   const filteredVideos = VIDEOS.filter((v) => {
     if (topTab === "heartverse") return v.type === "heartverse";
+    if (topTab === "karaoke") return v.type === "karaoke";
     return v.type === liveSignalSection;
   });
 
@@ -600,6 +639,22 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
             >
               Live Signal
             </button>
+            <button
+              className={`episodes-tab flex-1 py-1.5 px-2 text-xs font-semibold rounded-md transition-all duration-200 uppercase tracking-wide ${
+                topTab === "karaoke"
+                  ? "episodes-tab-karaoke-active"
+                  : "text-white/50 hover:text-white/80"
+              }`}
+              onClick={() => {
+                playClick();
+                stopVideo();
+                setTopTab("karaoke");
+                setActiveVideo(null);
+              }}
+              onMouseEnter={playHover}
+            >
+              Karaoke
+            </button>
           </div>
 
 
@@ -737,7 +792,8 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
                     const locked = isLocked(video);
                     const isElectric = topTab === "livesignal" && liveSignalSection === "electric";
                     const isAcoustic = topTab === "livesignal" && liveSignalSection === "acoustic";
-                    const accentColor = isElectric ? "#F2EF1D" : isAcoustic ? "#00FFFF" : "#FC54AF";
+                    const isKaraoke = topTab === "karaoke";
+                    const accentColor = isElectric ? "#F2EF1D" : isAcoustic ? "#00FFFF" : isKaraoke ? "#F2EF1D" : "#FC54AF";
                     const isNewest = video.id === newestId;
                     const isReleased = !locked;
                     const borderDefault = isReleased
@@ -1011,6 +1067,12 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
           color: #FC54AF;
           border: 1px solid rgba(252, 84, 175, 0.35);
           text-shadow: 0 0 6px rgba(252, 84, 175, 0.4);
+        }
+        .episodes-tab-karaoke-active {
+          background: rgba(242, 239, 29, 0.15);
+          color: #F2EF1D;
+          border: 1px solid rgba(242, 239, 29, 0.35);
+          text-shadow: 0 0 6px rgba(242, 239, 29, 0.4);
         }
         .episodes-close-btn {
           background: transparent;

@@ -997,6 +997,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           spotify: linkOverride.spotify || staticData.spotify,
           apple: linkOverride.apple || staticData.apple,
           youtube: linkOverride.youtube || staticData.youtube,
+          karaoke: staticData.karaoke,
           hasLyrics: staticData.hasLyrics
         };
       });
@@ -1661,6 +1662,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             };
             if (elementSkyMapStart[elementKey]) {
               pendingElementWarpRef.current = elementKey;
+              // Pre-load element track and set as pending so markWarpCompleted auto-plays it.
+              // Same pattern as song-selection warps — avoids direct playTrack race conditions.
+              try { if (typeof window !== 'undefined') window.__BLOCK_MAIN_AUDIO = false; } catch {}
+              try { audioManager?.selectTrack(elementKey); } catch {}
               setElementWarpYoutubeUrl(elementSkyMapStart[elementKey]);
               const elementName = elementKey.toUpperCase();
               setCurTrack({
@@ -1888,6 +1893,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           const welcomeType = welcomeAudioTypeRef.current;
           welcomeAudioTypeRef.current = null; // Clear immediately to prevent duplicate plays
 
+          // Unblock audio watchdog before playing any element/heart track
+          try { if (typeof window !== 'undefined') window.__BLOCK_MAIN_AUDIO = false; } catch {}
           // Play element music, heart (onboarding), or space-music
           if (welcomeType === 'home') {
             audioManager?.playTrack('heart');
@@ -1896,6 +1903,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             const backupElementKey = pendingElementWarpRef.current;
             pendingElementWarpRef.current = null;
             try { audioManager?.playTrack(backupElementKey); } catch {}
+            // Exit home mode so the user lands in their element world (backup path)
+            try { setHomeMode(false); } catch {}
           } else {
             audioManager?.playTrack('space-music');
           }
@@ -3050,10 +3059,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             // Leave homepage mode so PlanetSystem doesn't force show-all
             try { setHomeMode(false); } catch {}
           } else if (pendingElementWarpRef.current) {
-            // Element planet warp via Start button: keep homeMode=true so HUDPanel shows
-            // general CHXNDLER buttons (not element-specific). elementWarpYoutubeUrl still
-            // drives the sky because it has priority in desiredYoutubeUrl.
-            // onFlyEnd reads the ref before onWarpSfxEnd runs, so we clear it here after use.
+            // Element planet warp via Start button (e.g., after login for returning user).
+            // Exit home mode so the user lands in their element world, not the center galaxy view.
             const elementKey = pendingElementWarpRef.current;
             pendingElementWarpRef.current = null; // clear now that we've captured the key
             // Mark element warp as used so subsequent STARTs warp to space instead
@@ -3063,9 +3070,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               playerStore.getState().setPlanetDisplayMode('single');
               playerStore.getState().setPlanetsVisible(true);
             } catch {}
-            // homeMode stays true (set in handleStartClick) — this keeps general buttons
-            // Play element-specific music track through the main AudioProvider player
-            try { audioManager?.playTrack(elementKey); } catch {}
+            // Exit home mode — mirrors what the planet:warp event handler does for manual element clicks
+            try { setHomeMode(false); } catch {}
+            // selectTrack was called in handleStartClick; markWarpCompleted (line 2825) already
+            // triggered auto-play via the pending-track effect. No direct playTrack needed here.
             // Play Welcome-Back VO alongside element music
             const elementWelcomeType = welcomeAudioTypeRef.current;
             welcomeAudioTypeRef.current = null;
