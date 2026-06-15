@@ -959,7 +959,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         spotify: 'https://open.spotify.com/track/39ArZKiv8TK2fkUIX0KbYV?si=f4086c9e755a4151',
         apple: 'https://music.apple.com/us/album/make-believe-feat-arines/1890757188?i=1890757189',
         youtube: 'https://youtu.be/lv9XF-nWbNc?si=vX5c4RDnnruxqrtk',
+        karaoke: 'https://youtu.be/HDSZ0QJuqdQ',
         cover: '/covers/MAKE BELIEVE.webp',
+      },
+      'sugar-were-going-down': {
+        cover: "/covers/SUGAR, WE'RE GOING DOWN.webp",
+      },
+      'whats-my-age-again': {
+        cover: "/covers/WHAT'S MY AGE AGAIN.webp",
       },
     };
 
@@ -997,7 +1004,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           spotify: linkOverride.spotify || staticData.spotify,
           apple: linkOverride.apple || staticData.apple,
           youtube: linkOverride.youtube || staticData.youtube,
-          karaoke: staticData.karaoke,
+          karaoke: linkOverride.karaoke || staticData.karaoke,
           hasLyrics: staticData.hasLyrics
         };
       });

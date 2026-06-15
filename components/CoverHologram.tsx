@@ -9,7 +9,8 @@ import { sfx } from "@/lib/sfx";
 import { ELEMENT_COLORS, type Element } from "@/lib/planets";
 import TiltSpinCard from "@/components/TiltSpinCard";
 import { useAudio } from "@/app/providers/AudioProvider";
-import { getCardImageUrl, SUPABASE_CARDS_BASE_URL } from "@/lib/supabaseCardUrl";
+import { getCardImageUrl, SUPABASE_CARDS_BASE_URL, encodeSupabasePath } from "@/lib/supabaseCardUrl";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 // Helper function to determine element from title/slug
 const getTrackElement = (title: string, slug?: string): Element => {
@@ -162,6 +163,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
     'home': getCardImageUrl('HOME'),
     'home-acoustic': getCardImageUrl('HOME (ACOUSTIC)'),
     'letting-go': getCardImageUrl('LETTING GO'),
+    'make-believe': getCardImageUrl('MAKE BELIEVE'),
     'house-party': getCardImageUrl('HOUSE PARTY'),
     'i-might-fall-in-love-with-you': getCardImageUrl('I MIGHT FALL IN LOVE WITH YOU'),
     'little-black-heart': getCardImageUrl('LITTLE BLACK HEART'),
@@ -174,14 +176,15 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
     'ocean-girl-acoustic': getCardImageUrl('OCEAN GIRL (ACOUSTIC)'),
     'pink-moon': getCardImageUrl('PINK MOON'),
     'somebody-to-love': getCardImageUrl('SOMEBODY TO LOVE'),
-    'we-re-just-friends-dmvrco-remix': `${SUPABASE_CARDS_BASE_URL}/were-just-friends-dmvcrco-remix.webp`,
-    'we-re-just-friends-acoustic': `${SUPABASE_CARDS_BASE_URL}/WERE-JUST-FRIENDS-ACOUSTIC.webp`,
-    'we-re-just-friends-mickey-jas-remix': getCardImageUrl("WE'RE JUST FRIENDS (MICKEY JAS REMIX)"),
-    'we-re-just-friends': `${SUPABASE_CARDS_BASE_URL}/were-just-friends.webp`,
+    'were-just-friends-dmvrco-remix': `${SUPABASE_CARDS_BASE_URL}/were-just-friends-dmvcrco-remix.webp`,
+    'were-just-friends-acoustic': `${SUPABASE_CARDS_BASE_URL}/WERE-JUST-FRIENDS-ACOUSTIC.webp`,
+    'were-just-friends': `${SUPABASE_CARDS_BASE_URL}/were-just-friends.webp`,
+    'were-just-friends-mickey-jas-remix': `${SUPABASE_CARDS_BASE_URL}/${encodeSupabasePath("WE'RE JUST FRIENDS (mickey jas REMIX).webp")}`,
     'collide': getCardImageUrl('COLLIDE'),
     'mr-brightside': getCardImageUrl('MR. BRIGHTSIDE'),
     'paris': getCardImageUrl('PARIS'),
     'pokemon': getCardImageUrl('POKEMON'),
+    'sugar-were-going-down': getCardImageUrl("SUGAR WE'RE GOING DOWN"),
   };
   const [showCard, setShowCard] = useState(false);
   const [cardFlipped, setCardFlipped] = useState(false); // legacy flag, kept for compatibility
@@ -201,6 +204,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   
   // Get current track info from unified audio provider
   const { currentTrack } = useAudio();
+  const { user } = useAuth();
   
   
 
@@ -579,9 +583,6 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       return;
     }
 
-    // Close modal and show the planetarium so the user sees the star fly-in
-    setShowCard(false);
-
     try {
       setShippingStatus('saving');
       const res = await fetch('/api/cards/order-chxndler', {
@@ -593,27 +594,9 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       if (!res.ok || !data.success) throw new Error(data.error || 'Failed');
       try { sfx.play('success', 0.7); } catch {}
       setShippingStatus('success');
-
-      // Fire star event immediately so the fly-in animation plays in the planetarium
-      try {
-        window.dispatchEvent(new CustomEvent('chxndler-card:ordered', {
-          detail: {
-            id: data.order_id,
-            shipping_full_name: shippingForm.full_name,
-            created_at: new Date().toISOString(),
-          }
-        }));
-      } catch {}
-
-      // Show "You're In" overlay after the star animation completes (~4s: 200ms buffer + 2800ms approach + 1000ms shine)
-      setTimeout(() => {
-        setShowYoureIn(true);
-      }, 4200);
     } catch (err) {
       console.error('[order-chxndler] submit error:', err);
       setShippingStatus('error');
-      // Re-open card on error so user can retry
-      setShowCard(true);
     }
   };
 
@@ -901,12 +884,11 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
               {slug === 'chxndler_home' && showShipping && (
                 <div style={{ flex: '1 1 0', minHeight: 0, overflowY: 'auto', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '4px 0' }}>
                   {shippingStatus === 'success' ? (
-                    <div className="text-center mt-4 flex flex-col gap-3 items-center">
-                      <img src="/elements/merch.webp" alt="merch" style={{ width: 100, height: 100, objectFit: 'contain' }} />
-                      <div className="font-bold text-2xl" style={{ color: '#00FF88', textShadow: '0 0 10px rgba(0,255,136,0.8)' }}>You're In</div>
-                      <div className="text-lg" style={{ color: 'rgba(255,255,255,0.9)' }}>Your CHXNDLER card is being sent.</div>
-                      <div className="text-lg" style={{ color: 'rgba(255,255,255,0.75)' }}>One contains a <span style={{ fontWeight: 'bold', color: '#F2EF1D', textShadow: '0 0 6px rgba(242,239,29,0.6)' }}>hidden signal</span>.</div>
-                      <div className="text-lg italic" style={{ color: 'rgba(255,255,255,0.7)' }}>If it's yours… we're making a song.</div>
+                    <div className="text-center mt-2 flex flex-col items-center" style={{ gap: 2 }}>
+                      <img src="https://hjpaiolhhugwzblarfix.supabase.co/storage/v1/object/public/cards/CHXNDLER%20gold.webp" alt="CHXNDLER gold" style={{ width: 200, height: 200, objectFit: 'contain' }} />
+                      <div className="text-lg" style={{ color: 'rgba(255,255,255,0.9)', lineHeight: 1.2 }}>Your CHXNDLER Card is on the way.</div>
+                      <div className="text-lg" style={{ color: '#F2EF1D', textShadow: '0 0 8px rgba(242,239,29,0.9), 0 0 16px rgba(242,239,29,0.6)', fontWeight: 'bold', lineHeight: 1.2 }}>ONE CARD IS GOLD.</div>
+                      <div className="text-lg italic" style={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.2 }}>Find it and we'll make a song together.</div>
                       <button
                         type="button"
                         onClick={() => {
@@ -917,7 +899,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           }, 250);
                         }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                        className="send-card-pulse mt-2 w-full rounded-lg px-4 py-3 font-bold text-base border transition-all"
+                        className="send-card-pulse w-full rounded-lg px-4 py-3 font-bold text-base border transition-all"
                         style={{
                           background: '#FF69B4',
                           border: '1px solid rgba(255,105,180,0.8)',
@@ -925,7 +907,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           boxShadow: '0 0 14px rgba(255,105,180,0.6)',
                         }}
                       >
-                        Join the Heartverse
+                        {user ? 'Explore the Heartverse' : 'Join the Heartverse'}
                       </button>
                     </div>
                   ) : (
@@ -1617,7 +1599,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: 16,
+              gap: 6,
               textAlign: 'center',
             }}
           >
@@ -1645,42 +1627,23 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
               ×
             </button>
 
-            {/* CHXNDLER mascot */}
+            {/* CHXNDLER gold card */}
             <img
-              src="/elements/logo.webp"
-              alt="CHXNDLER"
-              style={{ width: 80, height: 80, objectFit: 'contain', borderRadius: '50%' }}
+              src="https://hjpaiolhhugwzblarfix.supabase.co/storage/v1/object/public/cards/CHXNDLER%20gold.webp"
+              alt="CHXNDLER gold"
+              style={{ width: 200, height: 200, objectFit: 'contain' }}
             />
 
-            {/* "You're In" heading */}
-            <div
-              style={{
-                fontSize: 40,
-                fontWeight: 800,
-                background: 'linear-gradient(90deg, #F2EF1D, #00FF88)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                lineHeight: 1.1,
-              }}
-            >
-              You&apos;re In
-            </div>
-
             {/* Body text */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.92)', margin: 0 }}>
-                Your CHXNDLER card is being sent.
+                Your CHXNDLER Card is on the way.
               </p>
-              <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.8)', margin: 0 }}>
-                One contains a{' '}
-                <span style={{ fontWeight: 700, color: '#F2EF1D', textShadow: '0 0 8px rgba(242,239,29,0.6)' }}>
-                  hidden signal
-                </span>
-                .
+              <p style={{ fontSize: 18, fontWeight: 700, color: '#F2EF1D', textShadow: '0 0 8px rgba(242,239,29,0.9), 0 0 16px rgba(242,239,29,0.6)', margin: 0 }}>
+                ONE CARD IS GOLD.
               </p>
               <p style={{ fontSize: 18, fontStyle: 'italic', color: 'rgba(255,255,255,0.7)', margin: 0 }}>
-                If it&apos;s yours&hellip; we&apos;re making a song.
+                Find it and we&apos;ll make a song together.
               </p>
             </div>
 
@@ -1708,7 +1671,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                 boxShadow: '0 0 20px rgba(252,84,175,0.5)',
               }}
             >
-              Join the Heartverse
+              {user ? 'Explore the Heartverse' : 'Join the Heartverse'}
             </button>
           </div>
         </div>,

@@ -93,15 +93,16 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
   function handleGetCard() {
     if (expired) return;
     try { sfx.play("click", 0.6); } catch {}
+    // Close modal immediately before warp starts
+    onClose();
     // Trigger warp to Heartverse center planet
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent("planet:warp", {
         detail: { element: "center", isCenterPlanet: true },
       }));
     }, 200);
-    // Close modal and open card form after warp completes (~3000ms warp + buffer)
+    // Open card form after warp completes (~3000ms warp + buffer)
     setTimeout(() => {
-      onClose();
       window.dispatchEvent(new CustomEvent("openChxndlerCardDirect"));
     }, 3200);
   }

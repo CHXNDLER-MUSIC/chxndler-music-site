@@ -273,6 +273,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 103.0, label: "Chorus 2", kind: "chorus" },
     { time: 132.6, label: "Final Chorus", kind: "chorus" }
   ] },
+  { title: "LETTING GO", spotify:"https://open.spotify.com/track/3aKp9MEmCd96LSCKtIYCzV?si=46380abdd7b5424d", apple:"https://music.apple.com/us/album/letting-go-feat-birding-single/1892480318", youtube:"https://youtu.be/rE01eet43DA", karaoke:"https://youtu.be/0rqWRJ-Lors" },
   { title: "OCEAN GIRL (REMIX)", spotify:"https://open.spotify.com/track/1wbgLONY1GsBZC5XW4MUzu?si=ff27a874552948c4", apple:"https://music.apple.com/us/album/ocean-girl-remix-single/1830764323", youtube:"https://www.youtube.com/watch?v=oGiRQCARek4", cover:"/covers/OCEAN GIRL (REMIX).webp", src: "/tracks/ocean-girl-remix.opus", sections: [
     { time: 22.1, label: "Build Up", kind: "verse" },
     { time: 54.7, label: "Drop 1", kind: "chorus" },

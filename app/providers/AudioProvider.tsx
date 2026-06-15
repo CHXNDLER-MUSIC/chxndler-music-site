@@ -113,6 +113,7 @@ export const TRACKS = {
   WJF: { mp3: S("we're-just-friends.mp3"), opus: S("we're-just-friends.opus") },
   WJF_DMVRCO: { mp3: S("we're-just-friends-dmvrco-remix.mp3"), opus: S("we're-just-friends-dmvrco-remix.opus") },
   WJF_MICKEY_JAS: { mp3: S("we're-just-friends-mickey-jas-remix.mp3"), opus: S("we're-just-friends-mickey-jas-remix.opus") },
+  SUGAR_WERE_GOING_DOWN: { mp3: S("sugar-were-going-down.mp3") },
   // Ambient / voiceover — kept local in /public
   SPACE_MUSIC: { mp3: "/tracks/space-music.mp3" },
   WELCOME_TO_HEARTVERSE: { mp3: "/tracks/welcome-to-the-heartverse.mp3", opus: "/tracks/welcome-to-the-heartverse.opus" },
@@ -270,6 +271,13 @@ export const TRACK_INFO: Record<string, TrackInfo> = {
     coverUrl: '/covers/WE\'RE JUST FRIENDS (MICKEY JAS REMIX).webp',
     skyTexture: '/sky/were-just-friends-sky.webp',
     oneLiner: 'Lines blur between us.'
+  },
+  'sugar-were-going-down': {
+    id: 'sugar-were-going-down',
+    title: "SUGAR, WE'RE GOING DOWN",
+    artist: 'CHXNDLER',
+    coverUrl: "/covers/SUGAR, WE'RE GOING DOWN.webp",
+    oneLiner: 'Fall Out Boy cover'
   },
   // Element planet tracks
   'water': {
@@ -1842,10 +1850,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     selectTrack: async (trackId: string) => {
       const normId = normalizeSlug(trackId);
-      const trackInfo = TRACK_INFO[normId] || TRACK_INFO[trackId];
+      let trackInfo = TRACK_INFO[normId] || TRACK_INFO[trackId];
       if (!trackInfo) {
-        if (process.env.NODE_ENV !== "production") console.warn(`Track not found: ${trackId}`);
-        return;
+        if (process.env.NODE_ENV !== "production") console.log(`🎵 selectTrack: Track not in TRACK_INFO, creating dynamic info for: ${trackId}`);
+        trackInfo = {
+          id: normId || trackId,
+          title: (trackId || '').toUpperCase().replace(/-/g, ' '),
+          artist: 'CHXNDLER',
+          oneLiner: 'Listen now'
+        };
       }
 
       // Find the track source using the shared mapper

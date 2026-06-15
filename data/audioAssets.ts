@@ -218,6 +218,10 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
       { time: 164.4, label: "Final Chorus", kind: "chorus" }
     ]
   },
+  "sugar-were-going-down": {
+    src: supabaseTrackUrl("sugar-were-going-down.mp3"),
+    cover: "/covers/SUGAR, WE'RE GOING DOWN.webp",
+  },
   // COLORS OF OUR HOME — variants
   "colors-of-our-home": {
     src: supabaseTrackUrl("COLORS-OF-OUR-HOME.opus"),

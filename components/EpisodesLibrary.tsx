@@ -166,14 +166,14 @@ const VIDEOS: Video[] = [
     title: "Acoustic Signal 10",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "acoustic",
-    releaseDate: "2026-05-30T12:00:00",
+    releaseDate: "2026-07-03T12:00:00",
   },
   {
     id: "lsp-011",
     title: "Acoustic Signal 11",
     youtubeUrl: "https://youtu.be/aIsGwmTky9g",
     type: "acoustic",
-    releaseDate: "2026-05-12T12:00:00",
+    releaseDate: "2026-08-14T12:00:00",
     postDescription: "Setlist\n00:00 Heartverse\n00:36 Peaches (Justin Bieber)\n02:26 Never (Lauv)\n05:32 Love (Kendrick Lamar)\n08:54 EMO GIRL (mgk)\n11:34 CHEERLEADER\n14:56 MAKE BELIEVE",
   },
 
@@ -232,7 +232,7 @@ const VIDEOS: Video[] = [
     title: "Electric Signal 07",
     youtubeUrl: "https://youtu.be/5rJL4p74l-g",
     type: "electric",
-    releaseDate: "2026-05-09T12:00:00",
+    releaseDate: "2026-06-19T12:00:00",
     postDescription: "Setlist\n00:00 Heartverse\n00:18 SUGAR, WE'RE GOING DOWN (Fall Out Boy)\n03:52 WE'RE JUST FRIENDS\n07:29 WHAT'S MY AGE AGAIN? (Blink 182)\n09:56 I LIKE ME BETTER (Lauv)\n13:36 ALWAYS ON MY MIND\n17:25 LOVE ME",
   },
   {
@@ -240,7 +240,7 @@ const VIDEOS: Video[] = [
     title: "Electric Signal 08",
     youtubeUrl: "https://youtu.be/9eJ5hZmCj2Q",
     type: "electric",
-    releaseDate: "2026-05-23T12:00:00",
+    releaseDate: "2026-07-10T12:00:00",
     postDescription: "Setlist\n00:00 Heartverse\n00:33 CHEERLEADER\n04:03 Mean It (Lauv)\n08:21 I WOULD DIE FOR YOUR LOVE\n12:31 I LIKE ME BETTER (Lauv)\n14:31 Love\n16:36 Robbers\n21:10 AM I PRETTY WHEN I CRY",
   },
   {
@@ -248,14 +248,14 @@ const VIDEOS: Video[] = [
     title: "Electric Signal 09",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "electric",
-    releaseDate: "2026-06-06T12:00:00",
+    releaseDate: "2026-07-31T12:00:00",
   },
   {
     id: "lsf-010",
     title: "Electric Signal 10",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "electric",
-    releaseDate: "2026-06-20T12:00:00",
+    releaseDate: "2026-08-28T12:00:00",
   },
 
   // ── Karaoke ──
@@ -731,7 +731,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
               >
                 <iframe
                   ref={iframeRef}
-                  key={startTime}
+                  key={activeVideo?.id}
                   src={`${getYouTubeEmbedUrl(activeVideo.youtubeUrl)}&start=${startTime}&autoplay=1`}
                   title={activeVideo.title}
                   width="100%"
@@ -763,7 +763,20 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
                         <button
                           key={i}
                           type="button"
-                          onClick={() => { playClick(); setStartTime(seconds); }}
+                          onClick={() => {
+                            playClick();
+                            setStartTime(seconds);
+                            if (iframeRef.current?.contentWindow) {
+                              iframeRef.current.contentWindow.postMessage(
+                                JSON.stringify({ event: 'command', func: 'seekTo', args: [seconds, true] }),
+                                '*'
+                              );
+                              iframeRef.current.contentWindow.postMessage(
+                                JSON.stringify({ event: 'command', func: 'playVideo', args: [] }),
+                                '*'
+                              );
+                            }
+                          }}
                           onMouseEnter={playHover}
                           className="block w-full text-left py-0.5 transition-colors duration-150 hover:text-[#00FFFF] cursor-pointer"
                         >
