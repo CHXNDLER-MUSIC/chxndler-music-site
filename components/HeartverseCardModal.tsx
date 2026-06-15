@@ -93,8 +93,9 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
   function handleGetCard() {
     if (expired) return;
     try { sfx.play("click", 0.6); } catch {}
-    // Close modal immediately before warp starts
+    // Close modal and any open Welcome Home display before warp starts
     onClose();
+    try { window.dispatchEvent(new CustomEvent("closeWelcomeHomeModal")); } catch {}
     // Trigger warp to Heartverse center planet
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent("planet:warp", {

@@ -899,7 +899,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             : 20),
       }));
 
-      setCards(cardsWithCosts);
+      const EXCLUDED_CARDS = ['EXTREME BABY'];
+      setCards(cardsWithCosts.filter((card: any) => !EXCLUDED_CARDS.includes((card.card_name || '').toUpperCase())));
     } catch (error) {
       console.error('Error fetching cards:', error);
     } finally {

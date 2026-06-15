@@ -15,7 +15,7 @@ export const SUPABASE_CARDS_BASE_URL =
  * special characters are escaped.
  */
 export function encodeSupabasePath(path: string): string {
-  return path.split("/").map(encodeURIComponent).join("/");
+  return path.split("/").map(s => encodeURIComponent(s).replace(/'/g, "%27")).join("/");
 }
 
 /**
@@ -26,9 +26,26 @@ export function encodeSupabasePath(path: string): string {
  *   The key is trimmed, uppercased, and percent-encoded so spaces,
  *   parentheses, and other special characters resolve correctly.
  */
+const FILENAME_OVERRIDES: Record<string, string> = {
+  "HOUSE PARTY (ACOUSTIC)": "HOUSE PARTY (Acoustic)",
+  "WE'RE JUST FRIENDS (MICKEY JAS REMIX)": "WE'RE JUST FRIENDS (mickey jas REMIX)",
+  "WE'RE JUST FRIENDS (DMVRCO REMIX)": "were-just-friends-dmvcrco-remix",
+  "WE'RE JUST FRIENDS (ACOUSTIC)": "WERE-JUST-FRIENDS-ACOUSTIC",
+  "WE'RE JUST FRIENDS": "were-just-friends",
+  "MAKE BELIEVE": "make believe",
+  "WHAT'S MY AGE AGAIN?": "WHATS MY AGE AGAIN",
+  "SUGAR, WE'RE GOING DOWN": "SUGAR WE'RE GOING DOWN",
+  "AM I PRETTY WHEN I CRY?": "AM I PRETTY WHEN I CRY",
+  "AM I PRETTY WHEN I CRY? (ACOUSTIC)": "AM I PRETTY WHEN I CRY (ACOUSTIC)",
+  "AM I PRETTY WHEN I CRY (ACOUSTIC)?": "AM I PRETTY WHEN I CRY (ACOUSTIC)",
+};
+
 export function getCardImageUrl(cardKey: string): string {
   if (!cardKey) return `${SUPABASE_CARDS_BASE_URL}/${encodeSupabasePath("CHXNDLER")}.webp`;
   if (cardKey.startsWith("http")) return cardKey;
-  const key = String(cardKey).trim().toUpperCase();
-  return `${SUPABASE_CARDS_BASE_URL}/${encodeSupabasePath(key)}.webp`;
+  const normalized = String(cardKey).trim()
+    .replace(/[‘’ʼ`]/g, "'")
+    .normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+  const filename = FILENAME_OVERRIDES[normalized] ?? normalized;
+  return `${SUPABASE_CARDS_BASE_URL}/${encodeSupabasePath(filename)}.webp`;
 }

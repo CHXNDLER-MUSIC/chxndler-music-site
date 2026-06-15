@@ -493,7 +493,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           .order('created_at', { ascending: false });
 
         if (!error && data) {
-          setAllCards(data);
+          const EXCLUDED_CARDS = ['EXTREME BABY'];
+          setAllCards(data.filter(card => !EXCLUDED_CARDS.includes((card.card_name || '').toUpperCase())));
         }
       };
       fetchCards();
