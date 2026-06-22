@@ -26,6 +26,7 @@ export function trackKeyFromSlug(slug?: string): string | null {
     "were-just-friends-dmvrco-remix": "WJF_DMVRCO",
     "were-just-friends-mickey-jas-remix": "WJF_MICKEY_JAS",
     "sugar-were-going-down": "SUGAR_WERE_GOING_DOWN",
+    "whats-my-age-again": "WHATS_MY_AGE_AGAIN",
     // Element planet tracks
     "water": "WATER",
     "lightning": "LIGHTNING",

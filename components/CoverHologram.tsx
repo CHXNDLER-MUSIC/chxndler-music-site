@@ -185,6 +185,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
     'paris': getCardImageUrl('PARIS'),
     'pokemon': getCardImageUrl('POKEMON'),
     'sugar-were-going-down': getCardImageUrl("SUGAR WE'RE GOING DOWN"),
+    'whats-my-age-again': getCardImageUrl("WHAT'S MY AGE AGAIN?"),
   };
   const [showCard, setShowCard] = useState(false);
   const [cardFlipped, setCardFlipped] = useState(false); // legacy flag, kept for compatibility

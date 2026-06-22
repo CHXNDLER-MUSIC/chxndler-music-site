@@ -16,7 +16,7 @@ Then later on, on the drive home
 I called her mom from a payphone
 I said I was the cops and your husband's in jail
 This state looks down on sodomy
-And that's about the time that bitch hung up on me
+And that's about the time that witch hung up on me
 Nobody likes you when you're 23
 And are still more amused by prank phone calls
 What the hell is call ID?

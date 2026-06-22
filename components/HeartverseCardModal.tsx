@@ -266,16 +266,15 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
                 <p
                   className="text-center text-xl"
                   style={{
-                    color: "#F2EF1D",
-                    textShadow: "0 0 8px rgba(242,239,29,0.6)",
+                    color: "#FFFFFF",
                     lineHeight: "1.6",
                   }}
                 >
-                  I'm sending CHXNDLER cards to ALIENS.<br />One contains a{" "}
-                  <span style={{ fontWeight: "bold", color: "#FC54AF", textShadow: "0 0 6px rgba(252,84,175,0.6), 0 0 12px rgba(252,84,175,0.3)" }}>
-                    hidden signal
+                  I'm sending CHXNDLER cards to ALIENS.<br />One card is{" "}
+                  <span style={{ fontWeight: "bold", color: "#FFD700", textShadow: "0 0 6px rgba(255,215,0,0.8), 0 0 12px rgba(255,215,0,0.5), 0 0 20px rgba(255,215,0,0.3)" }}>
+                    GOLD
                   </span>
-                  .<br />Find it, and I'll write and produce a song just for you.
+                  .<br />Find it, and I'll write and produce your next song.
                 </p>
               </div>
 

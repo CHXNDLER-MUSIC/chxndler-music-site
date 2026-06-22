@@ -69,15 +69,15 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-05-20T23:00:00Z",
+    releaseDate: "2026-07-03T23:00:00Z",
   },
   {
     id: "hv-008",
-    title: "Heartverse 07: The Dirty Thirties",
+    title: "Heartverse 07: Lost In Bermuda",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-06-03T23:00:00Z",
+    releaseDate: "2026-07-10T23:00:00Z",
   },
   {
     id: "hv-006",
@@ -85,7 +85,7 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-06-17T23:00:00Z",
+    releaseDate: "2026-07-17T23:00:00Z",
   },
 
   // ── Live Signal – Acoustic Session ──
@@ -151,7 +151,7 @@ const VIDEOS: Video[] = [
     title: "Acoustic Signal 08",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "acoustic",
-    releaseDate: "2026-05-02T12:00:00",
+    releaseDate: "2026-07-03T12:00:00",
   },
   {
     id: "lsp-009",
@@ -166,7 +166,7 @@ const VIDEOS: Video[] = [
     title: "Acoustic Signal 10",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "acoustic",
-    releaseDate: "2026-07-03T12:00:00",
+    releaseDate: "2026-07-17T12:00:00",
   },
   {
     id: "lsp-011",
@@ -175,6 +175,34 @@ const VIDEOS: Video[] = [
     type: "acoustic",
     releaseDate: "2026-08-14T12:00:00",
     postDescription: "Setlist\n00:00 Heartverse\n00:36 Peaches (Justin Bieber)\n02:26 Never (Lauv)\n05:32 Love (Kendrick Lamar)\n08:54 EMO GIRL (mgk)\n11:34 CHEERLEADER\n14:56 MAKE BELIEVE",
+  },
+  {
+    id: "lsp-012",
+    title: "Acoustic Signal 12",
+    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    type: "acoustic",
+    releaseDate: "2026-08-28T12:00:00",
+  },
+  {
+    id: "lsp-013",
+    title: "Acoustic Signal 13",
+    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    type: "acoustic",
+    releaseDate: "2026-09-11T12:00:00",
+  },
+  {
+    id: "lsp-014",
+    title: "Acoustic Signal 14",
+    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    type: "acoustic",
+    releaseDate: "2026-09-25T12:00:00",
+  },
+  {
+    id: "lsp-015",
+    title: "Acoustic Signal 15",
+    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    type: "acoustic",
+    releaseDate: "2026-10-09T12:00:00",
   },
 
   // ── Live Signal – Electric Set ──
@@ -256,6 +284,41 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "electric",
     releaseDate: "2026-08-28T12:00:00",
+  },
+  {
+    id: "lsf-011",
+    title: "Electric Signal 11",
+    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    type: "electric",
+    releaseDate: "2026-09-11T12:00:00",
+  },
+  {
+    id: "lsf-012",
+    title: "Electric Signal 12",
+    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    type: "electric",
+    releaseDate: "2026-09-25T12:00:00",
+  },
+  {
+    id: "lsf-013",
+    title: "Electric Signal 13",
+    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    type: "electric",
+    releaseDate: "2026-10-09T12:00:00",
+  },
+  {
+    id: "lsf-014",
+    title: "Electric Signal 14",
+    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    type: "electric",
+    releaseDate: "2026-10-23T12:00:00",
+  },
+  {
+    id: "lsf-015",
+    title: "Electric Signal 15",
+    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    type: "electric",
+    releaseDate: "2026-11-06T12:00:00",
   },
 
   // ── Karaoke ──

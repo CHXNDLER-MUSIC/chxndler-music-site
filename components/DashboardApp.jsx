@@ -964,9 +964,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       },
       'sugar-were-going-down': {
         cover: "/covers/SUGAR, WE'RE GOING DOWN.webp",
+        apple: "https://music.apple.com/us/album/whats-my-age-again-single/6766415909",
       },
       'whats-my-age-again': {
         cover: "/covers/WHAT'S MY AGE AGAIN.webp",
+        spotify: "https://open.spotify.com/track/1ruK5nzccgGOr882nCyKHS?si=2fc407b2d0f54de8",
+        apple: "https://music.apple.com/us/album/whats-my-age-again-single/6766415909",
       },
     };
 

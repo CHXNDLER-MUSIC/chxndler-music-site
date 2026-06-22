@@ -114,6 +114,7 @@ export const TRACKS = {
   WJF_DMVRCO: { mp3: S("we're-just-friends-dmvrco-remix.mp3"), opus: S("we're-just-friends-dmvrco-remix.opus") },
   WJF_MICKEY_JAS: { mp3: S("we're-just-friends-mickey-jas-remix.mp3"), opus: S("we're-just-friends-mickey-jas-remix.opus") },
   SUGAR_WERE_GOING_DOWN: { mp3: S("sugar-were-going-down.mp3") },
+  WHATS_MY_AGE_AGAIN: { mp3: S("whats-my-age-again.mp3") },
   // Ambient / voiceover — kept local in /public
   SPACE_MUSIC: { mp3: "/tracks/space-music.mp3" },
   WELCOME_TO_HEARTVERSE: { mp3: "/tracks/welcome-to-the-heartverse.mp3", opus: "/tracks/welcome-to-the-heartverse.opus" },
@@ -278,6 +279,13 @@ export const TRACK_INFO: Record<string, TrackInfo> = {
     artist: 'CHXNDLER',
     coverUrl: "/covers/SUGAR, WE'RE GOING DOWN.webp",
     oneLiner: 'Fall Out Boy cover'
+  },
+  'whats-my-age-again': {
+    id: 'whats-my-age-again',
+    title: "WHAT'S MY AGE AGAIN?",
+    artist: 'CHXNDLER',
+    coverUrl: "/covers/WHAT'S MY AGE AGAIN.webp",
+    oneLiner: 'Blink-182 cover'
   },
   // Element planet tracks
   'water': {
