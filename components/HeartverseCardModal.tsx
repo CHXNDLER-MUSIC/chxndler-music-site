@@ -102,10 +102,17 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
         detail: { element: "center", isCenterPlanet: true },
       }));
     }, 200);
-    // Open card form after warp completes (~3000ms warp + buffer)
-    setTimeout(() => {
+    // Open card display after button.mp3 finishes playing (fired by DashboardApp)
+    const openOnSfxEnd = () => {
+      window.removeEventListener('warpButtonSfxEnd', openOnSfxEnd);
       window.dispatchEvent(new CustomEvent("openChxndlerCardDirect"));
-    }, 3200);
+    };
+    window.addEventListener('warpButtonSfxEnd', openOnSfxEnd);
+    // Fallback: open anyway if event never fires within 7s
+    setTimeout(() => {
+      window.removeEventListener('warpButtonSfxEnd', openOnSfxEnd);
+      window.dispatchEvent(new CustomEvent("openChxndlerCardDirect"));
+    }, 7000);
   }
 
   function handleLocateSignal() {

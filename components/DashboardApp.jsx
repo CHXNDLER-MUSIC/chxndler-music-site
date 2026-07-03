@@ -3041,11 +3041,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
             if (process.env.NODE_ENV !== "production") console.log("🔊 Playing button.mp3");
             try {
-              // Play button sound and reveal UI simultaneously (don't wait for sound to finish)
-              sfx.play('button', 0.9);
+              // Play button sound and reveal UI simultaneously; fire event when sound ends
+              sfx.playAndWait('button', 0.9).finally(() => {
+                try { window.dispatchEvent(new CustomEvent('warpButtonSfxEnd')); } catch {}
+              });
               revealUIAndPlay();
             } catch {
               if (process.env.NODE_ENV !== "production") console.warn("⚠️ SFX system failed, revealing UI directly");
+              try { window.dispatchEvent(new CustomEvent('warpButtonSfxEnd')); } catch {}
               revealUIAndPlay();
             }
           };
