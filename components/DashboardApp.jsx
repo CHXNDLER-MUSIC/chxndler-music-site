@@ -2061,8 +2061,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     const handleKeyDown = (e) => {
       if (!uiUnlocked) return; // Ignore all media key input before Start
       // Trigger on spacebar (not in input fields) or pause/media keys (anywhere)
-      const tag = (e.target?.tagName || '').toUpperCase();
-      const inTextField = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target?.isContentEditable === true);
+      // Check document.activeElement rather than e.target: on many mobile virtual
+      // keyboards the spacebar's keydown event does not reliably report the focused
+      // input as its target, which let this handler steal the keystroke (playing a
+      // click sound and preventDefault-ing) instead of typing a space.
+      const active = document.activeElement;
+      const activeTag = (active?.tagName || '').toUpperCase();
+      const inTextField = activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT' || active?.isContentEditable === true;
       const isSpacebar = !inTextField && (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar');
       const isPauseKey = e.code === 'Pause' || e.code === 'MediaPlayPause' || e.key === 'MediaPlayPause';
       

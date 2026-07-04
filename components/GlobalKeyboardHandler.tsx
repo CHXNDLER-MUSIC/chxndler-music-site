@@ -12,7 +12,10 @@ const GlobalKeyboardHandler = () => {
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       // Only handle spacebar when not focused on input elements and START button has been clicked
-      if (event.code === 'Space' && !isInputFocused(event.target as Element) && userClickedStart) {
+      // Check document.activeElement rather than event.target: on many mobile virtual
+      // keyboards, the spacebar's keydown event does not reliably report the focused
+      // input as its target, which would otherwise let this handler steal the keystroke.
+      if (event.code === 'Space' && !isInputFocused(document.activeElement) && userClickedStart) {
         event.preventDefault(); // Prevent page scroll
         // Play flip sound when starting playback, pause sound when pausing
         try { 
