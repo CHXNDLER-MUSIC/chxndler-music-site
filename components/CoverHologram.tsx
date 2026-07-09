@@ -669,6 +669,10 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       data-slug={(slug && slug.toLowerCase()) || title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
       tabIndex={0}
       onKeyDown={(e) => {
+        const targetTag = (e.target as HTMLElement)?.tagName;
+        if (targetTag === 'INPUT' || targetTag === 'TEXTAREA' || targetTag === 'SELECT') {
+          return; // Let form fields (e.g. the shipping form rendered via portal) handle their own keys
+        }
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           handleClick();
