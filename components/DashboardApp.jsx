@@ -2694,8 +2694,24 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       }
     }
     computeBeamBaseBgPos();
-    window.addEventListener('resize', computeBeamBaseBgPos);
-    return () => window.removeEventListener('resize', computeBeamBaseBgPos);
+
+    // Mobile browsers fire 'resize' when the address bar hides/shows during
+    // scroll/swipe (viewport height changes, width doesn't). Recomputing on
+    // those events made the lightbeam base appear to move while swiping, so
+    // only recompute when the width actually changes (real resize/rotation).
+    let lastWidth = window.innerWidth;
+    function onResize() {
+      const w = window.innerWidth;
+      if (w === lastWidth) return;
+      lastWidth = w;
+      computeBeamBaseBgPos();
+    }
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', computeBeamBaseBgPos);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', computeBeamBaseBgPos);
+    };
   }, []);
 
   // Position the blue display at its original location but extend upward to profile bar
