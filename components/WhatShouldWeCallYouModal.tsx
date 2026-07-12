@@ -6,6 +6,7 @@ import { useUIStore } from "@/store/useUIStore";
 import { useProfile as useNewProfile } from "@/hooks/useProfile";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useTour } from "@/contexts/TourContext";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 const debugModal = (message: string, data?: any) => {
   try {
@@ -37,6 +38,7 @@ export default function WhatShouldWeCallYouModal() {
   const { updateProfileName, updateProfile, profile } = useProfile();
   const { completeOnboarding, refreshProfile } = useNewProfile();
   const { start: startTour } = useTour();
+  const { confirmSession } = useAuth();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -124,6 +126,9 @@ export default function WhatShouldWeCallYouModal() {
       // Never call setSession here — it triggers _getUser internally → 403 → clears session.
       // Just read whatever the client has; fall back to sessionStorage identity from verifyOtp.
       const { data: { session } } = await supabaseBrowser.auth.getSession();
+      // Keep AuthProvider's confirmed-session window fresh through onboarding
+      // so a transient client session hiccup can't flip the nav to LOG IN.
+      if (session) confirmSession(session);
       const at = sessionStorage.getItem('chx_at');
 
       console.log("[profile] session", session);

@@ -94,6 +94,9 @@ export type TrackInfo = {
 export const TRACKS = {
   // Use MP3 only for ALONE to avoid loading a missing Opus source
   ALONE: { mp3: S("alone.mp3") },
+  // Use MP3 only for ALWAYS ON MY MIND — no Opus source uploaded
+  ALWAYS_ON_MY_MIND: { mp3: S("ALWAYS ON MY MIND.mp3") },
+  ALWAYS_ON_MY_MIND_ACOUSTIC: { mp3: S("ALWAYS ON MY MIND (ACOUSTIC).mp3") },
   BABY: { mp3: S("baby.mp3"), opus: S("baby.opus") },
   BE_MY_BEE: { mp3: S("be-my-bee.mp3"), opus: S("be-my-bee.opus") },
   BRAIN_FREEZE: { mp3: S("brain-freeze.mp3"), opus: S("brain-freeze.opus") },
@@ -134,6 +137,20 @@ export const TRACK_INFO: Record<string, TrackInfo> = {
     title: 'ALONE',
     artist: 'CHXNDLER',
     oneLiner: 'Lost in a crowd under city lights.'
+  },
+  'always-on-my-mind': {
+    id: 'always-on-my-mind',
+    title: 'ALWAYS ON MY MIND',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/ALWAYS ON MY MIND.webp',
+    oneLiner: "Even goodbyes can't erase you."
+  },
+  'always-on-my-mind-acoustic': {
+    id: 'always-on-my-mind-acoustic',
+    title: 'ALWAYS ON MY MIND (ACOUSTIC)',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/ALWAYS ON MY MIND (ACOUSTIC).webp',
+    oneLiner: "Even goodbyes can't erase you."
   },
   'welcome-to-the-heartverse': {
     id: 'welcome-to-the-heartverse',

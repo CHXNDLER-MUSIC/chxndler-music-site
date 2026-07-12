@@ -111,8 +111,15 @@ export async function startOnboardingSequence(userId: string): Promise<void> {
  * 5. Wait for badge to finish
  * 6. Update DB flag
  * 7. Dispatch openHeartverseCard to show claim card
+ *
+ * `skipHeartCoinCelebration` lets callers that already handled the HeartCoin
+ * award/celebration themselves (e.g. TourContext's claim_tour_reward call)
+ * skip straight to the badge step instead of showing a second celebration.
  */
-export async function runRewardSequence(userId: string): Promise<void> {
+export async function runRewardSequence(
+  userId: string,
+  options?: { skipHeartCoinCelebration?: boolean }
+): Promise<void> {
   if (typeof window === 'undefined') return;
 
   debugOnboarding('Running reward sequence', { userId });
@@ -133,13 +140,17 @@ export async function runRewardSequence(userId: string): Promise<void> {
     debugOnboarding('Exception checking DB flag in runRewardSequence', { err });
   }
 
-  // Step 1: HeartCoin celebration (force because auto-celebration was suppressed)
-  debugOnboarding('Triggering HeartCoin celebration');
-  triggerHeartCoinCelebration(1, { force: true });
+  if (!options?.skipHeartCoinCelebration) {
+    // Step 1: HeartCoin celebration (force because auto-celebration was suppressed)
+    debugOnboarding('Triggering HeartCoin celebration');
+    triggerHeartCoinCelebration(1, { force: true });
 
-  // Step 2: Wait for HeartCoin celebration to complete
-  debugOnboarding('Waiting for HeartCoin celebration to complete...');
-  await waitForHeartCoinComplete();
+    // Step 2: Wait for HeartCoin celebration to complete
+    debugOnboarding('Waiting for HeartCoin celebration to complete...');
+    await waitForHeartCoinComplete();
+  } else {
+    debugOnboarding('Skipping HeartCoin celebration — already handled by caller');
+  }
 
   await delay(300);
 

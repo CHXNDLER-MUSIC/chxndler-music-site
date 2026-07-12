@@ -93,41 +93,30 @@ export default function AuthButton() {
 
   // Get button display info
   const getButtonDisplayInfo = () => {
-    // Loading state - but only show briefly
-    if ((authLoading || profileLoading) && user === undefined) {
-      return { text: 'Loading...', mode: 'loading' as const };
-    }
-
-    // Mode A: Not logged in - user is null or undefined
+    // Mode A: Not logged in - only say LOG IN once we're sure there's no session
     if (!user) {
+      if (authLoading) {
+        return { text: 'Loading...', mode: 'loading' as const };
+      }
       return { text: 'LOG IN', mode: 'login' as const };
     }
 
-    // Additional validation - if we have user but no profile data at all after loading is done
-    if (user && !profileLoading && !profile) {
-      if (process.env.NODE_ENV !== "production") console.warn('AuthButton: User session exists but no profile found - clearing session');
-      // Force logout to clear invalid session
-      import('@/lib/supabase-browser').then(({ supabaseBrowser }) => {
-        supabaseBrowser.auth.signOut();
-      });
-      return { text: 'LOG IN', mode: 'login' as const };
+    // From here on a session exists (verifyOtp already established it). Never
+    // fall back to 'LOG IN' again while `user` is set — a still-loading or
+    // not-yet-created profile row (e.g. the DB trigger racing a brand-new
+    // signup) is not an invalid session, just a momentary state. Signing the
+    // user out here was destroying valid sessions and forcing re-verification.
+    if (profileLoading || !profile) {
+      return { text: 'Setting up...', mode: 'loading' as const };
     }
 
     // Mode C: Logged in but missing name or profile is incomplete
-    if (user && profile && (!profile.name || !profile.profile_complete)) {
+    if (!profile.name || !profile.profile_complete) {
       return { text: 'Finish setup', mode: 'setup' as const };
     }
 
     // Mode B: Complete profile - show name (icon will be separate)
-    if (user && profile?.name && profile.profile_complete) {
-      return { 
-        text: profile.name, 
-        mode: 'profile' as const 
-      };
-    }
-
-    // Fallback to login if something is wrong
-    return { text: 'LOG IN', mode: 'login' as const };
+    return { text: profile.name, mode: 'profile' as const };
   };
 
   // Get username text color based on element
@@ -243,6 +232,8 @@ export default function AuthButton() {
             ? "Click to log in and join the Heartverse"
             : buttonMode === 'setup'
             ? "Click to complete your profile setup"
+            : buttonMode === 'loading'
+            ? "Setting up your Heartverse profile..."
             : "Click to view your profile"
         }
         onMouseEnter={(e) => {

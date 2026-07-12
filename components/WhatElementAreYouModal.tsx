@@ -7,12 +7,12 @@ import { useUIStore } from "@/store/useUIStore";
 import { useProfile as useNewProfile } from "@/hooks/useProfile";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useAudio } from "@/app/providers/AudioProvider";
+import { useAuth } from "@/app/providers/AuthProvider";
 import { sfx } from "@/lib/sfx";
 import type { Element } from "@/lib/planets";
 import { ELEMENT_COLORS } from "@/lib/planets";
 // HeartCoin celebration is now handled by HeartcoinBalanceProvider via realtime subscription
 import { startOnboardingSequence, ONBOARDING_SEQUENCE_COMPLETE } from '@/utils/onboardingSequence';
-import { suppressNextHeartcoinCelebration } from '@/utils/heartcoinCelebration';
 import { suppressBadgeCelebrations } from '@/utils/celebrationQueue';
 
 // Element sound mappings
@@ -35,6 +35,7 @@ export default function WhatElementAreYouModal() {
   const { updateProfileNameAndElement, profile } = useProfile();
   const { completeOnboarding, refreshProfile } = useNewProfile();
   const audio = useAudio();
+  const { confirmSession } = useAuth();
   const [selectedElement, setSelectedElement] = useState<Element | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,14 +113,17 @@ export default function WhatElementAreYouModal() {
     setLoading(true);
     setError(null);
 
-    // Suppress auto-celebrations synchronously; they will be triggered manually
-    // after the tour prompt (skip or Got it!) via runRewardSequence.
-    suppressNextHeartcoinCelebration();
+    // Suppress badge auto-celebration synchronously; the Wanderer badge is
+    // still triggered manually later, after the tour prompt (skip or Got it!),
+    // via runRewardSequence.
     suppressBadgeCelebrations(120000);
 
     try {
       // Never call setSession — it triggers _getUser → 403 and wipes the OTP session.
       const { data: { session } } = await supabaseBrowser.auth.getSession();
+      // Keep AuthProvider's confirmed-session window fresh through onboarding
+      // so a transient client session hiccup can't flip the nav to LOG IN.
+      if (session) confirmSession(session);
       const at = sessionStorage.getItem('chx_at');
 
       console.log("[element] session", session);
@@ -135,9 +139,6 @@ export default function WhatElementAreYouModal() {
         return;
       }
 
-      // Alien name from profile context; fall back gracefully so element selection isn't blocked
-      const alienName = profile?.name || 'Alien';
-
       // Play element sound
       const elementSound = ELEMENT_SOUNDS[selectedElement];
       if (elementSound) {
@@ -149,61 +150,52 @@ export default function WhatElementAreYouModal() {
       };
       const mappedElement = elementToTitleCase[selectedElement];
 
-      // Try the RPC first (awards first HeartCoin). Fall back to a direct update if it fails.
-      let rpcSucceeded = false;
+      // Update the element directly. We intentionally do NOT call
+      // align_element_and_award_first_coin here — it awarded a HeartCoin on
+      // every ALIGN click. The HeartCoin reward is now granted exactly once,
+      // later, via claim_tour_reward when the user skips or finishes the
+      // guided tour (see TourContext.tsx skip()/completeAndDismiss()).
+      const updatePayload = {
+        element: mappedElement,
+        profile_complete: true,
+        updated_at: new Date().toISOString(),
+      };
+
+      let updateData: any = null;
+      let updateError: any = null;
+
       if (session) {
-        const { data: alignResult, error: alignError } = await supabaseBrowser.rpc(
-          'align_element_and_award_first_coin',
-          { p_element: mappedElement, p_display_name: alienName }
-        );
-        if (process.env.NODE_ENV !== "production") console.log('🎯 RPC result:', { alignResult, alignError });
-        if (!alignError) rpcSucceeded = true;
-      }
-
-      if (!rpcSucceeded) {
-        // RPC unavailable or session gone — update element directly
-        const updatePayload = {
-          element: mappedElement,
-          profile_complete: true,
-          updated_at: new Date().toISOString(),
-        };
-
-        let updateData: any = null;
-        let updateError: any = null;
-
-        if (session) {
-          const result = await supabaseBrowser
-            .from('profiles')
-            .update(updatePayload)
-            .eq('id', userId)
-            .select();
-          updateData = result.data;
-          updateError = result.error;
-        } else if (at) {
-          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-          const res = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': anonKey,
-              'Authorization': `Bearer ${at}`,
-              'Prefer': 'return=representation',
-            },
-            body: JSON.stringify(updatePayload),
-          });
-          if (!res.ok) {
-            const body = await res.text();
-            throw new Error(`Element update failed (${res.status}): ${body}`);
-          }
-          updateData = await res.json().catch(() => null);
-        } else {
-          throw new Error('No session and no access token — cannot update element.');
+        const result = await supabaseBrowser
+          .from('profiles')
+          .update(updatePayload)
+          .eq('id', userId)
+          .select();
+        updateData = result.data;
+        updateError = result.error;
+      } else if (at) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+        const res = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': anonKey,
+            'Authorization': `Bearer ${at}`,
+            'Prefer': 'return=representation',
+          },
+          body: JSON.stringify(updatePayload),
+        });
+        if (!res.ok) {
+          const body = await res.text();
+          throw new Error(`Element update failed (${res.status}): ${body}`);
         }
-
-        console.log("[element] update result", { data: updateData, error: updateError });
-        if (updateError) throw new Error(updateError.message);
+        updateData = await res.json().catch(() => null);
+      } else {
+        throw new Error('No session and no access token — cannot update element.');
       }
+
+      console.log("[element] update result", { data: updateData, error: updateError });
+      if (updateError) throw new Error(updateError.message);
 
       // Set profile image to the selected element icon
       const selectedElementIcon = ELEMENTS.find(el => el.key === selectedElement)?.icon;
@@ -240,6 +232,16 @@ export default function WhatElementAreYouModal() {
       closeElementSelection();
       triggerProfileRefresh();
       await refreshProfile();
+
+      // Before starting the warp: re-confirm the Supabase session is still
+      // recognized and re-sync AuthProvider so the nav shows the profile name
+      // (not LOG IN) the moment the tour opens after the warp lands.
+      const { data: { session: finalSession } } = await supabaseBrowser.auth.getSession();
+      if (finalSession) {
+        confirmSession(finalSession);
+      } else if (process.env.NODE_ENV !== "production") {
+        console.warn('[element] No client session at ALIGN completion — relying on confirmed-session grace window from OTP verification');
+      }
 
       // Fire warp so the animation starts right away
       window.dispatchEvent(new CustomEvent('planet:warp', {

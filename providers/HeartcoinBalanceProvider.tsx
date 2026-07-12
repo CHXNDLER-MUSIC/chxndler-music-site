@@ -51,6 +51,9 @@ interface HeartcoinBalanceContextType {
   refreshProfileState: () => Promise<void>;
   // New: Optimistic update function for direct balance manipulation
   optimisticIncrement: (delta: number, transactionId?: string) => void;
+  // Sets balance directly from a known-authoritative server value (e.g. an RPC
+  // response), without a refetch and without auto-triggering celebration.
+  setBalanceFromServer: (newBalance: number) => void;
 }
 
 const HeartcoinBalanceContext = createContext<HeartcoinBalanceContextType | undefined>(undefined);
@@ -351,6 +354,18 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
 
     setLoading(false);
   }, [fetchBalance, fetchSongOfDayStatus]);
+
+  // ============================================================================
+  // Direct Balance Assignment (for callers holding an authoritative server value,
+  // e.g. an RPC response) — sets balance without an extra DB round-trip and
+  // without re-triggering celebration (caller is expected to handle that itself).
+  // ============================================================================
+  const setBalanceFromServer = useCallback((newBalance: number) => {
+    debugBalance("BALANCE_SET_FROM_SERVER", { newBalance });
+    prevBalanceRef.current = newBalance;
+    lastCelebratedBalanceRef.current = newBalance;
+    setBalance(newBalance);
+  }, []);
 
   // ============================================================================
   // Public Refetch Functions
@@ -739,6 +754,7 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
     refetchBalanceAfterAward,
     refreshProfileState,
     optimisticIncrement,
+    setBalanceFromServer,
   }), [
     balance,
     loading,
@@ -748,6 +764,7 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
     refetchBalanceAfterAward,
     refreshProfileState,
     optimisticIncrement,
+    setBalanceFromServer,
   ]);
 
   return (

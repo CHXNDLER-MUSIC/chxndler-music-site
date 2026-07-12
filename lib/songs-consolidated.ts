@@ -198,6 +198,9 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
   // Unreleased early access: ALONE (ACOUSTIC)
   // Audio sources default to Supabase Storage paths: alone-acoustic.opus/mp3
   { title: "ALONE (ACOUSTIC)", karaoke: "https://youtu.be/07Vs6Dmi8tE", hasLyrics: true },
+  // Supabase Storage file is named with spaces/caps, not the slugified default — must override src
+  { title: "ALWAYS ON MY MIND", spotify: "https://open.spotify.com/track/0V0apkjLLjRny9VNn6IKFE?si=c6baf79640fa451f", apple: "https://music.apple.com/us/album/always-on-my-mind/6769572937?i=6769572938", cover: "/covers/ALWAYS ON MY MIND.webp", src: "/tracks/ALWAYS ON MY MIND.mp3", hasLyrics: true },
+  { title: "ALWAYS ON MY MIND (ACOUSTIC)", cover: "/covers/ALWAYS ON MY MIND (ACOUSTIC).webp", src: "/tracks/ALWAYS ON MY MIND (ACOUSTIC).mp3", hasLyrics: true },
   { title: "BABY", spotify:"https://open.spotify.com/track/3UEVjChARWDbY4ruOIbIl3", apple:"https://music.apple.com/us/album/baby/1823220422?i=1823220423", youtube:"https://youtu.be/RqBs_MYhM6c", cover: "/covers/BABY.webp", src: "/tracks/baby.opus", hasLyrics: true, sections: [
     { time: 15.8, label: "Verse 1", kind: "verse" },
     { time: 47.4, label: "Chorus 1", kind: "chorus" },
@@ -314,6 +317,7 @@ const MAPPED = RAW.map((t, idx) => {
   if (!base || base === "track") base = `track-${idx + 1}`;
   let tagline = TAGLINES[base];
   if (!tagline && base.startsWith("ocean-girl")) tagline = TAGLINES["ocean-girl"]; // apply to variants
+  if (!tagline && base.startsWith("always-on-my-mind")) tagline = TAGLINES["always-on-my-mind"]; // apply to variants
   
   // Determine element and get corresponding theme
   const element = getElementForSong(t.title, base);

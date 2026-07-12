@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
+import { useAuth } from "@/app/providers/AuthProvider";
 import { useRouter } from "next/navigation";
 import { useAudio } from "@/app/providers/AudioProvider";
 
@@ -57,9 +58,12 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
   const sentEmailRef = useRef("");
 
   const { profile, updateProfile } = useProfile();
-  
-  // Memoize profile status to prevent unnecessary re-renders
-  const isLoggedIn = useMemo(() => !!profile?.id, [profile?.id]);
+  const { user: authUser, confirmSession } = useAuth();
+
+  // Source of truth for "logged in" is the Supabase auth session, not the
+  // profile row — the profile can still be loading/missing for a moment
+  // after login without the user actually being unauthenticated.
+  const isLoggedIn = useMemo(() => !!authUser, [authUser]);
   
   // Memoize render status logging to prevent unnecessary logs
   const renderStatus = useMemo(() => {
@@ -301,6 +305,13 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       // which returns 403 and clears the session that verifyOtp just established.
       const { session, user } = result.data;
       console.log("[auth] session + user from verifyOtp", { userId: user.id, email: user.email });
+
+      // Seed AuthProvider's user state directly from the session verifyOtp just
+      // returned — this is the authoritative Supabase session. Don't wait on
+      // onAuthStateChange/getSession to catch up; the nav bar (AuthButton) must
+      // reflect the logged-in state immediately and stay that way through the
+      // rest of onboarding (name → element → ALIGN → warp → tour).
+      confirmSession(session);
 
       // Persist everything the name modal needs to identify the user without re-authing
       try { sessionStorage.setItem('chx_at', session.access_token); } catch {}

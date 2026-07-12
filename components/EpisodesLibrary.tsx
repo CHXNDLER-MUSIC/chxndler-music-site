@@ -69,7 +69,7 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-07-03T23:00:00Z",
+    releaseDate: "2026-07-10T23:00:00Z",
   },
   {
     id: "hv-008",
@@ -77,7 +77,7 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-07-10T23:00:00Z",
+    releaseDate: "2026-07-24T23:00:00Z",
   },
   {
     id: "hv-006",
@@ -85,7 +85,7 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-07-17T23:00:00Z",
+    releaseDate: "2026-08-07T23:00:00Z",
   },
 
   // ── Live Signal – Acoustic Session ──

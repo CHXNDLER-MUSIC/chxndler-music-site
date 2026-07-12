@@ -9,6 +9,7 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   clearSession: () => Promise<void>;
+  confirmSession: (session: Session) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -27,9 +28,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const didInitRef = useRef(false);
   const lastSessionFingerprintRef = useRef<string>("init");
   const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
+  // Set only by an explicit, user-initiated sign-out. Lets onAuthStateChange
+  // tell the difference between "the user actually logged out" and a spurious
+  // background session-loss event (see confirmedSessionUntilRef below).
+  const explicitSignOutRef = useRef(false);
+  // While onboarding is in progress (name → element → ALIGN → warp → tour),
+  // some environments briefly report no client session between OTP verification
+  // and the client's own session persistence catching up (see confirmSession).
+  // If a SIGNED_OUT/no-session event arrives before this timestamp and wasn't
+  // caused by an explicit sign-out, it's treated as spurious and ignored rather
+  // than kicking the user back to a "LOG IN" state and forcing re-verification.
+  const confirmedSessionUntilRef = useRef<number>(0);
+  const CONFIRMED_SESSION_GRACE_MS = 5 * 60 * 1000; // covers the full onboarding flow
 
   const clearSession = async () => {
     try {
+      explicitSignOutRef.current = true;
       await supabaseBrowser.auth.signOut();
       // Clear cookies manually
       document.cookie = 'sb-access-token=; path=/; max-age=0';
@@ -39,10 +53,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sessionStorage.clear();
       setUser(null);
       lastSessionFingerprintRef.current = "no-session";
+      confirmedSessionUntilRef.current = 0;
       if (isDebug()) debugLog('AuthProvider: Session cleared manually');
     } catch (error) {
       console.error('AuthProvider: Error clearing session:', error);
     }
+  };
+
+  // Directly seed `user` from a session we already know is valid (e.g. the
+  // session object returned straight from verifyOtp/signInWithOtp), instead of
+  // waiting on onAuthStateChange or getSession() to catch up. This is the
+  // Supabase-issued session itself — the source of truth — just applied
+  // synchronously rather than round-tripped through the client's internal event
+  // propagation, which onboarding has shown can lag or briefly report empty.
+  const confirmSession = (session: Session) => {
+    if (!session?.user) return;
+    explicitSignOutRef.current = false;
+    const fingerprint = sessionFingerprint(session);
+    lastSessionFingerprintRef.current = fingerprint;
+    confirmedSessionUntilRef.current = Date.now() + CONFIRMED_SESSION_GRACE_MS;
+    setUser(session.user);
+    setLoading(false);
+
+    if (session.access_token) {
+      const isSecure = window.location.protocol === 'https:';
+      const secureFlag = isSecure ? '; Secure' : '';
+      document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=3600; SameSite=Lax${secureFlag}`;
+      if (session.refresh_token) {
+        document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
+      }
+    }
+
+    if (isDebug()) debugLog('AuthProvider: Session confirmed directly', { userId: session.user.id });
   };
 
   useEffect(() => {
@@ -129,6 +171,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
+        // Guard against spurious session-loss: if we recently confirmed a valid
+        // session directly (see confirmSession) and this event reports no
+        // session without an explicit sign-out having happened, ignore it —
+        // don't force the user back to a logged-out state and a second OTP.
+        if (!session && !explicitSignOutRef.current && Date.now() < confirmedSessionUntilRef.current) {
+          console.warn('AuthProvider: Ignoring spurious no-session auth event during confirmed-session window', { event });
+          return;
+        }
+
         lastSessionFingerprintRef.current = fingerprint;
 
         if (isDebug()) {
@@ -169,7 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Memoize context value to prevent unnecessary re-renders
-  const value = useMemo(() => ({ user, loading, clearSession }), [user, loading]);
+  const value = useMemo(() => ({ user, loading, clearSession, confirmSession }), [user, loading]);
 
   return (
     <AuthContext.Provider value={value}>

@@ -5,11 +5,13 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useRef,
   ReactNode,
   useMemo,
   useCallback,
 } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { useAuth } from "@/app/providers/AuthProvider";
 import { debug } from "@/lib/logger";
 import { ProfileTier } from "@/types/card";
 import { TIER_ORDER } from "@/utils/tier";
@@ -207,6 +209,15 @@ interface ProfileContextType {
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
+  const { user: authUser } = useAuth();
+  // Mirrors AuthProvider's confirmed user in a ref so the onAuthStateChange
+  // handler below (set up once on mount) always sees the latest value without
+  // needing to resubscribe every time it changes.
+  const authUserRef = useRef(authUser);
+  useEffect(() => {
+    authUserRef.current = authUser;
+  }, [authUser]);
+
   const [profile, setProfile] = useState<Profile | null>(null);
   const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -321,8 +332,23 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         console.error("Error getting session:", sessionError.message, sessionError);
       }
 
-      const user = session?.user;
-      
+      let user = session?.user;
+      // Fallback identity for the brief window right after OTP verification
+      // where the Supabase client may not yet recognize its own session (see
+      // AuthProvider.confirmSession). WelcomeHomeModal stashes the verified
+      // user + access token in sessionStorage for exactly this case — using it
+      // here means the profile (including the name just saved) can still be
+      // read and shown instead of silently falling back to "no profile".
+      let fallbackAccessToken: string | null = null;
+      if (!user && typeof window !== 'undefined') {
+        const fallbackUserId = sessionStorage.getItem('heartverse_user_id');
+        const at = sessionStorage.getItem('chx_at');
+        if (fallbackUserId && at) {
+          user = { id: fallbackUserId, email: sessionStorage.getItem('heartverse_user_email') || null } as any;
+          fallbackAccessToken = at;
+        }
+      }
+
       // Debug log for ProfileContext
       if (typeof window !== 'undefined') {
         debug("ProfileContext fetchProfile", {
@@ -331,25 +357,58 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           hasUser: !!user,
           userId: user?.id,
           userEmail: user?.email,
+          usingFallbackToken: !!fallbackAccessToken,
           sessionError: sessionError?.message,
           timestamp: new Date().toISOString()
         });
       }
-      
+
       setUser(user);
       if (!user) {
         setProfileWithCelebration(null);
         return;
       }
 
-      // Read profile only; trigger is responsible for creation
-      const { data, error } = await supabaseBrowser
-        .from("profiles")
-        .select(
-          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, total_reflections, total_listening_minutes, total_heartcoins_earned, elemental_sessions_count, community_interactions, achievements_unlocked, streams_attended, livestreams_attended, concerts_attended, cards_owned, merch_items_owned, unique_merch_items, digital_cards_owned, donations_made, heartcoins_sent, aliens_invited, card_slots"
-        )
-        .eq("id", user.id)
-        .maybeSingle();
+      const PROFILE_COLUMNS = "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, total_reflections, total_listening_minutes, total_heartcoins_earned, elemental_sessions_count, community_interactions, achievements_unlocked, streams_attended, livestreams_attended, concerts_attended, cards_owned, merch_items_owned, unique_merch_items, digital_cards_owned, donations_made, heartcoins_sent, aliens_invited, card_slots";
+
+      let data: any = null;
+      let error: any = null;
+
+      if (fallbackAccessToken) {
+        // No recognized client session — read the profile row directly via
+        // REST using the verified OTP access token, same pattern the
+        // onboarding modals already use for writes.
+        try {
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+          const res = await fetch(
+            `${supabaseUrl}/rest/v1/profiles?id=eq.${user.id}&select=${encodeURIComponent(PROFILE_COLUMNS)}`,
+            {
+              headers: {
+                'apikey': anonKey,
+                'Authorization': `Bearer ${fallbackAccessToken}`,
+              },
+            }
+          );
+          if (res.ok) {
+            const rows = await res.json();
+            data = Array.isArray(rows) ? (rows[0] ?? null) : null;
+          } else {
+            error = { message: `Profile REST fallback failed (${res.status})` };
+          }
+        } catch (fallbackErr: any) {
+          error = { message: fallbackErr?.message || 'Profile REST fallback threw' };
+        }
+      } else {
+        // Read profile only; trigger is responsible for creation
+        const result = await supabaseBrowser
+          .from("profiles")
+          .select(PROFILE_COLUMNS)
+          .eq("id", user.id)
+          .maybeSingle();
+        data = result.data;
+        error = result.error;
+      }
 
       if (error) {
         console.error("Error fetching profile:", error.message, error);
@@ -837,7 +896,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           // Set up realtime subscription for user_badges changes
           setupUserBadgesRealtime(session.user.id);
         }
-      } else {
+      } else if (!authUserRef.current) {
+        // Only clear profile state when AuthProvider also agrees there's no
+        // authenticated user. AuthProvider ignores spurious no-session events
+        // during its confirmed-session grace window (right after OTP verify,
+        // through name/element entry and ALIGN) — mirror that here so a
+        // transient client session hiccup during onboarding can't wipe the
+        // profile that was just fetched/created.
         if (typeof window !== 'undefined') {
           debug("ProfileContext no user session, clearing profile", {
             browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",

@@ -3,10 +3,15 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useMenuState } from "@/contexts/MenuStateContext";
+import { useHeartcoinBalance } from "@/providers/HeartcoinBalanceProvider";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import OnboardingTour from "@/components/OnboardingTour";
 import { sfx } from "@/lib/sfx";
 import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
+import { triggerHeartCoinCelebration, suppressNextHeartcoinCelebration } from "@/utils/heartcoinCelebration";
 import { ONBOARDING_SEQUENCE_COMPLETE, runRewardSequence, isOnboardingSequenceActive } from "@/utils/onboardingSequence";
+
+type TourRewardType = "tour_skipped" | "tour_completed";
 
 type TourContextValue = {
   active: boolean;
@@ -25,39 +30,50 @@ const LS_KEYS = {
   disabled: "heartverse_tour_disabled",
 } as const;
 
+// Scope keys per-account so one user's tour-seen/disabled state can never
+// leak into another account tested/logged-in on the same browser.
+function scopedKey(base: string, userId?: string | null) {
+  return userId ? `${base}_${userId}` : base;
+}
+
 export function TourProvider({ children }: { children: React.ReactNode }) {
   const { profile, updateProfile } = useProfile();
   const { setMenuOpen } = useMenuState();
+  const { setBalanceFromServer } = useHeartcoinBalance();
   const [active, setActive] = useState(false);
   const [endModalVisible, setEndModalVisible] = useState(false);
   const [welcomeVisible, setWelcomeVisible] = useState(false);
   const autostartGuard = useRef(false);
+  const userId = profile?.id;
 
-  // Helpers for localStorage fallback (stable functions that don't change)
-  const isCompleted = useCallback(() => {
-    try { return localStorage.getItem(LS_KEYS.completed) === "1"; } catch { return false; }
-  }, []);
-  const isDisabled = useCallback(() => {
-    try { return localStorage.getItem(LS_KEYS.disabled) === "1"; } catch { return false; }
-  }, []);
+  // Helpers for localStorage fallback, scoped to the current account.
+  // Each accepts an optional override id, since during onboarding ProfileContext's
+  // `profile` can still be null (no Supabase client session yet) even though we
+  // know the real user id from the event that just fired (e.g. ALIGN completion).
+  const isCompleted = useCallback((overrideUserId?: string | null) => {
+    try { return localStorage.getItem(scopedKey(LS_KEYS.completed, overrideUserId ?? userId)) === "1"; } catch { return false; }
+  }, [userId]);
+  const isDisabled = useCallback((overrideUserId?: string | null) => {
+    try { return localStorage.getItem(scopedKey(LS_KEYS.disabled, overrideUserId ?? userId)) === "1"; } catch { return false; }
+  }, [userId]);
   const markCompleted = useCallback(() => {
-    try { localStorage.setItem(LS_KEYS.completed, "1"); } catch {}
-  }, []);
+    try { localStorage.setItem(scopedKey(LS_KEYS.completed, userId), "1"); } catch {}
+  }, [userId]);
   const markDisabled = useCallback(() => {
-    try { localStorage.setItem(LS_KEYS.disabled, "1"); } catch {}
-  }, []);
-  const clearDisabled = useCallback(() => {
-    try { localStorage.removeItem(LS_KEYS.disabled); } catch {}
-  }, []);
+    try { localStorage.setItem(scopedKey(LS_KEYS.disabled, userId), "1"); } catch {}
+  }, [userId]);
+  const clearDisabled = useCallback((overrideUserId?: string | null) => {
+    try { localStorage.removeItem(scopedKey(LS_KEYS.disabled, overrideUserId ?? userId)); } catch {}
+  }, [userId]);
 
   const start = useCallback(() => {
     // Suppress badge celebrations during tour to prevent interruptions
     suppressBadgeCelebrations(60000); // Suppress for 60 seconds (tour duration)
-    try { localStorage.removeItem(LS_KEYS.disabled); } catch {}
+    try { localStorage.removeItem(scopedKey(LS_KEYS.disabled, userId)); } catch {}
     setEndModalVisible(false);
     setWelcomeVisible(false);
     setActive(true);
-  }, []);
+  }, [userId]);
 
   const finish = useCallback(async () => {
     setActive(false);
@@ -66,33 +82,113 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     try { await updateProfile({ has_seen_tour: true }); } catch {}
   }, [markCompleted, updateProfile]);
 
+  // One-time onboarding reward claim (tour_skipped / tour_completed) via the
+  // claim_tour_reward RPC. This does NOT depend on ProfileContext's `profile`
+  // being loaded — the RPC resolves the user server-side from the Supabase
+  // auth session (auth.uid()), so it's safe to call even in the window right
+  // after ALIGN where `profile` can still be null client-side.
+  //
+  // Uses supabaseBrowser (the app's single shared browser client — see
+  // lib/supabase/client.ts) everywhere. No server/admin client involved.
+  const claimTourReward = useCallback(async (
+    rewardType: TourRewardType
+  ): Promise<{ awarded: boolean; failed: boolean }> => {
+    console.log("[tour reward] started", rewardType);
+
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabaseBrowser.auth.getSession();
+
+    console.log("[tour reward] auth", {
+      userId: session?.user?.id,
+      sessionError,
+    });
+
+    if (sessionError || !session?.user) {
+      console.error("[tour reward] no authenticated session", sessionError);
+      return { awarded: false, failed: true };
+    }
+
+    const { data, error } = await supabaseBrowser.rpc("claim_tour_reward", {
+      p_reward_type: rewardType,
+    });
+
+    console.log("[tour reward] rpc result", { data, error });
+
+    if (error) {
+      console.error("[tour reward] RPC failed", error);
+      return { awarded: false, failed: true };
+    }
+
+    if (!data || typeof data.awarded !== "boolean") {
+      console.error("[tour reward] invalid RPC response", data);
+      return { awarded: false, failed: true };
+    }
+
+    if (typeof data.heartcoin_balance === "number") {
+      setBalanceFromServer(data.heartcoin_balance);
+    }
+
+    if (data.awarded === true) {
+      // Suppress the realtime-driven duplicate that would otherwise fire if
+      // this RPC's award also inserts a heartcoin_transactions row, then
+      // show the one, real celebration.
+      suppressNextHeartcoinCelebration();
+      triggerHeartCoinCelebration(1, { force: true });
+    }
+    // awarded === false is not an error — it means this reward type was
+    // already claimed previously. No celebration, caller just continues.
+
+    return {
+      awarded: data.awarded,
+      failed: false,
+    };
+  }, [setBalanceFromServer]);
+
   const completeAndDismiss = useCallback(async () => {
-    setActive(false);
-    setEndModalVisible(false);
+    console.log("[tour reward] Got it! clicked -> completeAndDismiss()");
     markCompleted();
     try { await updateProfile({ has_seen_tour: true }); } catch {}
-    // Run reward sequence (HeartCoin → badge → claim card) after tour completion.
-    // DB flag prevents double-awarding even if the page was refreshed between ALIGN and here.
-    if (profile?.id) {
-      runRewardSequence(profile.id);
-    }
-  }, [markCompleted, updateProfile, profile]);
 
-  const skip = useCallback(async () => {
-    if (process.env.NODE_ENV !== "production") console.log('Tour skip function called');
+    // Await the real database award BEFORE dismissing the tour UI. Dismissing
+    // first doesn't itself cancel this async function, but we sequence it
+    // explicitly so the award is guaranteed to have resolved before anything
+    // downstream (badge sequence, claim card) runs.
+    await claimTourReward("tour_completed");
+
     setActive(false);
     setEndModalVisible(false);
-    setWelcomeVisible(false);
+
+    if (profile?.id) {
+      // Run reward sequence (Wanderer badge → claim card) after tour completion.
+      // HeartCoin celebration is skipped here — claimTourReward already handled
+      // (or correctly skipped) the real award above; this must never re-award.
+      runRewardSequence(profile.id, { skipHeartCoinCelebration: true });
+    }
+  }, [markCompleted, updateProfile, profile, claimTourReward]);
+
+  const skip = useCallback(async () => {
+    console.log("[tour reward] Skip for now clicked -> skip()");
     markCompleted();
     markDisabled();
     try { await updateProfile({ has_seen_tour: true }); } catch {}
 
-    // Run reward sequence (HeartCoin → badge → claim card) whether skipping mid-tour
-    // or skipping the welcome prompt. DB flag prevents double-awarding.
+    // Await the real database award BEFORE dismissing the tour UI (see
+    // completeAndDismiss for why).
+    await claimTourReward("tour_skipped");
+
+    setActive(false);
+    setEndModalVisible(false);
+    setWelcomeVisible(false);
+
     if (profile?.id) {
-      runRewardSequence(profile.id);
+      // Run reward sequence (Wanderer badge → claim card) whether skipping mid-tour
+      // or skipping the welcome prompt. HeartCoin celebration is skipped here —
+      // claimTourReward already handled (or correctly skipped) the real award above.
+      runRewardSequence(profile.id, { skipHeartCoinCelebration: true });
     }
-  }, [markCompleted, markDisabled, updateProfile, profile]);
+  }, [markCompleted, markDisabled, updateProfile, profile, claimTourReward]);
 
   const restart = useCallback(() => {
     setEndModalVisible(false);
@@ -121,10 +217,10 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (autostartGuard.current) return;
     if (!profile) return;
-    const completed = profile.has_seen_tour || isCompleted();
+    const completed = profile.has_seen_tour ?? isCompleted();
     if (completed || isDisabled()) return;
 
-    if (profile.profile_complete) {
+    if (profile.profile_complete && profile.element) {
       autostartGuard.current = true;
 
       // If onboarding sequence is active, don't auto-start
@@ -144,7 +240,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const onEntered = () => {
       // Only show if user hasn't completed the tour yet
-      const completed = profile?.has_seen_tour || isCompleted();
+      const completed = profile?.has_seen_tour ?? isCompleted();
       if (!completed && !isDisabled()) {
         clearDisabled();
         setWelcomeVisible(true);
@@ -154,24 +250,39 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("heartverse:entered", onEntered);
   }, [clearDisabled, profile, isCompleted, isDisabled]);
 
-  // Listen for onboarding sequence completion to show tour prompt
+  // Listen for onboarding sequence completion (fires after ALIGN's warp lands)
+  // to show the tour prompt. This always shows, regardless of whether the
+  // tour has been seen/completed/disabled before — ALIGN always re-prompts.
   useEffect(() => {
-    const onSequenceComplete = () => {
+    const onSequenceComplete = (event: Event) => {
       if (process.env.NODE_ENV !== "production") console.log('[Tour] Onboarding sequence complete');
 
-      const completed = profile?.has_seen_tour || isCompleted();
+      // ProfileContext's `profile` can still be null here (no Supabase client
+      // session yet during onboarding), so prefer the userId the ALIGN handler
+      // dispatched this event with over the (possibly stale/null) profile.
+      const eventUserId = (event as CustomEvent)?.detail?.userId as string | undefined;
+      const effectiveUserId = eventUserId ?? userId;
+
       // Guard: don't re-show if already visible or tour is already active
       // (the sequence dispatches this event a second time after its own timeouts)
-      if (!completed && !isDisabled() && !active && !welcomeVisible) {
-        if (process.env.NODE_ENV !== "production") console.log('[Tour] Showing tour prompt after warp');
-        clearDisabled();
+      const shouldShow = !active && !welcomeVisible;
+      if (process.env.NODE_ENV !== "production") console.log('[Tour] shouldShow?', shouldShow, { effectiveUserId, active, welcomeVisible });
+      if (shouldShow) {
+        if (process.env.NODE_ENV !== "production") console.log('[Tour] Showing tour prompt after warp — setWelcomeVisible(true) called');
+        clearDisabled(effectiveUserId);
         setWelcomeVisible(true);
       }
     };
 
     window.addEventListener(ONBOARDING_SEQUENCE_COMPLETE, onSequenceComplete);
     return () => window.removeEventListener(ONBOARDING_SEQUENCE_COMPLETE, onSequenceComplete);
-  }, [profile, active, welcomeVisible, isCompleted, isDisabled, clearDisabled]);
+  }, [active, welcomeVisible, clearDisabled, userId]);
+
+  useEffect(() => {
+    if (welcomeVisible && process.env.NODE_ENV !== "production") {
+      console.log('[Tour] welcomeVisible=true — popup JSX should now be mounted in the DOM');
+    }
+  }, [welcomeVisible]);
 
   const value = useMemo(() => ({ active, start, skip, restart, disable, enable, showWelcome }), [active, start, skip, restart, disable, enable, showWelcome]);
 
