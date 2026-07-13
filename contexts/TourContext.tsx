@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useMenuState } from "@/contexts/MenuStateContext";
 import { useHeartcoinBalance } from "@/providers/HeartcoinBalanceProvider";
@@ -9,7 +9,8 @@ import OnboardingTour from "@/components/OnboardingTour";
 import { sfx } from "@/lib/sfx";
 import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
 import { triggerHeartCoinCelebration, suppressNextHeartcoinCelebration } from "@/utils/heartcoinCelebration";
-import { ONBOARDING_SEQUENCE_COMPLETE, runRewardSequence, isOnboardingSequenceActive } from "@/utils/onboardingSequence";
+import { ONBOARDING_SEQUENCE_COMPLETE, runRewardSequence } from "@/utils/onboardingSequence";
+import { checkAndAwardEligibleBadges } from "@/lib/updateBadgeProgress";
 
 type TourRewardType = "tour_skipped" | "tour_completed";
 
@@ -37,25 +38,18 @@ function scopedKey(base: string, userId?: string | null) {
 }
 
 export function TourProvider({ children }: { children: React.ReactNode }) {
-  const { profile, updateProfile } = useProfile();
+  const { profile, updateProfile, refreshProfile, ensureProfileExists } = useProfile();
   const { setMenuOpen } = useMenuState();
   const { setBalanceFromServer } = useHeartcoinBalance();
   const [active, setActive] = useState(false);
   const [endModalVisible, setEndModalVisible] = useState(false);
   const [welcomeVisible, setWelcomeVisible] = useState(false);
-  const autostartGuard = useRef(false);
   const userId = profile?.id;
 
   // Helpers for localStorage fallback, scoped to the current account.
   // Each accepts an optional override id, since during onboarding ProfileContext's
   // `profile` can still be null (no Supabase client session yet) even though we
   // know the real user id from the event that just fired (e.g. ALIGN completion).
-  const isCompleted = useCallback((overrideUserId?: string | null) => {
-    try { return localStorage.getItem(scopedKey(LS_KEYS.completed, overrideUserId ?? userId)) === "1"; } catch { return false; }
-  }, [userId]);
-  const isDisabled = useCallback((overrideUserId?: string | null) => {
-    try { return localStorage.getItem(scopedKey(LS_KEYS.disabled, overrideUserId ?? userId)) === "1"; } catch { return false; }
-  }, [userId]);
   const markCompleted = useCallback(() => {
     try { localStorage.setItem(scopedKey(LS_KEYS.completed, userId), "1"); } catch {}
   }, [userId]);
@@ -110,6 +104,14 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       return { awarded: false, failed: true };
     }
 
+    // Guard against the profiles-row-creation trigger not having run yet —
+    // on a fresh signup, claim_tour_reward's award UPDATE (like other writes
+    // keyed on auth.uid()) silently matches zero rows and reports
+    // awarded:false/amount:0 with no error if the row doesn't exist yet.
+    // ensureProfileExists is an idempotent upsert (ignoreDuplicates), so this
+    // is a safe no-op once the row is already there.
+    await ensureProfileExists(session.user.id, session.user.email);
+
     const { data, error } = await supabaseBrowser.rpc("claim_tour_reward", {
       p_reward_type: rewardType,
     });
@@ -136,6 +138,30 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       // show the one, real celebration.
       suppressNextHeartcoinCelebration();
       triggerHeartCoinCelebration(1, { force: true });
+
+      // Explicitly check for newly-eligible badges (e.g. Wanderer, which
+      // requires 1 HeartCoin) right now, using the session's user id — do
+      // not wait on HeartcoinBalanceProvider's realtime heartcoin_transactions
+      // listener, since we don't know whether this RPC's award path inserts
+      // a row there. allowCelebration:true lets the real-time badge
+      // celebration system (lib/useBadgeCelebrations.ts +
+      // components/BadgeCelebrationController.tsx) show the unlock animation
+      // once it sees the resulting user_badges insert.
+      checkAndAwardEligibleBadges(session.user.id, { allowCelebration: true }).catch((err) => {
+        console.error("[tour reward] badge check failed", err);
+      });
+
+      // ProfileContext's `profile.heartcoin_total` (used by badge progress
+      // math, e.g. Wanderer's "X / 1 HeartCoin") isn't updated by the
+      // realtime user_badges subscription above — only a badge's unlocked
+      // state is. Without this, the badge shows unlocked but its progress
+      // bar reads stale (e.g. 0/1) until an unrelated profile refresh or a
+      // full page reload happens to fire. skipBadgeCheck:true avoids
+      // re-running badge checks here (checkAndAwardEligibleBadges already
+      // did that above).
+      refreshProfile().catch((err) => {
+        console.error("[tour reward] profile refresh failed", err);
+      });
     }
     // awarded === false is not an error — it means this reward type was
     // already claimed previously. No celebration, caller just continues.
@@ -144,7 +170,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       awarded: data.awarded,
       failed: false,
     };
-  }, [setBalanceFromServer]);
+  }, [setBalanceFromServer, refreshProfile, ensureProfileExists]);
 
   const completeAndDismiss = useCallback(async () => {
     console.log("[tour reward] Got it! clicked -> completeAndDismiss()");
@@ -211,44 +237,6 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     clearDisabled();
     setWelcomeVisible(true);
   }, [clearDisabled]);
-
-  // Auto-start: after profile is complete, no previous completion/disable
-  // BUT if onboarding sequence is active, defer to sequence-complete event
-  useEffect(() => {
-    if (autostartGuard.current) return;
-    if (!profile) return;
-    const completed = profile.has_seen_tour ?? isCompleted();
-    if (completed || isDisabled()) return;
-
-    if (profile.profile_complete && profile.element) {
-      autostartGuard.current = true;
-
-      // If onboarding sequence is active, don't auto-start
-      // The sequence will dispatch ONBOARDING_SEQUENCE_COMPLETE when done
-      if (isOnboardingSequenceActive()) {
-        if (process.env.NODE_ENV !== "production") console.log('[Tour] Onboarding sequence active, deferring to sequence-complete event');
-        return;
-      }
-
-      // For users who complete onboarding without the sequence (edge case),
-      // show welcome a tick later so UI settles after the last modal
-      setTimeout(() => setWelcomeVisible(true), 250);
-    }
-  }, [profile]);
-
-  // Listen to a global event for explicit start (emitted on ENTER THE HEARTVERSE if needed)
-  useEffect(() => {
-    const onEntered = () => {
-      // Only show if user hasn't completed the tour yet
-      const completed = profile?.has_seen_tour ?? isCompleted();
-      if (!completed && !isDisabled()) {
-        clearDisabled();
-        setWelcomeVisible(true);
-      }
-    };
-    window.addEventListener("heartverse:entered", onEntered);
-    return () => window.removeEventListener("heartverse:entered", onEntered);
-  }, [clearDisabled, profile, isCompleted, isDisabled]);
 
   // Listen for onboarding sequence completion (fires after ALIGN's warp lands)
   // to show the tour prompt. This always shows, regardless of whether the

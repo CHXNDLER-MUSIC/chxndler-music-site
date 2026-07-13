@@ -490,25 +490,36 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
             processedTransactionIdsRef.current = new Set(entries.slice(-50));
           }
 
-          // Optimistically update balance with the delta from this transaction
-          setBalance(prev => {
-            const newBalance = prev + amount;
+          // Re-fetch the authoritative balance from the heartcoin_balance view
+          // rather than computing prev + amount. This transaction may be the
+          // realtime echo of a balance already set via setBalanceFromServer
+          // (e.g. claim_tour_reward's RPC response) — blindly adding `amount`
+          // on top would double-count it. Setting the exact server value is
+          // correct whether or not this award was already applied, and two
+          // transactions arriving close together each resolve to the same
+          // correct final total rather than racing an additive update.
+          (async () => {
+            const freshBalance = await fetchBalance();
+            if (freshBalance === null) return;
 
+            const prevBalance = prevBalanceRef.current;
             const timeSinceInitialLoad = Date.now() - initialLoadCompletedAtRef.current;
             const shouldCelebrate =
               !isInitialLoadRef.current &&
               timeSinceInitialLoad >= INITIAL_LOAD_CELEBRATION_DELAY_MS &&
               amount > 0 &&
-              (lastCelebratedBalanceRef.current === null || newBalance > lastCelebratedBalanceRef.current);
+              prevBalance !== null &&
+              freshBalance > prevBalance &&
+              (lastCelebratedBalanceRef.current === null || freshBalance > lastCelebratedBalanceRef.current);
 
             if (shouldCelebrate) {
               debugCelebration("COIN_CELEBRATION (realtime)", {
                 delta: amount,
-                newBalance,
+                freshBalance,
                 reason,
                 transactionId
               });
-              lastCelebratedBalanceRef.current = newBalance;
+              lastCelebratedBalanceRef.current = freshBalance;
               try {
                 triggerHeartCoinCelebration(amount);
               } catch (err) {
@@ -516,9 +527,9 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
               }
             }
 
-            prevBalanceRef.current = newBalance;
-            return newBalance;
-          });
+            prevBalanceRef.current = freshBalance;
+            setBalance(freshBalance);
+          })();
 
           // After a positive HeartCoin transaction during real-time session,
           // check and award any newly eligible badges (e.g. Wanderer).
@@ -575,7 +586,7 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
 
     sotdChannelRef.current = sotdChannel;
     channelsSetupRef.current = true;
-  }, []);
+  }, [fetchBalance]);
 
   // ============================================================================
   // Cleanup Realtime Subscriptions

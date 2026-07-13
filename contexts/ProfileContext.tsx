@@ -182,6 +182,7 @@ interface ProfileContextType {
   user: any | null;
   loading: boolean;
   refreshProfile: () => Promise<void>;
+  ensureProfileExists: (userId: string, email?: string | null) => Promise<boolean>;
   updateProfileNameAndElement: (name: string, elementLabel: string) => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
   updateProfileName: (name: string) => Promise<void>;
@@ -1318,6 +1319,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     refreshProfile,
+    ensureProfileExists,
     updateProfileNameAndElement,
     updateProfile,
     updateProfileName,
@@ -1341,6 +1343,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     refreshProfile,
+    ensureProfileExists,
     updateProfileNameAndElement,
     updateProfile,
     updateProfileName,

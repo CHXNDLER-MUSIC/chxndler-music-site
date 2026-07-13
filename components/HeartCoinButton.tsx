@@ -653,19 +653,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     };
   }, []);
 
-  // Update local state when external heartCoins change or provider balance updates
-  // HeartcoinBalanceProvider is the source of truth for real-time balance updates
+  // Update local state when external heartCoins change or provider balance updates.
+  // HeartcoinBalanceProvider is the source of truth for real-time balance updates —
+  // it already resets to 0 on sign-out via its own auth listener, so we don't gate
+  // on profile?.id here. Gating on it caused the header to show a stale 0 during
+  // the window right after onboarding/ALIGN where ProfileContext's `profile` can
+  // still be null even though a valid session + balance exist, requiring a full
+  // page refresh before a freshly-awarded coin would show.
   useEffect(() => {
-    // If no profile (not logged in), always show 0
-    if (!profile?.id) {
-      setHeartCoins(0);
-      return;
-    }
-    // Use provider balance as canonical source of truth
-    // This ensures real-time updates from realtime subscriptions and optimistic updates
     const currentBalance = providerBalance ?? profile?.heartcoin_balance ?? externalHeartCoins;
     setHeartCoins(currentBalance);
-  }, [externalHeartCoins, providerBalance, profile?.heartcoin_balance, profile?.id]);
+  }, [externalHeartCoins, providerBalance, profile?.heartcoin_balance]);
 
   // Keyboard navigation for merch items
   useEffect(() => {

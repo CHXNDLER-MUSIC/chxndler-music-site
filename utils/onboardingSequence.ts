@@ -10,7 +10,6 @@
  */
 
 import { supabaseBrowser } from '@/lib/supabase-browser';
-import { triggerBadgeCelebration } from '@/utils/badgeCelebration';
 import { triggerHeartCoinCelebration } from '@/utils/heartcoinCelebration';
 
 // ============================================================================
@@ -154,11 +153,13 @@ export async function runRewardSequence(
 
   await delay(300);
 
-  // Step 3: Trigger Wanderer badge celebration
-  debugOnboarding('Triggering Wanderer badge celebration');
-  await triggerWandererBadge();
-
-  // Step 4: Wait for badge celebration to complete
+  // Step 3: Wait for the Wanderer badge celebration to complete. The badge
+  // award itself (and its celebration) is handled reactively by the real
+  // badge-celebration system (lib/useBadgeCelebrations.ts +
+  // components/BadgeCelebrationController.tsx) once the caller's
+  // checkAndAwardEligibleBadges call inserts the user_badges row — this
+  // orchestrator just waits for that system's completion event before
+  // showing the claim card.
   debugOnboarding('Waiting for badge celebration to complete...');
   await waitForBadgeComplete();
 
@@ -207,29 +208,6 @@ function waitForHeartCoinComplete(): Promise<void> {
       resolve();
     }, HEARTCOIN_TIMEOUT_MS);
   });
-}
-
-async function triggerWandererBadge(): Promise<void> {
-  // Fetch Wanderer badge details
-  try {
-    const { data: badge, error } = await supabaseBrowser
-      .from('badges')
-      .select('icon_url, badge_name')
-      .eq('badge_name', 'Wanderer')
-      .single();
-
-    if (error || !badge) {
-      debugOnboarding('Could not fetch Wanderer badge, using defaults', { error: error?.message });
-      // Use defaults
-      triggerBadgeCelebration('/elements/badge-wanderer.webp', 'Wanderer');
-    } else {
-      debugOnboarding('Triggering Wanderer badge', { badge });
-      triggerBadgeCelebration(badge.icon_url || '/elements/badge-wanderer.webp', badge.badge_name);
-    }
-  } catch (err) {
-    debugOnboarding('Exception fetching Wanderer badge', { err });
-    triggerBadgeCelebration('/elements/badge-wanderer.webp', 'Wanderer');
-  }
 }
 
 function waitForBadgeComplete(): Promise<void> {

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useProfile } from "@/contexts/ProfileContext";
+import { useTour } from "@/contexts/TourContext";
 import { useAudio } from "@/app/providers/AudioProvider";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 import type { Element } from "@/lib/planets";
@@ -48,7 +49,8 @@ function OnboardingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const audio = useAudio();
-  const { profile, refreshProfile, updateProfile } = useProfile();
+  const { profile, refreshProfile } = useProfile();
+  const { skip: skipTour } = useTour();
 
   // Always start at step 1 (name) - no localStorage restoration
   const [step, setStep] = useState<OnboardingStep>('name');
@@ -292,10 +294,15 @@ function OnboardingContent() {
     router.push('/');
   };
 
-  // Handle skipping tour now (mark as seen to avoid prompt) and enter
+  // Handle skipping tour now (mark as seen to avoid prompt) and enter.
+  // Routes through TourContext's skip() (not a plain updateProfile call) so
+  // this actually claims the tour_skipped HeartCoin reward via
+  // claim_tour_reward — previously this just set has_seen_tour and
+  // navigated home, which silenced TourContext's own prompt (see
+  // autostart effect) before it ever had a chance to award anything.
   const handleSkipTourAndEnter = async () => {
     try {
-      await updateProfile({ has_seen_tour: true });
+      await skipTour();
     } catch {}
     router.push('/');
   };

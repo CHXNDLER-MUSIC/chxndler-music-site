@@ -149,7 +149,6 @@ export default function WhatShouldWeCallYouModal() {
         id: userId,
         email: userEmail,
         name: trimmedName,
-        profile_complete: true,
         updated_at: new Date().toISOString(),
       };
       console.log("[profile] upsert payload", payload);

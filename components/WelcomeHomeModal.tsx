@@ -644,6 +644,12 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
                   backdropFilter: 'blur(4px)'
                 }}
               />
+              <p
+                className="text-xs text-center mt-2 px-2"
+                style={{ color: 'rgba(0,255,255,0.7)' }}
+              >
+                Signal lost? Check your spam or junk folder.
+              </p>
               {canUseClipboard && (
                 <div className="flex justify-center mt-1">
                   <button
