@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import type { RealtimePostgresInsertPayload } from '@supabase/supabase-js';
 import { areBadgeCelebrationsSuppressed, onSuppressionEnd } from '@/utils/celebrationQueue';
+import { isOnboardingSequenceActive } from '@/utils/onboardingSequence';
 
 // ============================================================================
 // DEBUG FLAG - Toggle to enable/disable debug logging
@@ -355,8 +356,15 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
             }
 
             // CRITICAL FIX: Check suppression BEFORE marking as seen
-            // If suppressed, queue the badge for later (don't mark as seen yet)
-            if (areBadgeCelebrationsSuppressed()) {
+            // If suppressed, queue the badge for later (don't mark as seen yet).
+            // Exception: the onboarding reward sequence (utils/onboardingSequence.ts)
+            // explicitly awaits this exact celebration via the badge:celebration-complete
+            // event immediately after tour completion/skip — which is always still inside
+            // the tour's 60s suppression window (contexts/TourContext.tsx's start()).
+            // Deferring it there meant the pending badge would later be silently marked
+            // "seen" (never celebrated) when suppression auto-cleared, and the reward
+            // sequence's wait would just time out. Bypass suppression in that case.
+            if (areBadgeCelebrationsSuppressed() && !isOnboardingSequenceActive()) {
               // Add to pending queue (keyed by badge_id to prevent duplicates)
               if (!pendingBadgesRef.current.has(newRow.badge_id)) {
                 pendingBadgesRef.current.set(newRow.badge_id, {

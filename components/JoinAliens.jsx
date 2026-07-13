@@ -172,7 +172,7 @@ export default function JoinAliens({ visible = true } = {}) {
   }, [shows]);
 
   /**
-   * Returns the next upcoming broadcast (Mon 7 PM ET / Thu 7 PM ET).
+   * Returns the next upcoming broadcast (Thu 7 PM ET).
    * Respects America/New_York so EST ↔ EDT transitions are automatic.
    */
   const getNextBroadcast = () => {
@@ -193,20 +193,11 @@ export default function JoinAliens({ visible = true } = {}) {
     const etDate = new Date(etYear, etMonth - 1, etDay);
     const etDow = etDate.getDay();
 
-    let daysUntil, kind;
     // Treat same-day as the active broadcast window until 9 PM ET
     const isBeforeStreamEnd = etHour < 21;
 
-    if (etDow === 1 && isBeforeStreamEnd) {
-      daysUntil = 0; kind = 'acoustic';
-    } else if (etDow === 4 && isBeforeStreamEnd) {
-      daysUntil = 0; kind = 'electric';
-    } else {
-      const daysToMon = ((1 - etDow + 7) % 7) || 7;
-      const daysToThu = ((4 - etDow + 7) % 7) || 7;
-      if (daysToMon < daysToThu) { daysUntil = daysToMon; kind = 'acoustic'; }
-      else { daysUntil = daysToThu; kind = 'electric'; }
-    }
+    const daysUntil = (etDow === 4 && isBeforeStreamEnd) ? 0 : (((4 - etDow + 7) % 7) || 7);
+    const kind = 'electric';
 
     const target = new Date(etYear, etMonth - 1, etDay + daysUntil);
     const tY = target.getFullYear(), tM = target.getMonth(), tD = target.getDate();
@@ -219,7 +210,7 @@ export default function JoinAliens({ visible = true } = {}) {
     );
     if (checkH !== 19) utc = new Date(Date.UTC(tY, tM, tD, 19 + 4, 0, 0));
 
-    const dayName = kind === 'acoustic' ? 'MONDAY' : 'THURSDAY';
+    const dayName = 'THURSDAY';
     const label = `${dayName} \u2022 7:00 PM ET \u2022 ${kind.toUpperCase()} SESSION`;
 
     return { kind, start: utc, label, dayName };
@@ -570,7 +561,7 @@ export default function JoinAliens({ visible = true } = {}) {
                   color: accent,
                   textShadow: accentGlow,
                   letterSpacing: '0.25em',
-                  animation: 'countdownPulse 1.5s ease-in-out infinite',
+                  animation: 'liveIndicatorPulse 1.5s ease-in-out infinite',
                 }}>
                   ● STREAM IS LIVE
                 </div>
@@ -2081,8 +2072,8 @@ export default function JoinAliens({ visible = true } = {}) {
           left: '10px',
           width: '60px',
           height: '60px',
-          background: 'rgba(242, 239, 29, 0.1)',
-          border: '2px solid #F2EF1D',
+          background: 'rgba(252, 84, 175, 0.1)',
+          border: '2px solid #FC54AF',
           borderRadius: '50%',
           cursor: 'pointer',
           display: 'flex',
@@ -2090,7 +2081,7 @@ export default function JoinAliens({ visible = true } = {}) {
           justifyContent: 'center',
           transition: 'all 300ms ease',
           outline: 'none',
-          boxShadow: '0 0 15px rgba(242, 239, 29, 0.4)',
+          boxShadow: '0 0 15px rgba(252, 84, 175, 0.4)',
           zIndex: isChatOpen ? (isChatProfileOpen ? 10 : 120) : 1000,
           overflow: 'hidden',
           pointerEvents: (isChatOpen && isChatProfileOpen) ? 'none' : 'auto'
@@ -2098,13 +2089,13 @@ export default function JoinAliens({ visible = true } = {}) {
         onMouseEnter={(e) => {
           try { sfx.play('hover', 0.3); } catch {}
           e.target.style.transform = 'scale(1.1)';
-          e.target.style.background = 'rgba(242, 239, 29, 0.2)';
-          e.target.style.boxShadow = '0 0 25px rgba(242, 239, 29, 0.6)';
+          e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+          e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
         }}
         onMouseLeave={(e) => {
           e.target.style.transform = 'scale(1)';
-          e.target.style.background = 'rgba(242, 239, 29, 0.1)';
-          e.target.style.boxShadow = '0 0 15px rgba(242, 239, 29, 0.4)';
+          e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+          e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.4)';
         }}
       >
         <img 
@@ -2758,6 +2749,21 @@ export default function JoinAliens({ visible = true } = {}) {
         }
 
         @keyframes countdownPulse {
+          0%, 100% {
+            text-shadow:
+              0 0 8px #00FFFF,
+              0 0 20px rgba(0, 255, 255, 0.5),
+              0 0 40px rgba(0, 255, 255, 0.25);
+          }
+          50% {
+            text-shadow:
+              0 0 4px #00FFFF,
+              0 0 12px rgba(0, 255, 255, 0.35),
+              0 0 24px rgba(0, 255, 255, 0.15);
+          }
+        }
+
+        @keyframes liveIndicatorPulse {
           0%, 100% {
             text-shadow:
               0 0 8px #FC54AF,

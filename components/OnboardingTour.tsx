@@ -115,7 +115,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "signal",
     selector: "[data-tour-id='signal-button']",
     title: "Signal",
-    body: "This is where the Heartverse comes together. Join live moments, chat with other Aliens, and feel the pulse of the community.",
+    body: "Join live moments, chat with other Aliens, and feel the pulse of the community.",
     requiresMenuClosed: true
   },
   
