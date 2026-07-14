@@ -218,12 +218,6 @@ export default function WhatElementAreYouModal() {
         }
       }
 
-      // Final cleanup — all onboarding tokens no longer needed
-      try { sessionStorage.removeItem('heartverse_user_id'); } catch {}
-      try { sessionStorage.removeItem('heartverse_user_email'); } catch {}
-      try { sessionStorage.removeItem('chx_at'); } catch {}
-      try { sessionStorage.removeItem('chx_rt'); } catch {}
-
       // Start the sequence BEFORE refreshProfile so sequenceActive=true when
       // TourContext's auto-start effect fires on the profile update.
       // This prevents the welcome modal from appearing immediately (before the warp).
@@ -239,6 +233,17 @@ export default function WhatElementAreYouModal() {
       const { data: { session: finalSession } } = await supabaseBrowser.auth.getSession();
       if (finalSession) {
         confirmSession(finalSession);
+
+        // Only clear the onboarding fallback tokens once the client session is
+        // confirmed recognized. ProfileContext.fetchProfile() falls back to
+        // heartverse_user_id/chx_at when supabase.auth.getSession() hasn't
+        // caught up yet — clearing them earlier (before this confirmation) left
+        // fetchProfile with no way to identify the user, so it set profile to
+        // null and the nav got stuck on "Setting up..." with no future retry.
+        try { sessionStorage.removeItem('heartverse_user_id'); } catch {}
+        try { sessionStorage.removeItem('heartverse_user_email'); } catch {}
+        try { sessionStorage.removeItem('chx_at'); } catch {}
+        try { sessionStorage.removeItem('chx_rt'); } catch {}
       } else if (process.env.NODE_ENV !== "production") {
         console.warn('[element] No client session at ALIGN completion — relying on confirmed-session grace window from OTP verification');
       }

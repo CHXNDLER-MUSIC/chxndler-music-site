@@ -10,8 +10,14 @@ const celebratedBadgesThisSession = new Set<string>();
 /**
  * Update badge progress counters for a specific user
  * This should be called whenever the user completes activities that count toward badges
+ * @param options.allowCelebration - Forwarded to checkAndAwardEligibleBadges. When true,
+ *   newly-awarded badges are NOT pre-marked as seen, so a caller can explicitly celebrate
+ *   them (e.g. after an in-progress ritual animation finishes).
  */
-export async function updateBadgeProgressCounters(userId: string) {
+export async function updateBadgeProgressCounters(
+  userId: string,
+  options?: { allowCelebration?: boolean }
+) {
   try {
     log('Updating badge progress counters for user:', userId);
 
@@ -44,17 +50,17 @@ export async function updateBadgeProgressCounters(userId: string) {
     log('Successfully updated badge progress counters');
     
     // Check and award any newly eligible badges
-    const newlyAwardedBadges = await checkAndAwardEligibleBadges(userId);
+    const newlyAwardedBadges = await checkAndAwardEligibleBadges(userId, options);
     // Summary only; show details via debug if needed
     log('badgeProgress summary:', {
       newlyAwarded: newlyAwardedBadges.length,
       computedAt: new Date().toISOString(),
     });
-    
-    return true;
+
+    return newlyAwardedBadges;
   } catch (error) {
     console.error('Error in updateBadgeProgressCounters:', error);
-    return false;
+    return [];
   }
 }
 
@@ -220,7 +226,7 @@ export async function checkAndAwardEligibleBadges(
           // Note: We keep the badge in celebratedBadgesThisSession even on error
           // to prevent repeated attempts in the same session
         } else {
-          newlyAwardedBadges.push(badge);
+          newlyAwardedBadges.push({ ...badge, earned_at: earnedAt });
           log(`✅ Successfully awarded badge: ${badge.badge_name}`);
 
           // When allowCelebration is true, skip marking as seen so the realtime

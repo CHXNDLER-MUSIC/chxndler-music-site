@@ -1915,8 +1915,8 @@ export default function JoinAliens({ visible = true } = {}) {
                           {/* Date */}
                           <div style={rowStyle}>
                             <svg style={iconStyle} viewBox="0 0 24 24" fill="none">
-                              <rect x="3" y="5" width="18" height="16" rx="2" stroke="#00FFFF" strokeWidth="1.8"/>
-                              <path d="M3 9h18M8 3v4M16 3v4" stroke="#00FFFF" strokeWidth="1.8" strokeLinecap="round"/>
+                              <rect x="3" y="5" width="18" height="16" rx="2" stroke="#F2EF1D" strokeWidth="1.8"/>
+                              <path d="M3 9h18M8 3v4M16 3v4" stroke="#F2EF1D" strokeWidth="1.8" strokeLinecap="round"/>
                             </svg>
                             <span style={labelStyle}>Date:</span>
                             <span style={valueStyle}>{dateText}{timeText ? ` • ${timeText}` : ''}</span>
@@ -1956,13 +1956,13 @@ export default function JoinAliens({ visible = true } = {}) {
                             style={{
                               flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                               padding: '10px 8px', borderRadius: 10, textDecoration: 'none',
-                              border: '1px solid rgba(0,255,255,0.6)', background: 'rgba(0,255,255,0.08)',
-                              color: '#00FFFF', fontWeight: 700, fontSize: 13,
+                              border: '1px solid rgba(242,239,29,0.6)', background: 'rgba(242,239,29,0.08)',
+                              color: '#F2EF1D', fontWeight: 700, fontSize: 13,
                             }}
                           >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                              <rect x="3" y="5" width="18" height="16" rx="2" stroke="#00FFFF" strokeWidth="1.8"/>
-                              <path d="M3 9h18M8 3v4M16 3v4" stroke="#00FFFF" strokeWidth="1.8" strokeLinecap="round"/>
+                              <rect x="3" y="5" width="18" height="16" rx="2" stroke="#F2EF1D" strokeWidth="1.8"/>
+                              <path d="M3 9h18M8 3v4M16 3v4" stroke="#F2EF1D" strokeWidth="1.8" strokeLinecap="round"/>
                             </svg>
                             + CALENDAR
                           </a>
@@ -2134,10 +2134,10 @@ export default function JoinAliens({ visible = true } = {}) {
           right: '205px',
           width: '55px',
           height: '55px',
-          background: 'rgba(0, 255, 255, 0.1)',
-          border: '2px solid #00FFFF',
+          background: 'rgba(255, 215, 0, 0.1)',
+          border: '2px solid #FFD700',
           borderRadius: '50%',
-          color: '#00FFFF',
+          color: '#FFD700',
           fontSize: '16px',
           fontWeight: 'bold',
           cursor: 'pointer',
@@ -2146,8 +2146,8 @@ export default function JoinAliens({ visible = true } = {}) {
           justifyContent: 'center',
           transition: 'all 300ms ease',
           outline: 'none',
-          textShadow: '0 0 8px #00FFFF',
-          boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
+          textShadow: '0 0 8px #FFD700',
+          boxShadow: '0 0 15px rgba(255, 215, 0, 0.3)',
           zIndex: (isChatOpen || isEpisodesOpen) ? 10 : 1200,
           pointerEvents: (isChatOpen || isEpisodesOpen) ? 'none' : 'auto',
           overflow: 'hidden',
@@ -2155,13 +2155,13 @@ export default function JoinAliens({ visible = true } = {}) {
         onMouseEnter={(e) => {
           try { sfx.play('hover', 0.3); } catch {}
           e.currentTarget.style.transform = 'scale(1.1)';
-          e.currentTarget.style.background = 'rgba(0, 255, 255, 0.2)';
-          e.currentTarget.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
+          e.currentTarget.style.background = 'rgba(255, 215, 0, 0.2)';
+          e.currentTarget.style.boxShadow = '0 0 25px rgba(255, 215, 0, 0.6)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.background = 'rgba(0, 255, 255, 0.1)';
-          e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
+          e.currentTarget.style.background = 'rgba(255, 215, 0, 0.1)';
+          e.currentTarget.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.3)';
         }}
         aria-label="Concerts"
       >

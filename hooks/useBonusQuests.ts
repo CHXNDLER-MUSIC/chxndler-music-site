@@ -147,9 +147,21 @@ export function useBonusQuests(): UseBonusQuestsReturn {
     if (process.env.NODE_ENV !== "production") console.log('[completeQuest] Calling RPC complete_bonus_quest_once_per_day with p_quest_id:', quest.id);
 
     try {
-      const { data, error } = await supabaseBrowser.rpc('complete_bonus_quest_once_per_day', {
-        p_quest_id: quest.id
-      });
+      console.log("SEND SIGNAL QUEST:", quest);
+      console.log(
+        "SEND SIGNAL QUEST ID:",
+        (quest as any).bonus_quest_id ?? quest.id
+      );
+
+      const { data, error } = await supabaseBrowser.rpc(
+        "complete_bonus_quest_once_per_day",
+        {
+          p_quest_id: (quest as any).bonus_quest_id ?? quest.id,
+        }
+      );
+
+      console.log("BONUS QUEST RPC DATA:", data);
+      console.error("BONUS QUEST RPC ERROR:", error);
 
       if (process.env.NODE_ENV !== "production") console.log('[completeQuest] RPC response:', { data, error });
 

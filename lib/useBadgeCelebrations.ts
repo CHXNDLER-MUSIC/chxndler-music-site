@@ -155,6 +155,27 @@ export function markBadgeAsSeenInStorage(badgeId: string, earnedAt: string): voi
 }
 
 // ============================================================================
+// Manual Injection - lets a caller (e.g. the journal ritual) push a badge
+// straight into the live celebration queue, bypassing the realtime/suppression
+// pipeline entirely. Used for badges that are earned as the direct, intended
+// result of an action whose own suppression window would otherwise swallow
+// the celebration (see components/SoulStarJournal.tsx handleRitualComplete).
+// Mirrors the onSuppressionEnd pub/sub pattern below.
+// ============================================================================
+type ManualCelebrationListener = (item: BadgeCelebrationItem) => void;
+const manualCelebrationListeners: Set<ManualCelebrationListener> = new Set();
+
+export function manuallyQueueBadgeCelebration(item: BadgeCelebrationItem): void {
+  manualCelebrationListeners.forEach((listener) => {
+    try {
+      listener(item);
+    } catch (err) {
+      console.error('[BADGE_CELEBRATION] Error in manual celebration listener:', err);
+    }
+  });
+}
+
+// ============================================================================
 // Main Hook
 // ============================================================================
 
@@ -188,6 +209,31 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
 
   const pop = useCallback(() => {
     setQueue((prev) => prev.slice(1));
+  }, []);
+
+  // Subscribe to manually-injected celebrations (bypasses realtime/suppression
+  // entirely). Independent of the userId-scoped effect below so it stays live
+  // across user changes and doesn't require the realtime subscription to be up.
+  useEffect(() => {
+    const unsubscribe = ((): (() => void) => {
+      const listener: ManualCelebrationListener = (item) => {
+        markBadgeAsSeen(item.badgeId, item.earnedAt, seenBadgesRef.current);
+        debugCelebration("BADGE_CELEBRATION_MANUAL_ENQUEUE", {
+          badgeId: item.badgeId,
+          badgeName: item.badgeName
+        });
+        setQueue((prev) => {
+          const alreadyInQueue = prev.some(existing =>
+            existing.badgeId === item.badgeId && existing.earnedAt === item.earnedAt
+          );
+          if (alreadyInQueue) return prev;
+          return [...prev, item];
+        });
+      };
+      manualCelebrationListeners.add(listener);
+      return () => { manualCelebrationListeners.delete(listener); };
+    })();
+    return unsubscribe;
   }, []);
 
   useEffect(() => {

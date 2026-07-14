@@ -43,6 +43,59 @@ function debugOnboarding(message: string, data?: any) {
   }
 }
 
+function describeError(error: any) {
+  if (!error) return error;
+  return { message: error.message, code: error.code, details: error.details, hint: error.hint };
+}
+
+// Same session-or-fallback-token pattern used by ProfileContext/WhatElementAreYouModal:
+// right after ALIGN, supabase.auth.getSession() can briefly report no session even though
+// the OTP verification already succeeded. WelcomeHomeModal stashes the verified user id +
+// raw access token in sessionStorage for exactly this window. Without this fallback, the
+// flag check/update below silently ran as the anonymous role, got blocked by RLS, and never
+// actually read/wrote the flag — logged only as an opaque "Error checking/updating DB flag".
+async function getOnboardingIdentity(): Promise<{ session: any; accessToken: string | null }> {
+  const { data: { session } } = await supabaseBrowser.auth.getSession();
+  const accessToken = typeof window !== 'undefined' ? sessionStorage.getItem('chx_at') : null;
+  return { session, accessToken };
+}
+
+async function fetchOnboardingFlag(userId: string): Promise<{ completed: boolean; error?: any }> {
+  const { session, accessToken } = await getOnboardingIdentity();
+
+  if (session) {
+    const { data, error } = await supabaseBrowser
+      .from('profiles')
+      .select('onboarding_reward_sequence_completed')
+      .eq('id', userId)
+      .maybeSingle();
+    if (error) return { completed: false, error };
+    return { completed: !!data?.onboarding_reward_sequence_completed };
+  }
+
+  if (!accessToken) {
+    return { completed: false, error: { message: 'No client session and no fallback access token' } };
+  }
+
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=onboarding_reward_sequence_completed`,
+      { headers: { apikey: anonKey, Authorization: `Bearer ${accessToken}` } }
+    );
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      return { completed: false, error: { message: `Flag fetch failed (${res.status})`, details: body } };
+    }
+    const rows = await res.json();
+    const row = Array.isArray(rows) ? rows[0] : null;
+    return { completed: !!row?.onboarding_reward_sequence_completed };
+  } catch (err: any) {
+    return { completed: false, error: { message: err?.message || 'Flag fetch threw' } };
+  }
+}
+
 // ============================================================================
 // Public API
 // ============================================================================
@@ -80,21 +133,12 @@ export async function startOnboardingSequence(userId: string): Promise<void> {
   // Check DB flag — if already done, sequenceActive stays true for the
   // warp window so the tour prompt still shows, but runRewardSequence
   // will no-op when called.
-  try {
-    const { data: profile, error } = await supabaseBrowser
-      .from('profiles')
-      .select('onboarding_reward_sequence_completed')
-      .eq('id', userId)
-      .single();
-
-    if (error) {
-      debugOnboarding('Error checking DB flag, continuing anyway', { error: error.message });
-    } else if (profile?.onboarding_reward_sequence_completed) {
-      debugOnboarding('Sequence already completed for user — skipping rewards');
-      return;
-    }
-  } catch (err) {
-    debugOnboarding('Exception checking DB flag', { err });
+  const { completed, error } = await fetchOnboardingFlag(userId);
+  if (error) {
+    debugOnboarding('Error checking DB flag, continuing anyway', describeError(error));
+  } else if (completed) {
+    debugOnboarding('Sequence already completed for user — skipping rewards');
+    return;
   }
 }
 
@@ -123,20 +167,13 @@ export async function runRewardSequence(
 
   debugOnboarding('Running reward sequence', { userId });
 
-  try {
-    const { data: profile } = await supabaseBrowser
-      .from('profiles')
-      .select('onboarding_reward_sequence_completed')
-      .eq('id', userId)
-      .single();
-
-    if (profile?.onboarding_reward_sequence_completed) {
-      debugOnboarding('Rewards already granted — skipping');
-      sequenceActive = false;
-      return;
-    }
-  } catch (err) {
-    debugOnboarding('Exception checking DB flag in runRewardSequence', { err });
+  const { completed, error: flagCheckError } = await fetchOnboardingFlag(userId);
+  if (flagCheckError) {
+    debugOnboarding('Error checking DB flag in runRewardSequence, continuing anyway', describeError(flagCheckError));
+  } else if (completed) {
+    debugOnboarding('Rewards already granted — skipping');
+    sequenceActive = false;
+    return;
   }
 
   if (!options?.skipHeartCoinCelebration) {
@@ -238,19 +275,52 @@ function waitForBadgeComplete(): Promise<void> {
 }
 
 async function updateDbFlag(userId: string): Promise<void> {
-  try {
-    const { error } = await supabaseBrowser
-      .from('profiles')
-      .update({ onboarding_reward_sequence_completed: true })
-      .eq('id', userId);
+  const { session, accessToken } = await getOnboardingIdentity();
 
-    if (error) {
-      debugOnboarding('Error updating DB flag', { error: error.message });
-    } else {
-      debugOnboarding('DB flag updated successfully');
+  if (session) {
+    try {
+      const { error } = await supabaseBrowser
+        .from('profiles')
+        .update({ onboarding_reward_sequence_completed: true })
+        .eq('id', userId);
+
+      if (error) {
+        debugOnboarding('Error updating DB flag', describeError(error));
+      } else {
+        debugOnboarding('DB flag updated successfully');
+      }
+    } catch (err: any) {
+      debugOnboarding('Exception updating DB flag', { message: err?.message });
     }
-  } catch (err) {
-    debugOnboarding('Exception updating DB flag', { err });
+    return;
+  }
+
+  if (!accessToken) {
+    debugOnboarding('Skipping DB flag update — no client session and no fallback access token');
+    return;
+  }
+
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const res = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: anonKey,
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ onboarding_reward_sequence_completed: true }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      debugOnboarding('Error updating DB flag via REST fallback', { status: res.status, body });
+    } else {
+      debugOnboarding('DB flag updated successfully via REST fallback');
+    }
+  } catch (err: any) {
+    debugOnboarding('Exception updating DB flag via REST fallback', { message: err?.message });
   }
 }
 

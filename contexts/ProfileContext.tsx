@@ -193,7 +193,7 @@ interface ProfileContextType {
   saveJournalEntry: (
     entry: Omit<JournalEntry, 'entry_id' | 'user_id' | 'created_at'>,
     options?: { sharePublic?: boolean }
-  ) => Promise<JournalEntry | null>;
+  ) => Promise<(JournalEntry & { newlyAwardedBadges?: any[] }) | null>;
   updateJournalEntry: (entryId: string, updates: Partial<Pick<JournalEntry, 'intention' | 'is_public' | 'entry_text'>>) => Promise<void>;
   deleteJournalEntry: (entryId: string) => Promise<void>;
   getDailyPrompts: () => Promise<DailyPrompts | null>;
@@ -366,6 +366,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       setUser(user);
       if (!user) {
+        if (process.env.NODE_ENV !== "production") console.warn('[ProfileContext] fetchProfile: no session and no fallback token — setting profile to null', {
+          hadSession: !!session,
+          hadFallbackUserId: typeof window !== 'undefined' ? !!sessionStorage.getItem('heartverse_user_id') : null,
+          hadFallbackToken: typeof window !== 'undefined' ? !!sessionStorage.getItem('chx_at') : null,
+        });
         setProfileWithCelebration(null);
         return;
       }
@@ -640,9 +645,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
       if (updates.element !== undefined) dbUpdates.element = updates.element;
       if (updates.journey !== undefined) dbUpdates.journey = updates.journey;
+      if (updates.has_seen_tour !== undefined) dbUpdates.has_seen_tour = updates.has_seen_tour;
       // Never allow front-end to directly update heartcoin fields
       if (updates.profile_complete !== undefined) dbUpdates.profile_complete = updates.profile_complete;
-      
+
+      if (Object.keys(dbUpdates).length === 0) {
+        if (process.env.NODE_ENV !== "production") console.warn("[ProfileContext] updateProfile called with no mappable fields — skipping no-op write", updates);
+        return;
+      }
+
       // Update the existing profile (no insert logic - trigger handles creation)
       const { data, error } = await supabaseBrowser
         .from("profiles")
@@ -1036,7 +1047,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const saveJournalEntry = useCallback(async (
     entry: Omit<JournalEntry, 'entry_id' | 'user_id' | 'created_at'>,
     options?: { sharePublic?: boolean }
-  ): Promise<JournalEntry | null> => {
+  ): Promise<(JournalEntry & { newlyAwardedBadges?: any[] }) | null> => {
     try {
       // Guard: avoid 403 on /auth/v1/user when not logged in
       const { data: { session: journalSession } } = await supabaseBrowser.auth.getSession();
@@ -1181,9 +1192,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       // Update badge progress counters after saving a journal entry.
       // Suppress celebrations during this check so that unrelated badges
       // (e.g. Live Witness, Stream Seeker) don't celebrate at the wrong time.
-      // Only reflection-related badges should celebrate here, but we suppress
-      // all because checkAndAwardEligibleBadges marks awarded badges as seen
-      // in localStorage, preventing future celebrations via the realtime handler.
       //
       // NOTE: Do NOT call enableBadgeCelebrations() here. The caller (handleSaveEntry
       // in SoulStarJournal) sets its own 10-second suppression window that covers the
@@ -1191,21 +1199,27 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       // timer, causing HeartcoinBalanceProvider's allowCelebration:true badge check
       // to slip through and show badge celebrations the user didn't just unlock.
       // The 10-second auto-timeout in suppressBadgeCelebrations handles expiry.
+      //
+      // allowCelebration:true is passed (and awaited) so we get back the badges this
+      // exact save unlocked (e.g. Soul Star). The caller marks them seen and celebrates
+      // them explicitly once the ritual animation finishes, bypassing the suppression
+      // window above — mirrors how HeartCoin rewards are force-triggered after the
+      // ritual instead of relying on the suppressed auto-celebration path.
+      let newlyAwardedBadges: any[] = [];
       if (user?.id) {
         suppressBadgeCelebrations(10000);
-        updateBadgeProgressCounters(user.id)
-          .then(() => {
-            // Refresh user badges to pick up any newly awarded badges
-            fetchUserBadges(user.id);
-          })
-          .catch(err => {
-            if (process.env.NODE_ENV !== "production") console.warn('Failed to update badge progress after journal save:', err);
-          });
+        try {
+          newlyAwardedBadges = await updateBadgeProgressCounters(user.id, { allowCelebration: true });
+          // Refresh user badges to pick up any newly awarded badges
+          fetchUserBadges(user.id);
+        } catch (err) {
+          if (process.env.NODE_ENV !== "production") console.warn('Failed to update badge progress after journal save:', err);
+        }
       }
 
       // Public sharing is now handled via the is_public column in the main entry
 
-      return data;
+      return { ...data, newlyAwardedBadges } as JournalEntry & { newlyAwardedBadges: any[] };
     } catch (error) {
       console.error('Error in saveJournalEntry:', error);
       throw error; // Re-throw so the UI can show the specific error

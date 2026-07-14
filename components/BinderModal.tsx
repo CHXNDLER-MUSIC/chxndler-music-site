@@ -153,7 +153,7 @@ interface PhysicalCardOrder {
 }
 
 export default function BinderModal({ open, onClose, preselectedCard, preselectedElement, pulsingCards = false, onOpenHeartCoin }: Props) {
-  const { profile, updateProfile, refreshProfile } = useProfile();
+  const { profile, refreshProfile } = useProfile();
   const { cards: ownedCards } = useUserCards(profile?.id);
   const {
     slots: binderSlots,
@@ -868,7 +868,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       }
 
       // Refresh profile to update HeartCoin balance
-      await updateProfile({});
+      await refreshProfile();
 
       // Refresh binder slots to show the newly purchased card
       await refreshBinderSlots();
