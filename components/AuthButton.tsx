@@ -106,7 +106,13 @@ export default function AuthButton() {
     // not-yet-created profile row (e.g. the DB trigger racing a brand-new
     // signup) is not an invalid session, just a momentary state. Signing the
     // user out here was destroying valid sessions and forcing re-verification.
-    if (profileLoading || !profile) {
+    //
+    // Only show "Setting up..." when there's no profile data at all yet.
+    // Supabase periodically re-validates the session in the background (tab
+    // resume, token refresh) which re-triggers profileLoading even when the
+    // already-loaded profile hasn't changed — gating on profileLoading here
+    // blanked out a perfectly good name every time that happened.
+    if (!profile) {
       return { text: 'Setting up...', mode: 'loading' as const };
     }
 
