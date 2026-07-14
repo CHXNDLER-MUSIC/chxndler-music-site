@@ -439,6 +439,13 @@ export default function ProfileBar({
     return () => window.removeEventListener('openHeartverseCard', handleOpenHeartverseCard);
   }, []);
 
+  // Listen for closeChxndlerCardModal event (e.g., when Log In button is clicked)
+  useEffect(() => {
+    const handleCloseChxndlerCardModal = () => setShowCardModal(false);
+    window.addEventListener('closeChxndlerCardModal', handleCloseChxndlerCardModal);
+    return () => window.removeEventListener('closeChxndlerCardModal', handleCloseChxndlerCardModal);
+  }, []);
+
   // Change beam to yellow when card modal opens, reset when it closes
   useEffect(() => {
     if (showCardModal) {
@@ -1277,12 +1284,14 @@ export default function ProfileBar({
             onClick={() => {
               try { sfx.play('click.mp3', 0.5); } catch {}
               setShowLoginTooltip(false);
+              setShowCardModal(false);
               setShowWelcomeHome(true);
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 setShowLoginTooltip(false);
+                setShowCardModal(false);
                 setShowWelcomeHome(true);
               }
             }}

@@ -616,6 +616,22 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Fallback trigger: AuthProvider's confirmSession() seeds `user` directly
+  // (bypassing supabaseBrowser's own onAuthStateChange) for the brief window
+  // right after OTP verification where the client may not yet recognize its
+  // own session. If that internal SIGNED_IN event never fires — or fires
+  // before the session is fully synced — the onAuthStateChange listener above
+  // never learns the user logged in, so `profile` stays null forever and
+  // AuthButton is stuck showing "Setting up..." until a page reload.
+  // Watching authUser directly closes that gap; fetchProfile's own
+  // isFetchingProfileRef guard makes this safe to run alongside the listener.
+  useEffect(() => {
+    if (authUser?.id && profile?.id !== authUser.id) {
+      fetchProfile();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser?.id]);
+
   const refreshProfile = useCallback(async () => {
     // Skip badge checks on refresh — badge checks should only run on initial
     // page load. Running them here causes merch/card purchases to incorrectly

@@ -670,7 +670,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
               )}
               <p
                 className="text-xs text-center mt-1 px-2"
-                style={{ color: 'rgba(0,255,255,0.7)' }}
+                style={{ color: '#FFFFFF' }}
               >
                 Signal lost? Check your spam or junk folder.
               </p>

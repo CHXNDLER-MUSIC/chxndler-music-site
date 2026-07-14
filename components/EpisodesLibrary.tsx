@@ -152,6 +152,7 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "acoustic",
     releaseDate: "2026-07-03T12:00:00",
+    locked: true,
   },
   {
     id: "lsp-009",
@@ -268,7 +269,7 @@ const VIDEOS: Video[] = [
     title: "Electric Signal 08",
     youtubeUrl: "https://youtu.be/9eJ5hZmCj2Q",
     type: "electric",
-    releaseDate: "2026-07-10T12:00:00",
+    releaseDate: "2026-07-24T12:00:00",
     postDescription: "Setlist\n00:00 Heartverse\n00:33 CHEERLEADER\n04:03 Mean It (Lauv)\n08:21 I WOULD DIE FOR YOUR LOVE\n12:31 I LIKE ME BETTER (Lauv)\n14:31 Love\n16:36 Robbers\n21:10 AM I PRETTY WHEN I CRY",
   },
   {
@@ -689,7 +690,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
             <button
               className={`episodes-tab flex-1 py-1.5 px-2 text-xs font-semibold rounded-md transition-all duration-200 uppercase tracking-wide ${
                 topTab === "livesignal"
-                  ? "episodes-tab-active"
+                  ? "episodes-tab-livesignal-active"
                   : "text-white/50 hover:text-white/80"
               }`}
               onClick={() => {
@@ -1143,6 +1144,12 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
           color: #FC54AF;
           border: 1px solid rgba(252, 84, 175, 0.35);
           text-shadow: 0 0 6px rgba(252, 84, 175, 0.4);
+        }
+        .episodes-tab-livesignal-active {
+          background: rgba(255, 255, 255, 0.1);
+          color: #FFFFFF;
+          border: 1px solid rgba(255, 255, 255, 0.6);
+          text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
         }
         .episodes-tab-karaoke-active {
           background: rgba(242, 239, 29, 0.15);

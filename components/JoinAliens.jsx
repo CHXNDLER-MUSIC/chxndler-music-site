@@ -1300,7 +1300,7 @@ export default function JoinAliens({ visible = true } = {}) {
                                     cursor: 'pointer'
                                   }}
                                 >
-                                  {nextIrl.url ? 'TICKETS' : 'UPCOMING IRL SIGNALS'}
+                                  {nextIrl.url ? 'TICKETS' : 'UPCOMING IN PERSON SIGNALS'}
                                 </a>
                               </div>
                             )}
@@ -1814,7 +1814,7 @@ export default function JoinAliens({ visible = true } = {}) {
                   textShadow: '0 0 10px rgba(242,239,29,0.8)',
                   textAlign: 'center',
                 }}>
-                  {concertsExpandedIdx !== null ? 'NEXT IN PERSON SIGNAL' : 'UPCOMING IRL SIGNALS'}
+                  {concertsExpandedIdx !== null ? 'NEXT IN PERSON SIGNAL' : 'UPCOMING IN PERSON SIGNALS'}
                 </span>
                 <button
                   onClick={() => { try { sfx.play('close', 0.4); } catch {} setShowConcertsPanel(false); setConcertsExpandedIdx(null); }}
@@ -2134,10 +2134,10 @@ export default function JoinAliens({ visible = true } = {}) {
           right: '205px',
           width: '55px',
           height: '55px',
-          background: 'rgba(255, 215, 0, 0.1)',
-          border: '2px solid #FFD700',
+          background: 'rgba(242, 239, 29, 0.1)',
+          border: '2px solid #F2EF1D',
           borderRadius: '50%',
-          color: '#FFD700',
+          color: '#F2EF1D',
           fontSize: '16px',
           fontWeight: 'bold',
           cursor: 'pointer',
@@ -2146,8 +2146,8 @@ export default function JoinAliens({ visible = true } = {}) {
           justifyContent: 'center',
           transition: 'all 300ms ease',
           outline: 'none',
-          textShadow: '0 0 8px #FFD700',
-          boxShadow: '0 0 15px rgba(255, 215, 0, 0.3)',
+          textShadow: '0 0 8px #F2EF1D',
+          boxShadow: '0 0 15px rgba(242, 239, 29, 0.3)',
           zIndex: (isChatOpen || isEpisodesOpen) ? 10 : 1200,
           pointerEvents: (isChatOpen || isEpisodesOpen) ? 'none' : 'auto',
           overflow: 'hidden',
@@ -2155,13 +2155,13 @@ export default function JoinAliens({ visible = true } = {}) {
         onMouseEnter={(e) => {
           try { sfx.play('hover', 0.3); } catch {}
           e.currentTarget.style.transform = 'scale(1.1)';
-          e.currentTarget.style.background = 'rgba(255, 215, 0, 0.2)';
-          e.currentTarget.style.boxShadow = '0 0 25px rgba(255, 215, 0, 0.6)';
+          e.currentTarget.style.background = 'rgba(242, 239, 29, 0.2)';
+          e.currentTarget.style.boxShadow = '0 0 25px rgba(242, 239, 29, 0.6)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.background = 'rgba(255, 215, 0, 0.1)';
-          e.currentTarget.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.3)';
+          e.currentTarget.style.background = 'rgba(242, 239, 29, 0.1)';
+          e.currentTarget.style.boxShadow = '0 0 15px rgba(242, 239, 29, 0.3)';
         }}
         aria-label="Concerts"
       >

@@ -145,6 +145,7 @@ export default function AuthButton() {
       case 'login':
         // Mode A: Not logged in - close any open modals first, then show Welcome Home modal
         window.dispatchEvent(new CustomEvent('closeHeartCoinModal'));
+        window.dispatchEvent(new CustomEvent('closeChxndlerCardModal'));
         setShowWelcomeHome(true);
         break;
         
