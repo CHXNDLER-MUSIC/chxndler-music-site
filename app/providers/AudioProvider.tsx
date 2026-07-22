@@ -5,7 +5,6 @@ import { supabaseTrackUrl as S } from "@/lib/supabaseTrackUrl";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useDailySongProgress, recordSongEndedPlay } from "@/hooks/useDailySongProgress";
 import { getNYDateString } from "@/lib/time";
-import { usePlanetRewardsContext } from "@/components/PlanetRewardsProvider";
 
 // Song-of-Day completion thresholds
 const SOD_COMPLETE_RATIO = 0.99;
@@ -521,10 +520,33 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         ...(isSotd ? { completed: true, completed_at: now } : {}),
       });
 
-      if (process.env.NODE_ENV !== "production") console.log('[MARK COMPLETE] Upserting user_song_daily_progress', payload);
-      const { error } = await supabaseBrowser
+      // NOTE: the live DB's unique constraint on user_song_daily_progress is
+      // (user_id, song_id, day) — NOT (user_id, song_id, day, play_number).
+      // The migrations that widened it to include play_number were never
+      // applied in production (confirmed via direct PostgREST probing), so
+      // onConflict must match the 3-column constraint or every upsert 42P10s.
+      console.log('[MARK COMPLETE] pre-upsert', {
+        songUuid,
+        day,
+        userId: user.id,
+        isSotd,
+        songOfDayIdRef: songOfDayIdRef.current,
+        willSetCompleted: isSotd,
+        payload,
+      });
+      const { data: markCompleteData, error } = await supabaseBrowser
         .from('user_song_daily_progress')
-        .upsert(payload, { onConflict: 'user_id,song_id,day', ignoreDuplicates: false });
+        .upsert(payload, { onConflict: 'user_id,song_id,day', ignoreDuplicates: false })
+        .select();
+      console.log('[MARK COMPLETE] post-upsert', {
+        songUuid,
+        day,
+        isSotd,
+        returnedRows: markCompleteData,
+        affectedRowCompleted: markCompleteData?.[0]?.completed,
+        affectedRowCompletedAt: markCompleteData?.[0]?.completed_at,
+        error,
+      });
       if (error) {
         const errCode = (error as any)?.code;
         const errMsg = (error as any)?.message ?? '';
@@ -560,6 +582,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       // Also trigger Song of the Day claim if this is the SOTD
       // markDailySongCompleted has its own guards and will no-op if not applicable
+      console.log('[MARK COMPLETE] calling markDailySongCompleted', { songUuid, isSotd });
       markDailySongCompleted(songUuid);
     } catch (err) {
       console.error('[MARK COMPLETE] exception', {
@@ -627,23 +650,38 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       });
 
       // 1) Upsert to user_song_daily_progress with completed=true and completed_at
-      // play_number:1 is included so onConflict matches the actual unique constraint
-      // (user_id, song_id, day, play_number) added in migration 20260113
+      // NOTE: the live DB's unique constraint is (user_id, song_id, day) — the
+      // migration widening it to include play_number was never applied in
+      // production (confirmed via direct PostgREST probing), so onConflict
+      // must target the 3-column constraint or this upsert 42P10s.
       const progressPayload = pickWritableUsdp({
         user_id: user.id,
         song_id: songUuid,
         day: nyDayString,
-        play_number: 1,
         completed: true,
         completion_percent: 1,
         completed_at: nowIso,
       });
 
-      if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] Upserting user_song_daily_progress payload', progressPayload);
+      console.log('[SOTD-COMPLETE] pre-upsert', {
+        songUuid,
+        day: nyDayString,
+        userId: user.id,
+        currentSongOfDayId,
+        payload: progressPayload,
+      });
       const { data: progressData, error: progressError } = await supabaseBrowser
         .from('user_song_daily_progress')
-        .upsert(progressPayload, { onConflict: 'user_id,song_id,day,play_number', ignoreDuplicates: false })
+        .upsert(progressPayload, { onConflict: 'user_id,song_id,day', ignoreDuplicates: false })
         .select();
+      console.log('[SOTD-COMPLETE] post-upsert', {
+        songUuid,
+        day: nyDayString,
+        returnedRows: progressData,
+        affectedRowCompleted: progressData?.[0]?.completed,
+        affectedRowCompletedAt: progressData?.[0]?.completed_at,
+        error: progressError,
+      });
 
       if (progressError) {
         const pErrCode = (progressError as any)?.code;
@@ -960,6 +998,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             day: nyDay, // explicit NY date; DB has default but we pass for clarity
           });
 
+          // Live DB's unique constraint is (user_id, song_id, day) — see note above.
           if (process.env.NODE_ENV !== "production") console.log('[DailyProgress Payload]', dailyProgressPayload);
           const { error: dailyProgressError } = await supabaseBrowser
             .from('user_song_daily_progress')
@@ -1162,6 +1201,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           completion_percent: pct,
         });
 
+        // Live DB's unique constraint is (user_id, song_id, day) — see note above.
         if (process.env.NODE_ENV !== "production") console.log('[DailyProgress Payload]', dailyProgressPayload);
         const { error: dailyProgressError } = await supabaseBrowser
           .from('user_song_daily_progress')
@@ -1638,22 +1678,52 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   // Uses audioRef.current as source of truth for currentTime/duration
   // trackingSlug is the original slug (not normalized) for accurate DB lookup
 
-  // Get Song of the Day from PlanetRewardsContext for HeartCoin awards
-  const { songOfDaySlug, songOfDayId } = usePlanetRewardsContext();
-
   useDailySongProgress({
     audioElement: audioRef.current,
     trackSlug: state.trackingSlug || null,
     isPlaying: state.playing,
     enabled: true, // Only tracks when authenticated user is playing a song
-    songOfDaySlug, // Fallback slug comparison for Song of the Day
-    songOfDayId // Canonical song_id from element_of_day table
+    songOfDaySlug: null, // Fallback slug comparison for Song of the Day (unused; useDailySongProgress is a no-op)
+    songOfDayId: null // Canonical song_id from element_of_day table (unused; see songOfDayIdRef below)
   });
 
-  // Keep songOfDayIdRef in sync with context value (for use in callbacks)
+  // Resolve today's Song of the Day id directly from the API instead of
+  // usePlanetRewardsContext(): AudioProvider is mounted ABOVE
+  // PlanetRewardsProvider in app/layout.tsx, so it is an ANCESTOR, not a
+  // descendant, of that provider. React context only flows to descendants,
+  // so usePlanetRewardsContext() here always hit its `!context` fallback and
+  // returned songOfDayId: null forever — meaning `isSotd` in
+  // markSongCompleted() was always false and `completed` never got set,
+  // even though progress upserts (completion_percent, play_count) worked
+  // fine. Confirmed live: a real user's row had completion_percent === 1
+  // but completed === false. Fetching independently here sidesteps the
+  // provider-order dependency entirely.
   useEffect(() => {
-    songOfDayIdRef.current = songOfDayId ?? null;
-  }, [songOfDayId]);
+    let cancelled = false;
+    const fetchSongOfDayId = async () => {
+      try {
+        const res = await fetch('/api/element-of-day');
+        if (!res.ok) {
+          if (process.env.NODE_ENV !== "production") console.warn('[SOTD] element-of-day fetch failed', res.status);
+          return;
+        }
+        const data = await res.json();
+        if (!cancelled) {
+          songOfDayIdRef.current = data?.songOfDayId ?? null;
+          if (process.env.NODE_ENV !== "production") console.log('[SOTD] songOfDayId resolved', songOfDayIdRef.current);
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV !== "production") console.warn('[SOTD] element-of-day fetch error', err);
+      }
+    };
+    fetchSongOfDayId();
+    // Re-check periodically in case a long-lived tab crosses midnight rollover.
+    const intervalId = window.setInterval(fetchSongOfDayId, 15 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   // Normalize incoming slugs so dropdown selections (e.g. `we're-just-friends`) map to TRACK_INFO ids (e.g. `were-just-friends`)
   const normalizeSlug = (slug?: string): string => {

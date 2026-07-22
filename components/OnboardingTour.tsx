@@ -35,7 +35,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "intro",
     selector: "",
     title: "Welcome aboard",
-    body: "Welcome to your Heartverse spaceship. I'll show you the key controls so you can explore, reflect, collect, and connect."
+    body: "Welcome to your spaceship. I'll show you the key controls so you can explore, reflect, collect, and connect."
   },
   
   // Step 1: Hamburger (opens menu for subsequent steps)
