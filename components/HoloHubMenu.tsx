@@ -105,7 +105,7 @@ function AnchoredPreviewModal({
             0 0 60px rgba(242, 239, 29, 0.2);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
-          animation: slideInUp 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+          animation: fadeIn 200ms ease-out;
         }
         
         .preview-header {
@@ -163,14 +163,12 @@ function AnchoredPreviewModal({
           position: relative;
         }
         
-        @keyframes slideInUp {
+        @keyframes fadeIn {
           from {
             opacity: 0;
-            transform: translateY(20px) scale(0.95);
           }
           to {
             opacity: 1;
-            transform: translateY(0) scale(1);
           }
         }
         
@@ -214,7 +212,6 @@ export default function HoloHubMenu({
   anchorOffsetPx,
   closeSignal = 0,
   suspend = false,
-  isLightningPlanet = false,
 }: {
   items?: HubItem[];
   radius?: number;
@@ -232,8 +229,6 @@ export default function HoloHubMenu({
   closeSignal?: number;
   // Temporarily hide panel contents without changing open state
   suspend?: boolean;
-  // True when viewing LIGHTNING planet - disables Spotify button only
-  isLightningPlanet?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [inlineUrl, setInlineUrl] = useState<string | null>(null);
@@ -627,8 +622,7 @@ export default function HoloHubMenu({
           const isFirst = i === 0;
           const isLast = i === entries.length - 1;
           const size = itemSize;
-          // Disable Spotify on LIGHTNING planet only
-          const isDisabled = (isLightningPlanet && it.id === 'sp');
+          const isDisabled = false;
           return (
             <button
               key={it.id}
@@ -714,8 +708,7 @@ export default function HoloHubMenu({
                 const isFirst = i === 0;
                 const isLast = i === entries.length - 1;
                 const size = itemSize;
-                // Disable Spotify on LIGHTNING planet only
-                const isDisabled = (isLightningPlanet && it.id === 'sp');
+                const isDisabled = false;
                 return (
                   <button
                     key={it.id}

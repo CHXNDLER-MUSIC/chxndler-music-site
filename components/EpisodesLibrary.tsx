@@ -69,7 +69,7 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-07-10T23:00:00Z",
+    releaseDate: "2026-07-31T23:00:00Z",
   },
   {
     id: "hv-008",
@@ -77,7 +77,7 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-07-24T23:00:00Z",
+    releaseDate: "2026-08-14T23:00:00Z",
   },
   {
     id: "hv-006",
@@ -85,7 +85,15 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     // 7PM Eastern (EDT, UTC-4)
-    releaseDate: "2026-08-07T23:00:00Z",
+    releaseDate: "2026-08-28T23:00:00Z",
+  },
+  {
+    id: "hv-009",
+    title: "Heartverse 09: Get A Job",
+    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    type: "heartverse",
+    // 7PM Eastern (EDT, UTC-4)
+    releaseDate: "2026-09-11T23:00:00Z",
   },
 
   // ── Live Signal – Acoustic Session ──
@@ -269,7 +277,7 @@ const VIDEOS: Video[] = [
     title: "Electric Signal 08",
     youtubeUrl: "https://youtu.be/9eJ5hZmCj2Q",
     type: "electric",
-    releaseDate: "2026-07-24T12:00:00",
+    releaseDate: "2026-07-31T12:00:00",
     postDescription: "Setlist\n00:00 Heartverse\n00:33 CHEERLEADER\n04:03 Mean It (Lauv)\n08:21 I WOULD DIE FOR YOUR LOVE\n12:31 I LIKE ME BETTER (Lauv)\n14:31 Love\n16:36 Robbers\n21:10 AM I PRETTY WHEN I CRY",
   },
   {
@@ -277,7 +285,7 @@ const VIDEOS: Video[] = [
     title: "Electric Signal 09",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "electric",
-    releaseDate: "2026-07-31T12:00:00",
+    releaseDate: "2026-08-14T12:00:00",
   },
   {
     id: "lsf-010",

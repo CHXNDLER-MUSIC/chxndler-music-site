@@ -3471,8 +3471,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         closeAllSignal={uiCloseSignal}
         suspendUI={isWarping || uiPhase === 'landing'}
         hideStartButton={false}
-        isLightningPlanet={curTrack?.slug === 'lightning'}
-        onPowerToggle={() => { 
+        onPowerToggle={() => {
           // Manual power toggle should not start new welcome audio, but don't interrupt if it's already playing
           if (!welcomeOnStartRef.current) {
             // Check if welcome audio is currently playing before disabling
