@@ -39,7 +39,7 @@ function CountdownTimer({ endDate }: { endDate: Date }) {
         border: "1px solid rgba(242,239,29,0.45)",
         borderRadius: "999px",
         boxShadow: "0 0 14px rgba(242,239,29,0.25), inset 0 0 8px rgba(242,239,29,0.08)",
-        padding: "10px 28px",
+        padding: "8px 24px",
         width: "fit-content",
         maxWidth: "90%",
       }}
@@ -50,7 +50,7 @@ function CountdownTimer({ endDate }: { endDate: Date }) {
           letterSpacing: "0.15em",
           color: expired ? "rgba(252,84,175,0.45)" : "rgba(252,84,175,0.85)",
           fontWeight: 600,
-          marginBottom: "4px",
+          marginBottom: "2px",
         }}
       >
         {expired ? "HIDDEN SIGNAL CLOSED" : "HIDDEN SIGNAL CLOSES IN"}
@@ -176,7 +176,7 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
               style={{
                 width: "min(92vw, 700px)",
                 height: "100%",
-                padding: "18px 14px",
+                padding: "14px 14px",
                 borderRadius: 18,
                 background: "rgba(0,0,0,0.6)",
                 border: "1px solid rgba(242,239,29,0.55)",
@@ -257,7 +257,7 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
 
               {/* Divider */}
               <div
-                className="w-full h-px mb-4"
+                className="w-full h-px mb-1"
                 style={{
                   background:
                     "linear-gradient(90deg, transparent, rgba(242,239,29,0.8) 20%, rgba(242,239,29,1) 50%, rgba(242,239,29,0.8) 80%, transparent)",
@@ -266,12 +266,12 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
               />
 
               {/* Body */}
-              <div className="flex flex-col items-center space-y-3 px-2 flex-1">
+              <div className="flex flex-col items-center px-2" style={{ gap: "8px" }}>
                 {/* Countdown */}
                 <CountdownTimer endDate={endDate} />
 
                 <p
-                  className="text-center text-xl"
+                  className="text-center text-base"
                   style={{
                     color: "#FFFFFF",
                     lineHeight: "1.6",
@@ -286,7 +286,7 @@ export default function HeartverseCardModal({ open, onClose }: Props) {
               </div>
 
               {/* Button pinned to bottom */}
-              <div className="px-2 pt-2">
+              <div className="px-2 pt-2" style={{ marginTop: "auto" }}>
                 {expired && winnerReady ? (
                   <button
                     onClick={handleLocateSignal}
