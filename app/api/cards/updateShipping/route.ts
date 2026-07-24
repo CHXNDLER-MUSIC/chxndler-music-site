@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
       state,
       zip,
       country,
+      phone_number,
     } = body;
 
     // Validate required fields
@@ -75,6 +76,7 @@ export async function POST(req: NextRequest) {
         state: state.trim(),
         zip: zip.trim(),
         country: country.trim(),
+        phone_number: phone_number?.trim() || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', orderId)

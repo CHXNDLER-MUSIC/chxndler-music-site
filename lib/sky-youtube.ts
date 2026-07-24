@@ -13,6 +13,7 @@ export const YOUTUBE_SKIES: Record<string, string> = {
   'be-my-bee': 'https://youtu.be/gUPRdW0sOkU',
   'be-my-bee-acoustic': 'https://youtu.be/gUPRdW0sOkU',
   'brain-freeze': 'https://youtu.be/eDsXZxWB66Y',
+  cheerleader: 'https://youtu.be/A-3yfqBD1jQ',
   collide: 'https://youtu.be/8qtq8DlS8ws',
   'colors-of-our-home': 'https://youtu.be/LkEXzg-84Rw',
   'colors-of-our-home-acoustic': 'https://youtu.be/LkEXzg-84Rw',

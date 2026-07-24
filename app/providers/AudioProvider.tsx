@@ -99,6 +99,8 @@ export const TRACKS = {
   BABY: { mp3: S("baby.mp3"), opus: S("baby.opus") },
   BE_MY_BEE: { mp3: S("be-my-bee.mp3"), opus: S("be-my-bee.opus") },
   BRAIN_FREEZE: { mp3: S("brain-freeze.mp3"), opus: S("brain-freeze.opus") },
+  // Actual uploaded filename is uppercase — no lowercase/Opus source exists
+  CHEERLEADER: { mp3: S("CHEERLEADER.mp3") },
   COLLIDE: { mp3: S("collide.mp3"), opus: S("collide.opus") },
   MR_BRIGHTSIDE: { mp3: S("MR.BRIGHTSIDE.mp3") },
   COLORS_HOME: { mp3: S("COLORS OF OUR HOME.mp3"), opus: S("COLORS-OF-OUR-HOME.opus") },
@@ -224,6 +226,13 @@ export const TRACK_INFO: Record<string, TrackInfo> = {
     coverUrl: '/covers/COLLIDE.webp',
     skyTexture: '/sky/collide-sky.webp',
     oneLiner: 'Two souls crash into fate.'
+  },
+  'cheerleader': {
+    id: 'cheerleader',
+    title: 'CHEERLEADER',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/cheerleader.webp',
+    oneLiner: 'Signal unlocked for DREAMERS & LOVERS.'
   },
   'game-boy-heart': {
     id: 'game-boy-heart',

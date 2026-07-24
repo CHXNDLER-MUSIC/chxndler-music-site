@@ -196,7 +196,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   const [hovered, setHovered] = useState(false);
   const [hasRealCard, setHasRealCard] = useState(false);
   const [showShipping, setShowShipping] = useState(false);
-  const [shippingForm, setShippingForm] = useState({ email: '', full_name: '', address_line1: '', address_line2: '', city: '', state: '', zip: '', country: '' });
+  const [shippingForm, setShippingForm] = useState({ email: '', phone_number: '', full_name: '', address_line1: '', address_line2: '', city: '', state: '', zip: '', country: '' });
   const [shippingStatus, setShippingStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [shippingAttempted, setShippingAttempted] = useState(false);
   const [sendCardPressed, setSendCardPressed] = useState(false);
@@ -611,7 +611,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       setShowShipping(false);
       setShippingStatus('idle');
       setShippingAttempted(false);
-      setShippingForm({ email: '', full_name: '', address_line1: '', address_line2: '', city: '', state: '', zip: '', country: '' });
+      setShippingForm({ email: '', phone_number: '', full_name: '', address_line1: '', address_line2: '', city: '', state: '', zip: '', country: '' });
     }
   }, [showCard]);
 
@@ -887,7 +887,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
 
               {/* Shipping mode - form only, no card image (homepage only) */}
               {slug === 'chxndler_home' && showShipping && (
-                <div style={{ flex: '1 1 0', minHeight: 0, overflowY: 'auto', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                <div style={{ flex: '1 1 0', minHeight: 0, overflowY: 'auto', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '4px 0 16px' }}>
                   {shippingStatus === 'success' ? (
                     <div className="text-center mt-2 flex flex-col items-center" style={{ gap: 2 }}>
                       <img src="https://hjpaiolhhugwzblarfix.supabase.co/storage/v1/object/public/cards/CHXNDLER%20gold.webp" alt="CHXNDLER gold" style={{ width: 200, height: 200, objectFit: 'contain' }} />
@@ -916,7 +916,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                       </button>
                     </div>
                   ) : (
-                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 5 }}>
                       {[
                         { key: 'full_name', placeholder: 'Full Name', type: 'text', required: true },
                         { key: 'address_line1', placeholder: 'Address Line 1', type: 'text', required: true },
@@ -928,12 +928,12 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           placeholder={placeholder}
                           value={shippingForm[key as keyof typeof shippingForm]}
                           onChange={(e) => setShippingForm(f => ({ ...f, [key]: e.target.value }))}
-                          className="w-full px-3 py-2 rounded text-white text-sm placeholder-white/50"
+                          className="w-full px-3 py-1.5 rounded text-white text-sm placeholder-white/50"
                           style={{ background: 'rgba(255,255,255,0.1)', border: `1px solid ${shippingAttempted && required && !shippingForm[key as keyof typeof shippingForm] ? 'rgba(255,80,80,0.7)' : 'rgba(255,255,255,0.3)'}` }}
                           disabled={shippingStatus === 'saving'}
                         />
                       ))}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
                         {[
                           { key: 'city', placeholder: 'City' },
                           { key: 'state', placeholder: 'State' },
@@ -944,13 +944,13 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                             placeholder={placeholder}
                             value={shippingForm[key as keyof typeof shippingForm]}
                             onChange={(e) => setShippingForm(f => ({ ...f, [key]: e.target.value }))}
-                            className="px-3 py-2 rounded text-white text-sm placeholder-white/50"
+                            className="px-3 py-1.5 rounded text-white text-sm placeholder-white/50"
                             style={{ background: 'rgba(255,255,255,0.1)', border: `1px solid ${shippingAttempted && !shippingForm[key as keyof typeof shippingForm] ? 'rgba(255,80,80,0.7)' : 'rgba(255,255,255,0.3)'}` }}
                             disabled={shippingStatus === 'saving'}
                           />
                         ))}
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
                         {[
                           { key: 'zip', placeholder: 'ZIP Code' },
                           { key: 'country', placeholder: 'Country' },
@@ -961,7 +961,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                             placeholder={placeholder}
                             value={shippingForm[key as keyof typeof shippingForm]}
                             onChange={(e) => setShippingForm(f => ({ ...f, [key]: e.target.value }))}
-                            className="px-3 py-2 rounded text-white text-sm placeholder-white/50"
+                            className="px-3 py-1.5 rounded text-white text-sm placeholder-white/50"
                             style={{ background: 'rgba(255,255,255,0.1)', border: `1px solid ${shippingAttempted && !shippingForm[key as keyof typeof shippingForm] ? 'rgba(255,80,80,0.7)' : 'rgba(255,255,255,0.3)'}` }}
                             disabled={shippingStatus === 'saving'}
                           />
@@ -972,8 +972,17 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                         placeholder="Email"
                         value={shippingForm.email}
                         onChange={(e) => setShippingForm(f => ({ ...f, email: e.target.value }))}
-                        className="w-full px-3 py-2 rounded text-white text-sm placeholder-white/50"
+                        className="w-full px-3 py-1.5 rounded text-white text-sm placeholder-white/50"
                         style={{ background: 'rgba(255,255,255,0.1)', border: `1px solid ${shippingAttempted && !shippingForm.email ? 'rgba(255,80,80,0.7)' : 'rgba(255,255,255,0.3)'}` }}
+                        disabled={shippingStatus === 'saving'}
+                      />
+                      <input
+                        type="tel"
+                        placeholder="Phone Number (Optional)"
+                        value={shippingForm.phone_number}
+                        onChange={(e) => setShippingForm(f => ({ ...f, phone_number: e.target.value }))}
+                        className="w-full px-3 py-1.5 rounded text-white text-sm placeholder-white/50"
+                        style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.3)' }}
                         disabled={shippingStatus === 'saving'}
                       />
                       <div className="relative w-full mt-1">

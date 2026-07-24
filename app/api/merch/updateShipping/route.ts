@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
+import { createSupabaseServerClientWithJwt, getSupabaseAdmin } from '@/lib/supabaseServer';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
       shipping_state,
       shipping_zip,
       shipping_country,
+      shipping_phone,
       // Optional fallback identifiers
       client_request_id,
       merch_item_id
@@ -181,6 +182,20 @@ export async function POST(request: NextRequest) {
     }
 
     if (process.env.NODE_ENV !== "production") console.log('[SHIPPING] Shipping saved for order:', resolvedOrderId);
+
+    // Phone number is optional and not part of the update_order_shipping RPC signature,
+    // so it's written directly via the admin client, scoped to this order + user.
+    if (typeof shipping_phone === 'string' && shipping_phone.trim()) {
+      const { error: phoneError } = await getSupabaseAdmin()
+        .from('orders')
+        .update({ phone_number: shipping_phone.trim() })
+        .eq('id', parsedOrderId)
+        .eq('user_id', user.id);
+
+      if (phoneError) {
+        console.error('[SHIPPING] Failed to save phone_number:', phoneError);
+      }
+    }
 
     return NextResponse.json({ success: true });
 

@@ -77,6 +77,7 @@ export interface Order {
   shipping_state?: string;
   shipping_zip?: string;
   shipping_country?: string;
+  phone_number?: string | null;
   // Variant selection fields
   selected_variant?: { type: string; value: string; label: string } | Record<string, never> | null;
   selected_color?: string | null;
@@ -104,6 +105,7 @@ export interface ShippingInfo {
   shipping_state: string;
   shipping_zip: string;
   shipping_country: string;
+  shipping_phone?: string;
   // Optional fallbacks when orderId is unavailable
   client_request_id?: string;
   merch_item_id?: string;

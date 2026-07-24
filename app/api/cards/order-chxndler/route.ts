@@ -4,7 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabaseServer';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, full_name, address_line1, address_line2, city, state, zip, country } = body;
+    const { email, phone_number, full_name, address_line1, address_line2, city, state, zip, country } = body;
 
     if (!email?.trim()) return NextResponse.json({ success: false, error: 'email is required' }, { status: 400 });
     if (!full_name?.trim()) return NextResponse.json({ success: false, error: 'full_name is required' }, { status: 400 });
@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
         item_id: 'chxndler-card',
         item_name: 'CHXNDLER Card',
         email: email.trim(),
+        phone_number: phone_number?.trim() || null,
         status: 'pending',
         total_heartcoins: 0,
         shipping_full_name: full_name.trim(),

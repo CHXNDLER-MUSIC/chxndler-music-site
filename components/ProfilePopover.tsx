@@ -2113,7 +2113,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           {/* Merch Collection - Full Overlay */}
           {showMerchInline && (
             <div
-              className="absolute inset-0 p-4 rounded-lg bg-black/90 backdrop-blur-md"
+              className="absolute top-0 left-0 right-0 min-h-full p-4 rounded-lg bg-black/90 backdrop-blur-md"
               style={{
                 zIndex: 15,
                 borderRadius: 18,

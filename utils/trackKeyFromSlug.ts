@@ -11,6 +11,7 @@ export function trackKeyFromSlug(slug?: string): string | null {
     "baby": "BABY",
     "be-my-bee": "BE_MY_BEE",
     "brain-freeze": "BRAIN_FREEZE",
+    "cheerleader": "CHEERLEADER",
     "collide": "COLLIDE",
     "mr-brightside": "MR_BRIGHTSIDE",
     "colors-of-our-home": "COLORS_HOME",

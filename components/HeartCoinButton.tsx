@@ -551,7 +551,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     state: '',
     zip: '',
     county: '',
-    country: ''
+    country: '',
+    phone: ''
   });
   const [heartCoins, setHeartCoins] = useState(0);
   const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
@@ -2209,7 +2210,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           city: shippingForm.city,
           state: shippingForm.state,
           zip: shippingForm.zip,
-          country: shippingForm.country || 'United States'
+          country: shippingForm.country || 'United States',
+          phone_number: shippingForm.phone || null
         })
       });
 
@@ -2255,7 +2257,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           state: '',
           zip: '',
           county: '',
-          country: ''
+          country: '',
+          phone: ''
         });
       }, 3000);
 
@@ -2627,6 +2630,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         shipping_state: shippingForm.state,
         shipping_zip: shippingForm.zip,
         shipping_country: shippingForm.country || 'United States',
+        shipping_phone: shippingForm.phone || undefined,
         // Fallback identifiers if orderId was not returned yet
         client_request_id: currentIdempotencyKeyRef.current || undefined,
         merch_item_id: purchaseDraft.merchItemId
@@ -2670,7 +2674,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             state: '',
             zip: '',
             county: '',
-            country: ''
+            country: '',
+            phone: ''
           });
           setShippingStatus('idle');
           currentIdempotencyKeyRef.current = null;
@@ -2719,7 +2724,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       state: '',
       zip: '',
       county: '',
-      country: ''
+      country: '',
+      phone: ''
     });
   };
 
@@ -2786,7 +2792,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             state: '',
             zip: '',
             county: '',
-            country: ''
+            country: '',
+            phone: ''
           });
           setShippingStatus('idle');
           currentIdempotencyKeyRef.current = null;
@@ -4395,68 +4402,89 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   {step === 'shipping' ? (
                                     /* Shipping Form - replaces User/Cost display */
                                     <div className="flex flex-col items-center w-full px-2">
-                                      <div className="space-y-2 w-full">
+                                      <div className="space-y-1.5 w-full">
                                         <input
                                           type="text"
                                           placeholder="Full Name"
                                           value={shippingForm.full_name}
                                           onChange={(e) => setShippingForm({...shippingForm, full_name: e.target.value})}
-                                          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                                          className="w-full px-3 py-1.5 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
                                         />
-                                        <input
-                                          type="text"
-                                          placeholder="Address Line 1"
-                                          value={shippingForm.address_line1}
-                                          onChange={(e) => setShippingForm({...shippingForm, address_line1: e.target.value})}
-                                          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
-                                        />
-                                        <input
-                                          type="text"
-                                          placeholder="Address Line 2 (Optional)"
-                                          value={shippingForm.address_line2}
-                                          onChange={(e) => setShippingForm({...shippingForm, address_line2: e.target.value})}
-                                          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
-                                        />
-                                        <div className="grid grid-cols-2 gap-2">
+                                        <div className="grid grid-cols-2 gap-1.5">
+                                          <input
+                                            type="text"
+                                            placeholder="Address Line 1"
+                                            value={shippingForm.address_line1}
+                                            onChange={(e) => setShippingForm({...shippingForm, address_line1: e.target.value})}
+                                            className="px-3 py-1.5 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                                          />
+                                          <input
+                                            type="text"
+                                            placeholder="Address Line 2 (Optional)"
+                                            value={shippingForm.address_line2}
+                                            onChange={(e) => setShippingForm({...shippingForm, address_line2: e.target.value})}
+                                            className="px-3 py-1.5 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                                          />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-1.5">
                                           <input
                                             type="text"
                                             placeholder="City"
                                             value={shippingForm.city}
                                             onChange={(e) => setShippingForm({...shippingForm, city: e.target.value})}
-                                            className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                                            className="px-3 py-1.5 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
                                           />
                                           <input
                                             type="text"
                                             placeholder="State"
                                             value={shippingForm.state}
                                             onChange={(e) => setShippingForm({...shippingForm, state: e.target.value})}
-                                            className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                                            className="px-3 py-1.5 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
                                           />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2">
+                                        <div className="grid grid-cols-2 gap-1.5">
                                           <input
                                             type="text"
                                             placeholder="ZIP Code"
                                             value={shippingForm.zip}
                                             onChange={(e) => setShippingForm({...shippingForm, zip: e.target.value})}
-                                            className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                                            className="px-3 py-1.5 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
                                           />
                                           <input
                                             type="text"
                                             placeholder="Country"
                                             value={shippingForm.country}
                                             onChange={(e) => setShippingForm({...shippingForm, country: e.target.value})}
-                                            className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                                            className="px-3 py-1.5 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
                                           />
                                         </div>
+                                        <input
+                                          type="tel"
+                                          placeholder="Phone Number (Optional)"
+                                          value={shippingForm.phone}
+                                          onChange={(e) => setShippingForm({...shippingForm, phone: e.target.value})}
+                                          className="w-full px-3 py-1.5 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                                        />
+                                      </div>
 
-                                        {/* CONFIRM SHIPPING button - directly below form fields */}
-                                        {(() => {
-                                          const missingRequired = !shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country;
-                                          const showMissing = missingRequired && shippingAttempted && shippingStatus !== 'error' && shippingStatus !== 'saving' && !isProcessing;
-                                          return (
+                                      {/* CONFIRM SHIPPING button - pinned to bottom of the display */}
+                                      {(() => {
+                                        const missingRequired = !shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country;
+                                        const showMissing = missingRequired && shippingAttempted && shippingStatus !== 'error' && shippingStatus !== 'saving' && !isProcessing;
+                                        return (
+                                          <div
+                                            className="w-full"
+                                            style={{
+                                              position: 'sticky',
+                                              bottom: 0,
+                                              marginTop: 8,
+                                              paddingTop: 8,
+                                              paddingBottom: 2,
+                                              background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.6) 30%, rgba(0,0,0,0.6) 100%)'
+                                            }}
+                                          >
                                             <button
-                                              className={`w-full mt-4 px-4 py-3 rounded border transition-colors text-center font-bold text-lg ${(isProcessing || shippingStatus === 'saving') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                              className={`w-full px-4 py-2.5 rounded border transition-colors text-center font-bold text-lg ${(isProcessing || shippingStatus === 'saving') ? 'opacity-50 cursor-not-allowed' : ''}`}
                                               style={{
                                                 backgroundColor: showMissing ? 'rgba(255,255,0,0.2)' : shippingStatus === 'error' ? 'rgba(255,165,0,0.2)' : 'rgba(0,255,0,0.2)',
                                                 borderColor: showMissing ? 'rgba(255,255,0,0.6)' : shippingStatus === 'error' ? 'rgba(255,165,0,0.6)' : 'rgba(0,255,0,0.6)',
@@ -4487,9 +4515,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                                isProcessing ? 'Processing...' :
                                                showMissing ? 'MISSING INFORMATION' : 'CONFIRM SHIPPING'}
                                             </button>
-                                          );
-                                        })()}
-                                      </div>
+                                          </div>
+                                        );
+                                      })()}
                                     </div>
                                   ) : (
                                     /* User/Cost Display - shown when step is 'confirm' */
@@ -5409,8 +5437,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           onChange={(e) => setShippingForm({...shippingForm, country: e.target.value})}
                           className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
                         />
+                        <input
+                          type="tel"
+                          placeholder="Phone Number (Optional)"
+                          value={shippingForm.phone}
+                          onChange={(e) => setShippingForm({...shippingForm, phone: e.target.value})}
+                          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                        />
                       </div>
-                      
+
                       <button
                         onClick={() => {
                           if (shippingStatus === 'error') {
@@ -5573,98 +5608,121 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     {/* Confirm Button - or Shipping Form for physical cards */}
                     {showCardConfirm === 'physical' && cardPurchaseStep === 'shipping' ? (
                       /* Shipping Form for physical card purchase */
-                      <div className="w-full space-y-2">
-                        <input
-                          type="text"
-                          placeholder="Full Name"
-                          value={shippingForm.full_name}
-                          onChange={(e) => setShippingForm({...shippingForm, full_name: e.target.value})}
-                          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Address Line 1"
-                          value={shippingForm.address_line1}
-                          onChange={(e) => setShippingForm({...shippingForm, address_line1: e.target.value})}
-                          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Address Line 2 (Optional)"
-                          value={shippingForm.address_line2}
-                          onChange={(e) => setShippingForm({...shippingForm, address_line2: e.target.value})}
-                          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
-                        />
-                        <div className="grid grid-cols-2 gap-2">
+                      <div className="w-full">
+                        <div className="space-y-1.5 w-full">
                           <input
                             type="text"
-                            placeholder="City"
-                            value={shippingForm.city}
-                            onChange={(e) => setShippingForm({...shippingForm, city: e.target.value})}
-                            className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                            placeholder="Full Name"
+                            value={shippingForm.full_name}
+                            onChange={(e) => setShippingForm({...shippingForm, full_name: e.target.value})}
+                            className="w-full px-3 py-1.5 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
                           />
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <input
+                              type="text"
+                              placeholder="Address Line 1"
+                              value={shippingForm.address_line1}
+                              onChange={(e) => setShippingForm({...shippingForm, address_line1: e.target.value})}
+                              className="px-3 py-1.5 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Address Line 2 (Optional)"
+                              value={shippingForm.address_line2}
+                              onChange={(e) => setShippingForm({...shippingForm, address_line2: e.target.value})}
+                              className="px-3 py-1.5 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <input
+                              type="text"
+                              placeholder="City"
+                              value={shippingForm.city}
+                              onChange={(e) => setShippingForm({...shippingForm, city: e.target.value})}
+                              className="px-3 py-1.5 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                            />
+                            <input
+                              type="text"
+                              placeholder="State"
+                              value={shippingForm.state}
+                              onChange={(e) => setShippingForm({...shippingForm, state: e.target.value})}
+                              className="px-3 py-1.5 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <input
+                              type="text"
+                              placeholder="ZIP Code"
+                              value={shippingForm.zip}
+                              onChange={(e) => setShippingForm({...shippingForm, zip: e.target.value})}
+                              className="px-3 py-1.5 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Country"
+                              value={shippingForm.country}
+                              onChange={(e) => setShippingForm({...shippingForm, country: e.target.value})}
+                              className="px-3 py-1.5 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                            />
+                          </div>
                           <input
-                            type="text"
-                            placeholder="State"
-                            value={shippingForm.state}
-                            onChange={(e) => setShippingForm({...shippingForm, state: e.target.value})}
-                            className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            type="text"
-                            placeholder="ZIP Code"
-                            value={shippingForm.zip}
-                            onChange={(e) => setShippingForm({...shippingForm, zip: e.target.value})}
-                            className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Country"
-                            value={shippingForm.country}
-                            onChange={(e) => setShippingForm({...shippingForm, country: e.target.value})}
-                            className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                            type="tel"
+                            placeholder="Phone Number (Optional)"
+                            value={shippingForm.phone}
+                            onChange={(e) => setShippingForm({...shippingForm, phone: e.target.value})}
+                            className="w-full px-3 py-1.5 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
                           />
                         </div>
 
-                        {/* CONFIRM SHIPPING button */}
+                        {/* CONFIRM SHIPPING button - pinned to bottom of the display */}
                         {(() => {
                           const missingRequired = !shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country;
                           const showMissing = missingRequired && cardShippingAttempted && shippingStatus !== 'error' && shippingStatus !== 'saving' && !isProcessing;
                           return (
-                            <button
-                              className={`w-full mt-3 px-4 py-3 rounded border transition-colors text-center font-bold text-lg ${(isProcessing || shippingStatus === 'saving') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            <div
+                              className="w-full"
                               style={{
-                                backgroundColor: showMissing ? 'rgba(255,255,0,0.2)' : shippingStatus === 'error' ? 'rgba(255,165,0,0.2)' : 'rgba(0,255,0,0.2)',
-                                borderColor: showMissing ? 'rgba(255,255,0,0.6)' : shippingStatus === 'error' ? 'rgba(255,165,0,0.6)' : 'rgba(0,255,0,0.6)',
-                                color: showMissing ? '#FFFF00' : shippingStatus === 'error' ? '#FFB347' : '#90EE90',
-                                textShadow: showMissing ? '0 0 4px rgba(255,255,0,0.8)' : shippingStatus === 'error' ? '0 0 4px rgba(255,179,71,0.8)' : '0 0 4px rgba(144,238,144,0.8)',
-                                boxShadow: showMissing ? '0 0 8px rgba(255,255,0,0.3)' : shippingStatus === 'error' ? '0 0 8px rgba(255,165,0,0.3)' : '0 0 8px rgba(0,255,0,0.3)'
+                                position: 'sticky',
+                                bottom: 0,
+                                marginTop: 8,
+                                paddingTop: 8,
+                                paddingBottom: 2,
+                                background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.6) 30%, rgba(0,0,0,0.6) 100%)'
                               }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (missingRequired) {
-                                  if (process.env.NODE_ENV !== "production") console.log('[CARD SHIPPING] CONFIRM clicked with missing fields - playing scroll sound');
-                                  setCardShippingAttempted(true);
-                                  try { sfx.play('scroll', 0.5); } catch {}
-                                  return;
-                                }
-                                if (shippingStatus === 'error') {
-                                  if (process.env.NODE_ENV !== "production") console.log('[CARD SHIPPING] RETRY clicked');
-                                  handleConfirmCardShipping();
-                                } else {
-                                  if (process.env.NODE_ENV !== "production") console.log('[CARD SHIPPING] CONFIRM SHIPPING clicked - calling handleConfirmCardShipping');
-                                  handleConfirmCardShipping();
-                                }
-                              }}
-                              onMouseEnter={() => { playHoverSfx(0.3) }}
                             >
-                              {shippingStatus === 'saving' ? 'Saving...' :
-                               shippingStatus === 'error' ? 'RETRY SHIPPING' :
-                               isProcessing ? 'Processing...' :
-                               showMissing ? 'MISSING INFORMATION' : 'CONFIRM SHIPPING'}
-                            </button>
+                              <button
+                                className={`w-full px-4 py-2.5 rounded border transition-colors text-center font-bold text-lg ${(isProcessing || shippingStatus === 'saving') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                style={{
+                                  backgroundColor: showMissing ? 'rgba(255,255,0,0.2)' : shippingStatus === 'error' ? 'rgba(255,165,0,0.2)' : 'rgba(0,255,0,0.2)',
+                                  borderColor: showMissing ? 'rgba(255,255,0,0.6)' : shippingStatus === 'error' ? 'rgba(255,165,0,0.6)' : 'rgba(0,255,0,0.6)',
+                                  color: showMissing ? '#FFFF00' : shippingStatus === 'error' ? '#FFB347' : '#90EE90',
+                                  textShadow: showMissing ? '0 0 4px rgba(255,255,0,0.8)' : shippingStatus === 'error' ? '0 0 4px rgba(255,179,71,0.8)' : '0 0 4px rgba(144,238,144,0.8)',
+                                  boxShadow: showMissing ? '0 0 8px rgba(255,255,0,0.3)' : shippingStatus === 'error' ? '0 0 8px rgba(255,165,0,0.3)' : '0 0 8px rgba(0,255,0,0.3)'
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (missingRequired) {
+                                    if (process.env.NODE_ENV !== "production") console.log('[CARD SHIPPING] CONFIRM clicked with missing fields - playing scroll sound');
+                                    setCardShippingAttempted(true);
+                                    try { sfx.play('scroll', 0.5); } catch {}
+                                    return;
+                                  }
+                                  if (shippingStatus === 'error') {
+                                    if (process.env.NODE_ENV !== "production") console.log('[CARD SHIPPING] RETRY clicked');
+                                    handleConfirmCardShipping();
+                                  } else {
+                                    if (process.env.NODE_ENV !== "production") console.log('[CARD SHIPPING] CONFIRM SHIPPING clicked - calling handleConfirmCardShipping');
+                                    handleConfirmCardShipping();
+                                  }
+                                }}
+                                onMouseEnter={() => { playHoverSfx(0.3) }}
+                              >
+                                {shippingStatus === 'saving' ? 'Saving...' :
+                                 shippingStatus === 'error' ? 'RETRY SHIPPING' :
+                                 isProcessing ? 'Processing...' :
+                                 showMissing ? 'MISSING INFORMATION' : 'CONFIRM SHIPPING'}
+                              </button>
+                            </div>
                           );
                         })()}
                       </div>
