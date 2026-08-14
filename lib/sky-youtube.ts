@@ -14,6 +14,7 @@ export const YOUTUBE_SKIES: Record<string, string> = {
   'be-my-bee-acoustic': 'https://youtu.be/gUPRdW0sOkU',
   'brain-freeze': 'https://youtu.be/eDsXZxWB66Y',
   cheerleader: 'https://youtu.be/A-3yfqBD1jQ',
+  'cheerleader-acoustic': 'https://youtu.be/A-3yfqBD1jQ',
   collide: 'https://youtu.be/8qtq8DlS8ws',
   'colors-of-our-home': 'https://youtu.be/LkEXzg-84Rw',
   'colors-of-our-home-acoustic': 'https://youtu.be/LkEXzg-84Rw',
@@ -22,7 +23,7 @@ export const YOUTUBE_SKIES: Record<string, string> = {
   'feeling-this-blink-182-cover': 'https://youtu.be/vQo8TaVJuec',
   'game-boy-heart': 'https://youtu.be/xbwh3MdCIIg',
   home: 'https://youtu.be/PaNTntT5tQk',
-  'home-acoustic': 'https://youtu.be/i298OKwH9MQ',
+  'home-acoustic': 'https://youtu.be/PaNTntT5tQk',
   'house-party': 'https://youtu.be/7Wld93-xCiI',
   'house-party-acoustic': 'https://youtu.be/tvg7P50YP2k',
   // Also map alternate title variant used elsewhere
@@ -44,17 +45,25 @@ export const YOUTUBE_SKIES: Record<string, string> = {
   'somebody-to-love': 'https://youtu.be/bsDhnZz8dlE',
   'tienes-un-amigo': 'https://youtu.be/xS-a7rWzYYw',
   'i-would-die-for-your-love': 'https://youtu.be/0mjY-84Yn3c',
+  'i-would-die-for-your-love-acoustic': 'https://youtu.be/0mjY-84Yn3c',
   'whats-my-age-again': 'https://youtu.be/n4e5VRHIx_c',
   'make-believe': 'https://youtu.be/_ilOHf_pdhY',
   'sugar-were-going-down': 'https://youtu.be/V3NEsPTADHU',
   'am-i-pretty-when-i-cry': 'https://youtu.be/QS9n6vNV5rk',
+  'am-i-pretty-when-i-cry-acoustic': 'https://youtu.be/QS9n6vNV5rk',
   'holy': 'https://youtu.be/MW5g-EQnwgU',
   'you-feel-it': 'https://youtu.be/WGS65lxnEfE',
+  'you-feel-it-acoustic': 'https://youtu.be/WGS65lxnEfE',
   'were-just-friends': 'https://youtu.be/EMwPpuhs3fs',
   'were-just-friends-acoustic': 'https://youtu.be/EMwPpuhs3fs',
   'were-just-friends-dmvrco-remix': 'https://youtu.be/EMwPpuhs3fs',
   'were-just-friends-mickey-jas-remix': 'https://youtu.be/EMwPpuhs3fs',
   'emo-girl': 'https://youtu.be/Qb1seQiAfv0',
+  // Unreleased — pre-configured so skies work the moment each song goes live
+  'i-like-me-better': 'https://youtu.be/gybZQzDSkOo',
+  'lost-in-bermuda': 'https://youtu.be/ri88uuZzROU',
+  'three-cheers-for-five-years': 'https://youtu.be/TvcQ_cTNiRQ',
+  'happy-meal': 'https://youtu.be/A-keHzbC4_w',
 };
 
 export function youtubeSkyFor(slug?: string): string | undefined {

@@ -101,6 +101,8 @@ export const TRACKS = {
   BRAIN_FREEZE: { mp3: S("brain-freeze.mp3"), opus: S("brain-freeze.opus") },
   // Actual uploaded filename is uppercase — no lowercase/Opus source exists
   CHEERLEADER: { mp3: S("CHEERLEADER.mp3") },
+  // Unreleased early access — uploaded filename matches the display title exactly
+  CHEERLEADER_ACOUSTIC: { mp3: S("CHEERLEADER (ACOUSTIC).mp3") },
   COLLIDE: { mp3: S("collide.mp3"), opus: S("collide.opus") },
   MR_BRIGHTSIDE: { mp3: S("MR.BRIGHTSIDE.mp3") },
   COLORS_HOME: { mp3: S("COLORS OF OUR HOME.mp3"), opus: S("COLORS-OF-OUR-HOME.opus") },
@@ -233,6 +235,13 @@ export const TRACK_INFO: Record<string, TrackInfo> = {
     artist: 'CHXNDLER',
     coverUrl: '/covers/cheerleader.webp',
     oneLiner: 'Signal unlocked for DREAMERS & LOVERS.'
+  },
+  'cheerleader-acoustic': {
+    id: 'cheerleader-acoustic',
+    title: 'CHEERLEADER (ACOUSTIC)',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/CHEERLEADER (ACOUSTIC).webp',
+    oneLiner: 'Wanting the person you love most to be cheering in the crowd.'
   },
   'game-boy-heart': {
     id: 'game-boy-heart',

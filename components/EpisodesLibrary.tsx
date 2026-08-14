@@ -367,6 +367,36 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://youtu.be/9PXDM5HogoY",
     type: "karaoke",
   },
+  {
+    id: "kar-007",
+    title: "OCEAN GIRL (REMIX)",
+    youtubeUrl: "https://youtu.be/rfRz3QDLNmM",
+    type: "karaoke",
+  },
+  {
+    id: "kar-008",
+    title: "WE'RE JUST FRIENDS",
+    youtubeUrl: "https://youtu.be/dYeVIV3RqXg",
+    type: "karaoke",
+  },
+  {
+    id: "kar-009",
+    title: "MAKE BELIEVE",
+    youtubeUrl: "https://youtu.be/HDSZ0QJuqdQ",
+    type: "karaoke",
+  },
+  {
+    id: "kar-010",
+    title: "BABY",
+    youtubeUrl: "https://youtu.be/z-EnAJomZ3M",
+    type: "karaoke",
+  },
+  {
+    id: "kar-011",
+    title: "POKÉMON",
+    youtubeUrl: "https://youtu.be/6xV_72SlBRM",
+    type: "karaoke",
+  },
 ];
 
 // ──────────────────────────────────────────────
@@ -514,6 +544,9 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
     if (topTab === "karaoke") return v.type === "karaoke";
     return v.type === liveSignalSection;
   });
+  if (topTab === "karaoke") {
+    filteredVideos.sort((a, b) => a.title.localeCompare(b.title));
+  }
 
   const newestId = getNewestId(filteredVideos);
 

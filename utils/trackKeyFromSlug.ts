@@ -12,6 +12,7 @@ export function trackKeyFromSlug(slug?: string): string | null {
     "be-my-bee": "BE_MY_BEE",
     "brain-freeze": "BRAIN_FREEZE",
     "cheerleader": "CHEERLEADER",
+    "cheerleader-acoustic": "CHEERLEADER_ACOUSTIC",
     "collide": "COLLIDE",
     "mr-brightside": "MR_BRIGHTSIDE",
     "colors-of-our-home": "COLORS_HOME",

@@ -1553,13 +1553,31 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     }
 
     // Helper to read latest DB live flag directly to avoid hook timing races
+    // Guarded with a hard timeout so a slow/stalled request can't block the START warp
     const fetchDbLive = async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
       try {
-        const r = await fetch('/api/admin/go-live', { cache: 'no-store' });
+        const r = await fetch('/api/admin/go-live', { cache: 'no-store', signal: controller.signal });
         if (!r.ok) return false;
         const j = await r.json();
         return !!j?.live;
       } catch { return false; }
+      finally { clearTimeout(timeoutId); }
+    };
+
+    // Safari has a known bug where supabase.auth.getSession() can hang indefinitely
+    // (e.g. after the tab was backgrounded). Race it against a timeout so START
+    // always proceeds instead of appearing unresponsive.
+    const getSessionWithTimeout = async (ms = 2500) => {
+      try {
+        return await Promise.race([
+          supabaseClient.auth.getSession(),
+          new Promise((resolve) => setTimeout(() => resolve({ data: { session: null } }), ms)),
+        ]);
+      } catch {
+        return { data: { session: null } };
+      }
     };
 
     // Suppress badge celebrations during warp sequence (15 seconds)
@@ -1578,7 +1596,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
     try {
       // Step 1: Check if user is logged in
-      const { data: { session } } = await supabaseClient.auth.getSession();
+      const { data: { session } } = await getSessionWithTimeout();
 
       let needsOnboarding = false;
       let needsWelcomeHome = false;
