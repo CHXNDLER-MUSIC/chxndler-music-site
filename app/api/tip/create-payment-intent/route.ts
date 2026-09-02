@@ -23,7 +23,10 @@ type TipMethod = (typeof ALLOWED_METHODS)[number];
 const METHOD_TYPES: Record<Exclude<TipMethod, 'express'>, string[]> = {
   card: ['card'],
   cashapp: ['cashapp'],
-  link: ['link'],
+  // Link needs `card` as its co-type for the login/autofill flow to work. The
+  // Link panel orders Link first. (If a "Bank" option still appears here, turn
+  // off US bank account in Stripe → Settings → Payments → Payment methods.)
+  link: ['card', 'link'],
 };
 
 function clampStr(v: unknown, max: number, fallback: string): string {

@@ -235,21 +235,22 @@
 }
 .amountLine {
   margin: 0;
-  font-size: clamp(1.8rem, 8vw, 2.4rem);
+  font-size: clamp(2.6rem, 12vw, 3.6rem);
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  line-height: 1;
 }
 .amountLine span {
   color: var(--pink);
-  text-shadow: 0 0 14px var(--pink-soft), 0 0 34px var(--pink-faint);
+  text-shadow: 0 0 16px var(--pink-soft), 0 0 40px var(--pink-faint);
 }
 .amountCaption {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 0.86rem;
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.55);
 }
 .elementHost {
   min-height: 44px;

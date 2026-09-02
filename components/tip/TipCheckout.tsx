@@ -21,10 +21,10 @@ type StripeChip = 'card' | 'cashapp' | 'link';
 type Choice = StripeChip | 'venmo';
 
 const CHIPS: { key: Choice; label: string }[] = [
-  { key: 'cashapp', label: 'Cash App' },
   { key: 'card', label: 'Card' },
-  { key: 'link', label: 'Link' },
   { key: 'venmo', label: 'Venmo' },
+  { key: 'cashapp', label: 'Cash App' },
+  { key: 'link', label: 'Link' },
 ];
 
 let stripePromise: Promise<Stripe | null> | null = null;
@@ -275,7 +275,12 @@ function MethodPanel({
 
   return (
     <div className={styles.methodPanel}>
-      <PaymentElement options={{ layout: 'tabs' }} />
+      <PaymentElement
+        options={{
+          layout: 'tabs',
+          ...(method === 'link' ? { paymentMethodOrder: ['link', 'card'] } : {}),
+        }}
+      />
       {inlineError ? <p className={styles.fieldError}>{inlineError}</p> : null}
       <button
         type="button"
@@ -408,7 +413,8 @@ export default function TipCheckout({
   onBack: () => void;
 }) {
   const promise = useMemo(getStripePromise, []);
-  const [choice, setChoice] = useState<Choice>('card');
+  // No method selected yet — nothing highlighted when the checkout screen opens.
+  const [choice, setChoice] = useState<Choice | null>(null);
   const [secrets, setSecrets] = useState<Partial<Record<FetchMethod, string>>>({});
   const [piIds, setPiIds] = useState<Partial<Record<FetchMethod, string>>>({});
   const [loading, setLoading] = useState<FetchMethod | null>('card');
@@ -457,7 +463,8 @@ export default function TipCheckout({
 
   const cardSecret = secrets.card;
   const expressSecret = secrets.express;
-  const activeSecret = choice !== 'venmo' ? secrets[choice] : undefined;
+  const activeSecret =
+    choice && choice !== 'venmo' ? secrets[choice] : undefined;
 
   return (
     <div className={styles.shell}>
@@ -502,7 +509,7 @@ export default function TipCheckout({
           ))}
         </div>
 
-        {/* Active method panel */}
+        {/* Active method panel — nothing until a chip is chosen */}
         {choice === 'venmo' ? (
           <div className={styles.venmoPanel}>
             <TipVenmoButton
@@ -526,7 +533,7 @@ export default function TipCheckout({
               <span className={styles.spinner} aria-label="Loading" />
             </div>
           )
-        ) : activeSecret && piIds[choice] ? (
+        ) : choice && activeSecret && piIds[choice] ? (
           <Elements
             key={choice}
             stripe={promise}
@@ -540,7 +547,7 @@ export default function TipCheckout({
               onError={onError}
             />
           </Elements>
-        ) : loading === choice ? (
+        ) : choice && loading === choice ? (
           <div className={styles.methodLoading}>
             <span className={styles.spinner} aria-label="Loading" />
           </div>
