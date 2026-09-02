@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { loadStripe, type Stripe, type StripeElementsOptions } from '@stripe/stripe-js';
 import {
-  CardElement,
+  CardCvcElement,
+  CardExpiryElement,
+  CardNumberElement,
   Elements,
   ExpressCheckoutElement,
   PaymentElement,
@@ -23,8 +25,7 @@ type Choice = StripeChip | 'venmo';
 const CHIPS: { key: Choice; label: string }[] = [
   { key: 'card', label: 'Card' },
   { key: 'venmo', label: 'Venmo' },
-  { key: 'cashapp', label: 'Cash App' },
-  { key: 'link', label: 'Link' },
+  // Cash App and Link tabs removed for now.
 ];
 
 let stripePromise: Promise<Stripe | null> | null = null;
@@ -296,11 +297,23 @@ function MethodPanel({
 
 /* -------------------------------------------------------------------------- */
 
+const CARD_ELEMENT_STYLE = {
+  base: {
+    color: '#ffffff',
+    fontFamily: 'InterLocal, system-ui, sans-serif',
+    fontSize: '18px',
+    fontSmoothing: 'antialiased',
+    iconColor: '#fc54af',
+    '::placeholder': { color: 'rgba(255,255,255,0.4)' },
+  },
+  invalid: { color: '#ffd0e6', iconColor: '#ffd0e6' },
+} as const;
+
 /**
- * Card panel using the classic CardElement (not PaymentElement). CardElement
- * renders ONLY the card number / expiry / CVC fields — it has no method
- * switcher, so it can never show a "Bank" tab or a Link box, regardless of what
- * the PaymentIntent's payment_method_types happen to be.
+ * Card panel using the SPLIT card elements (number / expiry / CVC) plus a plain
+ * ZIP input. Each field gets its own labelled box with room to breathe, so the
+ * expiry and ZIP are easy to read on a phone — unlike the cramped single-line
+ * CardElement. Still no method switcher, so no "Bank" tab can ever appear.
  */
 function CardPanel({
   amountCents,
@@ -318,13 +331,14 @@ function CardPanel({
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [numberReady, setNumberReady] = useState(false);
+  const [zip, setZip] = useState('');
   const [inlineError, setInlineError] = useState('');
 
   const confirm = async () => {
     if (!stripe || !elements || submitting) return;
-    const card = elements.getElement(CardElement);
-    if (!card) return;
+    const cardNumber = elements.getElement(CardNumberElement);
+    if (!cardNumber) return;
     setSubmitting(true);
     setInlineError('');
     void sfx.play('card-ding', 0.6);
@@ -335,7 +349,10 @@ function CardPanel({
     });
 
     const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: { card },
+      payment_method: {
+        card: cardNumber,
+        billing_details: { address: { postal_code: zip.trim() || undefined } },
+      },
     });
 
     if (error) {
@@ -365,32 +382,55 @@ function CardPanel({
     setInlineError('Payment not completed. Please try again.');
   };
 
+  const onFieldChange = (e: { error?: { message?: string } }) =>
+    setInlineError(e.error?.message ?? '');
+
   return (
     <div className={styles.methodPanel}>
-      <div className={styles.cardField}>
-        <CardElement
-          onReady={() => setReady(true)}
-          onChange={(e) => setInlineError(e.error?.message ?? '')}
-          options={{
-            hidePostalCode: false,
-            style: {
-              base: {
-                color: '#ffffff',
-                fontFamily: 'InterLocal, system-ui, sans-serif',
-                fontSize: '16px',
-                iconColor: '#fc54af',
-                '::placeholder': { color: 'rgba(255,255,255,0.4)' },
-              },
-              invalid: { color: '#ffd0e6', iconColor: '#ffd0e6' },
-            },
-          }}
-        />
+      <label className={styles.cardGroup}>
+        <span className={styles.cardLabel}>Card number</span>
+        <div className={styles.cardField}>
+          <CardNumberElement
+            onReady={() => setNumberReady(true)}
+            onChange={onFieldChange}
+            options={{ style: CARD_ELEMENT_STYLE, placeholder: '1234 1234 1234 1234' }}
+          />
+        </div>
+      </label>
+
+      <div className={styles.cardRow}>
+        <label className={styles.cardGroup}>
+          <span className={styles.cardLabel}>Expiry date</span>
+          <div className={styles.cardField}>
+            <CardExpiryElement onChange={onFieldChange} options={{ style: CARD_ELEMENT_STYLE }} />
+          </div>
+        </label>
+        <label className={styles.cardGroup}>
+          <span className={styles.cardLabel}>CVC</span>
+          <div className={styles.cardField}>
+            <CardCvcElement onChange={onFieldChange} options={{ style: CARD_ELEMENT_STYLE }} />
+          </div>
+        </label>
       </div>
+
+      <label className={styles.cardGroup}>
+        <span className={styles.cardLabel}>ZIP code</span>
+        <input
+          className={styles.cardZip}
+          inputMode="numeric"
+          autoComplete="postal-code"
+          maxLength={10}
+          placeholder="12345"
+          value={zip}
+          onChange={(e) => setZip(e.target.value.replace(/[^\d-]/g, ''))}
+        />
+      </label>
+
       {inlineError ? <p className={styles.fieldError}>{inlineError}</p> : null}
       <button
         type="button"
         className={styles.primary}
-        disabled={!stripe || !ready || submitting}
+        disabled={!stripe || !numberReady || submitting}
         onClick={confirm}
       >
         {submitting ? 'Processing…' : `Pay ${formatUsd(amountCents)}`}
