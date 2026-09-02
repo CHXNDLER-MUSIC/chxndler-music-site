@@ -51,29 +51,74 @@ function formatUsd(cents: number) {
   return Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`;
 }
 
-async function fetchSecret(
+type SecretResult =
+  | { ok: true; clientSecret: string; paymentIntentId: string }
+  | { ok: false; error: string };
+
+async function requestSecret(
   method: StripeMethod,
   amountCents: number,
-): Promise<{ clientSecret: string; paymentIntentId: string } | null> {
+): Promise<SecretResult> {
+  let session: ReturnType<typeof getTipSession> | null = null;
   try {
-    const s = getTipSession();
+    session = getTipSession();
+  } catch {
+    session = null;
+  }
+  try {
     const res = await fetch('/api/tip/create-payment-intent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
       body: JSON.stringify({
         amountDollars: Math.round(amountCents / 100),
         method,
-        sessionId: s.id,
-        source: s.source,
-        campaign: s.campaign,
+        sessionId: session?.id ?? 'ts_unknown',
+        source: session?.source ?? 'direct',
+        campaign: session?.campaign ?? 'none',
       }),
     });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data?.clientSecret) return null;
-    return { clientSecret: data.clientSecret, paymentIntentId: data.paymentIntentId };
-  } catch {
-    return null;
+    const data = await res.json().catch(() => ({}) as Record<string, unknown>);
+    if (res.ok && typeof data?.clientSecret === 'string') {
+      return {
+        ok: true,
+        clientSecret: data.clientSecret,
+        paymentIntentId: String(data.paymentIntentId ?? ''),
+      };
+    }
+    const serverMsg = typeof data?.error === 'string' ? data.error : '';
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[tip] create-payment-intent failed', res.status, data);
+    }
+    return {
+      ok: false,
+      error: serverMsg || `Payment setup failed (${res.status}). Please try again.`,
+    };
+  } catch (err) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[tip] create-payment-intent network error', err);
+    }
+    return { ok: false, error: 'network' };
   }
+}
+
+/** Requests a client secret, retrying once on a transient network failure. */
+async function fetchSecret(
+  method: StripeMethod,
+  amountCents: number,
+): Promise<SecretResult> {
+  const first = await requestSecret(method, amountCents);
+  if (first.ok || first.error !== 'network') return first;
+  await new Promise((r) => setTimeout(r, 900));
+  const second = await requestSecret(method, amountCents);
+  if (second.ok) return second;
+  return {
+    ok: false,
+    error:
+      second.error === 'network'
+        ? 'We couldn’t reach the payment service. Check your connection and try again, or use Venmo.'
+        : second.error,
+  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -375,11 +420,18 @@ export default function TipCheckout({
       if (secrets[method]) return secrets[method]!;
       setLoading(method);
       const r = await fetchSecret(method, amountCents);
-      setLoading(null);
-      if (!r) {
+      setLoading((cur) => (cur === method ? null : cur));
+      if (!r.ok) {
+        // Only the initial card load bounces to the full error screen; a failed
+        // secondary chip just leaves that panel empty.
         if (method === 'card' && !bailedRef.current) {
           bailedRef.current = true;
-          onError('The payment form could not load. Please try again or use Venmo.');
+          void trackTipEvent('tip_error', { metadata: { where: 'create-payment-intent' } });
+          onError(
+            r.error && r.error !== 'network'
+              ? r.error
+              : 'The payment form could not load. Please try again or use Venmo.',
+          );
         }
         return null;
       }
