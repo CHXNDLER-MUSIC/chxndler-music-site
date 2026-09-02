@@ -61,7 +61,7 @@
 }
 
 .titleIcon {
-  height: clamp(4.25rem, 19vw, 6.25rem);
+  height: clamp(5.25rem, 24vw, 8rem);
   width: auto;
   flex: none;
   object-fit: contain;
@@ -90,7 +90,7 @@
   border: 1px solid var(--pink-soft);
   background: rgba(252, 84, 175, 0.06);
   color: #fff;
-  font-size: clamp(1.4rem, 6vw, 1.8rem);
+  font-size: clamp(1.6rem, 6.8vw, 2.1rem);
   font-weight: 700;
   letter-spacing: 0.03em;
   padding: clamp(0.65rem, 3vw, 0.9rem) 0.5rem;
@@ -382,7 +382,7 @@
   justify-content: center;
   gap: 0.5rem;
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid var(--pink-soft);
   background: transparent;
   color: rgba(255, 255, 255, 0.78);
   font-size: 0.9rem;
@@ -397,7 +397,7 @@
 }
 .venmo:hover {
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.5);
+  border-color: var(--pink);
 }
 .venmoHandle {
   color: rgba(255, 255, 255, 0.45);
