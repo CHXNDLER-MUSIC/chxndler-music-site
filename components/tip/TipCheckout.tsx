@@ -16,8 +16,9 @@ import { sfx } from '@/lib/sfx';
 import styles from './tip.module.css';
 import TipVenmoButton from './TipVenmoButton';
 
-type StripeMethod = 'card' | 'cashapp' | 'link';
-type Choice = StripeMethod | 'venmo';
+type FetchMethod = 'card' | 'cashapp' | 'link' | 'express';
+type StripeChip = 'card' | 'cashapp' | 'link';
+type Choice = StripeChip | 'venmo';
 
 const CHIPS: { key: Choice; label: string }[] = [
   { key: 'cashapp', label: 'Cash App' },
@@ -56,7 +57,7 @@ type SecretResult =
   | { ok: false; error: string };
 
 async function requestSecret(
-  method: StripeMethod,
+  method: FetchMethod,
   amountCents: number,
 ): Promise<SecretResult> {
   let session: ReturnType<typeof getTipSession> | null = null;
@@ -104,7 +105,7 @@ async function requestSecret(
 
 /** Requests a client secret, retrying once on a transient network failure. */
 async function fetchSecret(
-  method: StripeMethod,
+  method: FetchMethod,
   amountCents: number,
 ): Promise<SecretResult> {
   const first = await requestSecret(method, amountCents);
@@ -186,14 +187,14 @@ function ExpressPanel({
         }}
         onConfirm={confirm}
         options={{
-          buttonHeight: 48,
-          layout: { maxColumns: 2, maxRows: 1, overflow: 'never' },
+          buttonHeight: 50,
           paymentMethods: {
             applePay: 'auto',
             googlePay: 'auto',
             link: 'never',
             paypal: 'never',
             amazonPay: 'never',
+            klarna: 'never',
           },
         }}
       />
@@ -210,7 +211,7 @@ function MethodPanel({
   onSuccess,
   onError,
 }: {
-  method: StripeMethod;
+  method: StripeChip;
   amountCents: number;
   paymentIntentId: string;
   onSuccess: () => void;
@@ -274,12 +275,7 @@ function MethodPanel({
 
   return (
     <div className={styles.methodPanel}>
-      <PaymentElement
-        options={{
-          layout: 'tabs',
-          ...(method === 'link' ? { paymentMethodOrder: ['link', 'card'] } : {}),
-        }}
-      />
+      <PaymentElement options={{ layout: 'tabs' }} />
       {inlineError ? <p className={styles.fieldError}>{inlineError}</p> : null}
       <button
         type="button"
@@ -413,13 +409,13 @@ export default function TipCheckout({
 }) {
   const promise = useMemo(getStripePromise, []);
   const [choice, setChoice] = useState<Choice>('card');
-  const [secrets, setSecrets] = useState<Partial<Record<StripeMethod, string>>>({});
-  const [piIds, setPiIds] = useState<Partial<Record<StripeMethod, string>>>({});
-  const [loading, setLoading] = useState<StripeMethod | null>('card');
+  const [secrets, setSecrets] = useState<Partial<Record<FetchMethod, string>>>({});
+  const [piIds, setPiIds] = useState<Partial<Record<FetchMethod, string>>>({});
+  const [loading, setLoading] = useState<FetchMethod | null>('card');
   const bailedRef = useRef(false);
 
   const ensureSecret = useCallback(
-    async (method: StripeMethod): Promise<string | null> => {
+    async (method: FetchMethod): Promise<string | null> => {
       if (secrets[method]) return secrets[method]!;
       setLoading(method);
       const r = await fetchSecret(method, amountCents);
@@ -445,8 +441,10 @@ export default function TipCheckout({
     [amountCents, secrets, onError],
   );
 
-  // Card secret up front — it feeds both Apple/Google Pay and the default panel.
+  // On mount: a wallet intent for the Apple/Google Pay button, and the card
+  // intent for the default panel.
   useEffect(() => {
+    void ensureSecret('express');
     void ensureSecret('card');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -458,6 +456,7 @@ export default function TipCheckout({
   };
 
   const cardSecret = secrets.card;
+  const expressSecret = secrets.express;
   const activeSecret = choice !== 'venmo' ? secrets[choice] : undefined;
 
   return (
@@ -470,15 +469,16 @@ export default function TipCheckout({
           <p className={styles.amountCaption}>Tip to CHXNDLER</p>
         </div>
 
-        {/* Apple Pay / Google Pay — first option, only rendered by Stripe on a
-            device/browser that actually has a wallet. */}
-        {cardSecret && piIds.card && (
+        {/* Apple Pay / Google Pay — first option. Stripe only renders these on a
+            device/browser that actually has the wallet (real iPhone Safari with
+            a Wallet card for Apple Pay; Android Chrome for Google Pay). */}
+        {expressSecret && piIds.express && (
           <Elements
             stripe={promise}
-            options={{ clientSecret: cardSecret, appearance: APPEARANCE }}
+            options={{ clientSecret: expressSecret, appearance: APPEARANCE }}
           >
             <ExpressPanel
-              paymentIntentId={piIds.card}
+              paymentIntentId={piIds.express}
               onSuccess={onSuccess}
               onError={onError}
             />
@@ -505,7 +505,10 @@ export default function TipCheckout({
         {/* Active method panel */}
         {choice === 'venmo' ? (
           <div className={styles.venmoPanel}>
-            <TipVenmoButton />
+            <TipVenmoButton
+              amountDollars={Math.round(amountCents / 100)}
+              note="One alien to another ♡"
+            />
           </div>
         ) : choice === 'card' ? (
           cardSecret && piIds.card ? (

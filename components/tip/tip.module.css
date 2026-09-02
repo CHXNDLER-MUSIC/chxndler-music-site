@@ -254,8 +254,13 @@
 .elementHost {
   min-height: 44px;
 }
+.expressHost {
+  width: 100%;
+  min-height: 50px;
+}
 .expressHost:empty {
   display: none;
+  min-height: 0;
 }
 
 /* ---- method chips: Cash App · Card · Link · Venmo ---- */

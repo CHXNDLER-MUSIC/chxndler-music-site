@@ -9,16 +9,21 @@ export const dynamic = 'force-dynamic';
 // for exactly ONE method. That makes the embedded element render only that
 // method's form — no Stripe tab strip, so no "Bank", and no Link box bleeding
 // into the card form.
-const ALLOWED_METHODS = ['card', 'cashapp', 'link'] as const;
+const ALLOWED_METHODS = ['card', 'cashapp', 'link', 'express'] as const;
 type TipMethod = (typeof ALLOWED_METHODS)[number];
 
-// Each chip maps to a minimal method set. Card is card-only (so the element
-// shows no tab strip → no "Bank", no Link box). Link needs `card` as its
-// required co-type, but the Link panel orders Link first.
-const METHOD_TYPES: Record<TipMethod, string[]> = {
+// Each chip maps to a minimal method set so the embedded element renders only
+// that one form — no Stripe tab strip, so no "Bank" and no cross-bleed.
+//   card    → card fields only
+//   cashapp → Cash App Pay only
+//   link    → Link login only
+// `express` is different: it backs the Apple Pay / Google Pay button
+// (ExpressCheckoutElement), which wants automatic_payment_methods to detect
+// wallets reliably; the element itself is configured to show wallets only.
+const METHOD_TYPES: Record<Exclude<TipMethod, 'express'>, string[]> = {
   card: ['card'],
   cashapp: ['cashapp'],
-  link: ['link', 'card'],
+  link: ['link'],
 };
 
 function clampStr(v: unknown, max: number, fallback: string): string {
@@ -66,10 +71,16 @@ export async function POST(req: NextRequest) {
 
     let intent;
     try {
-      intent = await stripe.paymentIntents.create({
-        ...baseParams,
-        payment_method_types: METHOD_TYPES[method],
-      });
+      intent =
+        method === 'express'
+          ? await stripe.paymentIntents.create({
+              ...baseParams,
+              automatic_payment_methods: { enabled: true },
+            })
+          : await stripe.paymentIntents.create({
+              ...baseParams,
+              payment_method_types: METHOD_TYPES[method],
+            });
     } catch (err) {
       // Method not enabled on the account → fall back to card so the flow works.
       if (method === 'card') throw err;
