@@ -2,12 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { trackTipEvent } from '@/lib/tip/analytics';
-import {
-  HOMEPAGE_WARP_FLAG,
-  TIP_PAID_FLAG,
-  TIP_MAX_DOLLARS,
-  TIP_MIN_DOLLARS,
-} from '@/lib/tip/constants';
+import { TIP_MAX_DOLLARS, TIP_MIN_DOLLARS } from '@/lib/tip/constants';
 import { sfx } from '@/lib/sfx';
 import styles from './tip.module.css';
 import TipAmountPicker from './TipAmountPicker';
@@ -16,26 +11,12 @@ import TipError from './TipError';
 
 type Stage = 'select' | 'pay' | 'error';
 
-function tipAlreadyPaid(): boolean {
-  try {
-    return sessionStorage.getItem(TIP_PAID_FLAG) === '1';
-  } catch {
-    return false;
-  }
-}
-
 /**
- * The moment a tip is confirmed we leave /tip entirely and hand the visitor to
- * the main site. HOMEPAGE_WARP_FLAG makes DashboardApp run its own warp/entry
- * sequence on arrival, so it feels like being transported in — no button, no
- * intermediate screen. TIP_PAID_FLAG guards against a Back/refresh dropping
- * anyone back into the tipping flow.
+ * Leave /tip for the main site's normal opening screen. Only ever called after
+ * a confirmed payment (the Pay button, or a redirect-method return) — visiting
+ * /tip on its own never triggers this.
  */
 function enterSite() {
-  try {
-    sessionStorage.setItem(TIP_PAID_FLAG, '1');
-    sessionStorage.setItem(HOMEPAGE_WARP_FLAG, '1');
-  } catch {}
   // Relative — resolves to chxndler.world/ in production, localhost in dev.
   window.location.assign('/');
 }
@@ -44,20 +25,17 @@ export default function TipExperience() {
   const [stage, setStage] = useState<Stage>('select');
   const [amountCents, setAmountCents] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
-  const [redirecting, setRedirecting] = useState(
-    () => typeof window !== 'undefined' && tipAlreadyPaid(),
-  );
+  const [redirecting, setRedirecting] = useState(false);
   const firedView = useRef(false);
 
-  // Shared UI SFX bus for this flow.
+  // Shared UI SFX bus for this flow. Also clear any leftover "paid" flag from an
+  // earlier build so it can never auto-redirect a plain /tip visit.
   useEffect(() => {
     sfx.setEnabled(true);
     sfx.preload(['click', 'card-ding']).catch(() => {});
-  }, []);
-
-  // Already paid this tab session → don't render the flow, just go to the site.
-  useEffect(() => {
-    if (tipAlreadyPaid()) enterSite();
+    try {
+      sessionStorage.removeItem('chx_tip_paid');
+    } catch {}
   }, []);
 
   // First-party page view + resilience for redirect-based payment methods that
@@ -97,11 +75,6 @@ export default function TipExperience() {
   };
 
   const handleContinue = (amountDollars: number) => {
-    if (tipAlreadyPaid()) {
-      setRedirecting(true);
-      enterSite();
-      return;
-    }
     const dollars = Math.round(amountDollars);
     if (!Number.isFinite(dollars) || dollars < TIP_MIN_DOLLARS || dollars > TIP_MAX_DOLLARS) {
       return;
