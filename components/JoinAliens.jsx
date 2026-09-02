@@ -66,6 +66,9 @@ export default function JoinAliens({ visible = true } = {}) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isChatProfileOpen, setIsChatProfileOpen] = useState(false);
   const [isEpisodesOpen, setIsEpisodesOpen] = useState(false);
+  // When true, the "NEXT IN PERSON SIGNAL" section is collapsed/faded because
+  // the live chat is opening. It stays hidden until the pink beam is re-opened.
+  const [irlHiddenForChat, setIrlHiddenForChat] = useState(false);
   // IRL panel state
   const [isIrlOpen, setIsIrlOpen] = useState(false);
   const [showAllIrl, setShowAllIrl] = useState(false);
@@ -231,6 +234,8 @@ export default function JoinAliens({ visible = true } = {}) {
       setShowPaymentOptions10(false);
       setShowVenmoPopup(false);
       setShowVenmoPayment(false);
+      // Restore the in-person signal section for the next time the beam opens
+      setIrlHiddenForChat(false);
       return;
     }
 
@@ -378,9 +383,10 @@ export default function JoinAliens({ visible = true } = {}) {
         minHeight: 0,
         maxHeight: '100%',
         margin: '0',
-        // Always reserve space for bottom-floating buttons (chat, episodes, $/phone)
+        // Always reserve space for bottom-floating buttons (chat, episodes, $/phone).
+        // Buttons sit at bottom:15px and are 55px tall (top edge ~70px), so ~80px leaves a small gap.
         // Use safe-area inset where available to avoid iOS home indicator overlap
-        padding: '0px 8px calc(120px + env(safe-area-inset-bottom, 0px)) 8px',
+        padding: '0px 8px calc(80px + env(safe-area-inset-bottom, 0px)) 8px',
         background: 'rgba(0, 0, 0, 0.6)',
         backdropFilter: 'blur(12px)',
         border: 'none',
@@ -641,7 +647,20 @@ export default function JoinAliens({ visible = true } = {}) {
         </YouTubeLive>
 
         {/* IRL SIGNAL — expandable neon dashboard drawer — sibling of countdown, grows downward */}
-        <div ref={irlSectionRef} style={{ width: 'calc(100% + 16px)', margin: '4px -8px 0', position: 'relative', flex: isIrlOpen ? '1 1 0' : '0 0 auto', minHeight: isIrlOpen ? 240 : 0, display: forceLiveFlag ? 'none' : 'flex', flexDirection: 'column' }}>
+        <div ref={irlSectionRef} style={{
+          width: 'calc(100% + 16px)',
+          margin: irlHiddenForChat ? '0 -8px' : '4px -8px 0',
+          position: 'relative',
+          flex: irlHiddenForChat ? '0 0 auto' : (isIrlOpen ? '1 1 0' : '0 0 auto'),
+          minHeight: irlHiddenForChat ? 0 : (isIrlOpen ? 240 : 0),
+          maxHeight: irlHiddenForChat ? 0 : undefined,
+          opacity: irlHiddenForChat ? 0 : 1,
+          overflow: irlHiddenForChat ? 'hidden' : undefined,
+          pointerEvents: irlHiddenForChat ? 'none' : undefined,
+          transition: 'opacity 240ms ease, max-height 300ms ease, margin 300ms ease',
+          display: forceLiveFlag ? 'none' : 'flex',
+          flexDirection: 'column',
+        }}>
             {/* Wrapper with single continuous border so contents stay inside */}
             <div
               className="irl-pulse"
@@ -1373,7 +1392,8 @@ export default function JoinAliens({ visible = true } = {}) {
                 top: 0,
                 left: 0,
                 right: 0,
-                bottom: 'calc(120px + env(safe-area-inset-bottom, 0px))',
+                // Sit just above the fixed dock buttons (bottom:15px + 55px tall) with a small gap
+                bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
                 background: 'rgba(0,0,0,0.92)',
                 backdropFilter: 'blur(18px)',
                 WebkitBackdropFilter: 'blur(18px)',
@@ -1561,7 +1581,8 @@ export default function JoinAliens({ visible = true } = {}) {
                 top: 0,
                 left: 0,
                 right: 0,
-                bottom: 'calc(120px + env(safe-area-inset-bottom, 0px))',
+                // Sit just above the fixed dock buttons (bottom:15px + 55px tall) with a small gap
+                bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
                 background: 'rgba(0,0,0,0.92)',
                 backdropFilter: 'blur(18px)',
                 WebkitBackdropFilter: 'blur(18px)',
@@ -1771,7 +1792,8 @@ export default function JoinAliens({ visible = true } = {}) {
                 top: 0,
                 left: 0,
                 right: 0,
-                bottom: 'calc(120px + env(safe-area-inset-bottom, 0px))',
+                // Sit just above the fixed dock buttons (bottom:15px + 55px tall) with a small gap
+                bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
                 background: 'rgba(0,0,0,0.92)',
                 backdropFilter: 'blur(18px)',
                 WebkitBackdropFilter: 'blur(18px)',
@@ -1892,7 +1914,16 @@ export default function JoinAliens({ visible = true } = {}) {
                       startStr = ymd; endStr = ymd;
                     }
                     const calEventTitle = 'CHXNDLER live at ' + (venue || 'IRL Signal');
-                    const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calEventTitle)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(venue)}&ctz=America/New_York`;
+                    let calDetails = '';
+                    // Hardcoded override for the Arlene's Grocery show: 6:30 PM–11:00 PM ET + custom description.
+                    // Times are written without a trailing Z so Google Calendar interprets them in ctz (America/New_York).
+                    if (/arlene'?s\s+grocery/i.test(venue)) {
+                      const ymd = `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}`;
+                      startStr = `${ymd}T183000`;
+                      endStr = `${ymd}T230000`;
+                      calDetails = 'Come be part of the beginning. 🖤👽\nCome sing with us, meet other aliens, and be part of something special.\nWelcome to the Heartverse. <3';
+                    }
+                    const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calEventTitle)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(venue)}${calDetails ? `&details=${encodeURIComponent(calDetails)}` : ''}&ctz=America/New_York`;
 
                     const iconStyle = { width: 18, height: 18, flexShrink: 0 };
                     const rowStyle = { display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.07)' };
@@ -1972,14 +2003,14 @@ export default function JoinAliens({ visible = true } = {}) {
                             style={{
                               flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                               padding: '10px 8px', borderRadius: 10, textDecoration: 'none',
-                              border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.05)',
-                              color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: 13,
+                              border: '1px solid rgba(255,255,255,0.9)', background: 'rgba(255,255,255,0.05)',
+                              color: '#FFFFFF', fontWeight: 700, fontSize: 13,
                               opacity: ticketsUrl ? 1 : 0.45,
                             }}
                           >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                              <path d="M7 7h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8"/>
-                              <path d="M8.5 12h7" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" strokeLinecap="round"/>
+                              <path d="M7 7h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" stroke="#FFFFFF" strokeWidth="1.8"/>
+                              <path d="M8.5 12h7" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round"/>
                             </svg>
                             TICKETS
                           </a>
@@ -2051,18 +2082,25 @@ export default function JoinAliens({ visible = true } = {}) {
           e.stopPropagation();
           if (process.env.NODE_ENV !== "production") console.log('Chat button clicked! Current state:', isChatOpen);
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
-          // Close phone form and tip panel before opening chat
-          if (!isChatOpen && showPhoneForm) {
-            setShowPhoneForm(false);
+
+          if (isChatOpen) {
+            // Just close the chat — the in-person signal section stays closed
+            setIsChatOpen(false);
+            if (process.env.NODE_ENV !== "production") console.log('Setting chat state to: false');
+            return;
           }
-          if (!isChatOpen && showTipOptions) {
-            setShowTipOptions(false);
-            setShowPaymentOptions(false);
-            setShowPaymentOptions5(false);
-            setShowPaymentOptions10(false);
-          }
-          setIsChatOpen(!isChatOpen);
-          if (process.env.NODE_ENV !== "production") console.log('Setting chat state to:', !isChatOpen);
+
+          // Opening chat: close the in-person signal section (and any slide-up
+          // panels) first, then reveal the chat once the fade/collapse finishes.
+          setShowPhoneForm(false);
+          setShowTipOptions(false);
+          setShowPaymentOptions(false);
+          setShowPaymentOptions5(false);
+          setShowPaymentOptions10(false);
+          setShowConcertsPanel(false);
+          setIrlHiddenForChat(true);
+          setTimeout(() => setIsChatOpen(true), 300);
+          if (process.env.NODE_ENV !== "production") console.log('Setting chat state to: true (after in-person signal closes)');
         }}
         title=""
         className="text-chat-button"

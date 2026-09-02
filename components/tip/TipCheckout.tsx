@@ -179,6 +179,9 @@ function ExpressPanel({
       <ExpressCheckoutElement
         onReady={(e) => {
           const pm = e.availablePaymentMethods;
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('[tip] ExpressCheckout availablePaymentMethods:', pm);
+          }
           setAvailable(!!pm && (pm.applePay || pm.googlePay));
         }}
         onConfirm={confirm}

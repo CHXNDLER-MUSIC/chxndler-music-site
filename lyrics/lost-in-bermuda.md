@@ -1,64 +1,59 @@
-Did it hurt when you fell from heaven?
-You were only eighteen
-I can see you in the moonlight
-The shadow from my dream
+She said
+“I want to get lost in Bermuda
+The boat leaves this week”
+I said, 
+“I think you must be out your mind?
+Will you pack tonight with me?”
 
-If I give you my hand, will you take it slow?
-I see that look in your eyes
-The fire inside is starting to glow
-You light me up inside
+She said,
+“Do you think that we’ll still be laughing When we’re old and grey?”
+I said, 
+“If this is where we’re headed Then I think we’ll be okay”
 
-Your necklace 
-Pressed in my chest
-Now all I am left with
+I want to get lost in Bermuda
+Throw away the map 
+Take every wrong turn we can find
+And not look back 
+Jump the cliff
+Count one, two, three
+Where the stars meet the sea
+I want to get lost in Bermuda
+I want to get lost in Bermuda
+Just you and me
 
-Is your little black heart
-Left me in the middle of the night
-[Left me in the middle of the night]
-little black heart
-[little black heart]
-Left me in the middle of the night
-[Left me in the middle of the night]
+We found a treasure chest that day
+I knew something caught your eye
+A little moment of forever shining in the light
+We left with empty pockets
+But my heart already knows
+Someday I’ll get down on one knee
+Wherever this road goes  
 
-When did it get to be so cold?
-Why did you leave me all alone?
-In the graveyard I found ghosts
-Long to leave this world behind    
+I want to get lost in Bermuda
+Throw away the map 
+Take every wrong turn we can find
+and not look back 
+Jump the cliff
+Count one, two, three
+Where the stars meet the sea
+I want to get lost in Bermuda
+I want to get lost in Bermuda
+Just you and me
 
-Now your necklace 
-Pressed into my chest
-Now all I am left with
+Get rum swizzled with the pirates
+And we’ll bet it all on black
+Forever is past the horizon
+There’s no turning back
+If growing old means this together
+I’d put my whole life on that
 
-Is your little black heart
-Left me in the middle of the night
-[Left me in the middle of the night]
-Little black heart
-[Little black heart]
-Left me in the middle of the night
-Left me in the middle of the night
-Long to leave this world behind 
-Are you afraid to live or afraid to die? 
-[Are you afraid to live or afraid to die?]
-Left me with your little black heart
-
-Black mini skirt
-Bruises on your knee
-Black opium on my body
-Black mini skirt
-Bruises on your knee
-Black opium on my body
-Now your necklace 
-Pressed into my chest
-Now all I am left with
-
-Is your little black heart
-Left me in the middle of the night
-[Left me in the middle of the night]
-Little black heart
-[Little black heart]
-Left me in the middle of the night
-Left me in the middle of the night
-Long to leave this world behind 
-Are you afraid to live or afraid to die? 
-[Are you afraid to live or afraid to die?]
-Left me with your little black heart
+I want to get lost in Bermuda
+Throw away the map 
+Take every wrong turn we can find
+and not look back 
+Jump the cliff 
+Count one, two, three
+Where the stars meet the sea
+I want to get lost in Bermuda
+I want to get lost in Bermuda
+Just you and me
