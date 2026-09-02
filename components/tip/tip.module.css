@@ -1,0 +1,481 @@
+/* CHXNDLER /tip — deep-space, hot-pink, mobile-first. Reuses the site palette
+   (#020016 ground, #FC54AF accent) and the existing glow language. */
+
+.root {
+  --pink: #fc54af;
+  --pink-soft: rgba(252, 84, 175, 0.5);
+  --pink-faint: rgba(252, 84, 175, 0.14);
+  --ground: #020016;
+
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(252, 84, 175, 0.22), transparent 60%),
+    radial-gradient(120% 120% at 50% 120%, rgba(80, 30, 120, 0.28), transparent 55%),
+    var(--ground);
+  color: #fff;
+  font-family: InterLocal, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* faint drifting starfield */
+.stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 30%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.5px 1.5px at 75% 15%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 45% 65%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 88% 55%, rgba(255, 255, 255, 0.45), transparent),
+    radial-gradient(1.5px 1.5px at 12% 82%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 62% 88%, rgba(255, 255, 255, 0.5), transparent);
+  opacity: 0.55;
+}
+
+.shell {
+  position: relative;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.7rem, 2.6vw, 1rem);
+  padding: max(1rem, env(safe-area-inset-top)) 1.25rem
+    max(1.25rem, env(safe-area-inset-bottom)) 1.25rem;
+  width: min(30rem, 100%);
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* ---- header ---- */
+.title {
+  margin: 0;
+  font-size: clamp(1.6rem, 7vw, 2.3rem);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px #fff, 0 0 26px var(--pink), 0 0 60px var(--pink-soft);
+}
+
+.titleIcon {
+  height: clamp(4.25rem, 19vw, 6.25rem);
+  width: auto;
+  flex: none;
+  object-fit: contain;
+  margin-top: -0.75rem;
+  margin-bottom: -1.1rem;
+  filter: drop-shadow(0 0 8px var(--pink)) drop-shadow(0 0 20px var(--pink-soft));
+}
+
+.subtitle {
+  margin: 0;
+  font-size: clamp(0.95rem, 3.6vw, 1.1rem);
+  color: rgba(255, 255, 255, 0.82);
+  letter-spacing: 0.02em;
+}
+
+/* ---- amount grid ---- */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.preset {
+  appearance: none;
+  border: 1px solid var(--pink-soft);
+  background: rgba(252, 84, 175, 0.06);
+  color: #fff;
+  font-size: clamp(1.4rem, 6vw, 1.8rem);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: clamp(0.65rem, 3vw, 0.9rem) 0.5rem;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.18s ease, background 0.18s ease,
+    border-color 0.18s ease;
+}
+.preset:active {
+  transform: scale(0.97);
+}
+.preset:hover {
+  border-color: var(--pink);
+}
+.presetSelected {
+  background: var(--pink);
+  border-color: #fff;
+  box-shadow: 0 0 18px var(--pink), 0 0 44px var(--pink-soft);
+}
+
+.other {
+  grid-column: 1 / -1;
+  appearance: none;
+  border: 1px dashed var(--pink-soft);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: clamp(0.9rem, 3.6vw, 1rem);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.7rem 0.5rem;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+.other:hover {
+  border-color: var(--pink);
+  color: #fff;
+}
+.otherSelected {
+  border-style: solid;
+  border-color: #fff;
+  color: #fff;
+  box-shadow: 0 0 14px var(--pink-soft);
+}
+
+/* ---- custom amount input ---- */
+.customWrap {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--pink-soft);
+  border-radius: 14px;
+  padding: 0.65rem 0.9rem;
+  background: rgba(0, 0, 0, 0.35);
+}
+.customCurrency {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--pink);
+}
+.customInput {
+  flex: 1;
+  min-width: 0;
+  appearance: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.customInput::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.fieldError {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #ffd0e6;
+  font-size: 0.85rem;
+  min-height: 0;
+}
+.fieldError:empty {
+  display: none;
+}
+
+/* ---- primary button ---- */
+.primary {
+  appearance: none;
+  border: none;
+  width: 100%;
+  background: var(--pink);
+  color: #fff;
+  font-size: clamp(1rem, 4.4vw, 1.15rem);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0.85rem 1.25rem;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 0 20px var(--pink-soft), 0 0 48px var(--pink-faint);
+  transition: transform 0.12s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+.primary:active {
+  transform: scale(0.98);
+}
+.primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.back {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0.4rem;
+}
+.back:hover {
+  color: #fff;
+}
+
+/* ---- checkout ---- */
+.checkoutCard {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.amountBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+.amountLine {
+  margin: 0;
+  font-size: clamp(1.8rem, 8vw, 2.4rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.amountLine span {
+  color: var(--pink);
+  text-shadow: 0 0 14px var(--pink-soft), 0 0 34px var(--pink-faint);
+}
+.amountCaption {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+.elementHost {
+  min-height: 44px;
+}
+.expressHost:empty {
+  display: none;
+}
+
+/* ---- method chips: Cash App · Card · Link · Venmo ---- */
+.chipRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+}
+.chip {
+  appearance: none;
+  border: 1px solid var(--pink-soft);
+  background: rgba(252, 84, 175, 0.06);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.6rem 0.25rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.18s ease, background 0.18s ease,
+    border-color 0.18s ease, color 0.18s ease;
+}
+.chip:hover {
+  color: #fff;
+  border-color: var(--pink);
+}
+.chip:active {
+  transform: scale(0.96);
+}
+.chipActive {
+  background: var(--pink);
+  border-color: #fff;
+  color: #fff;
+  box-shadow: 0 0 14px var(--pink), 0 0 34px var(--pink-soft);
+}
+
+.methodPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.cardField {
+  border: 1px solid var(--pink-soft);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.95rem 0.9rem;
+}
+.venmoPanel {
+  display: flex;
+  justify-content: center;
+}
+.methodLoading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 120px;
+}
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* ---- venmo (secondary) ---- */
+.venmo {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+.venmo:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+.venmoHandle {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: none;
+}
+
+/* ---- error state ---- */
+.errorTitle {
+  margin: 0;
+  font-size: clamp(1.2rem, 5vw, 1.6rem);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px #fff, 0 0 30px var(--pink-soft);
+}
+.errorBody {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.95rem;
+}
+
+/* ---- brief "leaving for the site" state after a confirmed tip ---- */
+.redirectNote {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 1.5rem;
+  font-family: "Orbitron", var(--font-orbitron, "Orbitron"), sans-serif;
+  font-size: clamp(1rem, 4vw, 1.4rem);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 0 12px #fff, 0 0 40px var(--pink), 0 0 90px var(--pink-soft);
+  animation: hvFade 0.4s ease forwards;
+}
+
+/* ---- post-payment warp / Heartverse entry screen (unused: kept for reuse) ---- */
+.warpScreen {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #01000c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: hvFade 0.5s ease forwards;
+}
+/* The site's real light-speed clip (same asset the homepage warp uses). */
+.warpVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+.warpVignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, transparent 26%, rgba(1, 0, 12, 0.72) 100%);
+}
+.warpContent {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(1.75rem, 7vw, 3rem);
+  text-align: center;
+  padding: 1.5rem;
+}
+.hvWelcome {
+  position: relative;
+  margin: 0;
+  font-family: "Orbitron", var(--font-orbitron, "Orbitron"), sans-serif;
+  font-size: clamp(1.5rem, 7vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-shadow: 0 0 12px #fff, 0 0 40px var(--pink), 0 0 90px var(--pink-soft);
+  opacity: 0;
+  animation: hvRise 0.9s ease 0.35s forwards;
+}
+
+@keyframes hvFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes hvRise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .warpScreen,
+  .hvWelcome,
+  .spinner {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  .hvWelcome {
+    opacity: 1;
+  }
+}

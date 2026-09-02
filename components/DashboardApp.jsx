@@ -1585,7 +1585,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Also acquire the new celebration lock used by the realtime BadgeCelebrationController
     // so badge overlays don't appear during/just after START warp
     try {
-      acquireCelebrationLock('badge');
+      acquireCelebrationLock('badge', 15000);
       setTimeout(() => {
         try { releaseCelebrationLock('badge'); } catch {}
       }, 15000);

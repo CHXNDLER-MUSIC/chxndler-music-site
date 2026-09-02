@@ -99,6 +99,8 @@ export const TRACKS = {
   BABY: { mp3: S("baby.mp3"), opus: S("baby.opus") },
   BE_MY_BEE: { mp3: S("be-my-bee.mp3"), opus: S("be-my-bee.opus") },
   BRAIN_FREEZE: { mp3: S("brain-freeze.mp3"), opus: S("brain-freeze.opus") },
+  // Uploaded filename matches display title exactly — no Opus source
+  FEELING_THIS: { mp3: S("FEELING THIS.mp3") },
   // Actual uploaded filename is uppercase — no lowercase/Opus source exists
   CHEERLEADER: { mp3: S("CHEERLEADER.mp3") },
   // Unreleased early access — uploaded filename matches the display title exactly
@@ -250,6 +252,13 @@ export const TRACK_INFO: Record<string, TrackInfo> = {
     coverUrl: '/covers/GAME BOY HEART.webp',
     skyTexture: '/sky/game-boy-heart-sky.webp',
     oneLiner: 'Escaping into an 8-bit dream.'
+  },
+  'feeling-this': {
+    id: 'feeling-this',
+    title: 'FEELING THIS',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/FEELING THIS.webp',
+    oneLiner: 'Skin, sweat, and emotion take over.'
   },
   'house-party': {
     id: 'house-party',

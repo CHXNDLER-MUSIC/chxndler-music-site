@@ -10,22 +10,23 @@ type CelebrationType = 'badge' | 'planet_reward' | 'heartcoin';
 interface CelebrationLock {
   type: CelebrationType;
   timestamp: number;
+  duration: number;
 }
 
 // Simple in-memory state for the celebration lock
 let currentLock: CelebrationLock | null = null;
 const lockListeners: Set<() => void> = new Set();
 
-const LOCK_TIMEOUT = 5000; // Auto-release after 5 seconds if not manually released
+const LOCK_TIMEOUT = 5000; // Default auto-release if not manually released, or if caller doesn't specify a duration
 
-export function acquireCelebrationLock(type: CelebrationType): boolean {
+export function acquireCelebrationLock(type: CelebrationType, durationMs: number = LOCK_TIMEOUT): boolean {
   // Check if lock is held and not expired
-  if (currentLock && Date.now() - currentLock.timestamp < LOCK_TIMEOUT) {
+  if (currentLock && Date.now() - currentLock.timestamp < currentLock.duration) {
     return false;
   }
 
   // Acquire the lock
-  currentLock = { type, timestamp: Date.now() };
+  currentLock = { type, timestamp: Date.now(), duration: durationMs };
   notifyListeners();
   return true;
 }
@@ -41,7 +42,7 @@ export function releaseCelebrationLock(type: CelebrationType): void {
 export function isCelebrationLockHeld(): boolean {
   if (!currentLock) return false;
   // Check if lock has expired
-  if (Date.now() - currentLock.timestamp >= LOCK_TIMEOUT) {
+  if (Date.now() - currentLock.timestamp >= currentLock.duration) {
     currentLock = null;
     return false;
   }

@@ -356,47 +356,6 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
     }
   }, [step]);
 
-  // WebOTP (Email) best-effort auto-read to suggest/fill the code on supported browsers
-  useEffect(() => {
-    if (step !== 'verify') return;
-    // Only attempt in secure contexts with credentials API present
-    const w = typeof window !== 'undefined' ? (window as any) : undefined;
-    const n = typeof navigator !== 'undefined' ? (navigator as any) : undefined;
-    if (!w || !n || !('credentials' in n)) return;
-    // Some browsers gate OTPCredential; use feature detection defensively
-    const hasOtp = 'OTPCredential' in w;
-    if (!hasOtp) return;
-    const ac = new AbortController();
-    // Abort after 90s to avoid lingering listeners
-    const t = setTimeout(() => ac.abort(), 90_000);
-    (async () => {
-      try {
-        const cred = await n.credentials.get({
-          otp: { transport: ['email'] },
-          signal: ac.signal,
-        } as any);
-        const codeFromOtp = (cred as any)?.code || (cred as any)?.otp;
-        if (codeFromOtp && typeof codeFromOtp === 'string') {
-          const digits = codeFromOtp.replace(/\D/g, '').slice(0, 6);
-          if (digits.length === 6) {
-            setCode(digits);
-            // Attempt verification immediately when code is captured
-            verifyCode(digits);
-          }
-        }
-      } catch {
-        // Silently ignore; user can paste or type manually
-      } finally {
-        clearTimeout(t);
-        ac.abort();
-      }
-    })();
-    return () => {
-      clearTimeout(t);
-      ac.abort();
-    };
-  }, [step]);
-
   async function resendCode() {
     if (loading || otpRequestInFlightRef.current || resendSeconds > 0 || !email) return;
     // Single OTP path — delegate entirely to signInWithEmail
