@@ -1,0 +1,252 @@
+"use client";
+
+import React, { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import type { BrandPitch, BrandPitchAudioVersion } from "@/lib/brandPitch";
+import { getBrandArtUrl, getBrandTrackUrl } from "@/lib/brandPitchStorage";
+import type { PitchPalette } from "@/lib/brandPitchPalette";
+import { getDerivedBackgroundImage, type PitchAssetRegistry } from "@/lib/brandPitchVisuals";
+import { Eyebrow, SectionShell, useAssetAvailable } from "./ui";
+import BrandAudioPlayer from "./BrandAudioPlayer";
+
+type ResolvedVersion = BrandPitchAudioVersion & { src: string };
+
+function useKnownDuration(src: string | null): number | undefined {
+  const [duration, setDuration] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    if (!src) return;
+    let cancelled = false;
+    const audio = new Audio();
+    audio.preload = "metadata";
+    audio.src = src;
+    const onLoaded = () => {
+      if (!cancelled && isFinite(audio.duration)) setDuration(audio.duration);
+    };
+    audio.addEventListener("loadedmetadata", onLoaded);
+    return () => {
+      cancelled = true;
+      audio.removeEventListener("loadedmetadata", onLoaded);
+      audio.src = "";
+    };
+  }, [src]);
+  return duration;
+}
+
+function SupportingRow({
+  version,
+  accent,
+  songTitle,
+}: {
+  version: ResolvedVersion;
+  accent: string;
+  songTitle: string;
+}) {
+  const knownDuration = useKnownDuration(version.src);
+  return (
+    <div className="py-[0.875rem]">
+      <BrandAudioPlayer
+        id={version.path}
+        src={version.src}
+        label={`${songTitle} — ${version.label.toLowerCase()}`}
+        visibleLabel={version.label}
+        accentColor={accent}
+        size="sm"
+        knownDuration={knownDuration}
+      />
+    </div>
+  );
+}
+
+/**
+ * "Hear the Concept" — the one place every playable version of the song
+ * lives, ordered as a guided listening journey rather than a flat file list:
+ * brand cut -> full song -> supporting content versions. Everything about
+ * that hierarchy (which versions are primary pitch tabs, which are supporting
+ * rows, which is the default, which one is "the" full song) comes from
+ * pitch.alt_versions — nothing here assumes a fixed set of lengths or names,
+ * so 15+full, 30+60+full, or 30+full+instrumental+acoustic all work the same way.
+ *
+ * Backed by "background 1.png" (derived from the brand's PHOTO folder, same
+ * convention as the hero/cover art — no new Supabase field) with a campaign
+ * tint over it for legibility, falling back to the plain light-campaign-color
+ * surface if that file isn't uploaded, 404s, or was already used elsewhere
+ * on the page (deduplicated via `assets`).
+ */
+export default function HearTheConcept({
+  pitch,
+  palette,
+  assets,
+}: {
+  pitch: BrandPitch;
+  palette: PitchPalette;
+  assets: PitchAssetRegistry;
+}) {
+  const reduceMotion = useReducedMotion();
+  const [lyricsOpen, setLyricsOpen] = useState(false);
+
+  const versions = useMemo(() => {
+    return pitch.alt_versions
+      .map((v) => {
+        const src = getBrandTrackUrl(v.path);
+        return src ? { ...v, src } : null;
+      })
+      .filter((v): v is ResolvedVersion => v !== null);
+  }, [pitch.alt_versions]);
+
+  const primary = useMemo(() => versions.filter((v) => v.role === "primary"), [versions]);
+  const supporting = useMemo(() => versions.filter((v) => v.role === "supporting"), [versions]);
+
+  const defaultVersion = primary.find((v) => v.is_default) || primary[0] || null;
+  const [selectedPath, setSelectedPath] = useState<string | null>(defaultVersion?.path ?? null);
+  const selected = primary.find((v) => v.path === selectedPath) || defaultVersion;
+
+  const coverAsset = useAssetAvailable(getBrandArtUrl(pitch.cover_art_path));
+  const cover = coverAsset.src;
+  const headline = pitch.audio_headline || (pitch.song_title ? `Hear "${pitch.song_title}."` : null);
+  const supportingLine = pitch.audio_description || "One song, built to work from a quick brand moment to a full campaign.";
+
+  if (!headline && !supportingLine && versions.length === 0) return null;
+
+  const backgroundImage = assets.claim(getDerivedBackgroundImage(pitch, 1));
+
+  return (
+    <SectionShell
+      id="hear-the-concept"
+      style={{ backgroundColor: palette.light, color: palette.onLight }}
+      backgroundImage={backgroundImage}
+      backgroundOverlay={`${palette.light}b3`}
+    >
+      <Eyebrow color={palette.accent}>{pitch.audio_eyebrow || "Hear the Concept"}</Eyebrow>
+
+      {headline && (
+        <h2 className="font-bold leading-[1.02] tracking-tight text-[2rem] sm:text-[3rem] max-w-[38rem]">{headline}</h2>
+      )}
+      {supportingLine && (
+        <p className="mt-[1rem] text-[1.0625rem] leading-relaxed opacity-75 max-w-[36rem]">{supportingLine}</p>
+      )}
+
+      <div className="mt-[3rem] grid grid-cols-1 lg:grid-cols-[minmax(0,24rem)_1fr] gap-[2.5rem] lg:gap-[4rem] items-start">
+        {/* LEFT — cover art + song identity, one composition with the player on the right */}
+        <div className="mx-auto lg:mx-0 w-full max-w-[22rem]">
+          <div
+            className="relative w-full aspect-square rounded-[1rem] overflow-hidden shadow-[0_1.5rem_3rem_-1rem_rgba(0,0,0,0.2)]"
+            style={{ backgroundColor: `${palette.accent}14` }}
+          >
+            {cover ? (
+              <img
+                src={cover}
+                alt={`${pitch.song_title} cover art`}
+                className="w-full h-full object-cover"
+                onError={coverAsset.onError}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <span className="text-[3rem] font-bold opacity-20" style={{ color: palette.accent }}>
+                  {pitch.brand_name?.slice(0, 1) || "♪"}
+                </span>
+              </div>
+            )}
+          </div>
+          <p className="mt-[1rem] text-[1.125rem] font-bold tracking-tight">{pitch.song_title}</p>
+          <p className="text-[0.9375rem] opacity-60">{pitch.artist_name}</p>
+        </div>
+
+        {/* RIGHT — primary listening experience, then supporting versions below a divider */}
+        <div>
+          {primary.length > 0 && selected && (
+            <div>
+              {primary.length > 1 && (
+                <div role="tablist" aria-label="Select a version" className="flex flex-wrap gap-[0.75rem] mb-[1.5rem]">
+                  {primary.map((v) => {
+                    const isSelected = selected.path === v.path;
+                    return (
+                      <button
+                        key={v.path}
+                        type="button"
+                        role="tab"
+                        aria-selected={isSelected}
+                        onClick={() => setSelectedPath(v.path)}
+                        className="rounded-full px-[1.5rem] py-[0.75rem] text-[0.875rem] font-bold tracking-[0.05em] uppercase transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem]"
+                        style={
+                          isSelected
+                            ? { backgroundColor: palette.accent, color: palette.onAccent, outlineColor: palette.accent }
+                            : { backgroundColor: `${palette.accent}14`, color: "currentColor", outlineColor: palette.accent }
+                        }
+                      >
+                        {v.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <h3 className="text-[1.25rem] sm:text-[1.5rem] font-bold tracking-tight">{selected.label}</h3>
+              {selected.description && (
+                <p className="mt-[0.4rem] text-[1rem] leading-relaxed opacity-70 max-w-[32rem]">{selected.description}</p>
+              )}
+
+              <div className="mt-[1.5rem]">
+                <BrandAudioPlayer
+                  id={selected.path}
+                  src={selected.src}
+                  label={`${pitch.song_title} — ${selected.label.toLowerCase()}`}
+                  accentColor={palette.accent}
+                  size="lg"
+                />
+              </div>
+
+              {selected.is_full_song && pitch.lyrics && (
+                <div className="mt-[1.5rem]">
+                  <button
+                    type="button"
+                    onClick={() => setLyricsOpen((v) => !v)}
+                    aria-expanded={lyricsOpen}
+                    aria-controls="brand-lyrics-panel"
+                    className="inline-flex items-center gap-[0.4rem] text-[0.875rem] font-semibold tracking-[0.1em] uppercase hover:opacity-70 transition-opacity"
+                    style={{ color: palette.accent }}
+                  >
+                    View Lyrics <span aria-hidden="true">{lyricsOpen ? "↑" : "↓"}</span>
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {lyricsOpen && (
+                      <motion.div
+                        id="brand-lyrics-panel"
+                        initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={reduceMotion ? {} : { height: 0, opacity: 0 }}
+                        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <p className="mt-[1rem] whitespace-pre-wrap text-[1rem] leading-relaxed opacity-75 max-w-[36rem]">
+                          {pitch.lyrics}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+            </div>
+          )}
+
+          {supporting.length > 0 && (
+            <div className={primary.length > 0 ? "mt-[2.5rem] pt-[2rem] border-t border-current/10" : ""}>
+              <p className="text-[0.75rem] font-semibold tracking-[0.15em] uppercase opacity-50">
+                {pitch.alt_versions_headline || "Versions for Content"}
+              </p>
+              <p className="mt-[0.35rem] text-[0.9375rem] opacity-60 max-w-[28rem]">
+                {pitch.alt_versions_description || "Flexible assets for social, film and campaign edits."}
+              </p>
+
+              <div className="mt-[1rem] flex flex-col divide-y divide-current/10">
+                {supporting.map((v) => (
+                  <SupportingRow key={v.path} version={v} accent={palette.accent} songTitle={pitch.song_title} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </SectionShell>
+  );
+}

@@ -1,6 +1,6 @@
-To be young and in love in New York City (In New York City)
+To be young and in love in New York City (New York City)
 To not know who I am, but still know that I'm good long as you're here with me
-To be drunk and in love in New York City (In New York City)
+To be drunk and in love in New York City (New York City)
 Midnight into morning coffee
 Burning through the hours talking
 
