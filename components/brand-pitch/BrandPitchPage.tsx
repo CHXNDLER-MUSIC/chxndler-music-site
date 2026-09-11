@@ -18,15 +18,19 @@ import BrandCTA from "./BrandCTA";
 // The narrative spine, in order: ENTER THE WORLD (hero) -> UNDERSTAND THE
 // IDEA -> HEAR IT -> UNDERSTAND THE BRAND ASSET -> SEE THE WORLD (one
 // campaign image) -> UNDERSTAND HOW IT SCALES -> SEE THE COLLECTIBLE ->
-// UNDERSTAND WHO CREATED IT -> TAKE ACTION. Photography is a feature, not a
-// background for every section: the hero ("background 1.png"), the one
-// campaign-image break, Hear the Concept ("background 2.png") and How It
-// Could Live ("background 3.png") use a photo; Idea, Sonic Identity,
-// Collectible, About and the CTA are solid campaign colors from
-// lib/brandPitchPalette. BrandFit, BrandOffer, BrandPricing and BrandProcess
-// still exist as components/data (nothing deleted) but are intentionally not
-// part of this template's render — the "sales deck" layer an earlier pass
-// moved away from.
+// TAKE ACTION (LET'S TALK) -> UNDERSTAND WHO CREATED IT. The CTA sits before
+// the creator signature, not after, so the conversion moment never gets
+// buried below an about section. Photography is a feature, not a background
+// for every section: the hero ("background 1.png"), the one campaign-image
+// break, and Hear the Concept ("background 2.png") use a photo; Idea, Sonic
+// Identity and How It Could Live are solid campaign colors with an optional
+// subtle atmosphere texture (background_textures[]); Collectible
+// ("background 3.png") and Created by CHXNDLER (its own
+// about_background_image_path/about_background_color) each get an
+// independent, fully configurable background — never hardcoded to any brand.
+// BrandFit, BrandOffer, BrandPricing and BrandProcess still exist as
+// components/data (nothing deleted) but are intentionally not part of this
+// template's render — the "sales deck" layer an earlier pass moved away from.
 export default function BrandPitchPage({ pitch }: { pitch: BrandPitch }) {
   const palette = buildPitchPalette(pitch);
   const year = pitch.year || new Date().getFullYear();
@@ -63,7 +67,7 @@ export default function BrandPitchPage({ pitch }: { pitch: BrandPitch }) {
           style={{ color: "#ffffff", mixBlendMode: "difference" }}
         >
           <span className="pointer-events-auto font-bold tracking-[0.2em] text-[0.875rem] sm:text-[0.9375rem]">
-            CHXNDLER
+            CHXNDLER STUDIO
           </span>
           <span className="pointer-events-auto text-[0.6875rem] sm:text-[0.75rem] tracking-[0.2em] uppercase font-medium">
             Original Brand Concept / {year}
@@ -76,10 +80,10 @@ export default function BrandPitchPage({ pitch }: { pitch: BrandPitch }) {
           <HearTheConcept pitch={pitch} palette={palette} assets={assets} />
           <SonicIdentity pitch={pitch} palette={palette} />
           <SecondaryCampaignImage pitch={pitch} assets={assets} />
-          <BrandMoments pitch={pitch} palette={palette} assets={assets} />
+          <BrandMoments pitch={pitch} palette={palette} />
           <Collectible pitch={pitch} palette={palette} assets={assets} />
-          <BrandAbout pitch={pitch} palette={palette} />
           <BrandCTA pitch={pitch} palette={palette} />
+          <BrandAbout pitch={pitch} palette={palette} assets={assets} />
         </main>
       </div>
     </BrandAudioProvider>

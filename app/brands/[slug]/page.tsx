@@ -7,10 +7,11 @@ import BrandPitchPage from "@/components/brand-pitch/BrandPitchPage";
 // Private/direct-link creative presentations — always fresh, never indexed.
 export const dynamic = "force-dynamic";
 
-type Props = { params: { slug: string } };
+type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const pitch = await fetchBrandPitch(params?.slug || "");
+  const { slug } = await params;
+  const pitch = await fetchBrandPitch(slug || "");
   if (!pitch) return { robots: { index: false, follow: false } };
 
   const title = pitch.seo_title || `${pitch.brand_name} × ${pitch.artist_name} — ${pitch.song_title}`;
@@ -31,7 +32,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function BrandPage({ params }: Props) {
-  const pitch = await fetchBrandPitch(params?.slug || "");
+  const { slug } = await params;
+  const pitch = await fetchBrandPitch(slug || "");
   if (!pitch) return notFound();
   return <BrandPitchPage pitch={pitch} />;
 }

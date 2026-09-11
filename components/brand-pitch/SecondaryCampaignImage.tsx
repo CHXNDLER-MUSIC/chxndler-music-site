@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import type { BrandPitch } from "@/lib/brandPitch";
 import { getBrandArtUrl } from "@/lib/brandPitchStorage";
 import type { PitchAssetRegistry } from "@/lib/brandPitchVisuals";
@@ -13,7 +13,11 @@ import { useAssetAvailable } from "./ui";
  * than duplicating the hero's image or showing a broken one.
  */
 export default function SecondaryCampaignImage({ pitch, assets }: { pitch: BrandPitch; assets: PitchAssetRegistry }) {
-  const claimed = assets.claim(getBrandArtUrl(pitch.secondary_art_path));
+  // Memoized so a parent re-render can't re-invoke assets.claim() against a
+  // url it already claimed on the first render (claim() mutates a shared
+  // Set, so an unmemoized second call would find it "already used" and
+  // silently return null instead of the image).
+  const claimed = useMemo(() => assets.claim(getBrandArtUrl(pitch.secondary_art_path)), [assets, pitch]);
   const artAsset = useAssetAvailable(claimed);
   if (!artAsset.src) return null;
 

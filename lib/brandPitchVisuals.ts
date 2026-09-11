@@ -41,6 +41,19 @@ export function getDerivedBackgroundImage(
 }
 
 /**
+ * Derives "<photo folder>/<filename>" from the pitch's cover_art_path — the
+ * PHOTO subfolder's other physical mockup photos (cd.png, vinyl.png,
+ * cassette.png) are uploaded as siblings of "cover art.png" itself, so no new
+ * Supabase column is needed to find them. Returns null if the pitch has no
+ * cover_art_path to derive a folder from (or hasn't uploaded that file yet —
+ * callers should pair this with useAssetAvailable for the 404 case).
+ */
+export function getDerivedPhotoAsset(pitch: { cover_art_path: string | null }, filename: string): string | null {
+  const dir = dirnameOfPath(pitch.cover_art_path);
+  return dir ? getBrandArtUrl(`${dir}/${filename}`) : null;
+}
+
+/**
  * The hero's own fallback chain — the derived "background 1.png" first (a
  * brand's chosen lead campaign image, e.g. Oatly's field), falling back to
  * the row's explicit hero_art_path, then cover_art_path, so a pitch that
@@ -58,6 +71,19 @@ export function getHeroImageCandidates(pitch: {
     getBrandArtUrl(pitch.hero_art_path),
     getBrandArtUrl(pitch.cover_art_path),
   ].filter((u): u is string => !!u);
+}
+
+/**
+ * background_textures[n] -> a low-opacity atmosphere wash for one of the
+ * three solid-color sections that otherwise have no photography at all (0:
+ * The Idea, 1: Sonic Identity, 2: How It Could Live). Passed straight into
+ * SectionShell's `textureUrl` prop. Deliberately independent of the
+ * asset-dedup registry below — these are decorative washes, not "major"
+ * campaign photography, so the same texture is allowed to repeat and never
+ * competes with the hero/collectible/etc. for a claim.
+ */
+export function getSectionTexture(pitch: { background_textures: string[] }, index: 0 | 1 | 2): string | null {
+  return getBrandArtUrl(pitch.background_textures[index] ?? null);
 }
 
 export type PitchAssetRegistry = {

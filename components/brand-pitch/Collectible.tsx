@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useMemo } from "react";
 import type { BrandPitch } from "@/lib/brandPitch";
 import { getBrandArtUrl } from "@/lib/brandPitchStorage";
 import type { PitchPalette } from "@/lib/brandPitchPalette";
-import type { PitchAssetRegistry } from "@/lib/brandPitchVisuals";
+import { getDerivedBackgroundImage, type PitchAssetRegistry } from "@/lib/brandPitchVisuals";
 import { Eyebrow, SectionShell, useAssetAvailable } from "./ui";
+import CollectibleViewer from "./CollectibleViewer";
 
 /**
  * Its own clearly defined, editorial section — not buried inside "How It
@@ -23,20 +24,41 @@ export default function Collectible({
 }) {
   // The card art is the whole point of this section — without a unique one
   // there's nothing to be "the visual hero," so the section stays hidden
-  // rather than show a placeholder (or a duplicate of another section's image).
-  const cardAsset = useAssetAvailable(assets.claim(getBrandArtUrl(pitch.collectible_card_path)));
+  // rather than show a placeholder (or a duplicate of another section's
+  // image). Claimed via useMemo (not directly in the render body) so a
+  // parent re-render doesn't re-invoke `assets.claim` against a url it
+  // already claimed on the first render — claim() mutates a shared Set, so
+  // an unmemoized second call would find it "already used" and return null.
+  const claimedCard = useMemo(() => assets.claim(getBrandArtUrl(pitch.collectible_card_path)), [assets, pitch]);
+  const cardAsset = useAssetAvailable(claimedCard);
   const card = cardAsset.src;
+
+  // "background 3.png" — exclusively this section's now (BrandMoments no
+  // longer claims it), so the card's own physical-object moment gets a
+  // photographic backdrop instead of a flat color. Must run before the
+  // `!card` early return below — every hook here has to run on every render,
+  // or a card image that 404s after its first successful render (card goes
+  // from truthy to null) drops this hook on a later render and React throws
+  // "Rendered fewer hooks than expected".
+  const backgroundImage = useMemo(() => assets.claim(getDerivedBackgroundImage(pitch, 3)), [assets, pitch]);
+
   if (!card) return null;
 
   return (
-    <SectionShell id="collectible" className="text-center" style={{ backgroundColor: palette.secondary, color: palette.onSecondary }}>
+    <SectionShell
+      id="collectible"
+      className="text-center"
+      style={{ backgroundColor: palette.secondary, color: palette.onSecondary }}
+      backgroundImage={backgroundImage}
+      backgroundOverlay={`${palette.secondary}b3`}
+    >
       <div className="max-w-[36rem] mx-auto">
         <Eyebrow color={palette.accent}>{pitch.collectible_eyebrow || "The Collectible"}</Eyebrow>
         <h2 className="font-bold leading-[1.02] tracking-tight text-[2rem] sm:text-[3rem]">
           {pitch.collectible_headline || "A Piece of the World You Can Keep."}
         </h2>
         <p className="mt-[1rem] text-[1.0625rem] sm:text-[1.25rem] font-semibold tracking-tight" style={{ color: palette.accent }}>
-          {pitch.collectible_subhead || `${pitch.song_title} — Card 001`}
+          {pitch.collectible_subhead || pitch.song_title}
         </p>
         <p className="mt-[1.25rem] text-[1.0625rem] leading-relaxed opacity-80">
           {pitch.collectible_body ||
@@ -45,19 +67,12 @@ export default function Collectible({
       </div>
 
       <div className="mt-[3.5rem] flex justify-center">
-        <div className="w-full max-w-[22rem] sm:max-w-[26rem]">
-          <div
-            className="relative w-full aspect-[5/7] rounded-[1.5rem] overflow-hidden shadow-[0_3rem_6rem_-2rem_rgba(0,0,0,0.4)]"
-            style={{ backgroundColor: `${palette.accent}14` }}
-          >
-            <img
-              src={card}
-              alt={`${pitch.song_title} collectible card`}
-              className="w-full h-full object-cover"
-              onError={cardAsset.onError}
-            />
-          </div>
-        </div>
+        <CollectibleViewer
+          src={card}
+          songTitle={pitch.song_title}
+          accent={palette.accent}
+          onError={cardAsset.onError}
+        />
       </div>
     </SectionShell>
   );

@@ -3,6 +3,7 @@
 import React from "react";
 import { useBrandAudio } from "./BrandAudioContext";
 import { formatTime } from "./ui";
+import { useInteractionSound } from "./useInteractionSound";
 
 type BrandAudioPlayerProps = {
   id: string;
@@ -31,6 +32,7 @@ export default function BrandAudioPlayer({
   visibleLabel,
 }: BrandAudioPlayerProps) {
   const { activeId, playing, loading, currentTime, duration, toggle, seek } = useBrandAudio();
+  const { playHover, playClick } = useInteractionSound();
   const isThis = activeId === id;
   const isPlaying = isThis && playing;
   const isLoading = isThis && loading;
@@ -43,10 +45,21 @@ export default function BrandAudioPlayer({
     <div className={`flex items-center gap-[1rem] sm:gap-[1.5rem] w-full ${className}`}>
       <button
         type="button"
-        onClick={() => toggle(id, src)}
+        onClick={() => {
+          playClick();
+          toggle(id, src);
+        }}
+        onMouseEnter={playHover}
         aria-label={isPlaying ? `Pause ${label}` : `Play ${label}`}
-        className={`flex-shrink-0 ${buttonSize} rounded-full flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]`}
-        style={{ backgroundColor: accentColor, outlineColor: accentColor }}
+        aria-pressed={isPlaying}
+        className={`flex-shrink-0 ${buttonSize} rounded-full flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] ${
+          isPlaying ? "ring-2 ring-offset-2" : ""
+        }`}
+        style={{
+          backgroundColor: accentColor,
+          outlineColor: accentColor,
+          ...(isPlaying ? ({ "--tw-ring-color": accentColor, "--tw-ring-offset-color": "transparent" } as React.CSSProperties) : {}),
+        }}
       >
         {isLoading ? (
           <span

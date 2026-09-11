@@ -24,13 +24,39 @@ export type BrandPitchAudioVersion = {
   // the full song while "Hear the Concept" still opens on the short brand cut.
   is_hero_default: boolean;
 };
+// One playable sonic-logo cut. "primary" is the version the section leads
+// with (visually emphasized); everything else is an easy-to-preview
+// alternate — however many a brand has (ALT 01, ALT 02, ALT 03, ...), never
+// a fixed count. Mirrors the alt_versions shape/convention on purpose.
+export type BrandPitchSonicLogoRole = "primary" | "alternate";
+export type BrandPitchSonicLogoVersion = {
+  label: string;
+  path: string;
+  role: BrandPitchSonicLogoRole;
+};
+
 export type BrandPitchMomentEmphasis = "hero" | "large" | "standard";
+export type BrandPitchMomentImageFit = "cover" | "contain";
+/** One auto-discovered campaign asset beyond a moment's hero image_path —
+ * see discoverMomentAssets. `isVideo` is derived from the file extension,
+ * never a separate authored field, so the viewer can never mis-render a
+ * still image as a video. */
+export type BrandPitchMomentAsset = { path: string; isVideo: boolean };
 export type BrandPitchMoment = {
   category: string;
   title: string;
   body: string;
   image_path: string | null;
   emphasis: BrandPitchMomentEmphasis;
+  /** "cover" (default) fills the card, cropping as needed. "contain" shows
+   * the whole image uncropped — for a card whose asset isn't the card's own
+   * aspect ratio (e.g. a full social post/story screenshot). */
+  image_fit: BrandPitchMomentImageFit;
+  /** Additional campaign assets beyond image_path (the hero), auto-discovered
+   * from the same Storage folder — see discoverMomentAssets. Always [] as
+   * parsed from the row; fetchBrandPitch fills this in afterward, since
+   * discovery is an async Storage call the synchronous row parser can't do. */
+  assets: BrandPitchMomentAsset[];
 };
 
 export type BrandPitch = {
@@ -69,6 +95,11 @@ export type BrandPitch = {
   sonic_description: string | null;
   sonic_mnemonic: string | null;
   sonic_uses: string[];
+  /** Scalable sonic-logo cuts (primary + however many alternates exist) —
+   * see BrandPitchSonicLogoVersion. Falls back to the legacy single
+   * sonic_logo_path column (as a synthetic one-item "primary" list) when
+   * empty, so brands entered before this column existed still render. */
+  sonic_logo_versions: BrandPitchSonicLogoVersion[];
 
   campaign_eyebrow: string | null;
   campaign_headline: string | null;
@@ -108,6 +139,8 @@ export type BrandPitch = {
   about_eyebrow: string | null;
   about_headline: string | null;
   about_body: string | null;
+  about_background_color: string | null;
+  about_background_image_path: string | null;
 
   cta_eyebrow: string | null;
   cta_headline: string | null;
@@ -181,9 +214,85 @@ function asMoments(value: unknown): BrandPitchMoment[] {
         typeof (item as any).image_path === "string" && (item as any).image_path.trim() ? (item as any).image_path : null;
       const rawEmphasis = (item as any).emphasis;
       const emphasis: BrandPitchMomentEmphasis = rawEmphasis === "hero" || rawEmphasis === "large" ? rawEmphasis : "standard";
-      return { category, title, body, image_path, emphasis };
+      const image_fit: BrandPitchMomentImageFit = (item as any).image_fit === "contain" ? "contain" : "cover";
+      return { category, title, body, image_path, emphasis, image_fit, assets: [] as BrandPitchMomentAsset[] };
     })
     .filter((x): x is BrandPitchMoment => x !== null);
+}
+
+// Same public bucket as lib/brandPitchStorage.ts's getBrandArtUrl — kept as
+// its own constant here (rather than importing that browser-client module)
+// since this file must stay importable from server-only contexts.
+const BRAND_BUCKET = "Brands";
+const VIDEO_EXTENSIONS = new Set(["mp4", "mov", "webm", "m4v"]);
+
+function dirnameOfPath(path: string | null | undefined): string | null {
+  const clean = (path || "").trim();
+  if (!clean) return null;
+  const idx = clean.lastIndexOf("/");
+  return idx === -1 ? null : clean.slice(0, idx);
+}
+
+function basenameOfPath(path: string | null | undefined): string | null {
+  const clean = (path || "").trim();
+  if (!clean) return null;
+  const idx = clean.lastIndexOf("/");
+  return idx === -1 ? clean : clean.slice(idx + 1);
+}
+
+function extensionOf(filename: string): string {
+  const idx = filename.lastIndexOf(".");
+  return idx === -1 ? "" : filename.slice(idx + 1).toLowerCase();
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Auto-discovers a moment's additional campaign assets by scanning the same
+ * Storage folder its hero image_path already lives in (falling back to the
+ * pitch's cover_art_path folder when image_path is null) for sibling files
+ * named "<category> <n>.<ext>" — e.g. a "PRODUCT" moment whose hero is
+ * "Oatly/WOW NO COW/PHOTO/product.png" picks up "product 2.png",
+ * "product 3.png", etc. from that same folder, sorted numerically.
+ *
+ * This is a live Storage list() call rather than a stored path list, so
+ * uploading a correctly-named file makes it appear with zero DB edit and
+ * zero code change — no new Supabase column needed. The hero's own filename
+ * is explicitly excluded so it can never be duplicated into the list.
+ */
+async function discoverMomentAssets(
+  pitch: { cover_art_path: string | null },
+  moment: BrandPitchMoment
+): Promise<BrandPitchMomentAsset[]> {
+  const category = moment.category.trim();
+  if (!category) return [];
+  const folder = dirnameOfPath(moment.image_path) || dirnameOfPath(pitch.cover_art_path);
+  if (!folder) return [];
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase.storage.from(BRAND_BUCKET).list(folder, { limit: 100 });
+    if (error || !data) return [];
+
+    const heroFilename = basenameOfPath(moment.image_path);
+    const pattern = new RegExp(`^${escapeRegExp(category.toLowerCase())}\\s+(\\d+)\\.[a-z0-9]+$`, "i");
+
+    return data
+      .map((file) => {
+        if (file.name === heroFilename) return null;
+        const match = file.name.match(pattern);
+        if (!match) return null;
+        return { name: file.name, order: parseInt(match[1], 10) };
+      })
+      .filter((x): x is { name: string; order: number } => x !== null)
+      .sort((a, b) => a.order - b.order)
+      .map((x) => ({ path: `${folder}/${x.name}`, isVideo: VIDEO_EXTENSIONS.has(extensionOf(x.name)) }));
+  } catch (err) {
+    console.error("[discoverMomentAssets] failed:", err);
+    return [];
+  }
 }
 
 function asProcessSteps(value: unknown): BrandPitchProcessStep[] {
@@ -219,6 +328,38 @@ function asAudioVersions(value: unknown): BrandPitchAudioVersion[] {
       return { label, description, path, role, is_default, is_full_song, is_hero_default };
     })
     .filter((x): x is BrandPitchAudioVersion => x !== null);
+}
+
+function asSonicLogoVersions(value: unknown, legacyPath: unknown): BrandPitchSonicLogoVersion[] {
+  const parsed = coerceArray(value)
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const label = typeof (item as any).label === "string" ? (item as any).label : null;
+      const path = typeof (item as any).path === "string" ? (item as any).path : null;
+      if (!label || !path) return null;
+      const role: BrandPitchSonicLogoRole = (item as any).role === "alternate" ? "alternate" : "primary";
+      return { label, path, role };
+    })
+    .filter((x): x is BrandPitchSonicLogoVersion => x !== null);
+
+  if (parsed.length > 0) {
+    // Exactly one "primary" — first flagged one wins, everything else
+    // (including any additional item mistakenly marked primary) is an alternate.
+    let sawPrimary = false;
+    return parsed.map((v) => {
+      if (v.role === "primary") {
+        if (sawPrimary) return { ...v, role: "alternate" as const };
+        sawPrimary = true;
+        return v;
+      }
+      return v;
+    });
+  }
+
+  // No rows entered under the new column yet — synthesize a single primary
+  // from the legacy sonic_logo_path so existing brands keep working.
+  const legacy = typeof legacyPath === "string" && legacyPath.trim() ? legacyPath : null;
+  return legacy ? [{ label: "Primary", path: legacy, role: "primary" }] : [];
 }
 
 function nullableString(value: unknown): string | null {
@@ -261,6 +402,7 @@ function normalizeBrandPitch(row: Record<string, any>): BrandPitch {
     sonic_description: nullableString(row.sonic_description),
     sonic_mnemonic: nullableString(row.sonic_mnemonic),
     sonic_uses: asStringArray(row.sonic_uses),
+    sonic_logo_versions: asSonicLogoVersions(row.sonic_logo_versions, row.sonic_logo_path),
 
     campaign_eyebrow: nullableString(row.campaign_eyebrow),
     campaign_headline: nullableString(row.campaign_headline),
@@ -299,6 +441,8 @@ function normalizeBrandPitch(row: Record<string, any>): BrandPitch {
     about_eyebrow: nullableString(row.about_eyebrow),
     about_headline: nullableString(row.about_headline),
     about_body: nullableString(row.about_body),
+    about_background_color: nullableString(row.about_background_color),
+    about_background_image_path: nullableString(row.about_background_image_path),
 
     cta_eyebrow: nullableString(row.cta_eyebrow),
     cta_headline: nullableString(row.cta_headline),
@@ -349,14 +493,34 @@ export async function fetchBrandPitch(slug: string): Promise<BrandPitch | null> 
 
   try {
     const supabase = getSupabaseAdmin();
-    let query = supabase.from("brand_pitches").select("*").eq("slug", cleanSlug);
+    // Case-insensitive lookup on purpose: /brands/[slug] should resolve the
+    // same pitch whether a link (or a row's slug column) was typed as
+    // "vacation" or "Vacation" — ilike with no wildcards in `cleanSlug` is a
+    // plain case-insensitive equality check, not a pattern match. Escape any
+    // literal %/_ first so a slug containing them can't be misread as a
+    // wildcard.
+    const ilikeSafeSlug = cleanSlug.replace(/[%_]/g, (c) => `\\${c}`);
+    let query = supabase.from("brand_pitches").select("*").ilike("slug", ilikeSafeSlug);
     if (process.env.NODE_ENV === "production") {
       query = query.eq("is_published", true);
     }
     const { data, error } = await query.maybeSingle();
 
     if (error || !data) return null;
-    return normalizeBrandPitch(data);
+    const pitch = normalizeBrandPitch(data);
+
+    // Enrich each moment with its auto-discovered extra assets (see
+    // discoverMomentAssets) — a handful of lightweight Storage list() calls,
+    // not asset downloads, so this stays cheap even though it runs on every
+    // request (this route is force-dynamic).
+    const campaign_uses = await Promise.all(
+      pitch.campaign_uses.map(async (moment) => ({
+        ...moment,
+        assets: await discoverMomentAssets(pitch, moment),
+      }))
+    );
+
+    return { ...pitch, campaign_uses };
   } catch (err) {
     console.error("[fetchBrandPitch] failed:", err);
     return null;

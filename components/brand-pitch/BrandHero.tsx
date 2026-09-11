@@ -7,10 +7,12 @@ import { getBrandArtUrl, getBrandTrackUrl } from "@/lib/brandPitchStorage";
 import { getHeroImageCandidates } from "@/lib/brandPitchVisuals";
 import { useBrandAudio } from "./BrandAudioContext";
 import { useAssetAvailable, useAssetChain } from "./ui";
+import { useInteractionSound } from "./useInteractionSound";
 
 export default function BrandHero({ pitch, accent, year }: { pitch: BrandPitch; accent: string; year: number }) {
   const reduceMotion = useReducedMotion();
   const { activeId, playing, toggle } = useBrandAudio();
+  const { playHover, playClick } = useInteractionSound();
 
   // Leads with the derived "background 1.png" (a brand's chosen campaign
   // image), falling back to hero_art_path then cover_art_path if that
@@ -38,20 +40,16 @@ export default function BrandHero({ pitch, accent, year }: { pitch: BrandPitch; 
     null;
   const heroSrc = getBrandTrackUrl(heroVersion?.path ?? null);
 
-  // A subtle secondary action is only ever shown if a *different* primary
-  // version is flagged as the full song — e.g. the hero leads with a short
-  // brand cut and the full song lives in "Hear the Concept". If the hero
-  // itself is already playing the full song (as flagged by is_hero_default),
-  // this naturally stays hidden — no second CTA competing with the first.
-  const otherFullSong = primaryVersions.find((v) => v.is_full_song && v.path !== heroVersion?.path) || null;
-  const hasOtherFullSong = !!(otherFullSong && getBrandTrackUrl(otherFullSong.path));
-
   // Use the raw object path as the audio id (not a made-up label) so this exact
   // clip is recognized as "the same instance" everywhere else it appears on the
   // page (e.g. the same tab in Hear the Concept) — continuity, not two copies.
   const heroId = heroVersion?.path || "";
   const isPlayingHero = activeId === heroId && playing;
   const title = pitch.hero_headline || pitch.song_title;
+  // Always driven by this pitch's own song_title — never a hardcoded title —
+  // with hero_button_text as an explicit CMS override when a brand wants
+  // different copy entirely.
+  const heroButtonLabel = pitch.hero_button_text || (pitch.song_title ? `Play "${pitch.song_title}"` : "Play");
   const capabilityLabels =
     pitch.hero_capability_labels.length > 0
       ? pitch.hero_capability_labels
@@ -143,21 +141,45 @@ export default function BrandHero({ pitch, accent, year }: { pitch: BrandPitch; 
 
       <motion.div {...fade(0.15)} className="mt-[2.5rem] flex flex-wrap items-center gap-[1.25rem]">
         {heroVersion && heroSrc ? (
-          <button
+          <motion.button
             type="button"
-            onClick={() => toggle(heroId, heroSrc)}
+            onClick={() => {
+              playClick();
+              toggle(heroId, heroSrc);
+            }}
+            onMouseEnter={playHover}
             aria-pressed={isPlayingHero}
-            className="group relative inline-flex items-center gap-[1rem] rounded-full pl-[1.5rem] pr-[2.25rem] py-[1.125rem] text-[1rem] font-bold tracking-[0.08em] uppercase shadow-[0_1rem_2.5rem_-0.5rem_rgba(0,0,0,0.4)] transition-transform duration-300 ease-out hover:scale-[1.04] active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
+            animate={reduceMotion || isPlayingHero ? { scale: 1 } : { scale: [1, 1.015, 1] }}
+            transition={
+              reduceMotion || isPlayingHero
+                ? { duration: 0 }
+                : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }
+            }
+            whileHover={reduceMotion ? undefined : { scale: 1.045 }}
+            whileTap={{ scale: 0.97 }}
+            className="group relative inline-flex items-center gap-[1rem] rounded-full pl-[1.5rem] pr-[2.25rem] py-[1.125rem] text-[1rem] font-bold tracking-[0.08em] uppercase shadow-[0_1rem_2.5rem_-0.5rem_rgba(0,0,0,0.4)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
             style={{ backgroundColor: accent, color: "#fff", outlineColor: accent }}
           >
+            {/* Slow, subtle glow ring — the "clearly the primary interaction"
+                cue. Idle-only: stops once playback starts, and never renders
+                under prefers-reduced-motion. */}
+            {!reduceMotion && !isPlayingHero && (
+              <motion.span
+                aria-hidden="true"
+                className="absolute -inset-[0.35rem] rounded-full pointer-events-none"
+                style={{ boxShadow: `0 0 1.5rem 0.25rem ${accent}` }}
+                animate={{ opacity: [0.12, 0.45, 0.12] }}
+                transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
+              />
+            )}
             <span
               aria-hidden="true"
-              className="flex items-center justify-center w-[2.25rem] h-[2.25rem] rounded-full bg-white/20 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110"
+              className="relative flex items-center justify-center w-[2.25rem] h-[2.25rem] rounded-full bg-white/20 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110"
             >
               {isPlayingHero ? "❚❚" : "▶"}
             </span>
-            {isPlayingHero ? "PAUSE" : pitch.hero_button_text || `Play ${heroVersion.label}`}
-          </button>
+            <span className="relative">{isPlayingHero ? "PAUSE" : heroButtonLabel}</span>
+          </motion.button>
         ) : (
           <span
             className={`inline-flex items-center rounded-full px-[1.75rem] py-[1rem] text-[0.9375rem] font-semibold tracking-[0.08em] uppercase border ${
@@ -166,17 +188,6 @@ export default function BrandHero({ pitch, accent, year }: { pitch: BrandPitch; 
           >
             AUDIO COMING SOON
           </span>
-        )}
-
-        {hasOtherFullSong && (
-          <a
-            href="#hear-the-concept"
-            className={`text-[0.875rem] font-semibold tracking-[0.04em] uppercase underline underline-offset-4 decoration-1 opacity-80 hover:opacity-100 transition-opacity ${
-              hasBackdrop ? "text-white" : ""
-            }`}
-          >
-            Hear the Full Song
-          </a>
         )}
       </motion.div>
 

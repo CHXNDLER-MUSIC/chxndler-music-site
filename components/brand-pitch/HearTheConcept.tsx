@@ -5,9 +5,11 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { BrandPitch, BrandPitchAudioVersion } from "@/lib/brandPitch";
 import { getBrandArtUrl, getBrandTrackUrl } from "@/lib/brandPitchStorage";
 import type { PitchPalette } from "@/lib/brandPitchPalette";
-import { getDerivedBackgroundImage, type PitchAssetRegistry } from "@/lib/brandPitchVisuals";
+import { getDerivedBackgroundImage, getDerivedPhotoAsset, type PitchAssetRegistry } from "@/lib/brandPitchVisuals";
 import { Eyebrow, SectionShell, useAssetAvailable } from "./ui";
 import BrandAudioPlayer from "./BrandAudioPlayer";
+import { useInteractionSound } from "./useInteractionSound";
+import CoverArtViewer from "./CoverArtViewer";
 
 type ResolvedVersion = BrandPitchAudioVersion & { src: string };
 
@@ -82,6 +84,7 @@ export default function HearTheConcept({
   assets: PitchAssetRegistry;
 }) {
   const reduceMotion = useReducedMotion();
+  const { playHover, playClick } = useInteractionSound();
   const [lyricsOpen, setLyricsOpen] = useState(false);
 
   const versions = useMemo(() => {
@@ -102,12 +105,20 @@ export default function HearTheConcept({
 
   const coverAsset = useAssetAvailable(getBrandArtUrl(pitch.cover_art_path));
   const cover = coverAsset.src;
+  const cdAsset = useAssetAvailable(getDerivedPhotoAsset(pitch, "cd.png"));
+  const vinylAsset = useAssetAvailable(getDerivedPhotoAsset(pitch, "vinyl.png"));
+  const cassetteAsset = useAssetAvailable(getDerivedPhotoAsset(pitch, "cassette.png"));
   const headline = pitch.audio_headline || (pitch.song_title ? `Hear "${pitch.song_title}."` : null);
   const supportingLine = pitch.audio_description || "One song, built to work from a quick brand moment to a full campaign.";
 
   if (!headline && !supportingLine && versions.length === 0) return null;
 
-  const backgroundImage = assets.claim(getDerivedBackgroundImage(pitch, 2));
+  // Claimed once per mount, not once per render: `assets.claim` mutates a
+  // shared Set as a side effect, so calling it unmemoized here would
+  // re-claim (and null out — the Set already has it from the first render)
+  // this same url every time local state changes below (tab switch, lyrics
+  // toggle), silently dropping the background on every subsequent render.
+  const backgroundImage = useMemo(() => assets.claim(getDerivedBackgroundImage(pitch, 2)), [assets, pitch]);
 
   return (
     <SectionShell
@@ -128,25 +139,29 @@ export default function HearTheConcept({
       <div className="mt-[3rem] grid grid-cols-1 lg:grid-cols-[minmax(0,24rem)_1fr] gap-[2.5rem] lg:gap-[4rem] items-start">
         {/* LEFT — cover art + song identity, one composition with the player on the right */}
         <div className="mx-auto lg:mx-0 w-full max-w-[22rem]">
-          <div
-            className="relative w-full aspect-square rounded-[1rem] overflow-hidden shadow-[0_1.5rem_3rem_-1rem_rgba(0,0,0,0.2)]"
-            style={{ backgroundColor: `${palette.accent}14` }}
-          >
-            {cover ? (
-              <img
-                src={cover}
-                alt={`${pitch.song_title} cover art`}
-                className="w-full h-full object-cover"
-                onError={coverAsset.onError}
-              />
-            ) : (
+          {cover ? (
+            <CoverArtViewer
+              src={cover}
+              songTitle={pitch.song_title}
+              accent={palette.accent}
+              onError={coverAsset.onError}
+              cd={cdAsset}
+              vinyl={vinylAsset}
+              cassette={cassetteAsset}
+              className="aspect-square shadow-[0_1.5rem_3rem_-1rem_rgba(0,0,0,0.2)]"
+            />
+          ) : (
+            <div
+              className="relative w-full aspect-square rounded-[1rem] overflow-hidden shadow-[0_1.5rem_3rem_-1rem_rgba(0,0,0,0.2)]"
+              style={{ backgroundColor: `${palette.accent}14` }}
+            >
               <div className="w-full h-full flex items-center justify-center">
                 <span className="text-[3rem] font-bold opacity-20" style={{ color: palette.accent }}>
                   {pitch.brand_name?.slice(0, 1) || "♪"}
                 </span>
               </div>
-            )}
-          </div>
+            </div>
+          )}
           <p className="mt-[1rem] text-[1.125rem] font-bold tracking-tight">{pitch.song_title}</p>
           <p className="text-[0.9375rem] opacity-60">{pitch.artist_name}</p>
         </div>
@@ -160,13 +175,20 @@ export default function HearTheConcept({
                   {primary.map((v) => {
                     const isSelected = selected.path === v.path;
                     return (
-                      <button
+                      <motion.button
                         key={v.path}
                         type="button"
                         role="tab"
                         aria-selected={isSelected}
-                        onClick={() => setSelectedPath(v.path)}
-                        className="rounded-full px-[1.5rem] py-[0.75rem] text-[0.875rem] font-bold tracking-[0.05em] uppercase transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem]"
+                        onClick={() => {
+                          if (!isSelected) playClick();
+                          setSelectedPath(v.path);
+                        }}
+                        onMouseEnter={playHover}
+                        whileHover={reduceMotion ? undefined : { scale: 1.035 }}
+                        whileTap={{ scale: 0.97 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
+                        className="rounded-full px-[1.5rem] py-[0.75rem] text-[0.875rem] font-bold tracking-[0.05em] uppercase transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem]"
                         style={
                           isSelected
                             ? { backgroundColor: palette.accent, color: palette.onAccent, outlineColor: palette.accent }
@@ -174,58 +196,74 @@ export default function HearTheConcept({
                         }
                       >
                         {v.label}
-                      </button>
+                      </motion.button>
                     );
                   })}
                 </div>
               )}
 
-              <h3 className="text-[1.25rem] sm:text-[1.5rem] font-bold tracking-tight">{selected.label}</h3>
-              {selected.description && (
-                <p className="mt-[0.4rem] text-[1rem] leading-relaxed opacity-70 max-w-[32rem]">{selected.description}</p>
-              )}
-
-              <div className="mt-[1.5rem]">
-                <BrandAudioPlayer
-                  id={selected.path}
-                  src={selected.src}
-                  label={`${pitch.song_title} — ${selected.label.toLowerCase()}`}
-                  accentColor={palette.accent}
-                  size="lg"
-                />
-              </div>
-
-              {selected.is_full_song && pitch.lyrics && (
-                <div className="mt-[1.5rem]">
-                  <button
-                    type="button"
-                    onClick={() => setLyricsOpen((v) => !v)}
-                    aria-expanded={lyricsOpen}
-                    aria-controls="brand-lyrics-panel"
-                    className="inline-flex items-center gap-[0.4rem] text-[0.875rem] font-semibold tracking-[0.1em] uppercase hover:opacity-70 transition-opacity"
-                    style={{ color: palette.accent }}
+              {/* Crossfades between versions on tab switch — `layout` on this
+                  wrapper smooths the height change between differently-sized
+                  content (e.g. a description that only some versions have)
+                  instead of the surrounding layout jumping. */}
+              <motion.div layout={!reduceMotion}>
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={selected.path}
+                    initial={reduceMotion ? false : { opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={reduceMotion ? {} : { opacity: 0 }}
+                    transition={{ duration: 0.18, ease: "easeInOut" }}
                   >
-                    View Lyrics <span aria-hidden="true">{lyricsOpen ? "↑" : "↓"}</span>
-                  </button>
-
-                  <AnimatePresence initial={false}>
-                    {lyricsOpen && (
-                      <motion.div
-                        id="brand-lyrics-panel"
-                        initial={reduceMotion ? false : { height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={reduceMotion ? {} : { height: 0, opacity: 0 }}
-                        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                        className="overflow-hidden"
-                      >
-                        <p className="mt-[1rem] whitespace-pre-wrap text-[1rem] leading-relaxed opacity-75 max-w-[36rem]">
-                          {pitch.lyrics}
-                        </p>
-                      </motion.div>
+                    <h3 className="text-[1.25rem] sm:text-[1.5rem] font-bold tracking-tight">{selected.label}</h3>
+                    {selected.description && (
+                      <p className="mt-[0.4rem] text-[1rem] leading-relaxed opacity-70 max-w-[32rem]">{selected.description}</p>
                     )}
-                  </AnimatePresence>
-                </div>
-              )}
+
+                    <div className="mt-[1.5rem]">
+                      <BrandAudioPlayer
+                        id={selected.path}
+                        src={selected.src}
+                        label={`${pitch.song_title} — ${selected.label.toLowerCase()}`}
+                        accentColor={palette.accent}
+                        size="lg"
+                      />
+                    </div>
+
+                    {selected.is_full_song && pitch.lyrics && (
+                      <div className="mt-[1.5rem]">
+                        <button
+                          type="button"
+                          onClick={() => setLyricsOpen((v) => !v)}
+                          aria-expanded={lyricsOpen}
+                          aria-controls="brand-lyrics-panel"
+                          className="inline-flex items-center gap-[0.4rem] text-[0.875rem] font-semibold tracking-[0.1em] uppercase hover:opacity-70 transition-opacity"
+                          style={{ color: palette.accent }}
+                        >
+                          View Lyrics <span aria-hidden="true">{lyricsOpen ? "↑" : "↓"}</span>
+                        </button>
+
+                        <AnimatePresence initial={false}>
+                          {lyricsOpen && (
+                            <motion.div
+                              id="brand-lyrics-panel"
+                              initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={reduceMotion ? {} : { height: 0, opacity: 0 }}
+                              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                              className="overflow-hidden"
+                            >
+                              <p className="mt-[1rem] whitespace-pre-wrap text-[1rem] leading-relaxed opacity-75 max-w-[36rem]">
+                                {pitch.lyrics}
+                              </p>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </motion.div>
             </div>
           )}
 

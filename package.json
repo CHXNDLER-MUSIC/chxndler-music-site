@@ -30,6 +30,7 @@
     "hooks:enable": "git config core.hooksPath .githooks && chmod +x .githooks/pre-commit scripts/secret-scan.sh"
   },
   "dependencies": {
+    "@calcom/embed-react": "^1.5.3",
     "@react-three/drei": "^9.117.3",
     "@react-three/fiber": "^8.17.10",
     "@stripe/react-stripe-js": "^6.8.2",
