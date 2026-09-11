@@ -3,7 +3,7 @@ import type { BrandPitch } from "@/lib/brandPitch";
 import type { PitchPalette } from "@/lib/brandPitchPalette";
 import { Eyebrow } from "./ui";
 
-const FALLBACK_CONTACT_EMAIL = "info@chxndler-music.com";
+const FALLBACK_CONTACT_EMAIL = "alien@chxndler.world";
 
 /**
  * The closing moment — a solid campaign-accent surface, centered, generous

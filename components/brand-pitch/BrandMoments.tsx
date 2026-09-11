@@ -2,7 +2,7 @@ import React from "react";
 import type { BrandPitch, BrandPitchMoment } from "@/lib/brandPitch";
 import { getBrandArtUrl } from "@/lib/brandPitchStorage";
 import type { PitchPalette } from "@/lib/brandPitchPalette";
-import type { PitchAssetRegistry } from "@/lib/brandPitchVisuals";
+import { getDerivedBackgroundImage, type PitchAssetRegistry } from "@/lib/brandPitchVisuals";
 import { Eyebrow, SectionShell, useAssetAvailable } from "./ui";
 
 /**
@@ -13,7 +13,9 @@ import { Eyebrow, SectionShell, useAssetAvailable } from "./ui";
  * three campaign_uses entries are the primary cards; anything beyond that,
  * plus any configured application mockups, drops into a smaller, restrained
  * "Supporting Applications" row that never competes with the primary three.
- * A solid campaign-dark surface — no photographic background.
+ * Backed by "background 3.png" (same derivation as the hero/Hear the Concept)
+ * with a campaign-dark tint over it, falling back to the plain solid dark
+ * surface if that file isn't uploaded, 404s, or was already used elsewhere.
  */
 export default function BrandMoments({
   pitch,
@@ -47,8 +49,14 @@ export default function BrandMoments({
 
   if (!pitch.campaign_headline && !pitch.campaign_intro && primaryMoments.length === 0 && mockups.length === 0) return null;
 
+  const backgroundImage = assets.claim(getDerivedBackgroundImage(pitch, 3));
+
   return (
-    <SectionShell style={{ backgroundColor: palette.dark, color: palette.onDark }}>
+    <SectionShell
+      style={{ backgroundColor: palette.dark, color: palette.onDark }}
+      backgroundImage={backgroundImage}
+      backgroundOverlay={`${palette.dark}b3`}
+    >
       <Eyebrow color={palette.accent}>{pitch.campaign_eyebrow || "How It Could Live"}</Eyebrow>
 
       {pitch.campaign_headline && (

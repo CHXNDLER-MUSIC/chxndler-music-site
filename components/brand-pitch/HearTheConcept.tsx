@@ -66,7 +66,7 @@ function SupportingRow({
  * pitch.alt_versions — nothing here assumes a fixed set of lengths or names,
  * so 15+full, 30+60+full, or 30+full+instrumental+acoustic all work the same way.
  *
- * Backed by "background 1.png" (derived from the brand's PHOTO folder, same
+ * Backed by "background 2.png" (derived from the brand's PHOTO folder, same
  * convention as the hero/cover art — no new Supabase field) with a campaign
  * tint over it for legibility, falling back to the plain light-campaign-color
  * surface if that file isn't uploaded, 404s, or was already used elsewhere
@@ -107,7 +107,7 @@ export default function HearTheConcept({
 
   if (!headline && !supportingLine && versions.length === 0) return null;
 
-  const backgroundImage = assets.claim(getDerivedBackgroundImage(pitch, 1));
+  const backgroundImage = assets.claim(getDerivedBackgroundImage(pitch, 2));
 
   return (
     <SectionShell

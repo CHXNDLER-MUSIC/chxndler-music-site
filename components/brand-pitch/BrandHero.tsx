@@ -4,14 +4,19 @@ import React from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import type { BrandPitch } from "@/lib/brandPitch";
 import { getBrandArtUrl, getBrandTrackUrl } from "@/lib/brandPitchStorage";
+import { getHeroImageCandidates } from "@/lib/brandPitchVisuals";
 import { useBrandAudio } from "./BrandAudioContext";
-import { useAssetAvailable } from "./ui";
+import { useAssetAvailable, useAssetChain } from "./ui";
 
 export default function BrandHero({ pitch, accent, year }: { pitch: BrandPitch; accent: string; year: number }) {
   const reduceMotion = useReducedMotion();
   const { activeId, playing, toggle } = useBrandAudio();
 
-  const heroArtAsset = useAssetAvailable(getBrandArtUrl(pitch.hero_art_path || pitch.cover_art_path));
+  // Leads with the derived "background 1.png" (a brand's chosen campaign
+  // image), falling back to hero_art_path then cover_art_path if that
+  // specific file isn't uploaded. See lib/brandPitchVisuals — the exact same
+  // chain BrandPitchPage uses to seed the page's asset-deduplication registry.
+  const heroArtAsset = useAssetChain(getHeroImageCandidates(pitch));
   const heroVideoAsset = useAssetAvailable(getBrandArtUrl(pitch.hero_video_path));
   const titleGraphicAsset = useAssetAvailable(getBrandArtUrl(pitch.song_title_graphic_path));
   const heroArt = heroArtAsset.src;

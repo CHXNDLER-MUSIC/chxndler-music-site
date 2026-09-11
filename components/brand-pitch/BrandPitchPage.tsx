@@ -2,9 +2,8 @@
 
 import React from "react";
 import type { BrandPitch } from "@/lib/brandPitch";
-import { getBrandArtUrl } from "@/lib/brandPitchStorage";
 import { buildPitchPalette } from "@/lib/brandPitchPalette";
-import { createAssetRegistry } from "@/lib/brandPitchVisuals";
+import { createAssetRegistry, getHeroImageCandidates } from "@/lib/brandPitchVisuals";
 import { BrandAudioProvider } from "./BrandAudioContext";
 import BrandHero from "./BrandHero";
 import CreativeIdea from "./CreativeIdea";
@@ -20,10 +19,11 @@ import BrandCTA from "./BrandCTA";
 // IDEA -> HEAR IT -> UNDERSTAND THE BRAND ASSET -> SEE THE WORLD (one
 // campaign image) -> UNDERSTAND HOW IT SCALES -> SEE THE COLLECTIBLE ->
 // UNDERSTAND WHO CREATED IT -> TAKE ACTION. Photography is a feature, not a
-// background for every section: the hero, the one campaign-image break, and
-// Hear the Concept (a derived "background 1.png") use a photo; everything
-// else is a solid campaign color from lib/brandPitchPalette. BrandFit,
-// BrandOffer, BrandPricing and BrandProcess
+// background for every section: the hero ("background 1.png"), the one
+// campaign-image break, Hear the Concept ("background 2.png") and How It
+// Could Live ("background 3.png") use a photo; Idea, Sonic Identity,
+// Collectible, About and the CTA are solid campaign colors from
+// lib/brandPitchPalette. BrandFit, BrandOffer, BrandPricing and BrandProcess
 // still exist as components/data (nothing deleted) but are intentionally not
 // part of this template's render — the "sales deck" layer an earlier pass
 // moved away from.
@@ -32,13 +32,13 @@ export default function BrandPitchPage({ pitch }: { pitch: BrandPitch }) {
   const year = pitch.year || new Date().getFullYear();
 
   // Cross-section image deduplication: whichever image the hero actually
-  // renders (hero_art_path, falling back to cover_art_path exactly like
-  // BrandHero itself does) is claimed immediately, before anything else
-  // resolves — so no later section (the campaign image break, application
-  // mockups, the collectible card) can ever accidentally reuse it. See
-  // lib/brandPitchVisuals.
-  const heroImageUrl = getBrandArtUrl(pitch.hero_art_path || pitch.cover_art_path);
-  const assets = createAssetRegistry([heroImageUrl]);
+  // renders (its own "background 1.png" -> hero_art_path -> cover_art_path
+  // chain — see getHeroImageCandidates) is claimed immediately, before
+  // anything else resolves, so no later section (Hear the Concept's
+  // "background 2.png", How It Could Live's "background 3.png", the campaign
+  // image break, application mockups, the collectible card) can ever
+  // accidentally reuse it.
+  const assets = createAssetRegistry([getHeroImageCandidates(pitch)[0] ?? null]);
 
   // Exposed as CSS custom properties at the page root so any section (now or
   // later) can reach the campaign palette via var(--campaign-*) instead of
