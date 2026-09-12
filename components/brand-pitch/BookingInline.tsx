@@ -99,7 +99,7 @@ export default function BookingInline({
           className="w-full overflow-hidden"
         >
           <div
-            className="mt-[2.5rem] w-full max-w-[45rem] mx-auto rounded-[1.375rem] overflow-hidden text-left"
+            className="mt-[2.5rem] w-full max-w-[64rem] mx-auto rounded-[1.375rem] overflow-hidden text-left"
             style={{ backgroundColor: "#ffffff", color: "#111111", boxShadow: "0 1.875rem 5rem -1.875rem rgba(17,17,17,0.4)" }}
           >
             {booking ? (
@@ -144,10 +144,14 @@ export default function BookingInline({
                 )}
               </div>
             ) : (
-              <div className="min-h-[35rem]">
+              // No max-height/scroll clamp here on purpose: at this width
+              // Cal renders its calendar-left/times-right layout, which is
+              // naturally short — clamping height was only ever masking the
+              // narrow-container stacked layout, not fixing it.
+              <div className="w-full">
                 <Cal
                   calLink={CAL_LINK}
-                  style={{ width: "100%", height: "100%", minHeight: "35rem", overflow: "auto" }}
+                  style={{ width: "100%" }}
                   config={
                     brandName
                       ? { theme: "light", notes: `Referred from CHXNDLER brand pitch: ${brandName} (${brandSlug})` }

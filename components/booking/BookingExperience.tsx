@@ -98,7 +98,7 @@ export default function BookingExperience({
       className="min-h-[100svh] w-full overflow-x-hidden flex items-center justify-center px-[20px] sm:px-[24px] xl:px-[40px] py-[48px]"
       style={{ backgroundColor: PAGE_BG, color: "#111111" }}
     >
-      <div className="w-full max-w-[1280px] mx-auto grid grid-cols-1 xl:grid-cols-[38%_62%] gap-y-[48px] xl:gap-x-[72px] items-center">
+      <div className="w-full max-w-[1440px] mx-auto grid grid-cols-1 xl:grid-cols-[30%_70%] gap-y-[48px] xl:gap-x-[56px] items-center">
         {/* LEFT — intro, always present, never fights for space with the scheduler */}
         <div className="flex flex-col justify-center">
           <div className="max-w-[28rem]">
@@ -140,7 +140,7 @@ export default function BookingExperience({
           />
 
           <div
-            className="relative w-full xl:max-w-[45rem] min-h-[37.5rem] rounded-[22px] border overflow-hidden flex flex-col"
+            className="relative w-full xl:max-w-[64rem] min-h-[37.5rem] rounded-[22px] border overflow-hidden flex flex-col"
             style={{
               backgroundColor: "#ffffff",
               borderColor: "rgba(17,17,17,0.08)",
@@ -150,6 +150,12 @@ export default function BookingExperience({
             {booking ? (
               <BookingConfirmation booking={booking} brandName={brandName} accent={accent} backHref={backHref} />
             ) : (
+              // Cal.com's booker only renders its calendar-left/times-right
+              // "large" layout when the embed has enough horizontal room —
+              // below ~50rem it falls back to a stacked (scroll-past-the-
+              // calendar) layout regardless of the "month_view" layout
+              // config. 64rem keeps that side-by-side layout so a visitor
+              // never has to scroll through the calendar to reach times.
               <div className="w-full h-full flex-1 min-h-[37.5rem]">
                 <Cal
                   calLink={CAL_LINK}

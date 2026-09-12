@@ -80,6 +80,12 @@ export type BrandPitch = {
   idea_body: string | null;
   idea_pull_quote: string | null;
   idea_attribution: string | null;
+  /** A short, punchy campaign tagline (e.g. "WHY FOLLOW THE HERD? ♡") — a
+   * more deliberate "creative thought" statement than idea_pull_quote when a
+   * pitch has one. CreativeIdea prefers this and falls back to
+   * idea_pull_quote so pitches entered before this column existed keep
+   * showing their own line. */
+  campaign_tagline: string | null;
 
   fit_eyebrow: string | null;
   fit_headline: string | null;
@@ -387,6 +393,7 @@ function normalizeBrandPitch(row: Record<string, any>): BrandPitch {
     idea_body: nullableString(row.idea_body),
     idea_pull_quote: nullableString(row.idea_pull_quote),
     idea_attribution: nullableString(row.idea_attribution),
+    campaign_tagline: nullableString(row.campaign_tagline),
 
     fit_eyebrow: nullableString(row.fit_eyebrow),
     fit_headline: nullableString(row.fit_headline),

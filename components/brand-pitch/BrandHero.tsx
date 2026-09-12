@@ -103,7 +103,7 @@ export default function BrandHero({ pitch, accent, year }: { pitch: BrandPitch; 
             <img
               src={titleGraphic}
               alt={title}
-              className="w-full max-w-[34rem] sm:max-w-[42rem] h-auto"
+              className="w-full max-w-[50rem] sm:max-w-[62rem] h-auto"
               onError={titleGraphicAsset.onError}
             />
           ) : (
@@ -155,28 +155,60 @@ export default function BrandHero({ pitch, accent, year }: { pitch: BrandPitch; 
                 ? { duration: 0 }
                 : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }
             }
-            whileHover={reduceMotion ? undefined : { scale: 1.045 }}
-            whileTap={{ scale: 0.97 }}
-            className="group relative inline-flex items-center gap-[1rem] rounded-full pl-[1.5rem] pr-[2.25rem] py-[1.125rem] text-[1rem] font-bold tracking-[0.08em] uppercase shadow-[0_1rem_2.5rem_-0.5rem_rgba(0,0,0,0.4)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
-            style={{ backgroundColor: accent, color: "#fff", outlineColor: accent }}
+            whileHover={
+              reduceMotion
+                ? undefined
+                : {
+                    scale: 1.03,
+                    boxShadow: `0 0.875rem 2rem -0.75rem rgba(0,0,0,0.5), 0 0 1.5rem -0.1rem ${accent}99`,
+                    transition: { duration: 0.25, ease: "easeOut" },
+                  }
+            }
+            whileTap={{ scale: 0.97, transition: { duration: 0.1 } }}
+            className="group relative inline-flex items-center gap-[0.875rem] rounded-[1.5rem] pl-[1.25rem] pr-[1.875rem] py-[0.875rem] text-[1rem] font-bold tracking-[0.08em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
+            style={{
+              backgroundColor: accent,
+              color: "#fff",
+              outlineColor: accent,
+              boxShadow: `0 0.75rem 2rem -0.75rem rgba(0,0,0,0.45), 0 0 1rem -0.25rem ${accent}66`,
+            }}
           >
-            {/* Slow, subtle glow ring — the "clearly the primary interaction"
-                cue. Idle-only: stops once playback starts, and never renders
-                under prefers-reduced-motion. */}
-            {!reduceMotion && !isPlayingHero && (
-              <motion.span
-                aria-hidden="true"
-                className="absolute -inset-[0.35rem] rounded-full pointer-events-none"
-                style={{ boxShadow: `0 0 1.5rem 0.25rem ${accent}` }}
-                animate={{ opacity: [0.12, 0.45, 0.12] }}
-                transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
-              />
-            )}
+            {/* Soft accent glow — breathes gently while idle ("waiting to be
+                pressed"), settles into a calm steady glow once playing
+                ("clearly active") instead of vanishing. Skips the looping
+                animation under prefers-reduced-motion but still renders a
+                static glow — that's styling, not motion. */}
+            <motion.span
+              aria-hidden="true"
+              className="absolute -inset-[0.3rem] rounded-[inherit] pointer-events-none"
+              style={{ boxShadow: `0 0 1.25rem 0.15rem ${accent}` }}
+              animate={
+                reduceMotion
+                  ? { opacity: isPlayingHero ? 0.3 : 0.18 }
+                  : isPlayingHero
+                    ? { opacity: 0.32 }
+                    : { opacity: [0.12, 0.3, 0.12] }
+              }
+              transition={
+                reduceMotion || isPlayingHero
+                  ? { duration: 0.3 }
+                  : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }
+              }
+            />
             <span
               aria-hidden="true"
-              className="relative flex items-center justify-center w-[2.25rem] h-[2.25rem] rounded-full bg-white/20 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110"
+              className="relative flex items-center justify-center w-[1.875rem] h-[1.875rem] rounded-full bg-white/14 transition-transform duration-300 group-hover:translate-x-[0.06rem]"
             >
-              {isPlayingHero ? "❚❚" : "▶"}
+              {isPlayingHero ? (
+                <svg width="11" height="12" viewBox="0 0 11 12" fill="none" aria-hidden="true">
+                  <rect x="0.5" y="0.5" width="3" height="11" rx="1" fill="currentColor" />
+                  <rect x="7" y="0.5" width="3" height="11" rx="1" fill="currentColor" />
+                </svg>
+              ) : (
+                <svg width="11" height="12" viewBox="0 0 12 13" fill="none" aria-hidden="true" style={{ marginLeft: "0.1rem" }}>
+                  <path d="M2 1L11 6.5L2 12V1Z" fill="currentColor" />
+                </svg>
+              )}
             </span>
             <span className="relative">{isPlayingHero ? "PAUSE" : heroButtonLabel}</span>
           </motion.button>

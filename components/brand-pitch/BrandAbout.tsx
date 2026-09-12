@@ -1,13 +1,18 @@
+"use client";
+
 import React from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import type { BrandPitch } from "@/lib/brandPitch";
 import type { PitchPalette } from "@/lib/brandPitchPalette";
 import type { PitchAssetRegistry } from "@/lib/brandPitchVisuals";
 import { Eyebrow, SectionShell } from "./ui";
 import StartButton from "@/components/StartButton";
 
-// CHXNDLER's own identity photo — the same across every brand pitch page,
-// not per-brand content, so it lives locally rather than in Supabase.
+// CHXNDLER's own identity photo and wordmark signature — the same across
+// every brand pitch page, not per-brand content, so they live locally rather
+// than in Supabase.
 const CHXNDLER_PHOTO = "/elements/CHXNDLER.jpg";
+const CHXNDLER_SIGNATURE = "/elements/PINK SIGNATURE.png";
 
 // This section is the one deliberate break from every brand's own campaign
 // palette (the light backgrounds / brand-accent colors every section above
@@ -17,6 +22,9 @@ const CHXNDLER_PHOTO = "/elements/CHXNDLER.jpg";
 // colors used elsewhere (the HeartCoin gem-button pink and StartButton's own
 // cyan glow in app/globals.css), so this section reads as "the same CHXNDLER"
 // a visitor sees anywhere else on the site, not an Oatly-specific treatment.
+// The current pitch's own `palette.accent` is woven in only as a handful of
+// subtle touches (eyebrow, portrait glow, divider, the featured line) so the
+// section still feels connected to whichever brand pitch it's on.
 const CHXNDLER_BG = "#08080C";
 const CHXNDLER_PINK = "#ff3ea5";
 const CHXNDLER_CYAN = "#19E3FF";
@@ -35,19 +43,28 @@ const GRAIN_URL =
 // soft, not a hard clip.
 const PORTRAIT_MASK = "radial-gradient(ellipse 50% 52% at 50% 46%, #000 94%, transparent 100%)";
 
-// Like CHXNDLER_PHOTO above, this eyebrow/headline pairing is CHXNDLER's own
-// fixed signature line — not brand content — so it's a constant here rather
-// than a per-pitch field every brand row has to duplicate by hand.
-const CHXNDLER_EYEBROW = "Created by CHXNDLER";
-const CHXNDLER_HEADLINE_TEXT = "Meet CHXNDLER";
+// This whole copy block is CHXNDLER's own fixed creator-credit signature —
+// true regardless of which brand pitch it appears on — not per-brand
+// content, so it's a constant here rather than a field every brand row has
+// to duplicate by hand. `pitch.about_eyebrow` is still honored as an
+// explicit per-pitch override (existing architecture, unchanged); nothing
+// else here reads from Supabase.
+const CHXNDLER_EYEBROW = "CREATED BY CHXNDLER";
+const CHXNDLER_HEADLINE_LINE_1 = "THE ARTIST";
+const CHXNDLER_HEADLINE_LINE_2 = "BEHIND THE SONG.";
+const CHXNDLER_STATEMENT_LINE_1 = "Every brand has a visual identity.";
+const CHXNDLER_STATEMENT_LINE_2 = "Why not a sonic one?";
+const CHXNDLER_CREDENTIALS = "ARTIST · SONGWRITER · PRODUCER";
 
 /**
- * The closing signature of the pitch, after LET'S TALK — a creative credit,
- * not a corporate team-bio. A large, editorial circular portrait anchors the
- * section (not a small avatar), paired with an oversized name treatment.
- * Visually it intentionally transitions OUT of the brand's campaign world
- * (the hot-pink BrandCTA section right above it) and into CHXNDLER's own
- * dark, cinematic identity — see the CHXNDLER_* constants above.
+ * The closing signature of the pitch, after LET'S TALK — an editorial artist
+ * reveal/creative-director credit, not a corporate team-bio or an "About Me"
+ * block. A portrait (40%) and the creator's story (60%) sit as one connected
+ * composition, vertically centered, framed rather than floating in an
+ * oversized viewport. Visually it intentionally transitions OUT of the
+ * brand's campaign world (the hot-pink BrandCTA section right above it) and
+ * into CHXNDLER's own dark, cinematic identity — see the CHXNDLER_*
+ * constants above.
  */
 export default function BrandAbout({
   pitch,
@@ -58,29 +75,45 @@ export default function BrandAbout({
   palette: PitchPalette;
   assets: PitchAssetRegistry;
 }) {
+  const reduceMotion = useReducedMotion();
   if (!pitch.about_body) return null;
+
+  const fade = (delay = 0) =>
+    reduceMotion
+      ? {}
+      : {
+          initial: { opacity: 0, y: 20 },
+          whileInView: { opacity: 1, y: 0 },
+          viewport: { once: true, amount: 0.35 },
+          transition: { duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] as const },
+        };
 
   return (
     <SectionShell style={{ backgroundColor: CHXNDLER_BG, color: CHXNDLER_BODY }}>
-      <div className="relative">
+      <div className="relative flex items-center">
         {/* Atmosphere only — no literal space graphics, just a hair of grain
-            for depth. The cyan/pink glow itself lives with the portrait
-            below so it reads as coming from the photo, not the page. */}
+            for depth. The cyan/pink/accent glow itself lives with the
+            portrait below so it reads as coming from the photo, not the page. */}
         <div
           className="absolute inset-0 pointer-events-none opacity-[0.035] mix-blend-overlay"
           style={{ backgroundImage: `url("${GRAIN_URL}")` }}
           aria-hidden="true"
         />
 
-        <div className="relative flex flex-col lg:flex-row items-center justify-center gap-[3rem] sm:gap-[3.5rem] lg:gap-[6rem]">
-          {/* Portrait — large editorial circle, not an avatar. No card
-              border/container: the glow and the feathered top edge are the
-              only framing. */}
-          <div className="relative flex-shrink-0 w-[12rem] h-[12rem] sm:w-[15.25rem] sm:h-[15.25rem] md:w-[18.75rem] md:h-[18.75rem] lg:w-[24.5rem] lg:h-[24.5rem]">
+        <div className="relative w-full grid grid-cols-1 lg:grid-cols-[2fr_3fr] items-center gap-[2rem] sm:gap-[2.5rem] lg:gap-[3rem]">
+          {/* Portrait — 40% column on desktop, ~9% smaller than the prior
+              pass so it reads as editorial rather than a profile avatar. No
+              card border/container: the atmospheric glow and the feathered
+              top edge are the only framing, so it feels embedded in the page
+              rather than pasted on top of it. */}
+          <motion.div
+            {...fade(0)}
+            className="relative flex-shrink-0 mx-auto lg:mx-0 w-[9rem] h-[9rem] sm:w-[11.5rem] sm:h-[11.5rem] md:w-[14rem] md:h-[14rem] lg:w-[18rem] lg:h-[18rem]"
+          >
             <div
-              className="absolute -inset-[18%] rounded-full blur-[4rem] pointer-events-none"
+              className="absolute -inset-[20%] rounded-full blur-[6rem] pointer-events-none"
               style={{
-                background: `radial-gradient(circle, ${CHXNDLER_CYAN}59 0%, ${CHXNDLER_PINK}26 42%, transparent 72%)`,
+                background: `radial-gradient(circle, ${palette.accent}22 0%, ${CHXNDLER_CYAN}26 40%, ${CHXNDLER_PINK}14 66%, transparent 82%)`,
               }}
               aria-hidden="true"
             />
@@ -88,33 +121,86 @@ export default function BrandAbout({
               src={CHXNDLER_PHOTO}
               alt={pitch.artist_name}
               className="relative w-full h-full object-cover rounded-full"
-              style={{ WebkitMaskImage: PORTRAIT_MASK, maskImage: PORTRAIT_MASK }}
+              style={{ WebkitMaskImage: PORTRAIT_MASK, maskImage: PORTRAIT_MASK, objectPosition: "58% 50%" }}
             />
-          </div>
+          </motion.div>
 
-          <div className="flex-1 text-center lg:text-left max-w-[32rem]">
-            <Eyebrow color={CHXNDLER_PINK}>{pitch.about_eyebrow || CHXNDLER_EYEBROW}</Eyebrow>
+          {/* Copy — 60% column. Deliberate rhythm: eyebrow, headline, body,
+              featured statement, then the role/signature line — no excessive
+              gaps between them. */}
+          <motion.div {...fade(0.12)} className="text-center lg:text-left max-w-[34rem] mx-auto lg:mx-0">
+            <Eyebrow color={palette.accent} style={{ fontSize: "0.9375rem" }}>
+              {pitch.about_eyebrow || CHXNDLER_EYEBROW}
+            </Eyebrow>
+
             <h3
-              className="font-bold leading-[1.05] tracking-tight text-[2.25rem] sm:text-[3rem] lg:text-[3.25rem]"
+              className="font-bold leading-[0.95] tracking-tight text-[2.5rem] sm:text-[3.5rem] lg:text-[4.25rem]"
               style={{ color: CHXNDLER_HEADLINE }}
             >
-              {CHXNDLER_HEADLINE_TEXT}
+              {CHXNDLER_HEADLINE_LINE_1}
+              <br />
+              <span className="whitespace-nowrap">{CHXNDLER_HEADLINE_LINE_2}</span>
             </h3>
+
+            <p
+              className="mt-[0.75rem] text-[0.6875rem] sm:text-[0.75rem] font-semibold tracking-[0.2em] uppercase"
+              style={{ color: "rgba(255,255,255,0.55)" }}
+            >
+              {CHXNDLER_CREDENTIALS}
+            </p>
+
             {pitch.about_body && (
               <p className="mt-[1.25rem] text-[1.0625rem] leading-relaxed mx-auto lg:mx-0" style={{ color: CHXNDLER_BODY }}>
                 {pitch.about_body}
               </p>
             )}
-            <div className="mt-[2rem] flex justify-center lg:justify-start">
+
+            {/* Featured statement — the creative philosophy, given more
+                weight than the biography (larger, brighter, the second line
+                bold + brand-accent) but deliberately smaller than the
+                headline so it never competes with it. */}
+            <p className="mt-[1.5rem] text-[1.1875rem] sm:text-[1.3125rem] leading-snug italic">
+              <span className="block" style={{ color: "rgba(255,255,255,0.72)" }}>
+                {CHXNDLER_STATEMENT_LINE_1}
+              </span>
+              <span className="block font-bold" style={{ color: palette.accent }}>
+                {CHXNDLER_STATEMENT_LINE_2}
+              </span>
+            </p>
+
+            {/* Creator's mark — the chxndler.world link paired with a small
+                text signature, read together as one artist mark rather than
+                a floating logo. The wrapper's scoped override tones down
+                StartButton's own cyan glow (shared sitewide, so its base
+                styling stays untouched) so the mark stays a controlled,
+                intentional finishing detail rather than the oversized glow
+                of the earlier design. */}
+            <div className="mt-[1.25rem] flex items-center justify-center lg:justify-start gap-[1rem] chxndler-mark">
               <StartButton
-                size={104}
+                size={136}
+                pulse={false}
                 ariaLabel="Visit chxndler.world"
                 onClick={() => window.open("https://chxndler.world", "_blank", "noopener,noreferrer")}
               />
+              <div className="flex flex-col justify-center -translate-y-[0.5rem]">
+                <img src={CHXNDLER_SIGNATURE} alt="CHXNDLER" className="h-[7rem] w-auto object-contain object-left" />
+                <span
+                  className="-mt-[1.5rem] text-[0.6875rem] font-semibold tracking-[0.25em] uppercase text-white"
+                >
+                  THE HEARTVERSE
+                </span>
+              </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
+
+      <style jsx>{`
+        .chxndler-mark :global(.chx-icon) {
+          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15))
+            drop-shadow(0 0 4px rgba(25, 227, 255, 0.12)) !important;
+        }
+      `}</style>
     </SectionShell>
   );
 }

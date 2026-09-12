@@ -13,6 +13,41 @@ import CoverArtViewer from "./CoverArtViewer";
 
 type ResolvedVersion = BrandPitchAudioVersion & { src: string };
 
+type LyricsSection = { label: string | null; text: string };
+
+/**
+ * Splits raw lyrics into sections on bracketed labels ("[VERSE 1]",
+ * "[CHORUS]", ...) so the panel can style those as small accent-colored
+ * headers instead of dumping one undifferentiated block of text. Generic by
+ * design — any brand's lyrics work the same way, nothing here assumes a
+ * particular song's structure or wording.
+ */
+function parseLyricsSections(lyrics: string): LyricsSection[] {
+  const sectionPattern = /^\s*\[([^\]]+)\]\s*$/;
+  const sections: LyricsSection[] = [];
+  let label: string | null = null;
+  let lines: string[] = [];
+
+  const flush = () => {
+    const text = lines.join("\n").trim();
+    if (label || text) sections.push({ label, text });
+    lines = [];
+  };
+
+  for (const rawLine of lyrics.split(/\r?\n/)) {
+    const match = rawLine.match(sectionPattern);
+    if (match) {
+      flush();
+      label = match[1].trim();
+    } else {
+      lines.push(rawLine);
+    }
+  }
+  flush();
+
+  return sections;
+}
+
 function useKnownDuration(src: string | null): number | undefined {
   const [duration, setDuration] = useState<number | undefined>(undefined);
   useEffect(() => {
@@ -110,6 +145,7 @@ export default function HearTheConcept({
   const cassetteAsset = useAssetAvailable(getDerivedPhotoAsset(pitch, "cassette.png"));
   const headline = pitch.audio_headline || (pitch.song_title ? `Hear "${pitch.song_title}."` : null);
   const supportingLine = pitch.audio_description || "One song, built to work from a quick brand moment to a full campaign.";
+  const lyricsSections = useMemo(() => (pitch.lyrics ? parseLyricsSections(pitch.lyrics) : []), [pitch.lyrics]);
 
   if (!headline && !supportingLine && versions.length === 0) return null;
 
@@ -230,17 +266,21 @@ export default function HearTheConcept({
                       />
                     </div>
 
-                    {selected.is_full_song && pitch.lyrics && (
+                    {pitch.lyrics && (
                       <div className="mt-[1.5rem]">
                         <button
                           type="button"
-                          onClick={() => setLyricsOpen((v) => !v)}
+                          onClick={() => {
+                            playClick();
+                            setLyricsOpen((v) => !v);
+                          }}
+                          onMouseEnter={playHover}
                           aria-expanded={lyricsOpen}
                           aria-controls="brand-lyrics-panel"
-                          className="inline-flex items-center gap-[0.4rem] text-[0.875rem] font-semibold tracking-[0.1em] uppercase hover:opacity-70 transition-opacity"
+                          className="inline-flex items-center gap-[0.5rem] text-[1.3125rem] font-semibold tracking-[0.1em] uppercase hover:opacity-70 transition-opacity"
                           style={{ color: palette.accent }}
                         >
-                          View Lyrics <span aria-hidden="true">{lyricsOpen ? "↑" : "↓"}</span>
+                          {lyricsOpen ? "Hide Lyrics" : "View Lyrics"} <span aria-hidden="true">{lyricsOpen ? "↑" : "↓"}</span>
                         </button>
 
                         <AnimatePresence initial={false}>
@@ -253,9 +293,30 @@ export default function HearTheConcept({
                               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                               className="overflow-hidden"
                             >
-                              <p className="mt-[1rem] whitespace-pre-wrap text-[1rem] leading-relaxed opacity-75 max-w-[36rem]">
-                                {pitch.lyrics}
-                              </p>
+                              <div className="mt-[1rem] max-w-[32rem]">
+                                <p className="text-[0.6875rem] font-bold tracking-[0.2em] uppercase opacity-50">
+                                  {pitch.song_title} — Lyrics
+                                </p>
+                                <div className="mt-[1rem] flex flex-col gap-[1rem]">
+                                  {lyricsSections.map((section, i) => (
+                                    <div key={i}>
+                                      {section.label && (
+                                        <p
+                                          className="text-[0.6875rem] font-bold tracking-[0.2em] uppercase mb-[0.3rem]"
+                                          style={{ color: palette.accent }}
+                                        >
+                                          {section.label}
+                                        </p>
+                                      )}
+                                      {section.text && (
+                                        <p className="whitespace-pre-line text-[1rem] leading-snug opacity-75">
+                                          {section.text}
+                                        </p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
                             </motion.div>
                           )}
                         </AnimatePresence>

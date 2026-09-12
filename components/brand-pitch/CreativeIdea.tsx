@@ -16,14 +16,29 @@ import { Eyebrow, SectionShell } from "./ui";
  * Because the section surface IS the accent color here, the eyebrow/pull
  * quote highlight can't use palette.accent itself (it would vanish) — same
  * fix as Sonic Identity: a slightly-transparent onAccent instead.
+ *
+ * Three deliberate movements, each given its own visual weight so the
+ * section reads as the pitch's strategic thesis rather than an "about"
+ * paragraph: the question (headline), the explanation (body), then a clear
+ * break before the creative thought — a major secondary statement, not a
+ * footnote.
  */
 export default function CreativeIdea({ pitch, palette }: { pitch: BrandPitch; palette: PitchPalette }) {
-  if (!pitch.idea_headline && !pitch.idea_body && !pitch.idea_pull_quote) return null;
+  // Prefers the dedicated campaign_tagline column (a punchier, more
+  // deliberate "creative thought" line, e.g. Oatly's "WHY FOLLOW THE HERD?
+  // ♡") when a pitch has one, falling back to idea_pull_quote so a pitch
+  // entered before that column existed still shows its own line — same
+  // newer-field-first/legacy-fallback convention used elsewhere in this
+  // template (e.g. sonic_logo_versions -> sonic_logo_path).
+  const statement = pitch.campaign_tagline || pitch.idea_pull_quote;
+
+  if (!pitch.idea_headline && !pitch.idea_body && !statement) return null;
 
   const highlight = `${palette.onAccent}d9`;
 
   return (
     <SectionShell
+      className="!py-[5rem] sm:!py-[7rem]"
       style={{ backgroundColor: palette.accent, color: palette.onAccent }}
       textureUrl={getSectionTexture(pitch, 0)}
     >
@@ -31,24 +46,29 @@ export default function CreativeIdea({ pitch, palette }: { pitch: BrandPitch; pa
         <Eyebrow color={highlight}>{pitch.idea_eyebrow || "The Idea"}</Eyebrow>
 
         {pitch.idea_headline && (
-          <h2 className="font-bold leading-[1.04] tracking-tight text-[2.25rem] sm:text-[3.5rem] lg:text-[4.25rem]">
+          <h2 className="font-bold leading-[0.98] tracking-tight text-[2.75rem] sm:text-[4.25rem] lg:text-[5.5rem]">
             {pitch.idea_headline}
           </h2>
         )}
 
         {pitch.idea_body && (
-          <p className="mt-[2rem] sm:mt-[2.5rem] text-[1.0625rem] sm:text-[1.1875rem] leading-relaxed opacity-80 max-w-[36rem]">
+          <p className="mt-[1.75rem] sm:mt-[2.25rem] text-[1.1875rem] sm:text-[1.3125rem] leading-relaxed opacity-80 max-w-[36rem]">
             {pitch.idea_body}
           </p>
         )}
 
-        {pitch.idea_pull_quote && (
-          <p
-            className="mt-[3rem] sm:mt-[4rem] font-black leading-[1.05] tracking-tight text-[1.75rem] sm:text-[2.75rem]"
-            style={{ color: highlight }}
-          >
-            {pitch.idea_pull_quote}
-          </p>
+        {/* A clear break before the creative thought — its own small
+            eyebrow, then a major statement, not a small closing line. */}
+        {statement && (
+          <div className="mt-[3.5rem] sm:mt-[5rem]">
+            <Eyebrow color={highlight}>The Creative Thought</Eyebrow>
+            <p
+              className="font-black leading-[0.98] tracking-tight text-[2.5rem] sm:text-[3.75rem] lg:text-[4.5rem]"
+              style={{ color: highlight }}
+            >
+              {statement}
+            </p>
+          </div>
         )}
 
         {pitch.idea_attribution && (

@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import MediaViewerModal from "./MediaViewerModal";
-import TiltSpinCard from "@/components/TiltSpinCard";
+import TiltSpinCard, { type TiltSpinCardControls } from "@/components/TiltSpinCard";
 import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 import { useInteractionSound } from "./useInteractionSound";
 import { sfx } from "@/lib/sfx";
@@ -31,10 +31,8 @@ export default function CollectibleViewer({
   const [open, setOpen] = useState(false);
   const [cardRotation, setCardRotation] = useState(0);
   const [isAnimatingFlip, setIsAnimatingFlip] = useState(false);
-  // The collectible card gets its own signature click sound (star.mp3)
-  // instead of the generic sitewide click — it's the "you found something
-  // special" beat of the page, so it should sound distinct.
-  const { playHover, playClick } = useInteractionSound({ clickKey: "star" });
+  const tiltControlsRef = useRef<TiltSpinCardControls | null>(null);
+  const { playHover, playClick } = useInteractionSound();
 
   // Reset to front-facing, untilted whenever the popout is reopened.
   useEffect(() => {
@@ -51,7 +49,10 @@ export default function CollectibleViewer({
       // Missing/unavailable asset — never block the interaction it's attached to.
     }
     setIsAnimatingFlip(true);
-    setCardRotation((prev) => prev + 180);
+    // Goes through the hook's own rotation tracking (not a local +180) so a
+    // drag right after a flip continues from the angle actually on screen
+    // instead of snapping back to wherever the last drag left off.
+    tiltControlsRef.current?.addSpinRotation(180);
     setTimeout(() => setIsAnimatingFlip(false), 500);
   };
 
@@ -95,6 +96,7 @@ export default function CollectibleViewer({
             spinSensitivity={0.8}
             onRotationChange={setCardRotation}
             onClick={handleFlip}
+            controlsRef={tiltControlsRef}
           >
             <img
               src={src}

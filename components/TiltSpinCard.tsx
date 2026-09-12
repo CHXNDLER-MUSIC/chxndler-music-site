@@ -1,7 +1,14 @@
 "use client";
 
-import React, { forwardRef, useRef } from "react";
+import React, { forwardRef, useEffect, useRef } from "react";
 import { useCardTiltSpin } from "@/hooks/useCardTiltSpin";
+
+/** Imperative controls for a caller that needs to drive rotation from
+ * outside a drag gesture (e.g. a tap-to-flip button adding 180deg) without
+ * desyncing the hook's own running rotation total. */
+export interface TiltSpinCardControls {
+  addSpinRotation: (deltaDegrees: number) => void;
+}
 
 interface TiltSpinCardProps {
   children: React.ReactNode;
@@ -17,6 +24,9 @@ interface TiltSpinCardProps {
   style?: React.CSSProperties;
   onClick?: () => void;
   tabIndex?: number;
+  /** Optional: receives { addSpinRotation } once mounted so a parent can
+   * add rotation (e.g. a flip) without desyncing the drag baseline. */
+  controlsRef?: React.MutableRefObject<TiltSpinCardControls | null>;
 }
 
 /**
@@ -46,6 +56,7 @@ export const TiltSpinCard = forwardRef<HTMLDivElement, TiltSpinCardProps>(
       style: externalStyle,
       onClick,
       tabIndex = 0,
+      controlsRef,
     },
     ref
   ) => {
@@ -59,7 +70,7 @@ export const TiltSpinCard = forwardRef<HTMLDivElement, TiltSpinCardProps>(
       setTimeout(() => { tapFiredRef.current = false; }, 100);
     };
 
-    const { style: tiltStyle, handlers, wasDragged } = useCardTiltSpin({
+    const { style: tiltStyle, handlers, wasDragged, addSpinRotation } = useCardTiltSpin({
       disabled,
       maxRotateX,
       maxRotateY,
@@ -70,6 +81,10 @@ export const TiltSpinCard = forwardRef<HTMLDivElement, TiltSpinCardProps>(
       onRotationChange,
       onTap: handleTap, // Pass wrapped handler for reliable tap detection
     });
+
+    useEffect(() => {
+      if (controlsRef) controlsRef.current = { addSpinRotation };
+    }, [controlsRef, addSpinRotation]);
 
     const combinedStyle: React.CSSProperties = {
       ...tiltStyle,

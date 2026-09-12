@@ -32,12 +32,27 @@ export function useAssetChain(candidates: Array<string | null | undefined>): { s
   return { src: clean[index] ?? null, onError: () => setIndex((i) => i + 1) };
 }
 
-export function Eyebrow({ children, color }: { children?: React.ReactNode; color?: string }) {
+export function Eyebrow({
+  children,
+  color,
+  className = "",
+  style,
+}: {
+  children?: React.ReactNode;
+  color?: string;
+  /** Additive — appended after the default classes so a caller can bump
+   * spacing/etc. for one instance without affecting every other Eyebrow on
+   * the page. Not reliable for overriding text size (Tailwind's own
+   * cascade order, not className order, decides conflicting utilities) —
+   * use `style` for that instead, since inline styles always win. */
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   if (!children) return null;
   return (
     <p
-      className="text-[0.75rem] sm:text-[0.8125rem] font-semibold tracking-[0.3em] uppercase mb-[1rem]"
-      style={{ color: color || "currentColor" }}
+      className={`text-[0.75rem] sm:text-[0.8125rem] font-semibold tracking-[0.3em] uppercase mb-[1rem] ${className}`}
+      style={{ color: color || "currentColor", ...style }}
     >
       {children}
     </p>

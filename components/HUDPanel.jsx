@@ -6805,7 +6805,7 @@ const HUDPanel = React.memo(function HUDPanel({
                       {/* KARAOKE button — toggles embedded YouTube video inside the lyrics panel */}
                       {(() => {
                         const _isElementPlanetBtn = currentId && ['heart', 'water', 'lightning', 'darkness', 'center'].includes(String(currentId).toLowerCase());
-                        const hasKaraoke = !_isElementPlanetBtn && !!currentSong?.karaoke;
+                        const hasKaraoke = !_isElementPlanetBtn && !isHome && !!currentSong?.karaoke;
                         const isActive = lyricsKaraokeMode && hasKaraoke;
                         return (
                           <button

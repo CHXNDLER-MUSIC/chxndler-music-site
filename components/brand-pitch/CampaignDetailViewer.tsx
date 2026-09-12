@@ -3,8 +3,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import MediaViewerModal from "./MediaViewerModal";
+import TiltSpinCard from "@/components/TiltSpinCard";
 import { useInteractionSound } from "./useInteractionSound";
 import { getBrandArtUrl } from "@/lib/brandPitchStorage";
+import { getDerivedPhotoAsset } from "@/lib/brandPitchVisuals";
+import { useAssetAvailable } from "./ui";
 import type { BrandPitch, BrandPitchMoment } from "@/lib/brandPitch";
 import type { PitchPalette } from "@/lib/brandPitchPalette";
 
@@ -71,8 +74,19 @@ export default function CampaignDetailViewer({
   const presentation = moment ? presentationFor(moment.category) : "generic";
   const momentKey = moment ? `${moment.category}|${moment.title}` : "";
 
+  // Exclusive merch — an optional bonus block for the PRODUCT moment only,
+  // shown when the brand has uploaded a "merch.png" sibling next to its
+  // other PHOTO assets (same folder-derivation convention as cd.png/vinyl.png
+  // in CoverArtViewer). No new Supabase field: brands that haven't uploaded
+  // one simply don't get the section, template-wide.
+  const merchAsset = useAssetAvailable(presentation === "product" ? getDerivedPhotoAsset(pitch, "merch.png") : null);
+  // Toggled by the "Exclusive Merch" button — swaps the stage/title/body to
+  // the merch shot in place, rather than appending a second block below.
+  const [showMerch, setShowMerch] = useState(false);
+
   useEffect(() => {
     setActiveIndex(0);
+    setShowMerch(false);
   }, [momentKey]);
 
   // Preload the next still image only — never eagerly fetch video bytes.
@@ -84,7 +98,8 @@ export default function CampaignDetailViewer({
     }
   }, [media, activeIndex]);
 
-  const canNav = media.length > 1;
+  const displayMedia: MediaItem[] = showMerch && merchAsset.src ? [{ url: merchAsset.src, isVideo: false }] : media;
+  const canNav = !showMerch && media.length > 1;
   const goTo = (i: number) => setActiveIndex(((i % media.length) + media.length) % media.length);
   const goNext = () => {
     if (!canNav) return;
@@ -124,20 +139,47 @@ export default function CampaignDetailViewer({
   if (!moment) return null;
 
   const number = String(index + 1).padStart(2, "0");
-  const eyebrow = `${number} — ${moment.category || "Application"}`;
+  const productEyebrow = `${number} — ${moment.category || "Application"}`;
+  const eyebrow = showMerch ? "EXCLUSIVE" : productEyebrow;
+  const title = showMerch ? "Limited Edition Merch" : moment.title;
+  const body = showMerch
+    ? "A limited run of wearable merch inspired by the song — made for the fans who found it first."
+    : moment.body;
 
   return (
     <MediaViewerModal open={open} onClose={onClose} label={pitch.song_title} kind={pitch.brand_name} accent={palette.accent}>
       <div>
-        <p className="text-[0.75rem] font-bold tracking-[0.2em] uppercase" style={{ color: palette.accent }}>
-          {eyebrow}
-        </p>
+        <div className="flex items-start justify-between gap-[1rem]">
+          <p className="text-[0.75rem] font-bold tracking-[0.2em] uppercase" style={{ color: palette.accent }}>
+            {eyebrow}
+          </p>
+          {merchAsset.src && (
+            <button
+              type="button"
+              onClick={() => {
+                playClick();
+                setShowMerch((v) => !v);
+              }}
+              onMouseEnter={playHover}
+              className="flex-shrink-0 inline-flex items-center gap-[0.35rem] rounded-full px-[0.875rem] py-[0.4rem] text-[0.6875rem] font-bold tracking-[0.15em] uppercase transition-colors duration-200 hover:opacity-80"
+              style={{ backgroundColor: `${palette.accent}1f`, color: palette.accent }}
+            >
+              {showMerch ? (
+                <>
+                  <span aria-hidden="true">←</span> Back to {moment.category || "Product"}
+                </>
+              ) : (
+                "Exclusive Merch"
+              )}
+            </button>
+          )}
+        </div>
         <h3 className="mt-[0.5rem] text-[1.75rem] sm:text-[2.25rem] font-bold tracking-tight leading-[1.05] text-white">
-          {moment.title}
+          {title}
         </h3>
-        {moment.body && (
+        {body && (
           <p className="mt-[0.75rem] text-[0.9375rem] sm:text-[1rem] leading-relaxed text-white/70 max-w-[36rem]">
-            {moment.body}
+            {body}
           </p>
         )}
 
@@ -146,9 +188,9 @@ export default function CampaignDetailViewer({
           onTouchStart={canNav ? onTouchStart : undefined}
           onTouchEnd={canNav ? onTouchEnd : undefined}
         >
-          {presentation === "social" ? (
+          {presentation === "social" && !showMerch ? (
             <VerticalStage
-              media={media}
+              media={displayMedia}
               activeIndex={activeIndex}
               onSelect={goTo}
               reduceMotion={reduceMotion}
@@ -156,7 +198,7 @@ export default function CampaignDetailViewer({
               playClick={playClick}
             />
           ) : (
-            <LookbookStage media={media} activeIndex={activeIndex} reduceMotion={reduceMotion} />
+            <LookbookStage media={displayMedia} activeIndex={showMerch ? 0 : activeIndex} reduceMotion={reduceMotion} accent={palette.accent} />
           )}
         </div>
 
@@ -173,7 +215,7 @@ export default function CampaignDetailViewer({
               <span aria-hidden="true" className="text-[1.25rem] leading-none">‹</span>
             </button>
             <span className="text-[0.75rem] font-semibold tracking-[0.25em] text-white/50">
-              {String(activeIndex + 1).padStart(2, "0")} / {String(media.length).padStart(2, "0")}
+              {String(activeIndex + 1).padStart(2, "0")} / {String(displayMedia.length).padStart(2, "0")}
             </span>
             <button
               type="button"
@@ -187,6 +229,7 @@ export default function CampaignDetailViewer({
             </button>
           </div>
         )}
+
       </div>
     </MediaViewerModal>
   );
@@ -198,10 +241,12 @@ function LookbookStage({
   media,
   activeIndex,
   reduceMotion,
+  accent,
 }: {
   media: MediaItem[];
   activeIndex: number;
   reduceMotion: boolean;
+  accent: string;
 }) {
   const item = media[activeIndex];
   if (!item) return null;
@@ -225,14 +270,62 @@ function LookbookStage({
               className="max-w-full max-h-[65vh] w-auto h-auto mx-auto block rounded-[0.75rem]"
             />
           ) : (
-            <img
-              src={item.url}
-              alt=""
-              className="max-w-full max-h-[65vh] w-auto h-auto mx-auto block rounded-[0.75rem]"
-            />
+            <SpinnableProductImage src={item.url} accent={accent} />
           )}
         </motion.div>
       </AnimatePresence>
+    </div>
+  );
+}
+
+/** A still product/IRL shot you can drag to tilt/spin, same mechanic as the
+ * collectible card and the cover-art viewer (TiltSpinCard, applying the
+ * reported Y rotation to the image itself since the container's own
+ * transform only ever carries the vertical wobble in spin mode). Video
+ * assets skip this — dragging would fight the native scrubber/controls. */
+function SpinnableProductImage({ src, accent }: { src: string; accent: string }) {
+  const [rotation, setRotation] = useState(0);
+  return (
+    <div className="relative inline-block max-w-full max-h-[65vh]">
+      <div
+        className="pulse-glow absolute -inset-[10%] rounded-[0.75rem] pointer-events-none"
+        aria-hidden="true"
+        style={{ background: `radial-gradient(circle, ${accent}55 0%, transparent 70%)`, filter: "blur(2rem)" }}
+      />
+      <TiltSpinCard
+        className="relative rounded-[0.75rem] overflow-hidden shadow-[0_2rem_4rem_-1rem_rgba(0,0,0,0.6)]"
+        maxRotateX={10}
+        sensitivity={0.3}
+        returnDuration={400}
+        enableSpin
+        spinSensitivity={0.8}
+        onRotationChange={setRotation}
+      >
+        <div style={{ transform: `rotateY(${rotation}deg)`, backfaceVisibility: "hidden" }}>
+          <img
+            src={src}
+            alt=""
+            className="max-w-full max-h-[65vh] w-auto h-auto mx-auto block"
+            draggable={false}
+          />
+        </div>
+      </TiltSpinCard>
+      <style jsx>{`
+        .pulse-glow {
+          animation: productPulse 3s ease-in-out infinite;
+        }
+        @keyframes productPulse {
+          0%,
+          100% {
+            opacity: 0.45;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.8;
+            transform: scale(1.08);
+          }
+        }
+      `}</style>
     </div>
   );
 }

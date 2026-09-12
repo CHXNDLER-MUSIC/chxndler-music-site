@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import type { BrandPitch } from "@/lib/brandPitch";
 import type { PitchPalette } from "@/lib/brandPitchPalette";
 import { Eyebrow } from "./ui";
 import BookingInline from "./BookingInline";
+import { useInteractionSound } from "./useInteractionSound";
 
 /**
  * The closing moment — a solid campaign-accent surface, centered, generous
@@ -12,8 +14,10 @@ import BookingInline from "./BookingInline";
  * photo.
  */
 export default function BrandCTA({ pitch, palette }: { pitch: BrandPitch; palette: PitchPalette }) {
+  const reduceMotion = useReducedMotion();
   const hasCta = !!(pitch.cta_eyebrow || pitch.cta_headline || pitch.cta_body);
   const [bookingOpen, setBookingOpen] = useState(false);
+  const { playHover, playClick } = useInteractionSound();
   if (!hasCta) return null;
 
   const buttonLabel = pitch.cta_button_text || "LET'S TALK";
@@ -58,25 +62,54 @@ export default function BrandCTA({ pitch, palette }: { pitch: BrandPitch; palett
             {buttonLabel}
           </a>
         ) : (
-          <button
+          <motion.button
             type="button"
-            onClick={() => setBookingOpen(true)}
-            className="mt-[2.5rem] inline-flex items-center justify-center rounded-full px-[2.25rem] py-[1.125rem] text-[0.9375rem] font-bold tracking-[0.08em] uppercase bg-white transition-transform hover:scale-[1.03] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] focus-visible:outline-white"
+            onClick={() => {
+              playClick();
+              setBookingOpen(true);
+            }}
+            onMouseEnter={playHover}
+            animate={reduceMotion || bookingOpen ? { scale: 1 } : { scale: [1, 1.015, 1] }}
+            transition={
+              reduceMotion || bookingOpen ? { duration: 0 } : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }
+            }
+            whileHover={reduceMotion ? undefined : { scale: 1.045 }}
+            whileTap={{ scale: 0.97 }}
+            className="relative mt-[2.5rem] inline-flex items-center justify-center rounded-full px-[2.25rem] py-[1.125rem] text-[0.9375rem] font-bold tracking-[0.08em] uppercase bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] focus-visible:outline-white"
             style={{ color: palette.accent }}
           >
-            {buttonLabel}
-          </button>
-        )}
-
-        {!isExternalUrl && (
-          <BookingInline
-            open={bookingOpen}
-            brandName={pitch.brand_name}
-            brandSlug={pitch.slug}
-            accentColor={palette.accent}
-          />
+            {/* Slow, subtle glow ring — same idle-attention cue as the hero
+                play button. White (not palette.accent) since the button
+                itself sits on the accent-colored section background, where
+                an accent-colored glow would just vanish into it. Stops once
+                the scheduler is open — it's already gotten the click. */}
+            {!reduceMotion && !bookingOpen && (
+              <motion.span
+                aria-hidden="true"
+                className="absolute -inset-[0.35rem] rounded-full pointer-events-none bg-white"
+                animate={{ opacity: [0.15, 0.45, 0.15] }}
+                transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
+              />
+            )}
+            <span className="relative">{buttonLabel}</span>
+          </motion.button>
         )}
       </div>
+
+      {/* Deliberately outside the copy's max-w-[42rem] column: Cal's
+          calendar-left/times-right layout needs real width to render — boxed
+          into the same narrow column as the headline, it has no choice but
+          to fall back to its tall stacked (calendar full-width, then a long
+          scrolling list of times) layout. Its own width is set in
+          BookingInline. */}
+      {!isExternalUrl && (
+        <BookingInline
+          open={bookingOpen}
+          brandName={pitch.brand_name}
+          brandSlug={pitch.slug}
+          accentColor={palette.accent}
+        />
+      )}
     </section>
   );
 }
