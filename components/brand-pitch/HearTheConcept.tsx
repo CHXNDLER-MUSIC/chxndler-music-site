@@ -166,15 +166,15 @@ export default function HearTheConcept({
       <Eyebrow color={palette.accent}>{pitch.audio_eyebrow || "Hear the Concept"}</Eyebrow>
 
       {headline && (
-        <h2 className="font-bold leading-[1.02] tracking-tight text-[2rem] sm:text-[3rem] max-w-[38rem]">{headline}</h2>
+        <h2 className="-mt-[0.35rem] font-bold leading-[1.02] tracking-tight text-[1.8rem] sm:text-[2.7rem] max-w-[38rem]">{headline}</h2>
       )}
       {supportingLine && (
-        <p className="mt-[1rem] text-[1.0625rem] leading-relaxed opacity-75 max-w-[36rem]">{supportingLine}</p>
+        <p className="mt-[0.75rem] text-[1.0625rem] leading-relaxed opacity-75 max-w-[36rem]">{supportingLine}</p>
       )}
 
-      <div className="mt-[3rem] grid grid-cols-1 lg:grid-cols-[minmax(0,24rem)_1fr] gap-[2.5rem] lg:gap-[4rem] items-start">
+      <div className="mt-[2.25rem] grid grid-cols-1 lg:grid-cols-[minmax(0,24rem)_1fr] gap-[2.5rem] lg:gap-[4rem] items-start">
         {/* LEFT — cover art + song identity, one composition with the player on the right */}
-        <div className="mx-auto lg:mx-0 w-full max-w-[22rem]">
+        <div className="mx-auto lg:mx-0 w-full max-w-[21rem]">
           {cover ? (
             <CoverArtViewer
               src={cover}
@@ -198,7 +198,7 @@ export default function HearTheConcept({
               </div>
             </div>
           )}
-          <p className="mt-[1rem] text-[1.125rem] font-bold tracking-tight">{pitch.song_title}</p>
+          <p className="mt-[0.75rem] text-[1.125rem] font-bold tracking-tight">{pitch.song_title}</p>
           <p className="text-[0.9375rem] opacity-60">{pitch.artist_name}</p>
         </div>
 
@@ -207,7 +207,7 @@ export default function HearTheConcept({
           {primary.length > 0 && selected && (
             <div>
               {primary.length > 1 && (
-                <div role="tablist" aria-label="Select a version" className="flex flex-wrap gap-[0.75rem] mb-[1.5rem]">
+                <div role="tablist" aria-label="Select a version" className="flex flex-wrap gap-[0.625rem] mb-[1.25rem]">
                   {primary.map((v) => {
                     const isSelected = selected.path === v.path;
                     return (
@@ -224,7 +224,7 @@ export default function HearTheConcept({
                         whileHover={reduceMotion ? undefined : { scale: 1.035 }}
                         whileTap={{ scale: 0.97 }}
                         transition={{ duration: 0.15, ease: "easeOut" }}
-                        className="rounded-full px-[1.5rem] py-[0.75rem] text-[0.875rem] font-bold tracking-[0.05em] uppercase transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem]"
+                        className="rounded-full px-[1.125rem] py-[0.625rem] text-[0.875rem] font-bold tracking-[0.05em] uppercase transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem]"
                         style={
                           isSelected
                             ? { backgroundColor: palette.accent, color: palette.onAccent, outlineColor: palette.accent }
@@ -256,7 +256,7 @@ export default function HearTheConcept({
                       <p className="mt-[0.4rem] text-[1rem] leading-relaxed opacity-70 max-w-[32rem]">{selected.description}</p>
                     )}
 
-                    <div className="mt-[1.5rem]">
+                    <div className="mt-[1.25rem]">
                       <BrandAudioPlayer
                         id={selected.path}
                         src={selected.src}
@@ -265,66 +265,70 @@ export default function HearTheConcept({
                         size="lg"
                       />
                     </div>
-
-                    {pitch.lyrics && (
-                      <div className="mt-[1.5rem]">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            playClick();
-                            setLyricsOpen((v) => !v);
-                          }}
-                          onMouseEnter={playHover}
-                          aria-expanded={lyricsOpen}
-                          aria-controls="brand-lyrics-panel"
-                          className="inline-flex items-center gap-[0.5rem] text-[1.3125rem] font-semibold tracking-[0.1em] uppercase hover:opacity-70 transition-opacity"
-                          style={{ color: palette.accent }}
-                        >
-                          {lyricsOpen ? "Hide Lyrics" : "View Lyrics"} <span aria-hidden="true">{lyricsOpen ? "↑" : "↓"}</span>
-                        </button>
-
-                        <AnimatePresence initial={false}>
-                          {lyricsOpen && (
-                            <motion.div
-                              id="brand-lyrics-panel"
-                              initial={reduceMotion ? false : { height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={reduceMotion ? {} : { height: 0, opacity: 0 }}
-                              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                              className="overflow-hidden"
-                            >
-                              <div className="mt-[1rem] max-w-[32rem]">
-                                <p className="text-[0.6875rem] font-bold tracking-[0.2em] uppercase opacity-50">
-                                  {pitch.song_title} — Lyrics
-                                </p>
-                                <div className="mt-[1rem] flex flex-col gap-[1rem]">
-                                  {lyricsSections.map((section, i) => (
-                                    <div key={i}>
-                                      {section.label && (
-                                        <p
-                                          className="text-[0.6875rem] font-bold tracking-[0.2em] uppercase mb-[0.3rem]"
-                                          style={{ color: palette.accent }}
-                                        >
-                                          {section.label}
-                                        </p>
-                                      )}
-                                      {section.text && (
-                                        <p className="whitespace-pre-line text-[1rem] leading-snug opacity-75">
-                                          {section.text}
-                                        </p>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    )}
                   </motion.div>
                 </AnimatePresence>
               </motion.div>
+
+              {/* Deliberately OUTSIDE the per-version crossfade above: the
+                  lyrics belong to the song as a whole, not to whichever
+                  version tab happens to be selected, so switching tabs must
+                  never remount (and re-collapse) this panel. */}
+              {pitch.lyrics && (
+                <div className="mt-[1rem]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClick();
+                      setLyricsOpen((v) => !v);
+                    }}
+                    onMouseEnter={playHover}
+                    aria-expanded={lyricsOpen}
+                    aria-controls="brand-lyrics-panel"
+                    className="inline-flex items-center gap-[0.5rem] text-[1.3125rem] font-semibold tracking-[0.1em] uppercase hover:opacity-70 transition-opacity"
+                    style={{ color: palette.accent }}
+                  >
+                    {lyricsOpen ? "Hide Lyrics" : "View Lyrics"} <span aria-hidden="true">{lyricsOpen ? "↑" : "↓"}</span>
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {lyricsOpen && (
+                      <motion.div
+                        id="brand-lyrics-panel"
+                        initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={reduceMotion ? {} : { height: 0, opacity: 0 }}
+                        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-[1rem] max-w-[32rem]">
+                          <p className="text-[0.6875rem] font-bold tracking-[0.2em] uppercase opacity-50">
+                            {pitch.song_title} — Lyrics
+                          </p>
+                          <div className="mt-[1rem] flex flex-col gap-[1rem]">
+                            {lyricsSections.map((section, i) => (
+                              <div key={i}>
+                                {section.label && (
+                                  <p
+                                    className="text-[0.6875rem] font-bold tracking-[0.2em] uppercase mb-[0.3rem]"
+                                    style={{ color: palette.accent }}
+                                  >
+                                    {section.label}
+                                  </p>
+                                )}
+                                {section.text && (
+                                  <p className="whitespace-pre-line text-[1rem] leading-snug opacity-75">
+                                    {section.text}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
             </div>
           )}
 

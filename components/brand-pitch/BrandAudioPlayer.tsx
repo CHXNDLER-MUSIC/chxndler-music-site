@@ -106,7 +106,9 @@ export default function BrandAudioPlayer({
             seek(parseFloat(e.target.value));
           }}
           aria-label={`Seek ${label}`}
-          className="flex-1 h-[0.25rem] rounded-full appearance-none cursor-pointer accent-[var(--brand-accent-native)]"
+          className={`flex-1 h-[0.25rem] rounded-full appearance-none cursor-pointer accent-[var(--brand-accent-native)] ${
+            size === "lg" ? "max-w-[24rem]" : ""
+          }`}
           style={{ accentColor }}
         />
         <span className="text-[0.6875rem] font-mono tabular-nums opacity-60 w-[2.5rem]">{formatTime(dur)}</span>

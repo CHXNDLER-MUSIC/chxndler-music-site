@@ -63,13 +63,13 @@ export default function BrandPitchPage({ pitch }: { pitch: BrandPitch }) {
         {/* mix-blend-mode makes this legible over any hero backdrop (light, dark, image, video)
             without brand-specific logic — white text inverts against whatever sits beneath it. */}
         <header
-          className="fixed top-0 inset-x-0 z-40 flex items-center justify-between px-[6vw] sm:px-[8vw] py-[1.5rem] sm:py-[1.75rem] pointer-events-none"
+          className="fixed top-0 inset-x-0 z-40 flex items-center justify-between gap-[1rem] pl-[6vw] pr-[7vw] sm:pl-[8vw] sm:pr-[9.5vw] py-[1.5rem] sm:py-[1.75rem] pointer-events-none"
           style={{ color: "#ffffff", mixBlendMode: "difference" }}
         >
-          <span className="pointer-events-auto font-bold tracking-[0.2em] text-[0.875rem] sm:text-[0.9375rem]">
+          <span className="pointer-events-auto flex-shrink-0 font-bold tracking-[0.2em] text-[0.875rem] sm:text-[0.9375rem]">
             CHXNDLER STUDIO
           </span>
-          <span className="pointer-events-auto text-[0.6875rem] sm:text-[0.75rem] tracking-[0.2em] uppercase font-medium">
+          <span className="pointer-events-auto text-right text-[0.6875rem] sm:text-[0.75rem] tracking-[0.2em] uppercase font-medium">
             Original Brand Concept / {year}
           </span>
         </header>

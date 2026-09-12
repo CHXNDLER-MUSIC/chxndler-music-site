@@ -134,7 +134,7 @@ export default function BrandAbout({
             </Eyebrow>
 
             <h3
-              className="font-bold leading-[0.95] tracking-tight text-[2.5rem] sm:text-[3.5rem] lg:text-[4.25rem]"
+              className="font-bold uppercase leading-[0.95] tracking-tight text-[2.5rem] sm:text-[3.5rem] lg:text-[4.25rem]"
               style={{ color: CHXNDLER_HEADLINE }}
             >
               {CHXNDLER_HEADLINE_LINE_1}
@@ -143,7 +143,7 @@ export default function BrandAbout({
             </h3>
 
             <p
-              className="mt-[0.75rem] text-[0.6875rem] sm:text-[0.75rem] font-semibold tracking-[0.2em] uppercase"
+              className="mt-[0.75rem] text-[0.6875rem] sm:text-[0.75rem] font-semibold tracking-[0.25em] uppercase"
               style={{ color: "rgba(255,255,255,0.55)" }}
             >
               {CHXNDLER_CREDENTIALS}
@@ -160,7 +160,7 @@ export default function BrandAbout({
                 bold + brand-accent) but deliberately smaller than the
                 headline so it never competes with it. */}
             <p className="mt-[1.5rem] text-[1.1875rem] sm:text-[1.3125rem] leading-snug italic">
-              <span className="block" style={{ color: "rgba(255,255,255,0.72)" }}>
+              <span className="block font-light" style={{ color: "rgba(255,255,255,0.5)" }}>
                 {CHXNDLER_STATEMENT_LINE_1}
               </span>
               <span className="block font-bold" style={{ color: palette.accent }}>
