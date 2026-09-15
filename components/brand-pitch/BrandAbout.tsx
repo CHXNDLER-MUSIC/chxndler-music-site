@@ -7,6 +7,8 @@ import type { PitchPalette } from "@/lib/brandPitchPalette";
 import type { PitchAssetRegistry } from "@/lib/brandPitchVisuals";
 import { Eyebrow, SectionShell } from "./ui";
 import StartButton from "@/components/StartButton";
+import { useInteractionSound } from "./useInteractionSound";
+import StudioPortfolioLauncher, { type StudioProject } from "./StudioPortfolioLauncher";
 
 // CHXNDLER's own identity photo and wordmark signature — the same across
 // every brand pitch page, not per-brand content, so they live locally rather
@@ -52,9 +54,10 @@ const PORTRAIT_MASK = "radial-gradient(ellipse 50% 52% at 50% 46%, #000 94%, tra
 const CHXNDLER_EYEBROW = "CREATED BY CHXNDLER";
 const CHXNDLER_HEADLINE_LINE_1 = "THE ARTIST";
 const CHXNDLER_HEADLINE_LINE_2 = "BEHIND THE SONG.";
-const CHXNDLER_STATEMENT_LINE_1 = "Every brand has a visual identity.";
-const CHXNDLER_STATEMENT_LINE_2 = "Why not a sonic one?";
 const CHXNDLER_CREDENTIALS = "ARTIST · SONGWRITER · PRODUCER";
+// The one accent word per line ("visual", "sonic") gets its own neon
+// treatment — everything else in the statement stays one consistent color/weight.
+const NEON_YELLOW = "#F5FF3D";
 
 /**
  * The closing signature of the pitch, after LET'S TALK — an editorial artist
@@ -70,12 +73,21 @@ export default function BrandAbout({
   pitch,
   palette,
   assets,
+  otherProjects,
 }: {
   pitch: BrandPitch;
   palette: PitchPalette;
   assets: PitchAssetRegistry;
+  /** Every OTHER published brand project — the current pitch is already
+   * excluded by the caller (app/brands/[slug]/page.tsx), derived from the
+   * brand_pitches row's own slug, never a route/pathname check here. */
+  otherProjects: StudioProject[];
 }) {
   const reduceMotion = useReducedMotion();
+  // The Heartverse mark gets its own signature click sound (star.mp3, same
+  // as the collectible card) rather than the generic sitewide click — same
+  // "you found something special" beat, template-wide, not brand-specific.
+  const { playHover, playClick } = useInteractionSound({ clickKey: "star" });
   if (!pitch.about_body) return null;
 
   const fade = (delay = 0) =>
@@ -122,6 +134,7 @@ export default function BrandAbout({
               alt={pitch.artist_name}
               className="relative w-full h-full object-cover rounded-full"
               style={{ WebkitMaskImage: PORTRAIT_MASK, maskImage: PORTRAIT_MASK, objectPosition: "58% 50%" }}
+              data-no-lazy="" // see ui.tsx SectionShell for why
             />
           </motion.div>
 
@@ -156,40 +169,70 @@ export default function BrandAbout({
             )}
 
             {/* Featured statement — the creative philosophy, given more
-                weight than the biography (larger, brighter, the second line
-                bold + brand-accent) but deliberately smaller than the
-                headline so it never competes with it. */}
-            <p className="mt-[1.5rem] text-[1.1875rem] sm:text-[1.3125rem] leading-snug italic">
-              <span className="block font-light" style={{ color: "rgba(255,255,255,0.5)" }}>
-                {CHXNDLER_STATEMENT_LINE_1}
+                weight than the biography but deliberately smaller than the
+                headline so it never competes with it. Always centered on its
+                own, regardless of how the surrounding copy column aligns
+                (center on mobile, left on desktop) — it reads as a standalone
+                pull-quote/mantra, not body copy. Both lines share one color/
+                weight; only the one accent word per line ("visual", "sonic")
+                breaks out in bold neon yellow. */}
+            <p
+              className="mt-[1.5rem] text-center text-[1.1875rem] sm:text-[1.3125rem] leading-snug italic"
+              style={{ color: CHXNDLER_HEADLINE }}
+            >
+              <span className="block">
+                Every brand has a <span className="font-bold" style={{ color: NEON_YELLOW }}>visual</span> identity.
               </span>
-              <span className="block font-bold" style={{ color: palette.accent }}>
-                {CHXNDLER_STATEMENT_LINE_2}
+              <span className="block">
+                Why not a <span className="font-bold" style={{ color: NEON_YELLOW }}>sonic</span> one?
               </span>
             </p>
 
-            {/* Creator's mark — the chxndler.world link paired with a small
-                text signature, read together as one artist mark rather than
-                a floating logo. The wrapper's scoped override tones down
-                StartButton's own cyan glow (shared sitewide, so its base
-                styling stays untouched) so the mark stays a controlled,
-                intentional finishing detail rather than the oversized glow
-                of the earlier design. */}
-            <div className="mt-[1.25rem] flex items-center justify-center lg:justify-start gap-[1rem] chxndler-mark">
-              <StartButton
-                size={136}
-                pulse={false}
-                ariaLabel="Visit chxndler.world"
-                onClick={() => window.open("https://chxndler.world", "_blank", "noopener,noreferrer")}
-              />
-              <div className="flex flex-col justify-center -translate-y-[0.5rem]">
-                <img src={CHXNDLER_SIGNATURE} alt="CHXNDLER" className="h-[7rem] w-auto object-contain object-left" />
-                <span
-                  className="-mt-[1.5rem] text-[0.6875rem] font-semibold tracking-[0.25em] uppercase text-white"
-                >
+            {/* Creator's mark — one centered lockup, always on its own axis
+                regardless of how the surrounding copy column aligns (center
+                on mobile, left on desktop): CHXNDLER's signature with THE
+                HEARTVERSE directly beneath it, then the interactive blue
+                Heartverse button centered underneath the whole lockup with
+                real breathing room — never beside it. The wrapper's scoped
+                override tones down StartButton's own cyan glow (shared
+                sitewide, so its base styling stays untouched) so the mark
+                stays a controlled, intentional finishing detail rather than
+                the oversized glow of the earlier design. */}
+            <div className="mt-[0.125rem] flex flex-col items-center gap-[1rem] chxndler-mark">
+              <div className="flex flex-col items-center">
+                {/* The source PNG has a lot of baked-in transparent padding above
+                    the actual mark — pulled up to close that gap instead of just
+                    trusting the box's own margin, or the visible ink would still
+                    read far below the statement above it. */}
+                <img
+                  src={CHXNDLER_SIGNATURE}
+                  alt="CHXNDLER"
+                  className="-mt-[1rem] sm:-mt-[1.25rem] h-[5.5rem] sm:h-[6.5rem] w-auto object-contain"
+                  data-no-lazy="" // see ui.tsx SectionShell for why
+                />
+                <span className="-mt-[0.5rem] sm:-mt-[0.625rem] text-[0.6875rem] font-semibold tracking-[0.25em] uppercase text-white">
                   THE HEARTVERSE
                 </span>
               </div>
+              <div onMouseEnter={playHover}>
+                <StartButton
+                  size={112}
+                  pulse={false}
+                  ariaLabel="Visit chxndler.world"
+                  onClick={() => {
+                    playClick();
+                    window.open("https://chxndler.world", "_blank", "noopener,noreferrer");
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Portfolio launcher — same centered-on-its-own-axis treatment
+                as the mark above, with its own breathing room so it reads as
+                a deliberate closing beat, not an appendage. Renders nothing
+                if the current pitch is the only published project. */}
+            <div className="mt-[1.75rem] flex justify-center">
+              <StudioPortfolioLauncher projects={otherProjects} />
             </div>
           </motion.div>
         </div>

@@ -19,7 +19,14 @@ type StagePhoto = { src: string | null; onError: () => void };
 function PhotoMockup({ src, alt, onError }: { src: string; alt: string; onError?: () => void }) {
   return (
     <div className="w-full h-full bg-[#111113] flex items-center justify-center">
-      <img src={src} alt={alt} className="w-full h-full object-contain" onError={onError} draggable={false} />
+      <img
+        src={src}
+        alt={alt}
+        className="w-full h-full object-contain"
+        onError={onError}
+        draggable={false}
+        data-no-lazy="" // see ui.tsx SectionShell for why
+      />
     </div>
   );
 }
@@ -122,7 +129,7 @@ function CssCoverArtStage({ stage, src, alt }: { stage: "cd" | "vinyl"; src: str
           }}
         />
         <div className="absolute rounded-full overflow-hidden" style={{ inset: "17%" }}>
-          <img src={src} alt={alt} className="w-full h-full object-cover" draggable={false} />
+          <img src={src} alt={alt} className="w-full h-full object-cover" draggable={false} data-no-lazy="" />
         </div>
         <div
           className="absolute rounded-full bg-white"
@@ -140,7 +147,7 @@ function CssCoverArtStage({ stage, src, alt }: { stage: "cd" | "vinyl"; src: str
       }}
     >
       <div className="absolute rounded-full overflow-hidden" style={{ inset: "32%" }}>
-        <img src={src} alt={alt} className="w-full h-full object-cover" draggable={false} />
+        <img src={src} alt={alt} className="w-full h-full object-cover" draggable={false} data-no-lazy="" />
       </div>
       <div
         className="absolute rounded-full bg-black"
@@ -190,7 +197,7 @@ function CoverArtStage({
   let rounded = "rounded-[1rem]";
 
   if (stage === "cover") {
-    content = <img src={src} alt={alt} className="w-full h-full object-cover" draggable={false} />;
+    content = <img src={src} alt={alt} className="w-full h-full object-cover" draggable={false} data-no-lazy="" />;
   } else if (stage === "cd") {
     if (cd?.src) {
       content = <PhotoMockup src={cd.src} alt={alt} onError={cd.onError} />;
@@ -270,7 +277,14 @@ export default function CoverArtViewer({
         className={`group relative block w-full rounded-[1rem] overflow-hidden cursor-pointer transition-transform duration-300 ease-out hover:scale-[1.02] motion-reduce:transition-none motion-reduce:hover:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem] ${className}`}
         style={{ outlineColor: accent }}
       >
-        <img src={src} alt={`${songTitle} cover art`} className="w-full h-full object-cover" onError={onError} draggable={false} />
+        <img
+          src={src}
+          alt={`${songTitle} cover art`}
+          className="w-full h-full object-cover"
+          onError={onError}
+          draggable={false}
+          data-no-lazy="" // see ui.tsx SectionShell for why
+        />
         <span
           className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/25 opacity-0 group-hover:opacity-100 transition-all duration-300"
           aria-hidden="true"

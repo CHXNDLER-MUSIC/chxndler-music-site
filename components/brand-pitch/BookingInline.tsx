@@ -154,7 +154,7 @@ export default function BookingInline({
                   style={{ width: "100%" }}
                   config={
                     brandName
-                      ? { theme: "light", notes: `Referred from CHXNDLER brand pitch: ${brandName} (${brandSlug})` }
+                      ? { theme: "light", notes: `Referred from CHXNDLER: ${brandName}${brandSlug ? ` (${brandSlug})` : ""}` }
                       : { theme: "light" }
                   }
                 />

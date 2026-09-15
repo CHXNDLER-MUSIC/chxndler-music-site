@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { fetchBrandPitch } from "@/lib/brandPitch";
+import { fetchBrandPitch, fetchAllBrandPitchSummaries } from "@/lib/brandPitch";
 import { getBrandArtUrl } from "@/lib/brandPitchStorage";
 import BrandPitchPage from "@/components/brand-pitch/BrandPitchPage";
+import type { StudioProject } from "@/components/brand-pitch/StudioPortfolioLauncher";
 
 // Private/direct-link creative presentations — always fresh, never indexed.
 export const dynamic = "force-dynamic";
@@ -35,5 +36,20 @@ export default async function BrandPage({ params }: Props) {
   const { slug } = await params;
   const pitch = await fetchBrandPitch(slug || "");
   if (!pitch) return notFound();
-  return <BrandPitchPage pitch={pitch} />;
+
+  // "EXPLORE THE STUDIO" gallery — every other published project, excluded
+  // by comparing the row's own slug (never the URL/pathname), so this stays
+  // correct regardless of how a page got linked to.
+  const allProjects = await fetchAllBrandPitchSummaries();
+  const otherProjects: StudioProject[] = allProjects
+    .filter((p) => p.slug !== pitch.slug.trim().toLowerCase())
+    .map((p) => ({
+      slug: p.slug,
+      brandName: p.brand_name,
+      projectTitle: p.song_title,
+      coverArt: getBrandArtUrl(p.cover_art_path || p.hero_art_path),
+      href: `/brands/${p.slug}`,
+    }));
+
+  return <BrandPitchPage pitch={pitch} otherProjects={otherProjects} />;
 }

@@ -14,6 +14,7 @@ import BrandMoments from "./BrandMoments";
 import Collectible from "./Collectible";
 import BrandAbout from "./BrandAbout";
 import BrandCTA from "./BrandCTA";
+import type { StudioProject } from "./StudioPortfolioLauncher";
 
 // The narrative spine, in order: ENTER THE WORLD (hero) -> UNDERSTAND THE
 // IDEA -> HEAR IT -> UNDERSTAND THE BRAND ASSET -> SEE THE WORLD (one
@@ -28,10 +29,21 @@ import BrandCTA from "./BrandCTA";
 // ("background 3.png") and Created by CHXNDLER (its own
 // about_background_image_path/about_background_color) each get an
 // independent, fully configurable background — never hardcoded to any brand.
-// BrandFit, BrandOffer, BrandPricing and BrandProcess still exist as
-// components/data (nothing deleted) but are intentionally not part of this
-// template's render — the "sales deck" layer an earlier pass moved away from.
-export default function BrandPitchPage({ pitch }: { pitch: BrandPitch }) {
+// The "sales deck" layer an earlier pass moved away from (fit/offer/pricing/
+// process) was removed entirely (see git history) rather than kept as dead
+// components — their brand_pitches columns (fit_points, deliverables,
+// pricing_*, process_steps) still exist and are still parsed by lib/brandPitch.ts,
+// just unrendered, so no content was lost if this template wants them back.
+export default function BrandPitchPage({
+  pitch,
+  otherProjects = [],
+}: {
+  pitch: BrandPitch;
+  /** Every OTHER published brand project, for the "EXPLORE THE STUDIO"
+   * gallery in BrandAbout — see app/brands/[slug]/page.tsx, which fetches
+   * the canonical brand_pitches list and excludes the current slug. */
+  otherProjects?: StudioProject[];
+}) {
   const palette = buildPitchPalette(pitch);
   const year = pitch.year || new Date().getFullYear();
 
@@ -61,9 +73,13 @@ export default function BrandPitchPage({ pitch }: { pitch: BrandPitch }) {
     <BrandAudioProvider>
       <div className="min-h-screen w-full overflow-x-hidden" style={themeVars}>
         {/* mix-blend-mode makes this legible over any hero backdrop (light, dark, image, video)
-            without brand-specific logic — white text inverts against whatever sits beneath it. */}
+            without brand-specific logic — white text inverts against whatever sits beneath it.
+            Deliberately `absolute`, not `fixed`: this is a title card for the hero underneath it,
+            not a persistent nav — it scrolls away with the hero instead of staying pinned over
+            every section beneath it (where it had nothing reliable to invert against and could
+            collide with section copy, especially on mobile). */}
         <header
-          className="fixed top-0 inset-x-0 z-40 flex items-center justify-between gap-[1rem] pl-[6vw] pr-[7vw] sm:pl-[8vw] sm:pr-[9.5vw] py-[1.5rem] sm:py-[1.75rem] pointer-events-none"
+          className="absolute top-0 inset-x-0 z-40 flex items-center justify-between gap-[1rem] pl-[6vw] pr-[7vw] sm:pl-[8vw] sm:pr-[9.5vw] py-[1.5rem] sm:py-[1.75rem] pointer-events-none"
           style={{ color: "#ffffff", mixBlendMode: "difference" }}
         >
           <span className="pointer-events-auto flex-shrink-0 font-bold tracking-[0.2em] text-[0.875rem] sm:text-[0.9375rem]">
@@ -74,7 +90,15 @@ export default function BrandPitchPage({ pitch }: { pitch: BrandPitch }) {
           </span>
         </header>
 
-        <main>
+        {/* globals.css has an unscoped `main { background: radial-gradient(...) }`
+            rule intended for the homepage's cockpit UI — it cascades to ANY
+            page rendering a bare <main>, this one included. Every brand pitch
+            up to now has masked it with an opaque hero image; a pitch with no
+            hero art (its only content is a faint accent-tinted wash) exposes
+            that cyan gradient bleeding straight through. Neutralized locally
+            here rather than touching the shared global rule, which other
+            unrelated pages (login, profile, ...) still depend on as-is. */}
+        <main className="bg-none">
           <BrandHero pitch={pitch} accent={palette.accent} year={year} />
           <CreativeIdea pitch={pitch} palette={palette} />
           <HearTheConcept pitch={pitch} palette={palette} assets={assets} />
@@ -83,7 +107,7 @@ export default function BrandPitchPage({ pitch }: { pitch: BrandPitch }) {
           <BrandMoments pitch={pitch} palette={palette} />
           <Collectible pitch={pitch} palette={palette} assets={assets} />
           <BrandCTA pitch={pitch} palette={palette} />
-          <BrandAbout pitch={pitch} palette={palette} assets={assets} />
+          <BrandAbout pitch={pitch} palette={palette} assets={assets} otherProjects={otherProjects} />
         </main>
       </div>
     </BrandAudioProvider>

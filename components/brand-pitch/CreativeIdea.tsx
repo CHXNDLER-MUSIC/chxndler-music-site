@@ -4,6 +4,23 @@ import type { PitchPalette } from "@/lib/brandPitchPalette";
 import { getSectionTexture } from "@/lib/brandPitchVisuals";
 import { Eyebrow, SectionShell } from "./ui";
 
+// Symbol/emoji ranges a "creative thought" tagline might end on (a heart, an
+// alien, an arrow, ...) — deliberately narrow (doesn't match ordinary
+// letters) so this only ever touches a genuinely decorative trailing glyph.
+const TRAILING_GLYPH_RE = /^[←-⯿☀-➿\u{1f000}-\u{1ffff}]+$/u;
+
+/** Ties a trailing decorative glyph (e.g. the "♡" in "LOVE IS OUT THERE ♡")
+ * to the word right before it with a non-breaking space, so a short punchy
+ * tagline can never wrap and strand the glyph alone on its own line.
+ * Ordinary trailing words are left untouched. */
+function glueTrailingGlyph(text: string): string {
+  const lastSpace = text.lastIndexOf(" ");
+  if (lastSpace === -1) return text;
+  const lastToken = text.slice(lastSpace + 1);
+  if (!TRAILING_GLYPH_RE.test(lastToken)) return text;
+  return text.slice(0, lastSpace) + "\u00A0" + lastToken;
+}
+
 /**
  * The opening thesis of the pitch — a clean editorial block, not a photo
  * backdrop. Shares its solid surface color with Sonic Identity (palette.accent)
@@ -58,15 +75,18 @@ export default function CreativeIdea({ pitch, palette }: { pitch: BrandPitch; pa
         )}
 
         {/* A clear break before the creative thought — its own small
-            eyebrow, then a major statement, not a small closing line. */}
+            eyebrow, then a major statement, not a small closing line.
+            clamp() sizing (rather than fixed breakpoint jumps) keeps a short
+            punchy tagline — with glueTrailingGlyph guarding its final glyph —
+            fitting on one line at typical widths instead of wrapping. */}
         {statement && (
           <div className="mt-[3.5rem] sm:mt-[5rem]">
             <Eyebrow color={highlight}>The Creative Thought</Eyebrow>
             <p
-              className="font-black leading-[0.98] tracking-tight text-[2.5rem] sm:text-[3.75rem] lg:text-[4.5rem]"
+              className="font-black leading-[0.98] tracking-tight text-[clamp(1.75rem,1.15rem+3.2vw,4.5rem)]"
               style={{ color: highlight }}
             >
-              {statement}
+              {glueTrailingGlyph(statement)}
             </p>
           </div>
         )}

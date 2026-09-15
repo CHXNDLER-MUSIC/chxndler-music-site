@@ -70,7 +70,13 @@ export default function CollectibleViewer({
         className="group relative block w-full aspect-[5/7] rounded-[1.5rem] overflow-hidden cursor-pointer shadow-[0_3rem_6rem_-2rem_rgba(0,0,0,0.4)] transition-transform duration-300 ease-out hover:-translate-y-[0.5rem] hover:scale-[1.03] motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:hover:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
         style={{ backgroundColor: `${accent}14`, outlineColor: accent }}
       >
-        <img src={src} alt={`${songTitle} collectible card`} className="w-full h-full object-contain" onError={onError} />
+        <img
+          src={src}
+          alt={`${songTitle} collectible card`}
+          className="w-full h-full object-contain"
+          onError={onError}
+          data-no-lazy="" // see ui.tsx SectionShell for why
+        />
         <span
           className="pointer-events-none absolute inset-0 rounded-[1.5rem] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
           aria-hidden="true"
@@ -108,6 +114,7 @@ export default function CollectibleViewer({
                 transition: isAnimatingFlip ? "transform 500ms cubic-bezier(0.4, 0, 0.2, 1)" : "none",
               }}
               draggable={false}
+              data-no-lazy="" // see ui.tsx SectionShell for why
             />
             <img
               src={getCardImageUrl("BACK")}
@@ -119,6 +126,7 @@ export default function CollectibleViewer({
                 transition: isAnimatingFlip ? "transform 500ms cubic-bezier(0.4, 0, 0.2, 1)" : "none",
               }}
               draggable={false}
+              data-no-lazy="" // see ui.tsx SectionShell for why
             />
           </TiltSpinCard>
         </div>

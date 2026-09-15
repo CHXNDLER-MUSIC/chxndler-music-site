@@ -484,6 +484,65 @@ function normalizeBrandPitch(row: Record<string, any>): BrandPitch {
   };
 }
 
+/** One brand_pitches row reduced to what the "EXPLORE THE STUDIO" launcher
+ * (and the /studio "Selected Work" gallery) needs to list every project —
+ * see StudioPortfolioLauncher. Deliberately carries raw storage paths, not
+ * resolved URLs: this file stays free of lib/brandPitchStorage's
+ * getBrandArtUrl (see BRAND_BUCKET comment above) so it's safe to import
+ * from any server-only context, not just React Server Components. Callers
+ * resolve cover_art_path/hero_art_path/sonic_logo_path themselves (see
+ * app/brands/[slug]/page.tsx and app/studio/page.tsx). */
+export type BrandPitchSummary = {
+  slug: string;
+  brand_name: string;
+  song_title: string;
+  cover_art_path: string | null;
+  hero_art_path: string | null;
+  /** The brand's primary sonic-logo cut, when it has one — a short (few-
+   * second) audio ID, exactly what /studio's Selected Work cards and Sonic
+   * Identity section preview. Legacy single-path column, same one
+   * asSonicLogoVersions falls back to in the full pitch fetch — good enough
+   * for a lightweight summary without pulling in the full jsonb column. */
+  sonic_logo_path: string | null;
+};
+
+/**
+ * Fetch every published brand pitch (minimal fields only) for the
+ * "EXPLORE THE STUDIO" project gallery — the single canonical list every
+ * /brands/[slug] page draws its "other projects" from, so adding a new brand
+ * row automatically appears everywhere without touching any page. Same
+ * is_published gate as fetchBrandPitch (strict in production, permissive in
+ * local dev so an unpublished pitch can still be previewed).
+ */
+export async function fetchAllBrandPitchSummaries(): Promise<BrandPitchSummary[]> {
+  try {
+    const supabase = getSupabaseAdmin();
+    let query = supabase
+      .from("brand_pitches")
+      .select("slug, brand_name, song_title, cover_art_path, hero_art_path, sonic_logo_path, is_published, sort_order")
+      .order("sort_order", { ascending: true });
+    if (process.env.NODE_ENV === "production") {
+      query = query.eq("is_published", true);
+    }
+    const { data, error } = await query;
+    if (error || !data) return [];
+
+    return data
+      .filter((row: Record<string, any>) => !!row.slug && !!row.brand_name)
+      .map((row: Record<string, any>) => ({
+        slug: String(row.slug).trim().toLowerCase(),
+        brand_name: row.brand_name || "",
+        song_title: row.song_title || "",
+        cover_art_path: nullableString(row.cover_art_path),
+        hero_art_path: nullableString(row.hero_art_path),
+        sonic_logo_path: nullableString(row.sonic_logo_path),
+      }));
+  } catch (err) {
+    console.error("[fetchAllBrandPitchSummaries] failed:", err);
+    return [];
+  }
+}
+
 /**
  * Fetch a brand pitch by slug for the reusable /brands/[slug] route.
  * Server-only. Explicitly filters is_published (rather than relying on RLS,

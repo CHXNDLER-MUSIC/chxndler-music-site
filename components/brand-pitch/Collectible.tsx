@@ -50,6 +50,7 @@ export default function Collectible({
       className="text-center"
       style={{ backgroundColor: palette.secondary, color: palette.onSecondary }}
       backgroundImage={backgroundImage}
+      backgroundOverlay={`${palette.secondary}b3`}
     >
       <div className="max-w-[36rem] mx-auto">
         <Eyebrow color={palette.accent}>{pitch.collectible_eyebrow || "The Collectible"}</Eyebrow>

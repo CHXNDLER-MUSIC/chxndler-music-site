@@ -56,7 +56,7 @@ export default function BrandCTA({ pitch, palette }: { pitch: BrandPitch; palett
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-[2.5rem] inline-flex items-center justify-center rounded-full px-[2.25rem] py-[1.125rem] text-[0.9375rem] font-bold tracking-[0.08em] uppercase bg-white transition-transform hover:scale-[1.03] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] focus-visible:outline-white"
+            className="mt-[2.5rem] inline-flex items-center justify-center rounded-full px-[2.25rem] py-[1.125rem] text-[0.9375rem] font-bold tracking-[0.08em] uppercase bg-white transition-transform hover:scale-[1.045] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] focus-visible:outline-white"
             style={{ color: palette.accent }}
           >
             {buttonLabel}
@@ -73,8 +73,15 @@ export default function BrandCTA({ pitch, palette }: { pitch: BrandPitch; palett
             transition={
               reduceMotion || bookingOpen ? { duration: 0 } : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }
             }
-            whileHover={reduceMotion ? undefined : { scale: 1.045 }}
-            whileTap={{ scale: 0.97 }}
+            // A direct hover response to pointer input, not an auto-playing
+            // animation — kept even under prefers-reduced-motion (only the
+            // idle looping pulse above is gated on that). Needs its own fast
+            // transition: the `transition` prop above is tuned for the 3.6s
+            // idle loop and would otherwise govern this too, making the
+            // enlarge take ~3.4s to reach full scale — nearly invisible on a
+            // normal hover.
+            whileHover={{ scale: 1.045, transition: { duration: 0.2, ease: "easeOut" } }}
+            whileTap={{ scale: 0.97, transition: { duration: 0.1 } }}
             className="relative mt-[2.5rem] inline-flex items-center justify-center rounded-full px-[2.25rem] py-[1.125rem] text-[0.9375rem] font-bold tracking-[0.08em] uppercase bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] focus-visible:outline-white"
             style={{ color: palette.accent }}
           >

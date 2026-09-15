@@ -94,7 +94,33 @@ export function SectionShell({
     >
       {bg.src && (
         <div className="absolute inset-0" aria-hidden="true">
-          <img src={bg.src} alt="" onError={bg.onError} className="absolute inset-0 w-full h-full object-cover" />
+          {/* data-no-lazy on every plain <img> in the brand-pitch template:
+              components/LazyLoadEnhancer.tsx (mounted sitewide in app/layout.tsx)
+              scans the whole document in a useEffect and stamps
+              loading="lazy"/decoding="async"/fetchpriority="low" onto any <img>
+              missing them. Since this app streams via React Server Components,
+              that DOM mutation can land on a brand-pitch image before React
+              finishes hydrating a later-arriving streamed chunk, which then
+              sees "extra" attributes it didn't render and logs a hydration
+              mismatch — a real race, not a content bug (confirmed: server
+              HTML and a JS-disabled DOM both lack these attributes; they
+              appear only once LazyLoadEnhancer's effect runs, in both dev and
+              prod). `data-no-lazy` is LazyLoadEnhancer's own existing escape
+              hatch (already used elsewhere in the codebase) — using it here
+              opts these SSR'd images (whose src is already in the initial
+              HTML, so the browser's own eager fetch has already started
+              before this effect could ever run) out of a mutation that was
+              already a no-op for them, removing the race with zero change to
+              actual loading behavior. suppressHydrationWarning does NOT fix
+              this — it only silences text-node mismatches, not attribute
+              ones, which is why it was tried and removed. */}
+          <img
+            src={bg.src}
+            alt=""
+            onError={bg.onError}
+            className="absolute inset-0 w-full h-full object-cover"
+            data-no-lazy=""
+          />
           {backgroundOverlay && <div className="absolute inset-0" style={{ background: backgroundOverlay }} />}
         </div>
       )}
@@ -105,6 +131,7 @@ export function SectionShell({
           aria-hidden="true"
           onError={texture.onError}
           className="absolute inset-0 w-full h-full object-cover opacity-[0.12] pointer-events-none"
+          data-no-lazy="" // see the note above, on SectionShell's background <img>
         />
       )}
       <div className="relative max-w-[75rem] mx-auto">{children}</div>

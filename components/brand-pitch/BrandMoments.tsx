@@ -121,6 +121,7 @@ function MomentCard({
               moment.image_fit === "contain" ? "object-contain" : "object-cover"
             }`}
             onError={artAsset.onError}
+            data-no-lazy="" // see ui.tsx SectionShell for why
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center p-[1.5rem] text-center" aria-hidden="true">

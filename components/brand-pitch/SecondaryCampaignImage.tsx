@@ -23,7 +23,13 @@ export default function SecondaryCampaignImage({ pitch, assets }: { pitch: Brand
 
   return (
     <section className="relative w-full h-[60vh] sm:h-[85vh] overflow-hidden" aria-hidden="true">
-      <img src={artAsset.src} alt="" className="absolute inset-0 w-full h-full object-cover" onError={artAsset.onError} />
+      <img
+        src={artAsset.src}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+        onError={artAsset.onError}
+        data-no-lazy="" // see ui.tsx SectionShell for why
+      />
     </section>
   );
 }

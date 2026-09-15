@@ -205,10 +205,11 @@ export async function runRewardSequence(
 
   await delay(300);
 
-  // Step 6: Show claim card and finish
-  debugOnboarding('Reward sequence complete — showing claim card');
+  // Step 6: Finish (auto-popup of claim card disabled for now — toggle back
+  // on by re-enabling the dispatch below)
+  debugOnboarding('Reward sequence complete — auto claim card popup disabled');
   sequenceActive = false;
-  window.dispatchEvent(new CustomEvent('openHeartverseCard'));
+  // window.dispatchEvent(new CustomEvent('openHeartverseCard'));
 
   cleanup();
 }

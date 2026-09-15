@@ -69,6 +69,50 @@ function useKnownDuration(src: string | null): number | undefined {
   return duration;
 }
 
+/**
+ * A compact, non-interactive "scale ladder" — the generic promise every
+ * pitch makes (one idea, delivered at every length a campaign needs), not
+ * per-brand content, so it's a constant here rather than another Supabase
+ * column every row has to fill in. Mirrors the same
+ * "brand-agnostic-default-copy" convention already used for
+ * hero_capability_labels' fallback list.
+ */
+const SCALE_STEPS = ["03 SEC SONIC ID", "15 SEC SOCIAL", "30 SEC CAMPAIGN", "60 SEC", "FULL SONG"];
+
+function BuiltToScale({ accent }: { accent: string }) {
+  return (
+    <div className="mt-[2rem] sm:mt-[2.5rem]">
+      <p className="text-[0.6875rem] font-bold tracking-[0.25em] uppercase opacity-45">Built to Scale</p>
+      <div className="mt-[0.75rem] flex items-center gap-[0.4rem] overflow-x-auto no-scrollbar">
+        {SCALE_STEPS.map((step, i) => (
+          <React.Fragment key={step}>
+            <span
+              className="flex-shrink-0 rounded-full px-[0.75rem] py-[0.375rem] text-[0.625rem] sm:text-[0.6875rem] font-bold tracking-[0.08em] uppercase whitespace-nowrap"
+              style={{ backgroundColor: `${accent}14`, color: "currentColor" }}
+            >
+              {step}
+            </span>
+            {i < SCALE_STEPS.length - 1 && (
+              <span aria-hidden="true" className="flex-shrink-0 opacity-30 text-[0.75rem]">
+                →
+              </span>
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+      <style jsx>{`
+        .no-scrollbar {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+    </div>
+  );
+}
+
 function SupportingRow({
   version,
   accent,
@@ -207,7 +251,12 @@ export default function HearTheConcept({
           {primary.length > 0 && selected && (
             <div>
               {primary.length > 1 && (
-                <div role="tablist" aria-label="Select a version" className="flex flex-wrap gap-[0.625rem] mb-[1.25rem]">
+                <div
+                  role="tablist"
+                  aria-label="Select a version"
+                  className="inline-flex max-w-full items-center gap-[0.2rem] rounded-full p-[0.25rem] mb-[1.5rem] overflow-x-auto no-scrollbar"
+                  style={{ backgroundColor: `${palette.accent}14` }}
+                >
                   {primary.map((v) => {
                     const isSelected = selected.path === v.path;
                     return (
@@ -221,20 +270,28 @@ export default function HearTheConcept({
                           setSelectedPath(v.path);
                         }}
                         onMouseEnter={playHover}
-                        whileHover={reduceMotion ? undefined : { scale: 1.035 }}
                         whileTap={{ scale: 0.97 }}
                         transition={{ duration: 0.15, ease: "easeOut" }}
-                        className="rounded-full px-[1.125rem] py-[0.625rem] text-[0.875rem] font-bold tracking-[0.05em] uppercase transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem]"
+                        className="flex-shrink-0 rounded-full px-[0.875rem] py-[0.5rem] text-[0.75rem] sm:text-[0.8125rem] font-bold tracking-[0.04em] uppercase whitespace-nowrap transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem]"
                         style={
                           isSelected
                             ? { backgroundColor: palette.accent, color: palette.onAccent, outlineColor: palette.accent }
-                            : { backgroundColor: `${palette.accent}14`, color: "currentColor", outlineColor: palette.accent }
+                            : { backgroundColor: "transparent", color: "currentColor", opacity: 0.55, outlineColor: palette.accent }
                         }
                       >
                         {v.label}
                       </motion.button>
                     );
                   })}
+                  <style jsx>{`
+                    .no-scrollbar {
+                      scrollbar-width: none;
+                      -ms-overflow-style: none;
+                    }
+                    .no-scrollbar::-webkit-scrollbar {
+                      display: none;
+                    }
+                  `}</style>
                 </div>
               )}
 
@@ -269,12 +326,16 @@ export default function HearTheConcept({
                 </AnimatePresence>
               </motion.div>
 
+              <BuiltToScale accent={palette.accent} />
+
               {/* Deliberately OUTSIDE the per-version crossfade above: the
                   lyrics belong to the song as a whole, not to whichever
                   version tab happens to be selected, so switching tabs must
-                  never remount (and re-collapse) this panel. */}
+                  never remount (and re-collapse) this panel. Sized as a
+                  secondary/tertiary interaction now — "Explore the Campaign"
+                  below is the section's actual closing CTA. */}
               {pitch.lyrics && (
-                <div className="mt-[1rem]">
+                <div className="mt-[1.5rem]">
                   <button
                     type="button"
                     onClick={() => {
@@ -284,8 +345,8 @@ export default function HearTheConcept({
                     onMouseEnter={playHover}
                     aria-expanded={lyricsOpen}
                     aria-controls="brand-lyrics-panel"
-                    className="inline-flex items-center gap-[0.5rem] text-[1.3125rem] font-semibold tracking-[0.1em] uppercase hover:opacity-70 transition-opacity"
-                    style={{ color: palette.accent }}
+                    className="inline-flex items-center gap-[0.4rem] text-[0.8125rem] font-semibold tracking-[0.08em] uppercase opacity-60 hover:opacity-100 transition-opacity"
+                    style={{ color: "currentColor" }}
                   >
                     {lyricsOpen ? "Hide Lyrics" : "View Lyrics"} <span aria-hidden="true">{lyricsOpen ? "↑" : "↓"}</span>
                   </button>

@@ -59,6 +59,7 @@ const StartButton = forwardRef<HTMLButtonElement, Props>(function StartButton(
           alt="Start"
           className="chx-icon"
           draggable={false}
+          data-no-lazy="" // see components/brand-pitch/ui.tsx's SectionShell for why
           onError={(e) => {
             try {
               const img = e.currentTarget;

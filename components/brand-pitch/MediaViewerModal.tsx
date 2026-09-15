@@ -22,16 +22,28 @@ export default function MediaViewerModal({
   kind,
   accent,
   headerExtra,
+  header,
+  maxWidthClassName,
   children,
 }: {
   open: boolean;
   onClose: () => void;
-  /** The dynamic, brand-specific value — e.g. the song title. */
+  /** The dynamic, brand-specific value — e.g. the song title. Still used for
+   * the dialog's accessible name (`aria-label`) even when `header` overrides
+   * the visual rendering below. */
   label: string;
   /** The static category caption — e.g. "Cover Art" or "Collectible Card". */
   kind: string;
   accent: string;
   headerExtra?: React.ReactNode;
+  /** Overrides the default label/kind title block entirely — for a caller
+   * whose header needs a different visual hierarchy (e.g. a small eyebrow
+   * above a larger headline) than the standard big-title/small-caption
+   * layout. `label`/`kind` are still used for the dialog's aria-label. */
+  header?: React.ReactNode;
+  /** Overrides the default `max-w-[40rem]` — for content wider than a
+   * single-media viewer, e.g. a multi-column grid. */
+  maxWidthClassName?: string;
   children: React.ReactNode;
 }) {
   const reduceMotion = useReducedMotion();
@@ -97,7 +109,7 @@ export default function MediaViewerModal({
             role="dialog"
             aria-modal="true"
             aria-label={`${label} — ${kind}`}
-            className="relative w-full max-w-[40rem] max-h-[90vh] overflow-y-auto rounded-[1.5rem] p-[1.5rem] sm:p-[2rem]"
+            className={`relative w-full ${maxWidthClassName || "max-w-[40rem]"} max-h-[90vh] overflow-y-auto rounded-[1.5rem] p-[1.5rem] sm:p-[2rem]`}
             style={{
               backgroundColor: "rgba(16,16,20,0.94)",
               boxShadow: `0 0 0 0.0625rem ${accent}33, 0 2rem 4rem -1rem rgba(0,0,0,0.6)`,
@@ -121,12 +133,14 @@ export default function MediaViewerModal({
               </span>
             </button>
 
-            <div className="pr-[2.5rem]">
-              <h2 className="text-[1.25rem] sm:text-[1.5rem] font-bold tracking-tight text-white">{label}</h2>
-              <p className="mt-[0.25rem] text-[0.6875rem] font-semibold tracking-[0.25em] uppercase text-white/50">
-                {kind}
-              </p>
-            </div>
+            {header || (
+              <div className="pr-[2.5rem]">
+                <h2 className="text-[1.25rem] sm:text-[1.5rem] font-bold tracking-tight text-white">{label}</h2>
+                <p className="mt-[0.25rem] text-[0.6875rem] font-semibold tracking-[0.25em] uppercase text-white/50">
+                  {kind}
+                </p>
+              </div>
+            )}
 
             {headerExtra}
 

@@ -78,7 +78,14 @@ export default function BrandHero({ pitch, accent, year }: { pitch: BrandPitch; 
             {...(!reduceMotion ? { autoPlay: true, loop: true } : {})}
           />
         ) : heroArt ? (
-          <img src={heroArt} alt="" className="w-full h-full object-cover" aria-hidden="true" onError={heroArtAsset.onError} />
+          <img
+            src={heroArt}
+            alt=""
+            className="w-full h-full object-cover"
+            aria-hidden="true"
+            onError={heroArtAsset.onError}
+            data-no-lazy="" // see ui.tsx SectionShell for why
+          />
         ) : (
           <div
             className="w-full h-full"
@@ -105,6 +112,7 @@ export default function BrandHero({ pitch, accent, year }: { pitch: BrandPitch; 
               alt={title}
               className="w-full max-w-[50rem] sm:max-w-[62rem] h-auto"
               onError={titleGraphicAsset.onError}
+              data-no-lazy="" // see ui.tsx SectionShell for why
             />
           ) : (
             <span

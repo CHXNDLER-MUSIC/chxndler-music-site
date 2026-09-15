@@ -285,6 +285,11 @@ function LookbookStage({
  * assets skip this — dragging would fight the native scrubber/controls. */
 function SpinnableProductImage({ src, accent }: { src: string; accent: string }) {
   const [rotation, setRotation] = useState(0);
+  const asset = useAssetAvailable(src);
+  // A missing/404 asset hides itself here, same as every other image in this
+  // template (see useAssetAvailable) — the browser's own broken-image icon
+  // otherwise stays visible with no error handling to catch it.
+  if (!asset.src) return null;
   return (
     <div className="relative inline-block max-w-full max-h-[65vh]">
       <div
@@ -303,10 +308,12 @@ function SpinnableProductImage({ src, accent }: { src: string; accent: string })
       >
         <div style={{ transform: `rotateY(${rotation}deg)`, backfaceVisibility: "hidden" }}>
           <img
-            src={src}
+            src={asset.src}
             alt=""
             className="max-w-full max-h-[65vh] w-auto h-auto mx-auto block"
             draggable={false}
+            onError={asset.onError}
+            data-no-lazy="" // see ui.tsx SectionShell for why
           />
         </div>
       </TiltSpinCard>
@@ -327,6 +334,24 @@ function SpinnableProductImage({ src, accent }: { src: string; accent: string })
         }
       `}</style>
     </div>
+  );
+}
+
+/** A missing/404 social clip hides itself rather than showing the browser's
+ * native broken-image icon — same useAssetAvailable convention as every
+ * other image in this template. Its own tiny component since it's rendered
+ * inside a .map() and useAssetAvailable is a hook. */
+function SocialImage({ src }: { src: string }) {
+  const asset = useAssetAvailable(src);
+  if (!asset.src) return null;
+  return (
+    <img
+      src={asset.src}
+      alt=""
+      className="w-full h-full object-cover"
+      onError={asset.onError}
+      data-no-lazy="" // see ui.tsx SectionShell for why
+    />
   );
 }
 
@@ -409,7 +434,7 @@ function VerticalStage({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <img src={item.url} alt="" className="w-full h-full object-cover" />
+                <SocialImage src={item.url} />
               )}
             </div>
           </div>
