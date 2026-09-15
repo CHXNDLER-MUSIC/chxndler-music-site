@@ -45,7 +45,7 @@ export default function StudioHero() {
           data-no-lazy="" // see ui.tsx SectionShell for why
         />
         <h1 className="mx-auto max-w-[26rem] sm:max-w-[46rem] lg:max-w-[74rem] font-bold uppercase leading-[0.92] tracking-tight text-[2.35rem] sm:text-[4.5rem] lg:text-[6rem]">
-          <span className="block text-white">We Make Brands</span>
+          <span className="block text-white">We Give Brands</span>
           <span
             className="block"
             style={{
@@ -55,15 +55,11 @@ export default function StudioHero() {
               color: "transparent",
             }}
           >
-            Sound Unforgettable.
+            A Sound of Their Own.
           </span>
         </h1>
 
-        <p className="mt-[1.5rem] max-w-[24rem] sm:max-w-[46rem] mx-auto text-[1rem] sm:text-[1.125rem] leading-relaxed text-white/55">
-          Giving your brand a sound that's unmistakably yours.
-        </p>
-
-        <p className="mt-[1.25rem] text-[0.8125rem] sm:text-[0.875rem] tracking-[0.08em] uppercase font-medium text-white/40">
+        <p className="mt-[1.5rem] text-[0.8125rem] sm:text-[0.875rem] tracking-[0.08em] uppercase font-medium text-white/40">
           Original Music <span aria-hidden="true" className="mx-[0.5rem] text-white/25">•</span>
           Sonic Identity <span aria-hidden="true" className="mx-[0.5rem] text-white/25">•</span>
           Creative Worlds

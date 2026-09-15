@@ -69,15 +69,17 @@ export default function StudioNav() {
         Chxndler Studio
       </a>
 
-      <a
-        href="#start-a-project"
-        onClick={go("start-a-project")}
-        onMouseEnter={playHover}
-        className="hidden sm:inline-flex flex-1 justify-end items-center rounded-full border border-white/20 px-[1.125rem] py-[0.5rem] text-[0.6875rem] font-bold tracking-[0.15em] uppercase text-white/90 transition-colors duration-200 hover:border-[#EF43A3] hover:text-[#EF43A3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
-        style={{ outlineColor: STUDIO_PINK }}
-      >
-        Start a Project
-      </a>
+      <div className="hidden sm:flex flex-1 justify-end">
+        <a
+          href="#start-a-project"
+          onClick={go("start-a-project")}
+          onMouseEnter={playHover}
+          className="inline-flex flex-shrink-0 items-center rounded-full border border-white/20 px-[1.125rem] py-[0.5rem] text-[0.6875rem] font-bold tracking-[0.15em] uppercase text-white/90 transition-colors duration-200 hover:border-[#EF43A3] hover:text-[#EF43A3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
+          style={{ outlineColor: STUDIO_PINK }}
+        >
+          Start a Project
+        </a>
+      </div>
 
       {/* Mobile: centered wordmark + a single clear action on the right —
           the full link list is one thumb-scroll away regardless, so it

@@ -31,7 +31,7 @@ export default function StudioFinalCTA() {
         </h2>
 
         <p
-          className="mt-[1.5rem] sm:mt-[1.75rem] text-[1.125rem] sm:text-[1.3125rem] font-bold tracking-[0.02em] leading-relaxed max-w-[28rem] mx-auto uppercase"
+          className="mt-[1.5rem] sm:mt-[1.75rem] text-[1rem] sm:text-[1.125rem] font-bold tracking-[0.02em] leading-relaxed max-w-[28rem] mx-auto uppercase"
           style={{ color: "rgba(8,8,11,0.75)" }}
         >
           Let's make it unforgettable.

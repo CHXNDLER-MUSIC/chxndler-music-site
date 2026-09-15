@@ -2,7 +2,7 @@
 
 import React, { useCallback, useRef, useState } from "react";
 import Link from "next/link";
-import { SectionShell } from "@/components/brand-pitch/ui";
+import { SectionShell, formatTime } from "@/components/brand-pitch/ui";
 import { useBrandAudio } from "@/components/brand-pitch/BrandAudioContext";
 import { useInteractionSound } from "@/components/brand-pitch/useInteractionSound";
 import { STUDIO_BG, STUDIO_PINK, STUDIO_BORDER } from "./identity";
@@ -33,7 +33,7 @@ function SparkleGlyph({ className = "w-[0.7rem] h-[0.7rem]" }: { className?: str
 
 function ArrowGlyph({ direction }: { direction: "left" | "right" }) {
   return (
-    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="w-[0.9rem] h-[0.9rem]">
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="w-[1.05rem] h-[1.05rem]">
       <path
         d={direction === "left" ? "M12.5 4.5L6.5 10L12.5 15.5" : "M7.5 4.5L13.5 10L7.5 15.5"}
         stroke="currentColor"
@@ -165,7 +165,7 @@ export default function StudioSelectedWork({ projects }: { projects: StudioWorkI
       <div className="flex flex-wrap items-end justify-between gap-[1.5rem]">
         <div>
           <h2
-            className="font-bold uppercase leading-[0.98] tracking-tight text-[2.25rem] sm:text-[3.25rem] lg:text-[3.75rem]"
+            className="font-bold uppercase leading-[0.98] tracking-tight text-[1.75rem] sm:text-[2.5rem] lg:text-[2.875rem]"
             style={{ color: STUDIO_PINK }}
           >
             Hear the Work
@@ -193,12 +193,12 @@ export default function StudioSelectedWork({ projects }: { projects: StudioWorkI
         ))}
       </div>
 
-      <div className="hidden sm:flex items-center justify-between gap-[1rem] mt-[2rem]">
-        <p className="text-[0.75rem] font-semibold tracking-[0.2em] text-white/35 tabular-nums">
+      <div className="hidden sm:grid grid-cols-3 items-center mt-[2rem]">
+        <p className="justify-self-start text-[0.75rem] font-semibold tracking-[0.2em] text-white/35 tabular-nums">
           {String(currentIndex + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")}
         </p>
 
-        <div className="flex items-center gap-[0.625rem]">
+        <div className="justify-self-center flex items-center gap-[0.875rem]">
           <button
             type="button"
             onClick={() => {
@@ -208,7 +208,7 @@ export default function StudioSelectedWork({ projects }: { projects: StudioWorkI
             onMouseEnter={playHover}
             disabled={atStart}
             aria-label="Previous project"
-            className="inline-flex items-center justify-center w-[2.75rem] h-[2.75rem] rounded-full border border-white/20 text-white/80 transition-colors duration-200 hover:border-current hover:text-[#EF43A3] disabled:opacity-30 disabled:pointer-events-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
+            className="inline-flex items-center justify-center w-[3.25rem] h-[3.25rem] rounded-full border border-white/20 text-white/80 transition-all duration-200 hover:scale-110 hover:border-current hover:text-[#EF43A3] disabled:opacity-30 disabled:pointer-events-none disabled:hover:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
             style={{ outlineColor: STUDIO_PINK }}
           >
             <ArrowGlyph direction="left" />
@@ -222,7 +222,7 @@ export default function StudioSelectedWork({ projects }: { projects: StudioWorkI
             onMouseEnter={playHover}
             disabled={atEnd}
             aria-label="Next project"
-            className="inline-flex items-center justify-center w-[2.75rem] h-[2.75rem] rounded-full border border-white/20 text-white/80 transition-colors duration-200 hover:border-current hover:text-[#EF43A3] disabled:opacity-30 disabled:pointer-events-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
+            className="inline-flex items-center justify-center w-[3.25rem] h-[3.25rem] rounded-full border border-white/20 text-white/80 transition-all duration-200 hover:scale-110 hover:border-current hover:text-[#EF43A3] disabled:opacity-30 disabled:pointer-events-none disabled:hover:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
             style={{ outlineColor: STUDIO_PINK }}
           >
             <ArrowGlyph direction="right" />
@@ -244,16 +244,17 @@ export default function StudioSelectedWork({ projects }: { projects: StudioWorkI
 }
 
 /**
- * The card separates two distinct actions: the artwork always navigates to
- * the internal /brands/[slug] project page (never plays audio), and a row
- * of compact audio-control pills underneath plays the full song / sonic
- * logo — both driven by the shared BrandAudioContext, so starting either
- * one here (or on any other card) stops whatever else was playing. A
- * project with no sonic-logo cut simply omits that pill rather than
- * rendering it disabled, so spacing stays consistent without an empty gap.
+ * The card now has exactly one interaction model, applied consistently
+ * across every project: the artwork itself IS the full-song play/pause
+ * control (album artwork behaves like album artwork), a small pill below
+ * plays the sonic logo, and campaign navigation happens only through the
+ * "Explore the Campaign" link — never by clicking the cover. All audio
+ * (song or sonic logo, on this card or any other) is driven by the single
+ * shared BrandAudioContext element, so starting one always stops whatever
+ * else was playing — there is no separate bookkeeping to get wrong here.
  */
 function WorkCard({ project }: { project: StudioWorkItem }) {
-  const { activeId, playing, toggle } = useBrandAudio();
+  const { activeId, playing, currentTime, duration, toggle } = useBrandAudio();
   const { playHover, playClick } = useInteractionSound();
 
   const hasSong = !!project.fullSongId && !!project.fullSongUrl;
@@ -261,6 +262,8 @@ function WorkCard({ project }: { project: StudioWorkItem }) {
 
   const hasSonic = !!project.sonicPreviewUrl;
   const isSonicPlaying = hasSonic && activeId === project.sonicPreviewUrl && playing;
+
+  const isThisProjectPlaying = isSongPlaying || isSonicPlaying;
 
   const playSong = () => {
     if (!hasSong) return;
@@ -273,86 +276,120 @@ function WorkCard({ project }: { project: StudioWorkItem }) {
     toggle(project.sonicPreviewUrl!, project.sonicPreviewUrl!);
   };
 
+  const coverArt = project.coverArtUrl ? (
+    <img
+      src={project.coverArtUrl}
+      alt=""
+      draggable={false}
+      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+      data-no-lazy="" // see ui.tsx SectionShell — this whole page is SSR'd with real data, so
+      // every image is already in the initial HTML; skips a hydration-mismatch race, not real lazy-loading
+    />
+  ) : (
+    <div className="absolute inset-0 flex items-center justify-center px-[1rem] text-center">
+      <span className="text-[1.5rem] font-black uppercase tracking-tight opacity-25">{project.brandName}</span>
+    </div>
+  );
+
   return (
     <div data-work-card className="group snap-start flex-shrink-0 w-[80%] sm:w-[45%] lg:w-[31%]">
-      <Link
-        href={project.href}
-        onMouseEnter={playHover}
-        onClick={playClick}
-        draggable={false}
-        aria-label={`View ${project.brandName} — ${project.projectTitle} project`}
-        className="relative block w-full aspect-square rounded-[0.75rem] overflow-hidden border border-white/10 bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.35rem]"
-        style={{ outlineColor: STUDIO_PINK }}
-      >
-        {project.coverArtUrl ? (
-          <img
-            src={project.coverArtUrl}
-            alt=""
-            draggable={false}
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.01] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-            data-no-lazy="" // see ui.tsx SectionShell — this whole page is SSR'd with real data, so
-            // every image is already in the initial HTML; skips a hydration-mismatch race, not real lazy-loading
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center px-[1rem] text-center">
-            <span className="text-[1.5rem] font-black uppercase tracking-tight opacity-25">{project.brandName}</span>
-          </div>
-        )}
+      {hasSong ? (
+        <button
+          type="button"
+          onClick={playSong}
+          onMouseEnter={playHover}
+          aria-pressed={isSongPlaying}
+          aria-label={
+            isSongPlaying
+              ? `Pause ${project.projectTitle} — ${project.brandName}`
+              : `Play ${project.projectTitle} — ${project.brandName}`
+          }
+          className="relative block w-full aspect-square rounded-[0.75rem] overflow-hidden border border-white/10 bg-white/5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.35rem]"
+          style={{ outlineColor: STUDIO_PINK }}
+        >
+          {coverArt}
 
-        {/* Desktop-hover reveal only — mobile has no hover, and tapping the
-            artwork already navigates directly, so there's nothing to reveal there. */}
-        <div className="pointer-events-none absolute inset-0 hidden lg:flex items-center justify-center bg-black/0 transition-colors duration-300 group-hover:bg-black/35">
-          <span className="inline-flex items-center gap-[0.4rem] text-[0.8125rem] font-bold tracking-[0.1em] uppercase text-white opacity-0 translate-y-[0.35rem] transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
-            View Project
-            <span aria-hidden="true">→</span>
-          </span>
+          {/* Desktop-hover reveal; also shown (not just on hover) while this
+              card's song is playing, so a listener who moves the mouse away
+              still sees the artwork reflect its own state. Mobile has no
+              hover — tapping just toggles play/pause directly. */}
+          <div
+            className={`pointer-events-none absolute inset-0 hidden lg:flex items-center justify-center bg-black/0 transition-colors duration-300 group-hover:bg-black/25 ${
+              isSongPlaying ? "lg:bg-black/25" : ""
+            }`}
+          >
+            <span
+              className={`inline-flex items-center gap-[0.45rem] text-[0.8125rem] font-bold tracking-[0.1em] uppercase text-white opacity-0 translate-y-[0.35rem] transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 ${
+                isSongPlaying ? "lg:opacity-100 lg:translate-y-0" : ""
+              }`}
+            >
+              <PlayPauseGlyph playing={isSongPlaying} className="w-[0.7rem] h-[0.7rem]" />
+              {isSongPlaying ? "Pause" : "Play Song"}
+            </span>
+          </div>
+        </button>
+      ) : (
+        <div
+          className="relative block w-full aspect-square rounded-[0.75rem] overflow-hidden border border-white/10 bg-white/5"
+          aria-hidden="true"
+        >
+          {coverArt}
         </div>
-      </Link>
+      )}
 
       <div className="mt-[0.875rem]">
         <p className="text-[0.9375rem] sm:text-[1.0625rem] font-bold tracking-tight">{project.projectTitle}</p>
         <p className="mt-[0.125rem] text-[0.8125rem] text-white/50">{project.brandName}</p>
 
-        {(hasSong || hasSonic) && (
-          <div className="mt-[0.625rem] flex flex-wrap items-center gap-[0.5rem]">
-            {hasSong && (
-              <AudioPill
-                active={isSongPlaying}
-                onClick={playSong}
-                onMouseEnter={playHover}
-                ariaLabel={isSongPlaying ? `Pause ${project.brandName} — ${project.projectTitle}` : `Play ${project.brandName} — ${project.projectTitle}`}
-              >
-                <PlayPauseGlyph playing={isSongPlaying} className="w-[0.65rem] h-[0.65rem]" />
-                Full Song
-              </AudioPill>
-            )}
-            {hasSonic && (
-              <AudioPill
-                active={isSonicPlaying}
-                onClick={playSonic}
-                onMouseEnter={playHover}
-                ariaLabel={isSonicPlaying ? `Pause ${project.brandName} sonic logo` : `Play ${project.brandName} sonic logo`}
-              >
-                <SparkleGlyph className="w-[0.65rem] h-[0.65rem]" />
-                Sonic Logo
-              </AudioPill>
-            )}
-          </div>
-        )}
+        <div className="mt-[0.625rem] min-h-[2.1875rem] flex flex-wrap items-center gap-[0.5rem]">
+          {hasSonic && (
+            <AudioPill
+              active={isSonicPlaying}
+              onClick={playSonic}
+              onMouseEnter={playHover}
+              ariaLabel={isSonicPlaying ? `Pause ${project.brandName} sonic logo` : `Play ${project.brandName} sonic logo`}
+            >
+              <SparkleGlyph className="w-[0.65rem] h-[0.65rem]" />
+              Sonic Logo
+            </AudioPill>
+          )}
+        </div>
+
+        {isThisProjectPlaying && <NowPlaying currentTime={currentTime} duration={duration} />}
 
         <Link
           href={project.href}
           onMouseEnter={playHover}
           onClick={playClick}
-          className="group/link mt-[0.625rem] inline-flex items-center gap-[0.35rem] text-[0.8125rem] font-semibold text-white/70 transition-colors duration-200 hover:text-[#EF43A3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] rounded-sm"
+          className="group/link mt-[0.875rem] inline-flex items-center gap-[0.4rem] text-[0.9375rem] font-bold text-white transition-colors duration-[250ms] hover:text-[#EF43A3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] rounded-sm"
           style={{ outlineColor: STUDIO_PINK }}
         >
-          View Project
-          <span aria-hidden="true" className="inline-block transition-transform duration-200 group-hover/link:translate-x-[0.2rem]">
+          Explore the Campaign
+          <span aria-hidden="true" className="inline-block transition-transform duration-[250ms] group-hover/link:translate-x-[0.25rem]">
             →
           </span>
         </Link>
       </div>
+    </div>
+  );
+}
+
+/** Compact, non-interactive progress readout — reuses the shared audio
+ * element's own currentTime/duration rather than tracking anything new, so
+ * it costs nothing extra to keep accurate. */
+function NowPlaying({ currentTime, duration }: { currentTime: number; duration: number }) {
+  const pct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+  return (
+    <div className="mt-[0.625rem] flex items-center gap-[0.5rem]" aria-hidden="true">
+      <span className="text-[0.625rem] font-bold tracking-[0.15em] uppercase" style={{ color: STUDIO_PINK }}>
+        Now Playing
+      </span>
+      <div className="relative h-[2px] w-[3.5rem] rounded-full bg-white/15 overflow-hidden">
+        <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${pct}%`, backgroundColor: STUDIO_PINK }} />
+      </div>
+      <span className="text-[0.625rem] tabular-nums text-white/40">
+        {formatTime(currentTime)} / {formatTime(duration)}
+      </span>
     </div>
   );
 }
@@ -377,12 +414,10 @@ function AudioPill({
       onMouseEnter={onMouseEnter}
       aria-pressed={active}
       aria-label={ariaLabel}
-      className="inline-flex items-center gap-[0.35rem] rounded-full border px-[0.8125rem] py-[0.625rem] text-[0.6875rem] font-bold tracking-[0.08em] uppercase leading-none transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem]"
-      style={{
-        borderColor: active ? STUDIO_PINK : STUDIO_BORDER,
-        color: active ? STUDIO_PINK : "rgba(255,255,255,0.75)",
-        outlineColor: STUDIO_PINK,
-      }}
+      className={`inline-flex items-center gap-[0.35rem] rounded-full border px-[0.8125rem] py-[0.625rem] text-[0.6875rem] font-bold tracking-[0.08em] uppercase leading-none transition-all duration-200 hover:scale-110 hover:border-[#EF43A3] hover:text-[#EF43A3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem] ${
+        active ? "border-[#EF43A3] text-[#EF43A3]" : "border-white/[0.12] text-white/75"
+      }`}
+      style={{ outlineColor: STUDIO_PINK }}
     >
       {children}
     </button>
