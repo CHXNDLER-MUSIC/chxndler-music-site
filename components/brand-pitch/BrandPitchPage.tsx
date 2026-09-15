@@ -14,6 +14,7 @@ import BrandMoments from "./BrandMoments";
 import Collectible from "./Collectible";
 import BrandAbout from "./BrandAbout";
 import BrandCTA from "./BrandCTA";
+import BrandSectionDivider from "./BrandSectionDivider";
 import type { StudioProject } from "./StudioPortfolioLauncher";
 
 // The narrative spine, in order: ENTER THE WORLD (hero) -> UNDERSTAND THE
@@ -72,19 +73,26 @@ export default function BrandPitchPage({
   return (
     <BrandAudioProvider>
       <div className="min-h-screen w-full overflow-x-hidden" style={themeVars}>
-        {/* mix-blend-mode makes this legible over any hero backdrop (light, dark, image, video)
-            without brand-specific logic — white text inverts against whatever sits beneath it.
-            Deliberately `absolute`, not `fixed`: this is a title card for the hero underneath it,
-            not a persistent nav — it scrolls away with the hero instead of staying pinned over
-            every section beneath it (where it had nothing reliable to invert against and could
-            collide with section copy, especially on mobile). */}
+        {/* mix-blend-mode makes the year label legible over any hero backdrop
+            (light, dark, image, video) without brand-specific logic — white
+            text inverts against whatever sits beneath it. The wordmark is a
+            detailed chrome graphic rather than flat text, so it opts out of
+            that same blend (which would invert its own shading into noise)
+            and instead centers itself with its own drop-shadow for legibility.
+            Deliberately `absolute`, not `fixed`: this is a title card for the
+            hero underneath it, not a persistent nav — it scrolls away with the
+            hero instead of staying pinned over every section beneath it. */}
         <header
-          className="absolute top-0 inset-x-0 z-40 flex items-center justify-between gap-[1rem] pl-[6vw] pr-[7vw] sm:pl-[8vw] sm:pr-[9.5vw] py-[1.5rem] sm:py-[1.75rem] pointer-events-none"
+          className="absolute top-0 inset-x-0 z-40 flex items-center justify-end gap-[1rem] pl-[6vw] pr-[7vw] sm:pl-[8vw] sm:pr-[9.5vw] py-[1.25rem] sm:py-[1.5rem] pointer-events-none"
           style={{ color: "#ffffff", mixBlendMode: "difference" }}
         >
-          <span className="pointer-events-auto flex-shrink-0 font-bold tracking-[0.2em] text-[0.875rem] sm:text-[0.9375rem]">
-            CHXNDLER STUDIO
-          </span>
+          <img
+            src="/elements/chxndler-studio.png"
+            alt="CHXNDLER STUDIO"
+            className="pointer-events-auto absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[5.5rem] sm:h-[7.25rem] w-auto drop-shadow-[0_0.125rem_0.5rem_rgba(0,0,0,0.55)]"
+            style={{ mixBlendMode: "normal" }}
+            data-no-lazy="" // see ui.tsx SectionShell for why
+          />
           <span className="pointer-events-auto text-right text-[0.6875rem] sm:text-[0.75rem] tracking-[0.2em] uppercase font-medium">
             Original Brand Concept / {year}
           </span>
@@ -100,14 +108,24 @@ export default function BrandPitchPage({
             unrelated pages (login, profile, ...) still depend on as-is. */}
         <main className="bg-none">
           <BrandHero pitch={pitch} accent={palette.accent} year={year} />
+          <BrandSectionDivider targetId="idea" />
           <CreativeIdea pitch={pitch} palette={palette} />
+          <BrandSectionDivider targetId="hear-the-concept" />
           <HearTheConcept pitch={pitch} palette={palette} assets={assets} />
+          <BrandSectionDivider targetId="sonic-identity" />
           <SonicIdentity pitch={pitch} palette={palette} />
+          {/* No divider directly around SecondaryCampaignImage — it renders
+              nothing when the pitch has no unique secondary image, and a
+              divider pinned to either side of it would then sit right next
+              to another one with nothing between them. */}
           <SecondaryCampaignImage pitch={pitch} assets={assets} />
           <BrandMoments pitch={pitch} palette={palette} />
+          <BrandSectionDivider targetId="collectible" />
           <Collectible pitch={pitch} palette={palette} assets={assets} />
-          <BrandCTA pitch={pitch} palette={palette} />
+          <BrandSectionDivider targetId="about" />
           <BrandAbout pitch={pitch} palette={palette} assets={assets} otherProjects={otherProjects} />
+          <BrandSectionDivider targetId="cta" />
+          <BrandCTA pitch={pitch} palette={palette} />
         </main>
       </div>
     </BrandAudioProvider>

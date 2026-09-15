@@ -205,7 +205,7 @@ export default function HearTheConcept({
       id="hear-the-concept"
       style={{ backgroundColor: palette.light, color: palette.onLight }}
       backgroundImage={backgroundImage}
-      backgroundOverlay={`${palette.light}b3`}
+      backgroundOverlay={`${palette.light}99`}
     >
       <Eyebrow color={palette.accent}>{pitch.audio_eyebrow || "Hear the Concept"}</Eyebrow>
 

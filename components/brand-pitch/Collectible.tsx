@@ -47,10 +47,10 @@ export default function Collectible({
   return (
     <SectionShell
       id="collectible"
-      className="text-center"
+      className="text-center !pt-[3rem] sm:!pt-[5rem]"
       style={{ backgroundColor: palette.secondary, color: palette.onSecondary }}
       backgroundImage={backgroundImage}
-      backgroundOverlay={`${palette.secondary}b3`}
+      backgroundOverlay={`${palette.secondary}66`}
     >
       <div className="max-w-[36rem] mx-auto">
         <Eyebrow color={palette.accent}>{pitch.collectible_eyebrow || "The Collectible"}</Eyebrow>

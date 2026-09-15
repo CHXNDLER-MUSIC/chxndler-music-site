@@ -53,7 +53,7 @@ function SpinnableArtStage({
   const [rotation, setRotation] = useState(0);
 
   return (
-    <div className="art-stage-float relative mx-auto w-full max-w-[26rem] aspect-square">
+    <div className="art-stage-float relative mx-auto w-full max-w-[30rem] sm:max-w-[36rem] aspect-square">
       <div
         className={`pulse-glow absolute -inset-[10%] ${rounded} pointer-events-none`}
         aria-hidden="true"
@@ -301,6 +301,7 @@ export default function CoverArtViewer({
         label={songTitle}
         kind="Cover Art"
         accent={accent}
+        maxWidthClassName="max-w-[44rem] sm:max-w-[50rem]"
         headerExtra={
           <div role="tablist" aria-label="Presentation" className="mt-[1.25rem] flex gap-[0.5rem]">
             {(["cover", "cd", "vinyl", "cassette"] as const).map((s) => (

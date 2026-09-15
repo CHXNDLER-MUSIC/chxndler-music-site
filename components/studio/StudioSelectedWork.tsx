@@ -23,14 +23,6 @@ function PlayPauseGlyph({ playing, className = "w-[0.8rem] h-[0.8rem]" }: { play
   );
 }
 
-function SparkleGlyph({ className = "w-[0.7rem] h-[0.7rem]" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className={className}>
-      <path d="M10 1L12.3 7.7L19 10L12.3 12.3L10 19L7.7 12.3L1 10L7.7 7.7Z" />
-    </svg>
-  );
-}
-
 function ArrowGlyph({ direction }: { direction: "left" | "right" }) {
   return (
     <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="w-[1.05rem] h-[1.05rem]">
@@ -209,13 +201,15 @@ export default function StudioSelectedWork({ projects }: { projects: StudioWorkI
   return (
     <SectionShell
       id="work"
-      className="scroll-mt-[4.5rem] !py-[4rem] sm:!py-[5.5rem]"
+      className="scroll-mt-[4.5rem] !pt-[4rem] sm:!pt-[5.5rem] !pb-[2rem] sm:!pb-[2.75rem]"
       style={{ backgroundColor: STUDIO_BG, color: "#ffffff" }}
     >
       <div className="flex flex-wrap items-end justify-between gap-[1.5rem]">
         <div>
-          <Eyebrow color={STUDIO_PINK}>Hear the Work</Eyebrow>
-          <p className="mt-[0.25rem] max-w-[28rem] text-[1.0625rem] sm:text-[1.1875rem] leading-relaxed text-white/60">
+          <Eyebrow color={STUDIO_PINK} style={{ fontSize: "1.125rem" }}>
+            Hear the Work
+          </Eyebrow>
+          <p className="mt-[0.25rem] max-w-[28rem] text-[1.1875rem] sm:text-[1.3125rem] leading-relaxed text-white/60">
             Songs, sounds and worlds built for brands.
           </p>
         </div>
@@ -230,7 +224,7 @@ export default function StudioSelectedWork({ projects }: { projects: StudioWorkI
         onScroll={handleScroll}
         onPointerDown={onPointerDown}
         onClickCapture={onClickCapture}
-        className="chx-work-track mt-[2.5rem] sm:mt-[3.5rem] -mx-[6vw] sm:-mx-[8vw] px-[6vw] sm:px-[8vw] flex gap-[1.25rem] sm:gap-[1.5rem] overflow-x-auto snap-x snap-mandatory cursor-grab active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-0.25rem]"
+        className="chx-work-track mt-[1.5rem] sm:mt-[2.25rem] -mx-[6vw] sm:-mx-[8vw] px-[6vw] sm:px-[8vw] flex gap-[1.25rem] sm:gap-[1.5rem] overflow-x-auto snap-x snap-mandatory cursor-grab active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-0.25rem]"
         style={{ WebkitOverflowScrolling: "touch", outlineColor: STUDIO_PINK }}
       >
         {loopedProjects.map((project, i) => {
@@ -239,12 +233,8 @@ export default function StudioSelectedWork({ projects }: { projects: StudioWorkI
         })}
       </div>
 
-      <div className="hidden sm:grid grid-cols-3 items-center mt-[2rem]">
-        <p className="justify-self-start text-[0.75rem] font-semibold tracking-[0.2em] text-white/35 tabular-nums">
-          {String(currentIndex + 1).padStart(2, "0")} / {String(N).padStart(2, "0")}
-        </p>
-
-        <div className="justify-self-center flex items-center gap-[0.875rem]">
+      <div className="hidden sm:flex flex-col items-center gap-[0.625rem] mt-[1.5rem]">
+        <div className="flex items-center gap-[0.875rem]">
           <button
             type="button"
             onClick={() => {
@@ -272,6 +262,10 @@ export default function StudioSelectedWork({ projects }: { projects: StudioWorkI
             <ArrowGlyph direction="right" />
           </button>
         </div>
+
+        <p className="text-[0.75rem] font-semibold tracking-[0.2em] text-white/35 tabular-nums">
+          {String(currentIndex + 1).padStart(2, "0")} / {String(N).padStart(2, "0")}
+        </p>
       </div>
 
       <style jsx>{`
@@ -395,7 +389,7 @@ function WorkCard({ project, inert = false }: { project: StudioWorkItem; inert?:
               tabIndex={inert ? -1 : undefined}
               ariaLabel={isSonicPlaying ? `Pause ${project.brandName} sonic logo` : `Play ${project.brandName} sonic logo`}
             >
-              <SparkleGlyph className="w-[0.65rem] h-[0.65rem]" />
+              <PlayPauseGlyph playing={isSonicPlaying} className="w-[0.6rem] h-[0.6rem]" />
               Sonic Logo
             </AudioPill>
           )}
@@ -408,8 +402,8 @@ function WorkCard({ project, inert = false }: { project: StudioWorkItem; inert?:
           onMouseEnter={playHover}
           onClick={playClick}
           tabIndex={inert ? -1 : undefined}
-          className="group/link mt-[0.875rem] inline-flex items-center gap-[0.4rem] rounded-full border px-[1rem] py-[0.4375rem] text-[0.8125rem] font-bold text-white transition-all duration-[250ms] hover:text-[#EF43A3] hover:border-[#EF43A3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
-          style={{ borderColor: STUDIO_PINK, outlineColor: STUDIO_PINK }}
+          className="group/link mt-[0.875rem] inline-flex items-center gap-[0.4rem] rounded-full border border-white/[0.12] px-[1rem] py-[0.4375rem] text-[0.8125rem] font-bold uppercase tracking-[0.04em] text-[#EF43A3] transition-all duration-[250ms] hover:scale-110 hover:border-[#EF43A3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
+          style={{ outlineColor: STUDIO_PINK }}
         >
           View Full Campaign
           <span aria-hidden="true" className="inline-block transition-transform duration-[250ms] group-hover/link:translate-x-[0.25rem]">

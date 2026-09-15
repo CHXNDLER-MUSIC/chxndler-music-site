@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { motion } from "framer-motion";
 import { scrollToSection } from "./scrollTo";
 import { STUDIO_PINK } from "./identity";
 import { useInteractionSound } from "@/components/brand-pitch/useInteractionSound";
@@ -8,23 +9,24 @@ import { useInteractionSound } from "@/components/brand-pitch/useInteractionSoun
 const LINKS: Array<{ id: string; label: string }> = [
   { id: "work", label: "Work" },
   { id: "services", label: "Services" },
-  { id: "about", label: "About" },
+  { id: "about", label: "Studio" },
 ];
 
 /**
  * Minimal, persistent nav for the whole /studio page — unlike the
  * brand-pitch template's `header` (a scrolls-away title card for the hero
  * underneath it, see BrandPitchPage.tsx), /studio is a long single-page
- * homepage where "WORK / SERVICES / ABOUT / START A PROJECT" need to be
- * reachable from anywhere, so this stays fixed. A flat translucent bar from
- * the start (no scroll-listener state) — /studio's hero is always a fixed
- * near-black, not a variable per-brand image, so it never needs the
- * mix-blend-mode trick the brand-pitch header relies on for legibility.
+ * homepage where "WORK / SERVICES / ABOUT" need to be reachable from
+ * anywhere, so this stays fixed. A flat translucent bar from the start (no
+ * scroll-listener state) — /studio's hero is always a fixed near-black, not
+ * a variable per-brand image, so it never needs the mix-blend-mode trick the
+ * brand-pitch header relies on for legibility.
  *
  * The text wordmark sits dead-center of the bar (absolutely positioned, not
  * part of the flex flow — the detailed alien mark lives above the hero
  * headline instead, see StudioHero.tsx; repeating it here at nav size just
- * reads as clutter), with section links on the left and the CTA on the right.
+ * reads as clutter), with section links on the left and the "Start a
+ * Project" CTA on the right.
  */
 export default function StudioNav() {
   const { playHover, playClick } = useInteractionSound();
@@ -42,56 +44,50 @@ export default function StudioNav() {
     >
       <nav aria-label="Studio sections" className="hidden sm:flex items-center gap-[2rem] flex-1">
         {LINKS.map((link) => (
-          <a
+          <motion.a
             key={link.id}
             href={`#${link.id}`}
             onClick={go(link.id)}
             onMouseEnter={playHover}
-            className="text-[0.75rem] font-semibold tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem] rounded-sm"
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.96 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="inline-block text-[0.75rem] font-semibold tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem] rounded-sm"
             style={{ outlineColor: STUDIO_PINK }}
           >
             {link.label}
-          </a>
+          </motion.a>
         ))}
       </nav>
 
-      {/* Mobile spacer so the centered wordmark stays centered against the
-          right-side "Start a Project" button below sm. */}
-      <div className="sm:hidden flex-1" aria-hidden="true" />
-
+      {/* Plain Tailwind hover:scale (not framer-motion) so it composites with
+          the existing -translate-x-1/2 -translate-y-1/2 centering transform
+          instead of a motion component's inline transform replacing it and
+          breaking the centering. */}
       <a
         href="#hero"
         onClick={go("hero")}
         onMouseEnter={playHover}
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[0.6875rem] sm:text-[0.75rem] font-bold tracking-[0.16em] uppercase text-white/90 hover:text-white transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem] rounded-sm whitespace-nowrap"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[0.6875rem] sm:text-[0.75rem] font-bold tracking-[0.16em] uppercase text-white/90 hover:text-white hover:scale-[1.1] transition-[color,transform] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem] rounded-sm whitespace-nowrap"
         style={{ outlineColor: STUDIO_PINK }}
       >
         Chxndler Studio
       </a>
 
-      <div className="hidden sm:flex flex-1 justify-end">
-        <a
+      <div className="flex flex-1 justify-end">
+        <motion.a
           href="#start-a-project"
           onClick={go("start-a-project")}
           onMouseEnter={playHover}
-          className="inline-flex flex-shrink-0 items-center rounded-full border border-white/20 px-[1.125rem] py-[0.5rem] text-[0.6875rem] font-bold tracking-[0.15em] uppercase text-white/90 transition-colors duration-200 hover:border-[#EF43A3] hover:text-[#EF43A3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
-          style={{ outlineColor: STUDIO_PINK }}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.96 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="flex-shrink-0 text-[0.6875rem] sm:text-[0.75rem] font-bold tracking-[0.16em] uppercase whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem] rounded-sm"
+          style={{ color: STUDIO_PINK, outlineColor: STUDIO_PINK }}
         >
           Start a Project
-        </a>
+        </motion.a>
       </div>
-
-      {/* Mobile: centered wordmark + a single clear action on the right —
-          the full link list is one thumb-scroll away regardless, so it
-          isn't duplicated here. */}
-      <a
-        href="#start-a-project"
-        onClick={go("start-a-project")}
-        className="sm:hidden flex-shrink-0 inline-flex items-center rounded-full border border-white/20 px-[0.625rem] py-[0.75rem] text-[0.5625rem] font-bold tracking-[0.08em] uppercase text-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
-        style={{ outlineColor: STUDIO_PINK }}
-      >
-        Start a Project
-      </a>
     </header>
   );
 }

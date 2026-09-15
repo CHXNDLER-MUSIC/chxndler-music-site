@@ -9,6 +9,7 @@ import StudioServices from "./StudioServices";
 import StudioCreatedBy from "./StudioCreatedBy";
 import StudioFinalCTA from "./StudioFinalCTA";
 import StudioFooter from "./StudioFooter";
+import StudioSectionDivider from "./StudioSectionDivider";
 import { STUDIO_BG } from "./identity";
 import type { StudioWorkItem } from "./types";
 
@@ -34,8 +35,11 @@ export default function StudioPage({ projects }: { projects: StudioWorkItem[] })
         <main className="bg-none">
           <StudioHero />
           <StudioSelectedWork projects={projects} />
+          <StudioSectionDivider targetId="services" />
           <StudioServices />
+          <StudioSectionDivider targetId="about" />
           <StudioCreatedBy />
+          <StudioSectionDivider targetId="start-a-project" />
           <StudioFinalCTA />
         </main>
         <StudioFooter />

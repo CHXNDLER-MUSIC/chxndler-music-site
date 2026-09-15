@@ -93,7 +93,7 @@ export default function BrandHero({ pitch, accent, year }: { pitch: BrandPitch; 
             aria-hidden="true"
           />
         )}
-        {hasBackdrop && <div className="absolute inset-0 bg-black/35" aria-hidden="true" />}
+        {hasBackdrop && <div className="absolute inset-0 bg-black/25" aria-hidden="true" />}
       </div>
 
       <motion.div {...fade(0)} className="max-w-[60rem]">

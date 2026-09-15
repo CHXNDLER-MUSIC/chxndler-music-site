@@ -31,6 +31,7 @@ export default function BrandMoments({ pitch, palette }: { pitch: BrandPitch; pa
 
   return (
     <SectionShell
+      id="campaign"
       style={{ backgroundColor: palette.dark, color: palette.onDark }}
       textureUrl={getSectionTexture(pitch, 2)}
     >

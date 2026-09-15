@@ -43,12 +43,14 @@ export default function StudioServices() {
   return (
     <SectionShell
       id="services"
-      className="scroll-mt-[4.5rem] !py-[2.75rem] sm:!py-[3.5rem]"
+      className="scroll-mt-[4.5rem] !py-[3.5rem] sm:!py-[4.5rem]"
       style={{ backgroundColor: STUDIO_BG_ALT, color: "#ffffff" }}
     >
-      <Eyebrow color={STUDIO_PINK}>What We Create</Eyebrow>
+      <Eyebrow color={STUDIO_PINK} style={{ fontSize: "1.125rem" }}>
+        What We Do
+      </Eyebrow>
 
-      <div className="mt-[1.75rem] sm:mt-[2.25rem] grid grid-cols-1 sm:grid-cols-3 gap-[1.75rem] sm:gap-[2rem] divide-y sm:divide-y-0 divide-white/10">
+      <div className="mt-[2.75rem] sm:mt-[3.5rem] grid grid-cols-1 sm:grid-cols-3 gap-[1.75rem] sm:gap-[2rem] divide-y sm:divide-y-0 divide-white/10">
         {SERVICES.map((service, i) => {
           const Symbol = service.Symbol;
           return (
@@ -57,7 +59,9 @@ export default function StudioServices() {
               {...fade(i * 0.08)}
               className="group pt-[1.75rem] sm:pt-0 first:pt-0 sm:border-l sm:first:border-l-0 sm:pl-[2rem] sm:first:pl-0 border-white/10 hover:border-white/25 transition-colors duration-300"
             >
-              <Symbol />
+              <div className="flex justify-center">
+                <Symbol />
+              </div>
 
               <p className="mt-[1.375rem] text-[0.8125rem] font-bold tracking-[0.2em] text-[#EF43A3]/60 transition-colors duration-300 group-hover:text-[#EF43A3]">
                 {service.number}
@@ -65,7 +69,7 @@ export default function StudioServices() {
               <h3 className="mt-[0.75rem] font-bold uppercase tracking-tight text-[1.5rem] sm:text-[1.75rem] text-white/90 transition-colors duration-300 group-hover:text-white">
                 {service.title}
               </h3>
-              <p className="mt-[0.875rem] text-[1rem] leading-relaxed text-white/60 max-w-[22rem] transition-colors duration-300 group-hover:text-white/70">
+              <p className="mt-[0.875rem] text-[1rem] leading-[1.85] text-white/60 max-w-[22rem] transition-colors duration-300 group-hover:text-white/70">
                 {service.body}
               </p>
             </motion.div>
@@ -85,7 +89,7 @@ export default function StudioServices() {
 // restrained one-shot transform — never a looping animation — guarded by
 // Tailwind's `motion-safe:` variant so prefers-reduced-motion gets the
 // color change only, no movement.
-const SYMBOL_WRAPPER = "h-[2.25rem] w-[4.75rem] text-white/45 transition-colors duration-300 group-hover:text-white/85";
+const SYMBOL_WRAPPER = "h-[3.25rem] w-[6.75rem] text-white/45 transition-colors duration-300 group-hover:text-white/85";
 
 // Per-bar hover scale, deliberately uneven (not a uniform bounce) — one shot
 // via CSS transition on :hover, never a repeating animation. Each entry is

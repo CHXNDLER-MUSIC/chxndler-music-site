@@ -180,7 +180,8 @@ export default function SonicIdentity({ pitch, palette }: { pitch: BrandPitch; p
 
   return (
     <SectionShell
-      className="!py-[4.5rem] sm:!py-[9rem]"
+      id="sonic-identity"
+      className="!pt-[2.25rem] sm:!pt-[5rem] !pb-[4.5rem] sm:!pb-[9rem]"
       style={{ backgroundColor: palette.accent, color: palette.onAccent }}
       textureUrl={getSectionTexture(pitch, 1)}
     >

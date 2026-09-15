@@ -55,6 +55,7 @@ export default function CreativeIdea({ pitch, palette }: { pitch: BrandPitch; pa
 
   return (
     <SectionShell
+      id="idea"
       className="!py-[5rem] sm:!py-[7rem]"
       style={{ backgroundColor: palette.accent, color: palette.onAccent }}
       textureUrl={getSectionTexture(pitch, 0)}

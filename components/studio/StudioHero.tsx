@@ -41,7 +41,7 @@ export default function StudioHero() {
         <img
           src="/elements/chxndler-studio.png"
           alt="CHXNDLER STUDIO"
-          className="mx-auto h-auto w-[11rem] sm:w-[13.5rem] lg:w-[15.25rem] mb-[1.5rem] sm:mb-[2.25rem]"
+          className="mx-auto h-auto w-[14.5rem] sm:w-[18rem] lg:w-[20.5rem] mb-[0.5rem] sm:mb-[0.875rem]"
           data-no-lazy="" // see ui.tsx SectionShell for why
         />
         <h1 className="mx-auto max-w-[26rem] sm:max-w-[46rem] lg:max-w-[74rem] font-bold uppercase leading-[0.92] tracking-tight text-[2.35rem] sm:text-[4.5rem] lg:text-[6rem]">
@@ -62,15 +62,15 @@ export default function StudioHero() {
         {/* Mobile: a compact centered vertical stack, no bullets — the
             single-line desktop treatment at this width orphans "Creative
             Worlds" onto its own line, which reads as a layout mistake. */}
-        <div className="sm:hidden mt-[1.5rem] flex flex-col items-center gap-[0.4rem] text-[0.875rem] tracking-[0.08em] uppercase font-medium text-white/40">
+        <div className="sm:hidden mt-[2.125rem] flex flex-col items-center gap-[0.4rem] text-[0.875rem] tracking-[0.08em] uppercase font-medium text-white/65">
           <span>Original Music</span>
           <span>Sonic Identity</span>
           <span>Creative Worlds</span>
         </div>
 
-        <p className="hidden sm:block mt-[1.5rem] text-[0.875rem] tracking-[0.08em] uppercase font-medium text-white/40">
-          Original Music <span aria-hidden="true" className="mx-[0.5rem] text-white/25">•</span>
-          Sonic Identity <span aria-hidden="true" className="mx-[0.5rem] text-white/25">•</span>
+        <p className="hidden sm:block mt-[2.125rem] text-[0.875rem] tracking-[0.08em] uppercase font-medium text-white/65">
+          Original Music <span aria-hidden="true" className="mx-[0.5rem] text-white/40">•</span>
+          Sonic Identity <span aria-hidden="true" className="mx-[0.5rem] text-white/40">•</span>
           Creative Worlds
         </p>
       </motion.div>
@@ -83,6 +83,7 @@ export default function StudioHero() {
           href="#work"
           onClick={go("work")}
           onMouseEnter={playHover}
+          whileHover={{ scale: 1.06, transition: { duration: 0.2, ease: "easeOut" } }}
           whileTap={{ scale: 0.97 }}
           className="group inline-flex items-center gap-[0.625rem] rounded-full px-[1.875rem] py-[1rem] text-[0.9375rem] font-bold tracking-[0.08em] uppercase text-white transition-opacity duration-200 hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
           style={{ backgroundColor: STUDIO_PINK, outlineColor: STUDIO_PINK }}
@@ -90,19 +91,6 @@ export default function StudioHero() {
           Hear the Work
           <span aria-hidden="true" className="inline-block transition-transform duration-200 group-hover:translate-y-[0.2rem]">
             ↓
-          </span>
-        </motion.a>
-        <motion.a
-          href="#start-a-project"
-          onClick={go("start-a-project")}
-          onMouseEnter={playHover}
-          whileTap={{ scale: 0.97 }}
-          className="group inline-flex items-center gap-[0.625rem] rounded-full border border-white/20 bg-[#0a0a0d] px-[1.875rem] py-[1rem] text-[0.9375rem] font-bold tracking-[0.08em] uppercase text-white/85 transition-colors duration-200 hover:border-white/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
-          style={{ outlineColor: STUDIO_PINK }}
-        >
-          Start a Project
-          <span aria-hidden="true" className="inline-block transition-transform duration-200 group-hover:translate-x-[0.2rem]">
-            →
           </span>
         </motion.a>
       </motion.div>

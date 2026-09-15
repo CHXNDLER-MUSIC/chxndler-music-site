@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useInteractionSound } from "./useInteractionSound";
 
 /**
  * One generic, brand-agnostic fullscreen viewer shared by the cover-art and
@@ -50,6 +51,12 @@ export default function MediaViewerModal({
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
+  // Dedicated "close" sound (close.mp3), distinct from the generic hover/click
+  // bus every trigger elsewhere uses — every /brands/[slug] viewer (cover art,
+  // collectible card, campaign lookbook, the studio portfolio launcher) is
+  // built on this one modal, so wiring it here covers every top-right × in
+  // the template with zero per-caller code.
+  const { playClick: playClose } = useInteractionSound({ clickKey: "close" });
 
   useEffect(() => {
     if (!open) return;
@@ -123,7 +130,10 @@ export default function MediaViewerModal({
             <button
               ref={closeRef}
               type="button"
-              onClick={onClose}
+              onClick={() => {
+                playClose();
+                onClose();
+              }}
               aria-label="Close"
               className="absolute top-[1rem] right-[1rem] inline-flex items-center justify-center w-[2.5rem] h-[2.5rem] rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem]"
               style={{ outlineColor: accent }}

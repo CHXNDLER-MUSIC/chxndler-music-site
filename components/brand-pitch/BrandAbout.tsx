@@ -6,8 +6,6 @@ import type { BrandPitch } from "@/lib/brandPitch";
 import type { PitchPalette } from "@/lib/brandPitchPalette";
 import type { PitchAssetRegistry } from "@/lib/brandPitchVisuals";
 import { Eyebrow, SectionShell } from "./ui";
-import StartButton from "@/components/StartButton";
-import { useInteractionSound } from "./useInteractionSound";
 import StudioPortfolioLauncher, { type StudioProject } from "./StudioPortfolioLauncher";
 
 // CHXNDLER's own identity photo and wordmark signature — the same across
@@ -53,21 +51,21 @@ const PORTRAIT_MASK = "radial-gradient(ellipse 50% 52% at 50% 46%, #000 94%, tra
 // else here reads from Supabase.
 const CHXNDLER_EYEBROW = "CREATED BY CHXNDLER";
 const CHXNDLER_HEADLINE_LINE_1 = "THE ARTIST";
-const CHXNDLER_HEADLINE_LINE_2 = "BEHIND THE SONG.";
+const CHXNDLER_HEADLINE_LINE_2 = "BEHIND THE SOUND.";
 const CHXNDLER_CREDENTIALS = "ARTIST · SONGWRITER · PRODUCER";
 // The one accent word per line ("visual", "sonic") gets its own neon
 // treatment — everything else in the statement stays one consistent color/weight.
 const NEON_YELLOW = "#F5FF3D";
 
 /**
- * The closing signature of the pitch, after LET'S TALK — an editorial artist
- * reveal/creative-director credit, not a corporate team-bio or an "About Me"
- * block. A portrait (40%) and the creator's story (60%) sit as one connected
- * composition, vertically centered, framed rather than floating in an
- * oversized viewport. Visually it intentionally transitions OUT of the
- * brand's campaign world (the hot-pink BrandCTA section right above it) and
- * into CHXNDLER's own dark, cinematic identity — see the CHXNDLER_*
- * constants above.
+ * The artist reveal/creative-director credit, now placed right before
+ * LET'S TALK (BrandCTA) — an editorial signature, not a corporate team-bio
+ * or an "About Me" block. A portrait (40%) and the creator's story (60%) sit
+ * as one connected composition, vertically centered, framed rather than
+ * floating in an oversized viewport. Visually it transitions OUT of the
+ * brand's campaign world above it and into CHXNDLER's own dark, cinematic
+ * identity — see the CHXNDLER_* constants above — right before the pitch
+ * closes on the hot-pink BrandCTA ask.
  */
 export default function BrandAbout({
   pitch,
@@ -84,10 +82,6 @@ export default function BrandAbout({
   otherProjects: StudioProject[];
 }) {
   const reduceMotion = useReducedMotion();
-  // The Heartverse mark gets its own signature click sound (star.mp3, same
-  // as the collectible card) rather than the generic sitewide click — same
-  // "you found something special" beat, template-wide, not brand-specific.
-  const { playHover, playClick } = useInteractionSound({ clickKey: "star" });
   if (!pitch.about_body) return null;
 
   const fade = (delay = 0) =>
@@ -101,7 +95,7 @@ export default function BrandAbout({
         };
 
   return (
-    <SectionShell style={{ backgroundColor: CHXNDLER_BG, color: CHXNDLER_BODY }}>
+    <SectionShell id="about" style={{ backgroundColor: CHXNDLER_BG, color: CHXNDLER_BODY }}>
       <div className="relative flex items-center">
         {/* Atmosphere only — no literal space graphics, just a hair of grain
             for depth. The cyan/pink/accent glow itself lives with the
@@ -120,7 +114,7 @@ export default function BrandAbout({
               rather than pasted on top of it. */}
           <motion.div
             {...fade(0)}
-            className="relative flex-shrink-0 mx-auto lg:mx-0 w-[9rem] h-[9rem] sm:w-[11.5rem] sm:h-[11.5rem] md:w-[14rem] md:h-[14rem] lg:w-[18rem] lg:h-[18rem]"
+            className="relative flex-shrink-0 mx-auto lg:mx-0 lg:order-2 w-[15rem] h-[15rem] sm:w-[19rem] sm:h-[19rem] md:w-[23rem] md:h-[23rem] lg:w-[29.5rem] lg:h-[29.5rem]"
           >
             <div
               className="absolute -inset-[20%] rounded-full blur-[6rem] pointer-events-none"
@@ -141,7 +135,7 @@ export default function BrandAbout({
           {/* Copy — 60% column. Deliberate rhythm: eyebrow, headline, body,
               featured statement, then the role/signature line — no excessive
               gaps between them. */}
-          <motion.div {...fade(0.12)} className="text-center lg:text-left max-w-[34rem] mx-auto lg:mx-0">
+          <motion.div {...fade(0.12)} className="text-center lg:text-left lg:order-1 max-w-[34rem] mx-auto lg:mx-0">
             <Eyebrow color={palette.accent} style={{ fontSize: "0.9375rem" }}>
               {pitch.about_eyebrow || CHXNDLER_EYEBROW}
             </Eyebrow>
@@ -188,62 +182,32 @@ export default function BrandAbout({
               </span>
             </p>
 
-            {/* Creator's mark — one centered lockup, always on its own axis
-                regardless of how the surrounding copy column aligns (center
-                on mobile, left on desktop): CHXNDLER's signature with THE
-                HEARTVERSE directly beneath it, then the interactive blue
-                Heartverse button centered underneath the whole lockup with
-                real breathing room — never beside it. The wrapper's scoped
-                override tones down StartButton's own cyan glow (shared
-                sitewide, so its base styling stays untouched) so the mark
-                stays a controlled, intentional finishing detail rather than
-                the oversized glow of the earlier design. */}
-            <div className="mt-[0.125rem] flex flex-col items-center gap-[1rem] chxndler-mark">
-              <div className="flex flex-col items-center">
-                {/* The source PNG has a lot of baked-in transparent padding above
-                    the actual mark — pulled up to close that gap instead of just
-                    trusting the box's own margin, or the visible ink would still
-                    read far below the statement above it. */}
-                <img
-                  src={CHXNDLER_SIGNATURE}
-                  alt="CHXNDLER"
-                  className="-mt-[1rem] sm:-mt-[1.25rem] h-[5.5rem] sm:h-[6.5rem] w-auto object-contain"
-                  data-no-lazy="" // see ui.tsx SectionShell for why
-                />
-                <span className="-mt-[0.5rem] sm:-mt-[0.625rem] text-[0.6875rem] font-semibold tracking-[0.25em] uppercase text-white">
-                  THE HEARTVERSE
-                </span>
-              </div>
-              <div onMouseEnter={playHover}>
-                <StartButton
-                  size={112}
-                  pulse={false}
-                  ariaLabel="Visit chxndler.world"
-                  onClick={() => {
-                    playClick();
-                    window.open("https://chxndler.world", "_blank", "noopener,noreferrer");
-                  }}
-                />
-              </div>
+            {/* Creator's mark — CHXNDLER's signature, centered on its own
+                axis regardless of how the surrounding copy column aligns
+                (center on mobile, left on desktop). */}
+            <div className="mt-[0.125rem] flex flex-col items-center">
+              {/* The source PNG has a lot of baked-in transparent padding above
+                  the actual mark — pulled up to close that gap instead of just
+                  trusting the box's own margin, or the visible ink would still
+                  read far below the statement above it. */}
+              <img
+                src={CHXNDLER_SIGNATURE}
+                alt="CHXNDLER"
+                className="-mt-[1rem] sm:-mt-[1.25rem] h-[5.5rem] sm:h-[6.5rem] w-auto object-contain"
+                data-no-lazy="" // see ui.tsx SectionShell for why
+              />
             </div>
 
             {/* Portfolio launcher — same centered-on-its-own-axis treatment
                 as the mark above, with its own breathing room so it reads as
                 a deliberate closing beat, not an appendage. Renders nothing
                 if the current pitch is the only published project. */}
-            <div className="mt-[1.75rem] flex justify-center">
+            <div className="mt-[0.375rem] flex justify-center">
               <StudioPortfolioLauncher projects={otherProjects} />
             </div>
           </motion.div>
         </div>
       </div>
-
-      <style jsx>{`
-        .chxndler-mark :global(.chx-icon) {
-          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15))
-            drop-shadow(0 0 4px rgba(25, 227, 255, 0.12)) !important;
-        }
-      `}</style>
     </SectionShell>
   );
 }

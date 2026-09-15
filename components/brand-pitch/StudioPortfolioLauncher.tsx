@@ -108,6 +108,8 @@ function StudioProjectCard({
   return (
     <Link
       href={project.href}
+      target="_blank"
+      rel="noopener noreferrer"
       onClick={onNavigate}
       onMouseEnter={onHover}
       className="studio-card group block rounded-[0.5rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
