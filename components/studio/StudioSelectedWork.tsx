@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { SectionShell, formatTime } from "@/components/brand-pitch/ui";
+import { Eyebrow, SectionShell, formatTime } from "@/components/brand-pitch/ui";
 import { useBrandAudio } from "@/components/brand-pitch/BrandAudioContext";
 import { useInteractionSound } from "@/components/brand-pitch/useInteractionSound";
 import { STUDIO_BG, STUDIO_PINK, STUDIO_BORDER } from "./identity";
@@ -45,6 +45,11 @@ function ArrowGlyph({ direction }: { direction: "left" | "right" }) {
   );
 }
 
+// Same value the track's gap-* utilities render at sm+ (mobile's 1.25rem/20px
+// gap is close enough that using this one constant for step math everywhere
+// never drifts visibly — scroll-snap silently absorbs the few px difference).
+const CARD_GAP = 24;
+
 /**
  * "Selected Work" — the record shelf. Every project gets identical 1:1
  * square cover art at identical size (no "featured" first item), presented
@@ -63,6 +68,20 @@ function ArrowGlyph({ direction }: { direction: "left" | "right" }) {
  * (a mouse wheel has no native horizontal axis the way a trackpad does).
  * Arrow buttons and left/right arrow keys move exactly one card. Nothing
  * ever autoplays or scrolls on its own.
+ *
+ * INFINITE LOOP: the track renders three copies of `projects` back to back
+ * ([clone-before][real][clone-after]) and starts scrolled to the first card
+ * of the middle (real) copy. Arrow/keyboard/drag navigation is completely
+ * unaware of the loop — it just scrolls by one card, same as always. A
+ * scroll-settle watcher (debounced off the native `scroll` event, since
+ * `scrollend` isn't universal yet) checks whether the settled position has
+ * drifted into a clone section and, if so, silently re-anchors `scrollLeft`
+ * (no smooth animation) to the identical position in the real section —
+ * since the clone is pixel-identical to the real card it's replacing, this
+ * correction is invisible, which is what makes 06→01 feel like one
+ * continuous slide rather than a reset. Clones are the same plain data
+ * objects as the real projects (not separate audio/state), so a clone
+ * mid-transition already shows the correct playing/hover state for free.
  */
 export default function StudioSelectedWork({ projects }: { projects: StudioWorkItem[] }) {
   if (projects.length === 0) return null;
@@ -73,31 +92,62 @@ export default function StudioSelectedWork({ projects }: { projects: StudioWorkI
   const dragMoved = useRef(false);
   const dragStartX = useRef(0);
   const dragStartScroll = useRef(0);
-  const [atStart, setAtStart] = useState(true);
-  const [atEnd, setAtEnd] = useState(false);
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const updateEdges = useCallback(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    setAtStart(el.scrollLeft <= 4);
-    setAtEnd(el.scrollLeft >= max - 4);
+  const N = projects.length;
+  // Three back-to-back copies so there's always a full real section's worth
+  // of clone buffer on either side, regardless of how many cards are visible
+  // at once or how many projects exist.
+  const loopedProjects = useMemo(() => [...projects, ...projects, ...projects], [projects]);
 
+  const measureStep = useCallback((el: HTMLDivElement) => {
     const card = el.querySelector<HTMLElement>("[data-work-card]");
-    const step = card ? card.getBoundingClientRect().width + 24 : el.clientWidth;
-    setCurrentIndex(Math.min(projects.length - 1, Math.round(el.scrollLeft / step)));
-  }, [projects.length]);
-
-  const scrollByCards = useCallback((dir: 1 | -1) => {
-    const el = trackRef.current;
-    if (!el) return;
-    const card = el.querySelector<HTMLElement>("[data-work-card]");
-    const gap = 24;
-    const amount = card ? card.getBoundingClientRect().width + gap : el.clientWidth * 0.85;
-    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    el.scrollBy({ left: dir * amount, behavior: reduceMotion ? "auto" : "smooth" });
+    return card ? card.getBoundingClientRect().width + CARD_GAP : el.clientWidth;
   }, []);
+
+  // Jump (no animation) to the start of the middle "real" copy before first
+  // paint, so the loop buffer is invisible on load.
+  useLayoutEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.scrollLeft = N * measureStep(el);
+    setCurrentIndex(0);
+  }, [N, measureStep]);
+
+  const handleScroll = useCallback(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const step = measureStep(el);
+    const paddedIndex = step > 0 ? Math.round(el.scrollLeft / step) : 0;
+    const real = ((paddedIndex % N) + N) % N;
+    setCurrentIndex(real);
+
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => {
+      if (isDragging.current) return; // re-checked on the next scroll/settle once released
+      const elNow = trackRef.current;
+      if (!elNow) return;
+      const stepNow = measureStep(elNow);
+      if (stepNow <= 0) return;
+      const pNow = Math.round(elNow.scrollLeft / stepNow);
+      if (pNow < N || pNow >= 2 * N) {
+        const realNow = ((pNow % N) + N) % N;
+        elNow.scrollLeft = (N + realNow) * stepNow;
+      }
+    }, 160);
+  }, [N, measureStep]);
+
+  const scrollByCards = useCallback(
+    (dir: 1 | -1) => {
+      const el = trackRef.current;
+      if (!el) return;
+      const amount = measureStep(el);
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      el.scrollBy({ left: dir * amount, behavior: reduceMotion ? "auto" : "smooth" });
+    },
+    [measureStep]
+  );
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -164,14 +214,9 @@ export default function StudioSelectedWork({ projects }: { projects: StudioWorkI
     >
       <div className="flex flex-wrap items-end justify-between gap-[1.5rem]">
         <div>
-          <h2
-            className="font-bold uppercase leading-[0.98] tracking-tight text-[1.75rem] sm:text-[2.5rem] lg:text-[2.875rem]"
-            style={{ color: STUDIO_PINK }}
-          >
-            Hear the Work
-          </h2>
-          <p className="mt-[1rem] max-w-[28rem] text-[1.0625rem] sm:text-[1.1875rem] leading-relaxed text-white/60">
-            Original music + sonic identities for brands.
+          <Eyebrow color={STUDIO_PINK}>Hear the Work</Eyebrow>
+          <p className="mt-[0.25rem] max-w-[28rem] text-[1.0625rem] sm:text-[1.1875rem] leading-relaxed text-white/60">
+            Songs, sounds and worlds built for brands.
           </p>
         </div>
       </div>
@@ -182,20 +227,21 @@ export default function StudioSelectedWork({ projects }: { projects: StudioWorkI
         aria-label="Selected work — scroll or use the arrow keys to browse projects"
         tabIndex={0}
         onKeyDown={onKeyDown}
-        onScroll={updateEdges}
+        onScroll={handleScroll}
         onPointerDown={onPointerDown}
         onClickCapture={onClickCapture}
         className="chx-work-track mt-[2.5rem] sm:mt-[3.5rem] -mx-[6vw] sm:-mx-[8vw] px-[6vw] sm:px-[8vw] flex gap-[1.25rem] sm:gap-[1.5rem] overflow-x-auto snap-x snap-mandatory cursor-grab active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-0.25rem]"
         style={{ WebkitOverflowScrolling: "touch", outlineColor: STUDIO_PINK }}
       >
-        {projects.map((project) => (
-          <WorkCard key={project.slug} project={project} />
-        ))}
+        {loopedProjects.map((project, i) => {
+          const isClone = i < N || i >= 2 * N;
+          return <WorkCard key={`${i < N ? "before" : i < 2 * N ? "real" : "after"}-${project.slug}`} project={project} inert={isClone} />;
+        })}
       </div>
 
       <div className="hidden sm:grid grid-cols-3 items-center mt-[2rem]">
         <p className="justify-self-start text-[0.75rem] font-semibold tracking-[0.2em] text-white/35 tabular-nums">
-          {String(currentIndex + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")}
+          {String(currentIndex + 1).padStart(2, "0")} / {String(N).padStart(2, "0")}
         </p>
 
         <div className="justify-self-center flex items-center gap-[0.875rem]">
@@ -206,9 +252,8 @@ export default function StudioSelectedWork({ projects }: { projects: StudioWorkI
               scrollByCards(-1);
             }}
             onMouseEnter={playHover}
-            disabled={atStart}
             aria-label="Previous project"
-            className="inline-flex items-center justify-center w-[3.25rem] h-[3.25rem] rounded-full border border-white/20 text-white/80 transition-all duration-200 hover:scale-110 hover:border-current hover:text-[#EF43A3] disabled:opacity-30 disabled:pointer-events-none disabled:hover:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
+            className="inline-flex items-center justify-center w-[3.25rem] h-[3.25rem] rounded-full border border-white/20 text-white/80 transition-all duration-200 hover:scale-110 hover:border-current hover:text-[#EF43A3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
             style={{ outlineColor: STUDIO_PINK }}
           >
             <ArrowGlyph direction="left" />
@@ -220,9 +265,8 @@ export default function StudioSelectedWork({ projects }: { projects: StudioWorkI
               scrollByCards(1);
             }}
             onMouseEnter={playHover}
-            disabled={atEnd}
             aria-label="Next project"
-            className="inline-flex items-center justify-center w-[3.25rem] h-[3.25rem] rounded-full border border-white/20 text-white/80 transition-all duration-200 hover:scale-110 hover:border-current hover:text-[#EF43A3] disabled:opacity-30 disabled:pointer-events-none disabled:hover:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
+            className="inline-flex items-center justify-center w-[3.25rem] h-[3.25rem] rounded-full border border-white/20 text-white/80 transition-all duration-200 hover:scale-110 hover:border-current hover:text-[#EF43A3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
             style={{ outlineColor: STUDIO_PINK }}
           >
             <ArrowGlyph direction="right" />
@@ -253,7 +297,7 @@ export default function StudioSelectedWork({ projects }: { projects: StudioWorkI
  * shared BrandAudioContext element, so starting one always stops whatever
  * else was playing — there is no separate bookkeeping to get wrong here.
  */
-function WorkCard({ project }: { project: StudioWorkItem }) {
+function WorkCard({ project, inert = false }: { project: StudioWorkItem; inert?: boolean }) {
   const { activeId, playing, currentTime, duration, toggle } = useBrandAudio();
   const { playHover, playClick } = useInteractionSound();
 
@@ -292,10 +336,11 @@ function WorkCard({ project }: { project: StudioWorkItem }) {
   );
 
   return (
-    <div data-work-card className="group snap-start flex-shrink-0 w-[80%] sm:w-[45%] lg:w-[31%]">
+    <div data-work-card className="group snap-start flex-shrink-0 w-[80%] sm:w-[45%] lg:w-[31%]" aria-hidden={inert || undefined}>
       {hasSong ? (
         <button
           type="button"
+          tabIndex={inert ? -1 : undefined}
           onClick={playSong}
           onMouseEnter={playHover}
           aria-pressed={isSongPlaying}
@@ -347,6 +392,7 @@ function WorkCard({ project }: { project: StudioWorkItem }) {
               active={isSonicPlaying}
               onClick={playSonic}
               onMouseEnter={playHover}
+              tabIndex={inert ? -1 : undefined}
               ariaLabel={isSonicPlaying ? `Pause ${project.brandName} sonic logo` : `Play ${project.brandName} sonic logo`}
             >
               <SparkleGlyph className="w-[0.65rem] h-[0.65rem]" />
@@ -361,10 +407,11 @@ function WorkCard({ project }: { project: StudioWorkItem }) {
           href={project.href}
           onMouseEnter={playHover}
           onClick={playClick}
-          className="group/link mt-[0.875rem] inline-flex items-center gap-[0.4rem] text-[0.9375rem] font-bold text-white transition-colors duration-[250ms] hover:text-[#EF43A3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] rounded-sm"
-          style={{ outlineColor: STUDIO_PINK }}
+          tabIndex={inert ? -1 : undefined}
+          className="group/link mt-[0.875rem] inline-flex items-center gap-[0.4rem] rounded-full border px-[1rem] py-[0.4375rem] text-[0.8125rem] font-bold text-white transition-all duration-[250ms] hover:text-[#EF43A3] hover:border-[#EF43A3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
+          style={{ borderColor: STUDIO_PINK, outlineColor: STUDIO_PINK }}
         >
-          Explore the Campaign
+          View Full Campaign
           <span aria-hidden="true" className="inline-block transition-transform duration-[250ms] group-hover/link:translate-x-[0.25rem]">
             →
           </span>
@@ -400,16 +447,19 @@ function AudioPill({
   onClick,
   onMouseEnter,
   ariaLabel,
+  tabIndex,
 }: {
   children: React.ReactNode;
   active: boolean;
   onClick: () => void;
   onMouseEnter?: () => void;
   ariaLabel: string;
+  tabIndex?: number;
 }) {
   return (
     <button
       type="button"
+      tabIndex={tabIndex}
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       aria-pressed={active}

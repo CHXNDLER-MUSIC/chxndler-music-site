@@ -24,7 +24,7 @@ export default function StudioFooter() {
       className="border-t border-white/10 px-[6vw] sm:px-[8vw] py-[3rem] sm:py-[3.5rem]"
       style={{ backgroundColor: STUDIO_BG_ALT, color: "#ffffff" }}
     >
-      <div className="max-w-[75rem] mx-auto flex flex-col sm:flex-row items-center justify-between gap-[1.25rem] text-center sm:text-left">
+      <div className="max-w-[75rem] mx-auto flex flex-col sm:flex-row items-center justify-center gap-[1.25rem] sm:gap-[2.5rem] text-center">
         <nav aria-label="Studio sections" className="flex flex-wrap items-center justify-center gap-x-[1.5rem] gap-y-[0.5rem]">
           {LINKS.map((link) => (
             <a

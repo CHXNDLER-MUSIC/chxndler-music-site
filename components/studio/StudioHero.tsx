@@ -59,7 +59,16 @@ export default function StudioHero() {
           </span>
         </h1>
 
-        <p className="mt-[1.5rem] text-[0.8125rem] sm:text-[0.875rem] tracking-[0.08em] uppercase font-medium text-white/40">
+        {/* Mobile: a compact centered vertical stack, no bullets — the
+            single-line desktop treatment at this width orphans "Creative
+            Worlds" onto its own line, which reads as a layout mistake. */}
+        <div className="sm:hidden mt-[1.5rem] flex flex-col items-center gap-[0.4rem] text-[0.875rem] tracking-[0.08em] uppercase font-medium text-white/40">
+          <span>Original Music</span>
+          <span>Sonic Identity</span>
+          <span>Creative Worlds</span>
+        </div>
+
+        <p className="hidden sm:block mt-[1.5rem] text-[0.875rem] tracking-[0.08em] uppercase font-medium text-white/40">
           Original Music <span aria-hidden="true" className="mx-[0.5rem] text-white/25">•</span>
           Sonic Identity <span aria-hidden="true" className="mx-[0.5rem] text-white/25">•</span>
           Creative Worlds
@@ -68,7 +77,7 @@ export default function StudioHero() {
 
       <motion.div
         {...fade(0.15)}
-        className="mt-[3rem] flex flex-wrap items-center justify-center gap-[1rem] sm:gap-[1.25rem]"
+        className="mt-[1.75rem] sm:mt-[3rem] flex flex-wrap items-center justify-center gap-[1rem] sm:gap-[1.25rem]"
       >
         <motion.a
           href="#work"
