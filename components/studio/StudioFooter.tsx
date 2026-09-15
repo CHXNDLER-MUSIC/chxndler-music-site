@@ -21,25 +21,25 @@ export default function StudioFooter() {
 
   return (
     <footer
-      className="border-t border-white/10 px-[6vw] sm:px-[8vw] py-[2.5rem] flex flex-col sm:flex-row items-center justify-between gap-[1.25rem] text-center sm:text-left"
+      className="border-t border-white/10 px-[6vw] sm:px-[8vw] py-[3rem] sm:py-[3.5rem]"
       style={{ backgroundColor: STUDIO_BG_ALT, color: "#ffffff" }}
     >
-      <p className="text-[0.8125rem] font-bold tracking-[0.2em] uppercase text-white/70">CHXNDLER STUDIO</p>
+      <div className="max-w-[75rem] mx-auto flex flex-col sm:flex-row items-center justify-between gap-[1.25rem] text-center sm:text-left">
+        <nav aria-label="Studio sections" className="flex flex-wrap items-center justify-center gap-x-[1.5rem] gap-y-[0.5rem]">
+          {LINKS.map((link) => (
+            <a
+              key={link.id}
+              href={`#${link.id}`}
+              onClick={go(link.id)}
+              className="text-[0.75rem] font-semibold tracking-[0.1em] uppercase text-white/45 hover:text-white transition-colors duration-200"
+            >
+              {link.label}
+            </a>
+          ))}
+        </nav>
 
-      <nav aria-label="Studio sections" className="flex flex-wrap items-center justify-center gap-x-[1.5rem] gap-y-[0.5rem]">
-        {LINKS.map((link) => (
-          <a
-            key={link.id}
-            href={`#${link.id}`}
-            onClick={go(link.id)}
-            className="text-[0.75rem] font-semibold tracking-[0.1em] uppercase text-white/45 hover:text-white transition-colors duration-200"
-          >
-            {link.label}
-          </a>
-        ))}
-      </nav>
-
-      <p className="text-[0.6875rem] text-white/30">© {year} CHXNDLER STUDIO</p>
+        <p className="text-[0.6875rem] text-white/30">© {year} CHXNDLER STUDIO</p>
+      </div>
     </footer>
   );
 }

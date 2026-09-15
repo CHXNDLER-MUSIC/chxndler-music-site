@@ -1,44 +1,40 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import BookingInline from "@/components/brand-pitch/BookingInline";
 import { useInteractionSound } from "@/components/brand-pitch/useInteractionSound";
-import { STUDIO_BG_ALT, STUDIO_PINK } from "./identity";
+import { STUDIO_PINK, STUDIO_ON_PINK } from "./identity";
 
 /**
- * Final CTA — reuses the same contact mechanism every /brands/[slug] page
- * already uses (BookingInline: an inline Cal.com scheduler, no fixed
- * overlay), so a booking made from /studio lands in the exact same
- * calendar/inbox as one made from a brand pitch. Restyled to match the
- * brand direction here (near-black, pink used only for the button/accents)
- * rather than BrandCTA's full-bleed accent-color surface, which would read
- * as too much pink for this page's "sparingly" rule.
+ * Final CTA — the second (and last) full-bleed #EF43A3 moment on the page.
+ * No eyebrow, no graphic, no gradient: just the biggest typographic moment
+ * on the site and one dark pill button, mirroring StudioManifesto's flat
+ * pink treatment. Reuses the same inline Cal.com booking mechanism every
+ * /brands/[slug] page already uses (BookingInline) so a booking made from
+ * /studio lands in the same calendar/inbox as one made from a brand pitch.
  */
 export default function StudioFinalCTA() {
-  const reduceMotion = useReducedMotion();
   const [bookingOpen, setBookingOpen] = useState(false);
   const { playHover, playClick } = useInteractionSound();
 
   return (
     <section
       id="start-a-project"
-      className="flex flex-col items-center justify-center text-center px-[6vw] sm:px-[8vw] py-[7rem] sm:py-[9rem] min-h-[60vh] scroll-mt-[5rem]"
-      style={{ backgroundColor: STUDIO_BG_ALT, color: "#ffffff" }}
+      className="flex flex-col items-center justify-center text-center px-[6vw] sm:px-[8vw] py-[5.25rem] sm:py-[6.5rem] scroll-mt-[5rem]"
+      style={{ backgroundColor: STUDIO_PINK, color: STUDIO_ON_PINK }}
     >
-      <div className="max-w-[42rem]">
-        <p className="text-[0.75rem] sm:text-[0.8125rem] font-semibold tracking-[0.3em] uppercase mb-[1rem]" style={{ color: STUDIO_PINK }}>
-          CHXNDLER STUDIO
-        </p>
-
-        <h2 className="font-bold uppercase leading-[1.02] tracking-tight text-[2.5rem] sm:text-[4rem]">
-          What Should
-          <br />
-          Your Brand Sound Like?
+      <div className="max-w-[34rem] sm:max-w-[42rem] lg:max-w-[60rem]">
+        <h2 className="mx-auto font-black uppercase leading-[0.94] tracking-tighter text-[2.5rem] sm:text-[4rem] lg:text-[5.5rem]">
+          What Should Your
+          <br className="hidden lg:block" /> Brand Sound Like?
         </h2>
 
-        <p className="mt-[1.5rem] text-[1.0625rem] sm:text-[1.1875rem] leading-relaxed text-white/60 max-w-[34rem] mx-auto">
-          Let's make something people actually want to hear.
+        <p
+          className="mt-[1.5rem] sm:mt-[1.75rem] text-[1.125rem] sm:text-[1.3125rem] font-bold tracking-[0.02em] leading-relaxed max-w-[28rem] mx-auto uppercase"
+          style={{ color: "rgba(8,8,11,0.75)" }}
+        >
+          Let's make it unforgettable.
         </p>
 
         <motion.button
@@ -48,24 +44,17 @@ export default function StudioFinalCTA() {
             setBookingOpen(true);
           }}
           onMouseEnter={playHover}
-          animate={reduceMotion || bookingOpen ? { scale: 1 } : { scale: [1, 1.015, 1] }}
-          transition={reduceMotion || bookingOpen ? { duration: 0 } : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
-          whileHover={reduceMotion ? undefined : { scale: 1.045, transition: { duration: 0.2, ease: "easeOut" } }}
-          whileTap={{ scale: 0.97, transition: { duration: 0.1 } }}
-          className="relative mt-[2.5rem] inline-flex items-center justify-center gap-[0.625rem] rounded-full px-[2.25rem] py-[1.125rem] text-[0.9375rem] font-bold tracking-[0.08em] uppercase text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
-          style={{ backgroundColor: STUDIO_PINK, outlineColor: STUDIO_PINK }}
+          whileTap={{ scale: 0.98, transition: { duration: 0.1 } }}
+          className="group mt-[2.5rem] inline-flex items-center justify-center gap-[0.75rem] rounded-full px-[2.5rem] py-[1.125rem] text-[0.9375rem] font-bold tracking-[0.08em] uppercase transition-colors duration-200 hover:bg-[#141416] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.35rem]"
+          style={{ backgroundColor: STUDIO_ON_PINK, color: "#FFFFFF", outlineColor: STUDIO_ON_PINK }}
         >
-          {!reduceMotion && !bookingOpen && (
-            <motion.span
-              aria-hidden="true"
-              className="absolute -inset-[0.35rem] rounded-full pointer-events-none"
-              style={{ backgroundColor: STUDIO_PINK }}
-              animate={{ opacity: [0.12, 0.32, 0.12] }}
-              transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
-            />
-          )}
-          <span className="relative">Start a Project</span>
-          <span aria-hidden="true" className="relative">→</span>
+          <span>Start a Project</span>
+          <span
+            aria-hidden="true"
+            className="inline-block transition-transform duration-200 group-hover:translate-x-[0.25rem]"
+          >
+            →
+          </span>
         </motion.button>
       </div>
 

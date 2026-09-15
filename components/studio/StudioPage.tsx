@@ -6,8 +6,6 @@ import StudioNav from "./StudioNav";
 import StudioHero from "./StudioHero";
 import StudioSelectedWork from "./StudioSelectedWork";
 import StudioServices from "./StudioServices";
-import StudioManifesto from "./StudioManifesto";
-import StudioSonicIdentity from "./StudioSonicIdentity";
 import StudioCreatedBy from "./StudioCreatedBy";
 import StudioFinalCTA from "./StudioFinalCTA";
 import StudioFooter from "./StudioFooter";
@@ -15,13 +13,20 @@ import { STUDIO_BG } from "./identity";
 import type { StudioWorkItem } from "./types";
 
 // Client assembly, mirroring BrandPitchPage.tsx's role for /brands/[slug]:
-// one shared BrandAudioProvider so a card preview, the Sonic Identity
-// section, and (if a visitor clicks through) any per-brand player all share
-// a single underlying <audio> element — never two clips audible at once.
+// one shared BrandAudioProvider so a Selected Work card preview and (if a
+// visitor clicks through) any per-brand player all share a single
+// underlying <audio> element — never two clips audible at once.
 export default function StudioPage({ projects }: { projects: StudioWorkItem[] }) {
   return (
     <BrandAudioProvider>
-      <div className="min-h-screen w-full overflow-x-hidden" style={{ backgroundColor: STUDIO_BG, color: "#ffffff" }}>
+      <div className="relative isolate min-h-screen w-full overflow-x-hidden" style={{ backgroundColor: STUDIO_BG, color: "#ffffff" }}>
+        {/* Fixed to the viewport (not the page) so the image is always sized
+            to the screen — sized to the full page instead, "cover" would
+            scale it up to match the page's scroll height and turn it blurry. */}
+        <div className="fixed inset-0 -z-10" aria-hidden="true">
+          <img src="/elements/chxndler-studio-background.png" alt="" className="h-full w-full object-cover" data-no-lazy="" />
+        </div>
+
         <StudioNav />
         {/* See BrandPitchPage.tsx — neutralizes the sitewide `main { background:
             radial-gradient(...) }` rule (meant for the homepage cockpit UI)
@@ -30,8 +35,6 @@ export default function StudioPage({ projects }: { projects: StudioWorkItem[] })
           <StudioHero />
           <StudioSelectedWork projects={projects} />
           <StudioServices />
-          <StudioManifesto />
-          <StudioSonicIdentity projects={projects} />
           <StudioCreatedBy />
           <StudioFinalCTA />
         </main>

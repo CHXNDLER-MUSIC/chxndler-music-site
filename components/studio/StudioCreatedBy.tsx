@@ -41,11 +41,15 @@ export default function StudioCreatedBy() {
         };
 
   return (
-    <SectionShell id="about" className="scroll-mt-[4.5rem]" style={{ backgroundColor: STUDIO_BG, color: STUDIO_BODY }}>
-      <div className="relative w-full grid grid-cols-1 lg:grid-cols-[2fr_3fr] items-center gap-[2rem] sm:gap-[2.5rem] lg:gap-[3rem]">
+    <SectionShell
+      id="about"
+      className="scroll-mt-[4.5rem] !pt-[3.5rem] !pb-[2.25rem] sm:!pt-[5rem] sm:!pb-[3rem]"
+      style={{ backgroundColor: STUDIO_BG, color: STUDIO_BODY }}
+    >
+      <div className="relative w-full grid grid-cols-1 lg:grid-cols-[3fr_4fr] items-center gap-[1.5rem] sm:gap-[2rem]">
         <motion.div
           {...fade(0)}
-          className="relative flex-shrink-0 mx-auto lg:mx-0 w-[9rem] h-[9rem] sm:w-[11.5rem] sm:h-[11.5rem] md:w-[14rem] md:h-[14rem] lg:w-[18rem] lg:h-[18rem]"
+          className="relative flex-shrink-0 mx-auto lg:mx-0 w-[13.5rem] h-[13.5rem] sm:w-[17rem] sm:h-[17rem] md:w-[21rem] md:h-[21rem] lg:w-[27rem] lg:h-[27rem]"
         >
           <div
             className="absolute -inset-[20%] rounded-full blur-[6rem] pointer-events-none"
@@ -69,12 +73,12 @@ export default function StudioCreatedBy() {
           </Eyebrow>
 
           <h3
-            className="font-bold uppercase leading-[0.95] tracking-tight text-[2rem] sm:text-[3.5rem] lg:text-[4.25rem]"
+            className="font-bold uppercase leading-[0.95] tracking-tight text-[1.75rem] sm:text-[3.25rem] lg:text-[3.75rem]"
             style={{ color: STUDIO_HEADLINE }}
           >
             The Artist
             <br />
-            Behind the Studio.
+            <span className="whitespace-nowrap">Behind the Song.</span>
           </h3>
 
           <p
@@ -85,8 +89,8 @@ export default function StudioCreatedBy() {
           </p>
 
           <p className="mt-[1.25rem] text-[1.0625rem] leading-relaxed mx-auto lg:mx-0" style={{ color: STUDIO_BODY }}>
-            CHXNDLER STUDIO is the creative studio founded by artist, songwriter and producer CHXNDLER — bringing an
-            artist's approach to original music, sonic identity and creative worlds for brands.
+            CHXNDLER STUDIO brings an artist's approach to original music, sonic identity and creative worlds for
+            brands.
           </p>
 
           <div className="mt-[1.75rem] flex justify-center lg:justify-start">

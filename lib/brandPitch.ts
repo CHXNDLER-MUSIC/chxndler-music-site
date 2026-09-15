@@ -504,6 +504,19 @@ export type BrandPitchSummary = {
    * asSonicLogoVersions falls back to in the full pitch fetch — good enough
    * for a lightweight summary without pulling in the full jsonb column. */
   sonic_logo_path: string | null;
+  /** Every sonic-logo cut (primary + alternates), parsed the same way
+   * fetchBrandPitch does — lets a caller resolve "the" primary cut with the
+   * exact same asSonicLogoVersions rule (first-flagged-primary-wins, legacy
+   * sonic_logo_path fallback) used everywhere else, instead of assuming
+   * sonic_logo_path alone is always populated. */
+  sonic_logo_versions: BrandPitchSonicLogoVersion[];
+  /** Every playable audio version (label/path/role/is_default/is_full_song/
+   * is_hero_default), parsed the same way fetchBrandPitch does — this is
+   * what lets /studio's Selected Work play "the full song" per project using
+   * the exact same is_hero_default -> primary+is_default -> primary[0]
+   * fallback chain BrandHero.tsx already uses, rather than a second,
+   * divergent notion of "the" song. */
+  alt_versions: BrandPitchAudioVersion[];
 };
 
 /**
@@ -519,7 +532,9 @@ export async function fetchAllBrandPitchSummaries(): Promise<BrandPitchSummary[]
     const supabase = getSupabaseAdmin();
     let query = supabase
       .from("brand_pitches")
-      .select("slug, brand_name, song_title, cover_art_path, hero_art_path, sonic_logo_path, is_published, sort_order")
+      .select(
+        "slug, brand_name, song_title, cover_art_path, hero_art_path, sonic_logo_path, sonic_logo_versions, alt_versions, is_published, sort_order"
+      )
       .order("sort_order", { ascending: true });
     if (process.env.NODE_ENV === "production") {
       query = query.eq("is_published", true);
@@ -536,6 +551,8 @@ export async function fetchAllBrandPitchSummaries(): Promise<BrandPitchSummary[]
         cover_art_path: nullableString(row.cover_art_path),
         hero_art_path: nullableString(row.hero_art_path),
         sonic_logo_path: nullableString(row.sonic_logo_path),
+        sonic_logo_versions: asSonicLogoVersions(row.sonic_logo_versions, row.sonic_logo_path),
+        alt_versions: asAudioVersions(row.alt_versions),
       }));
   } catch (err) {
     console.error("[fetchAllBrandPitchSummaries] failed:", err);

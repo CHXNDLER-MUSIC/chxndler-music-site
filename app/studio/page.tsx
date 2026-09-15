@@ -43,14 +43,30 @@ export default async function StudioHomePage() {
   // project data source.
   const summaries = await fetchAllBrandPitchSummaries();
 
-  const projects: StudioWorkItem[] = summaries.map((p) => ({
-    slug: p.slug,
-    brandName: p.brand_name,
-    projectTitle: p.song_title,
-    coverArtUrl: getBrandArtUrl(p.cover_art_path || p.hero_art_path),
-    sonicPreviewUrl: getBrandTrackUrl(p.sonic_logo_path),
-    href: `/brands/${p.slug}`,
-  }));
+  const projects: StudioWorkItem[] = summaries.map((p) => {
+    // Same fallback chain BrandHero.tsx uses for "the" hero song on a
+    // brand's own pitch page: is_hero_default first, then the primary
+    // version flagged is_default, then just the first primary version.
+    const primaryVersions = p.alt_versions.filter((v) => v.role === "primary");
+    const fullSongVersion =
+      p.alt_versions.find((v) => v.is_hero_default) || primaryVersions.find((v) => v.is_default) || primaryVersions[0] || null;
+
+    // Same resolution SonicIdentity.tsx uses for "the" primary cut —
+    // asSonicLogoVersions (see lib/brandPitch.ts) already guarantees at most
+    // one "primary" and puts it first when one exists.
+    const sonicVersion = p.sonic_logo_versions.find((v) => v.role === "primary") || p.sonic_logo_versions[0] || null;
+
+    return {
+      slug: p.slug,
+      brandName: p.brand_name,
+      projectTitle: p.song_title,
+      coverArtUrl: getBrandArtUrl(p.cover_art_path || p.hero_art_path),
+      fullSongId: fullSongVersion?.path || null,
+      fullSongUrl: getBrandTrackUrl(fullSongVersion?.path ?? null),
+      sonicPreviewUrl: getBrandTrackUrl(sonicVersion?.path ?? null),
+      href: `/brands/${p.slug}`,
+    };
+  });
 
   return <StudioPage projects={projects} />;
 }
