@@ -89,7 +89,7 @@ export default function BrandPitchPage({
           <img
             src="/elements/chxndler-studio.png"
             alt="CHXNDLER STUDIO"
-            className="pointer-events-auto absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[5.5rem] sm:h-[7.25rem] w-auto drop-shadow-[0_0.125rem_0.5rem_rgba(0,0,0,0.55)]"
+            className="pointer-events-auto absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[7.5rem] sm:h-[9.5rem] w-auto drop-shadow-[0_0.125rem_0.5rem_rgba(0,0,0,0.55)]"
             style={{ mixBlendMode: "normal" }}
             data-no-lazy="" // see ui.tsx SectionShell for why
           />
