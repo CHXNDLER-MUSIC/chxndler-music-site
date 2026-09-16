@@ -97,20 +97,12 @@ export default function BrandHero({ pitch, accent, year }: { pitch: BrandPitch; 
       </div>
 
       <motion.div {...fade(0)} className="max-w-[60rem]">
-        <p
-          className={`text-[0.875rem] sm:text-[1rem] tracking-[0.15em] uppercase font-semibold mb-[1.25rem] ${
-            hasBackdrop ? "text-white/90" : "opacity-70"
-          }`}
-        >
-          {pitch.brand_name} × {pitch.artist_name}
-        </p>
-
         <h1 className="leading-[0.92]">
           {titleGraphic ? (
             <img
               src={titleGraphic}
               alt={title}
-              className="w-full max-w-[50rem] sm:max-w-[62rem] h-auto"
+              className="w-full max-w-[32rem] sm:max-w-[40rem] h-auto"
               onError={titleGraphicAsset.onError}
               data-no-lazy="" // see ui.tsx SectionShell for why
             />

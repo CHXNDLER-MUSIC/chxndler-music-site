@@ -90,8 +90,15 @@ export default function CollectibleViewer({
         </span>
       </button>
 
-      <MediaViewerModal open={open} onClose={() => setOpen(false)} label={songTitle} kind="Collectible Card" accent={accent}>
-        <div className="relative mx-auto w-full max-w-[20rem] collectible-float" style={{ aspectRatio: "5 / 7" }}>
+      <MediaViewerModal
+        open={open}
+        onClose={() => setOpen(false)}
+        label={songTitle}
+        kind="Collectible Card"
+        accent={accent}
+        maxWidthClassName="max-w-[34rem]"
+      >
+        <div className="relative mx-auto w-full max-w-[28rem] collectible-float" style={{ aspectRatio: "5 / 7" }}>
           <TiltSpinCard
             className="relative w-full h-full rounded-[1.25rem] overflow-hidden shadow-[0_2rem_4rem_-1rem_rgba(0,0,0,0.6)]"
             style={{ backgroundColor: `${accent}14` }}

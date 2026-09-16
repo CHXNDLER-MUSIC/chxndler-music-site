@@ -36,7 +36,7 @@ export default function BrandCTA({ pitch, palette }: { pitch: BrandPitch; palett
   return (
     <section
       id="cta"
-      className="flex flex-col items-center justify-center text-center px-[6vw] sm:px-[8vw] py-[3.5rem] sm:py-[5rem]"
+      className="flex flex-col items-center justify-center text-center px-[6vw] sm:px-[8vw] py-[7rem] sm:py-[9.5rem]"
       style={{ backgroundColor: palette.accent, color: palette.onAccent }}
     >
       <div className="max-w-[42rem]">
@@ -57,7 +57,7 @@ export default function BrandCTA({ pitch, palette }: { pitch: BrandPitch; palett
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-[2.5rem] inline-flex items-center justify-center rounded-full px-[2.25rem] py-[1.125rem] text-[0.9375rem] font-bold tracking-[0.08em] uppercase bg-white transition-transform hover:scale-[1.045] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] focus-visible:outline-white"
+            className="mt-[2.5rem] inline-flex items-center justify-center rounded-full px-[2.75rem] py-[1.375rem] text-[1.0625rem] font-bold tracking-[0.08em] uppercase bg-white transition-transform hover:scale-[1.045] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] focus-visible:outline-white"
             style={{ color: palette.accent }}
           >
             {buttonLabel}
@@ -83,7 +83,7 @@ export default function BrandCTA({ pitch, palette }: { pitch: BrandPitch; palett
             // normal hover.
             whileHover={{ scale: 1.045, transition: { duration: 0.2, ease: "easeOut" } }}
             whileTap={{ scale: 0.97, transition: { duration: 0.1 } }}
-            className="relative mt-[2.5rem] inline-flex items-center justify-center rounded-full px-[2.25rem] py-[1.125rem] text-[0.9375rem] font-bold tracking-[0.08em] uppercase bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] focus-visible:outline-white"
+            className="relative mt-[2.5rem] inline-flex items-center justify-center rounded-full px-[2.75rem] py-[1.375rem] text-[1.0625rem] font-bold tracking-[0.08em] uppercase bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] focus-visible:outline-white"
             style={{ color: palette.accent }}
           >
             {/* Slow, subtle glow ring — same idle-attention cue as the hero

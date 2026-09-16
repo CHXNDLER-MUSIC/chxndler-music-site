@@ -83,18 +83,23 @@ export default function BrandPitchPage({
             hero underneath it, not a persistent nav — it scrolls away with the
             hero instead of staying pinned over every section beneath it. */}
         <header
-          className="absolute top-0 inset-x-0 z-40 flex items-center justify-end gap-[1rem] pl-[6vw] pr-[7vw] sm:pl-[8vw] sm:pr-[9.5vw] py-[1.25rem] sm:py-[1.5rem] pointer-events-none"
-          style={{ color: "#ffffff", mixBlendMode: "difference" }}
+          className="absolute top-0 inset-x-0 z-40 flex items-center justify-between gap-[1rem] pl-[6vw] pr-[7vw] sm:pl-[8vw] sm:pr-[9.5vw] py-[1.25rem] sm:py-[1.5rem] pointer-events-none"
+          style={{ color: "#ffffff" }}
         >
+          <span className="pointer-events-auto text-left text-[0.6875rem] sm:text-[0.75rem] tracking-[0.2em] uppercase font-medium">
+            {pitch.brand_name} × {pitch.artist_name}
+          </span>
+
           <img
             src="/elements/chxndler-studio.png"
             alt="CHXNDLER STUDIO"
-            className="pointer-events-auto absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[7.5rem] sm:h-[9.5rem] w-auto drop-shadow-[0_0.125rem_0.5rem_rgba(0,0,0,0.55)]"
-            style={{ mixBlendMode: "normal" }}
+            className="pointer-events-auto absolute left-1/2 top-[92%] -translate-x-1/2 -translate-y-1/2 h-[7.5rem] sm:h-[9.5rem] w-auto drop-shadow-[0_0.125rem_0.5rem_rgba(0,0,0,0.55)]"
             data-no-lazy="" // see ui.tsx SectionShell for why
           />
-          <span className="pointer-events-auto text-right text-[0.6875rem] sm:text-[0.75rem] tracking-[0.2em] uppercase font-medium">
-            Original Brand Concept / {year}
+          <span className="pointer-events-auto text-right text-[0.6875rem] sm:text-[0.75rem] tracking-[0.2em] uppercase font-medium"
+            style={{ color: "#ffffff", mixBlendMode: "normal" }}
+          >
+            Original Brand Concept
           </span>
         </header>
 
@@ -114,6 +119,7 @@ export default function BrandPitchPage({
           <HearTheConcept pitch={pitch} palette={palette} assets={assets} />
           <BrandSectionDivider targetId="sonic-identity" />
           <SonicIdentity pitch={pitch} palette={palette} />
+          <BrandSectionDivider targetId="campaign" />
           {/* No divider directly around SecondaryCampaignImage — it renders
               nothing when the pitch has no unique secondary image, and a
               divider pinned to either side of it would then sit right next

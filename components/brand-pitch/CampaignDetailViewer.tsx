@@ -147,7 +147,14 @@ export default function CampaignDetailViewer({
     : moment.body;
 
   return (
-    <MediaViewerModal open={open} onClose={onClose} label={pitch.song_title} kind={pitch.brand_name} accent={palette.accent}>
+    <MediaViewerModal
+      open={open}
+      onClose={onClose}
+      label={pitch.song_title}
+      kind={pitch.brand_name}
+      accent={palette.accent}
+      maxWidthClassName="max-w-[56rem]"
+    >
       <div>
         <div className="flex items-start justify-between gap-[1rem]">
           <p className="text-[0.75rem] font-bold tracking-[0.2em] uppercase" style={{ color: palette.accent }}>
@@ -184,7 +191,7 @@ export default function CampaignDetailViewer({
         )}
 
         <div
-          className="mt-[1.5rem] sm:mt-[2rem]"
+          className="relative mt-[1.5rem] sm:mt-[2rem]"
           onTouchStart={canNav ? onTouchStart : undefined}
           onTouchEnd={canNav ? onTouchEnd : undefined}
         >
@@ -200,33 +207,38 @@ export default function CampaignDetailViewer({
           ) : (
             <LookbookStage media={displayMedia} activeIndex={showMerch ? 0 : activeIndex} reduceMotion={reduceMotion} accent={palette.accent} />
           )}
+
+          {canNav && (
+            <>
+              <button
+                type="button"
+                onClick={goPrev}
+                onMouseEnter={playHover}
+                aria-label="Previous asset"
+                className="absolute left-0 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-[2.75rem] h-[2.75rem] rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors duration-200 focus-visible:outline focus-visible:outline-2"
+                style={{ outlineColor: palette.accent }}
+              >
+                <span aria-hidden="true" className="text-[1.25rem] leading-none">‹</span>
+              </button>
+              <button
+                type="button"
+                onClick={goNext}
+                onMouseEnter={playHover}
+                aria-label="Next asset"
+                className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-[2.75rem] h-[2.75rem] rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors duration-200 focus-visible:outline focus-visible:outline-2"
+                style={{ outlineColor: palette.accent }}
+              >
+                <span aria-hidden="true" className="text-[1.25rem] leading-none">›</span>
+              </button>
+            </>
+          )}
         </div>
 
         {canNav && (
-          <div className="mt-[1.25rem] flex items-center justify-between">
-            <button
-              type="button"
-              onClick={goPrev}
-              onMouseEnter={playHover}
-              aria-label="Previous asset"
-              className="inline-flex items-center justify-center w-[2.75rem] h-[2.75rem] rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors duration-200 focus-visible:outline focus-visible:outline-2"
-              style={{ outlineColor: palette.accent }}
-            >
-              <span aria-hidden="true" className="text-[1.25rem] leading-none">‹</span>
-            </button>
+          <div className="mt-[1.25rem] flex items-center justify-center">
             <span className="text-[0.75rem] font-semibold tracking-[0.25em] text-white/50">
               {String(activeIndex + 1).padStart(2, "0")} / {String(displayMedia.length).padStart(2, "0")}
             </span>
-            <button
-              type="button"
-              onClick={goNext}
-              onMouseEnter={playHover}
-              aria-label="Next asset"
-              className="inline-flex items-center justify-center w-[2.75rem] h-[2.75rem] rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors duration-200 focus-visible:outline focus-visible:outline-2"
-              style={{ outlineColor: palette.accent }}
-            >
-              <span aria-hidden="true" className="text-[1.25rem] leading-none">›</span>
-            </button>
           </div>
         )}
 
@@ -267,7 +279,7 @@ function LookbookStage({
               controls
               playsInline
               preload="none"
-              className="max-w-full max-h-[65vh] w-auto h-auto mx-auto block rounded-[0.75rem]"
+              className="max-w-full max-h-[54vh] w-auto h-auto mx-auto block rounded-[0.75rem]"
             />
           ) : (
             <SpinnableProductImage src={item.url} accent={accent} />
@@ -291,7 +303,7 @@ function SpinnableProductImage({ src, accent }: { src: string; accent: string })
   // otherwise stays visible with no error handling to catch it.
   if (!asset.src) return null;
   return (
-    <div className="relative inline-block max-w-full max-h-[65vh]">
+    <div className="relative inline-block max-w-full max-h-[54vh]">
       <div
         className="pulse-glow absolute -inset-[10%] rounded-[0.75rem] pointer-events-none"
         aria-hidden="true"
@@ -310,7 +322,7 @@ function SpinnableProductImage({ src, accent }: { src: string; accent: string })
           <img
             src={asset.src}
             alt=""
-            className="max-w-full max-h-[65vh] w-auto h-auto mx-auto block"
+            className="max-w-full max-h-[54vh] w-auto h-auto mx-auto block"
             draggable={false}
             onError={asset.onError}
             data-no-lazy="" // see ui.tsx SectionShell for why
@@ -424,7 +436,7 @@ function VerticalStage({
               cursor: single || isActive ? "default" : "pointer",
             }}
           >
-            <div className="w-full aspect-[9/16] rounded-[1rem] overflow-hidden bg-black/30" style={{ maxHeight: "72vh" }}>
+            <div className="w-full aspect-[9/16] rounded-[1rem] overflow-hidden bg-black/30" style={{ maxHeight: "54vh" }}>
               {item.isVideo ? (
                 <video
                   src={item.url}

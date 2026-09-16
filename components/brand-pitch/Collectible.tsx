@@ -50,17 +50,17 @@ export default function Collectible({
       className="text-center !pt-[3rem] sm:!pt-[5rem]"
       style={{ backgroundColor: palette.secondary, color: palette.onSecondary }}
       backgroundImage={backgroundImage}
-      backgroundOverlay={`${palette.secondary}66`}
+      backgroundOverlay={`${palette.secondary}26`}
     >
       <div className="max-w-[36rem] mx-auto">
         <Eyebrow color={palette.accent}>{pitch.collectible_eyebrow || "The Collectible"}</Eyebrow>
-        <h2 className="font-bold leading-[1.02] tracking-tight text-[2rem] sm:text-[3rem]">
+        <h2 className="font-bold leading-[1.02] tracking-tight text-[2rem] sm:text-[3rem]" style={{ color: "#ffffff" }}>
           {pitch.collectible_headline || "A Piece of the World You Can Keep."}
         </h2>
         <p className="mt-[1rem] text-[1.0625rem] sm:text-[1.25rem] font-semibold tracking-tight" style={{ color: palette.accent }}>
           {pitch.collectible_subhead || pitch.song_title}
         </p>
-        <p className="mt-[1.25rem] text-[1.0625rem] leading-relaxed opacity-80">
+        <p className="mt-[1.25rem] text-[1.0625rem] leading-relaxed opacity-80" style={{ color: "#ffffff" }}>
           {pitch.collectible_body ||
             "A physical extension of the collaboration — turning the song into something fans can discover, collect and keep."}
         </p>

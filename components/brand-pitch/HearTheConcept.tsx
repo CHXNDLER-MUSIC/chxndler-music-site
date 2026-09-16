@@ -69,50 +69,6 @@ function useKnownDuration(src: string | null): number | undefined {
   return duration;
 }
 
-/**
- * A compact, non-interactive "scale ladder" — the generic promise every
- * pitch makes (one idea, delivered at every length a campaign needs), not
- * per-brand content, so it's a constant here rather than another Supabase
- * column every row has to fill in. Mirrors the same
- * "brand-agnostic-default-copy" convention already used for
- * hero_capability_labels' fallback list.
- */
-const SCALE_STEPS = ["03 SEC SONIC ID", "15 SEC SOCIAL", "30 SEC CAMPAIGN", "60 SEC", "FULL SONG"];
-
-function BuiltToScale({ accent }: { accent: string }) {
-  return (
-    <div className="mt-[2rem] sm:mt-[2.5rem]">
-      <p className="text-[0.6875rem] font-bold tracking-[0.25em] uppercase opacity-45">Built to Scale</p>
-      <div className="mt-[0.75rem] flex items-center gap-[0.4rem] overflow-x-auto no-scrollbar">
-        {SCALE_STEPS.map((step, i) => (
-          <React.Fragment key={step}>
-            <span
-              className="flex-shrink-0 rounded-full px-[0.75rem] py-[0.375rem] text-[0.625rem] sm:text-[0.6875rem] font-bold tracking-[0.08em] uppercase whitespace-nowrap"
-              style={{ backgroundColor: `${accent}14`, color: "currentColor" }}
-            >
-              {step}
-            </span>
-            {i < SCALE_STEPS.length - 1 && (
-              <span aria-hidden="true" className="flex-shrink-0 opacity-30 text-[0.75rem]">
-                →
-              </span>
-            )}
-          </React.Fragment>
-        ))}
-      </div>
-      <style jsx>{`
-        .no-scrollbar {
-          scrollbar-width: none;
-          -ms-overflow-style: none;
-        }
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
-    </div>
-  );
-}
-
 function SupportingRow({
   version,
   accent,
@@ -175,12 +131,30 @@ export default function HearTheConcept({
       .filter((v): v is ResolvedVersion => v !== null);
   }, [pitch.alt_versions]);
 
-  const primary = useMemo(() => versions.filter((v) => v.role === "primary"), [versions]);
+  // Canonical tab order regardless of DB row order — anything not in this
+  // list (a brand-specific label) keeps its original relative position at
+  // the end, so this never hides an unrecognized version.
+  const TAB_ORDER = ["30 SEC", "60 SEC", "FULL SONG", "INSTRUMENTAL"];
+  const primary = useMemo(() => {
+    const filtered = versions.filter((v) => v.role === "primary");
+    return [...filtered].sort((a, b) => {
+      const ai = TAB_ORDER.indexOf(a.label.toUpperCase());
+      const bi = TAB_ORDER.indexOf(b.label.toUpperCase());
+      if (ai === -1 && bi === -1) return 0;
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+  }, [versions]);
   const supporting = useMemo(() => versions.filter((v) => v.role === "supporting"), [versions]);
 
   const defaultVersion = primary.find((v) => v.is_default) || primary[0] || null;
   const [selectedPath, setSelectedPath] = useState<string | null>(defaultVersion?.path ?? null);
   const selected = primary.find((v) => v.path === selectedPath) || defaultVersion;
+  // Probed ahead of playback (same mechanism SupportingRow's compact rows
+  // use below) so the duration readout shows the track's real length
+  // immediately, instead of "0:00" until the listener presses play.
+  const selectedKnownDuration = useKnownDuration(selected?.src ?? null);
 
   const coverAsset = useAssetAvailable(getBrandArtUrl(pitch.cover_art_path));
   const cover = coverAsset.src;
@@ -203,11 +177,13 @@ export default function HearTheConcept({
   return (
     <SectionShell
       id="hear-the-concept"
-      style={{ backgroundColor: palette.light, color: palette.onLight }}
+      style={{ backgroundColor: palette.light, color: "#ffffff" }}
       backgroundImage={backgroundImage}
-      backgroundOverlay={`${palette.light}99`}
+      backgroundOverlay={`${palette.light}1a`}
     >
-      <Eyebrow color={palette.accent}>{pitch.audio_eyebrow || "Hear the Concept"}</Eyebrow>
+      <Eyebrow color={palette.accent} style={{ fontSize: "1.0625rem" }}>
+        {pitch.audio_eyebrow || "Hear the Concept"}
+      </Eyebrow>
 
       {headline && (
         <h2 className="-mt-[0.35rem] font-bold leading-[1.02] tracking-tight text-[1.8rem] sm:text-[2.7rem] max-w-[38rem]">{headline}</h2>
@@ -254,8 +230,8 @@ export default function HearTheConcept({
                 <div
                   role="tablist"
                   aria-label="Select a version"
-                  className="inline-flex max-w-full items-center gap-[0.2rem] rounded-full p-[0.25rem] mb-[1.5rem] overflow-x-auto no-scrollbar"
-                  style={{ backgroundColor: `${palette.accent}14` }}
+                  className="inline-flex max-w-full items-center gap-[0.5rem] rounded-full p-[0.25rem] mb-[1.5rem] overflow-x-auto no-scrollbar"
+                  style={{ backgroundColor: `${palette.accent}33` }}
                 >
                   {primary.map((v) => {
                     const isSelected = selected.path === v.path;
@@ -272,11 +248,16 @@ export default function HearTheConcept({
                         onMouseEnter={playHover}
                         whileTap={{ scale: 0.97 }}
                         transition={{ duration: 0.15, ease: "easeOut" }}
-                        className="flex-shrink-0 rounded-full px-[0.875rem] py-[0.5rem] text-[0.75rem] sm:text-[0.8125rem] font-bold tracking-[0.04em] uppercase whitespace-nowrap transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem]"
+                        className="flex-shrink-0 rounded-full px-[0.6875rem] py-[0.4375rem] text-[0.75rem] font-bold tracking-[0.04em] uppercase whitespace-nowrap transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem]"
                         style={
                           isSelected
-                            ? { backgroundColor: palette.accent, color: palette.onAccent, outlineColor: palette.accent }
-                            : { backgroundColor: "transparent", color: "currentColor", opacity: 0.55, outlineColor: palette.accent }
+                            ? {
+                                backgroundColor: palette.accent,
+                                color: "#ffffff",
+                                boxShadow: `0 0 0.6rem 0 ${palette.accent}66`,
+                                outlineColor: palette.accent,
+                              }
+                            : { backgroundColor: "rgba(255,255,255,0.16)", color: "#ffffff", outlineColor: palette.accent }
                         }
                       >
                         {v.label}
@@ -320,13 +301,12 @@ export default function HearTheConcept({
                         label={`${pitch.song_title} — ${selected.label.toLowerCase()}`}
                         accentColor={palette.accent}
                         size="lg"
+                        knownDuration={selectedKnownDuration}
                       />
                     </div>
                   </motion.div>
                 </AnimatePresence>
               </motion.div>
-
-              <BuiltToScale accent={palette.accent} />
 
               {/* Deliberately OUTSIDE the per-version crossfade above: the
                   lyrics belong to the song as a whole, not to whichever
@@ -345,7 +325,7 @@ export default function HearTheConcept({
                     onMouseEnter={playHover}
                     aria-expanded={lyricsOpen}
                     aria-controls="brand-lyrics-panel"
-                    className="inline-flex items-center gap-[0.4rem] text-[0.8125rem] font-semibold tracking-[0.08em] uppercase opacity-60 hover:opacity-100 transition-opacity"
+                    className="inline-flex items-center gap-[0.4rem] text-[0.9375rem] font-semibold tracking-[0.08em] uppercase opacity-60 hover:opacity-100 transition-opacity"
                     style={{ color: "currentColor" }}
                   >
                     {lyricsOpen ? "Hide Lyrics" : "View Lyrics"} <span aria-hidden="true">{lyricsOpen ? "↑" : "↓"}</span>

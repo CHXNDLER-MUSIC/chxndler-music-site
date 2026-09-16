@@ -56,12 +56,14 @@ export default function CreativeIdea({ pitch, palette }: { pitch: BrandPitch; pa
   return (
     <SectionShell
       id="idea"
-      className="!py-[5rem] sm:!py-[7rem]"
+      className="!pt-[6.5rem] sm:!pt-[8.5rem] !pb-[5rem] sm:!pb-[7rem]"
       style={{ backgroundColor: palette.accent, color: palette.onAccent }}
       textureUrl={getSectionTexture(pitch, 0)}
     >
       <div className="max-w-[46rem] mx-auto">
-        <Eyebrow color={highlight}>{pitch.idea_eyebrow || "The Idea"}</Eyebrow>
+        <Eyebrow color={highlight} style={{ fontSize: "1.0625rem" }}>
+          {pitch.idea_eyebrow || "The Idea"}
+        </Eyebrow>
 
         {pitch.idea_headline && (
           <h2 className="font-bold leading-[0.98] tracking-tight text-[2.75rem] sm:text-[4.25rem] lg:text-[5.5rem]">

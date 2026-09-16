@@ -95,7 +95,11 @@ export default function BrandAbout({
         };
 
   return (
-    <SectionShell id="about" style={{ backgroundColor: CHXNDLER_BG, color: CHXNDLER_BODY }}>
+    <SectionShell
+      id="about"
+      className="!pt-[9rem] sm:!pt-[12rem] !pb-[9rem] sm:!pb-[12rem]"
+      style={{ backgroundColor: CHXNDLER_BG, color: CHXNDLER_BODY }}
+    >
       <div className="relative flex items-center">
         {/* Atmosphere only — no literal space graphics, just a hair of grain
             for depth. The cyan/pink/accent glow itself lives with the
@@ -135,7 +139,7 @@ export default function BrandAbout({
           {/* Copy — 60% column. Deliberate rhythm: eyebrow, headline, body,
               featured statement, then the role/signature line — no excessive
               gaps between them. */}
-          <motion.div {...fade(0.12)} className="text-center lg:text-left lg:order-1 max-w-[34rem] mx-auto lg:mx-0">
+          <motion.div {...fade(0.12)} className="min-w-0 text-center lg:text-left lg:order-1 max-w-[34rem] mx-auto lg:mx-0">
             <Eyebrow color={palette.accent} style={{ fontSize: "0.9375rem" }}>
               {pitch.about_eyebrow || CHXNDLER_EYEBROW}
             </Eyebrow>
@@ -146,7 +150,7 @@ export default function BrandAbout({
             >
               {CHXNDLER_HEADLINE_LINE_1}
               <br />
-              <span className="whitespace-nowrap">{CHXNDLER_HEADLINE_LINE_2}</span>
+              {CHXNDLER_HEADLINE_LINE_2}
             </h3>
 
             <p
@@ -193,7 +197,7 @@ export default function BrandAbout({
               <img
                 src={CHXNDLER_SIGNATURE}
                 alt="CHXNDLER"
-                className="-mt-[1rem] sm:-mt-[1.25rem] h-[5.5rem] sm:h-[6.5rem] w-auto object-contain"
+                className="-mt-[1rem] sm:-mt-[1.25rem] h-[6.75rem] sm:h-[7.75rem] w-auto object-contain"
                 data-no-lazy="" // see ui.tsx SectionShell for why
               />
             </div>
@@ -202,7 +206,7 @@ export default function BrandAbout({
                 as the mark above, with its own breathing room so it reads as
                 a deliberate closing beat, not an appendage. Renders nothing
                 if the current pitch is the only published project. */}
-            <div className="mt-[0.375rem] flex justify-center">
+            <div className="-mt-[1rem] sm:-mt-[1.25rem] flex justify-center">
               <StudioPortfolioLauncher projects={otherProjects} />
             </div>
           </motion.div>

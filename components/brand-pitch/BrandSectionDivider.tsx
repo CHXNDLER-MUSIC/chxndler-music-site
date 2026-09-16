@@ -37,21 +37,28 @@ export default function BrandSectionDivider({ targetId }: { targetId: string }) 
 
   return (
     <div className="relative h-0">
-      <motion.button
-        type="button"
-        onClick={() => {
-          playClick();
-          scrollToSection(targetId);
-        }}
-        onMouseEnter={playHover}
-        whileHover={reduceMotion ? undefined : { scale: 1.4 }}
-        whileTap={{ scale: 0.9 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-        aria-label="Scroll to next section"
-        className="absolute -top-[3.5rem] sm:-top-[4.5rem] left-1/2 -translate-x-1/2 z-20 inline-flex items-center justify-center w-[2.25rem] h-[2.25rem] text-[1.375rem] leading-none text-white rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] focus-visible:outline-white"
-      >
-        <span aria-hidden="true">↓</span>
-      </motion.button>
+      {/* Positioning (absolute + centering translate) lives on this static
+          wrapper, not on the motion.button below — framer-motion writes its
+          own `transform` inline style for whileHover's `scale`, which would
+          otherwise silently replace (not merge with) Tailwind's
+          `-translate-x-1/2` class, snapping the button off-center on hover. */}
+      <div className="absolute -top-[3.5rem] sm:-top-[4.5rem] left-1/2 -translate-x-1/2 z-20">
+        <motion.button
+          type="button"
+          onClick={() => {
+            playClick();
+            scrollToSection(targetId);
+          }}
+          onMouseEnter={playHover}
+          whileHover={reduceMotion ? undefined : { scale: 1.4 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          aria-label="Scroll to next section"
+          className="inline-flex items-center justify-center w-[2.75rem] h-[2.75rem] text-[1.75rem] leading-none text-white rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] focus-visible:outline-white"
+        >
+          <span aria-hidden="true">↓</span>
+        </motion.button>
+      </div>
     </div>
   );
 }

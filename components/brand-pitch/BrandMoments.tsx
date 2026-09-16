@@ -35,7 +35,9 @@ export default function BrandMoments({ pitch, palette }: { pitch: BrandPitch; pa
       style={{ backgroundColor: palette.dark, color: palette.onDark }}
       textureUrl={getSectionTexture(pitch, 2)}
     >
-      <Eyebrow color={palette.accent}>{pitch.campaign_eyebrow || "How It Could Live"}</Eyebrow>
+      <Eyebrow color={palette.accent} style={{ fontSize: "1.0625rem" }}>
+        {pitch.campaign_eyebrow || "How It Could Live"}
+      </Eyebrow>
 
       {pitch.campaign_headline && (
         <h2 className="font-bold leading-[1.05] tracking-tight text-[2rem] sm:text-[3rem] max-w-[40rem]">

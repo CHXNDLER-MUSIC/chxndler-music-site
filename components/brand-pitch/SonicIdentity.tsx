@@ -186,7 +186,7 @@ export default function SonicIdentity({ pitch, palette }: { pitch: BrandPitch; p
       textureUrl={getSectionTexture(pitch, 1)}
     >
       <div className="flex flex-col items-center text-center">
-        <Eyebrow color={highlight} className="!mb-[0.75rem]">
+        <Eyebrow color={highlight} className="!mb-[0.75rem]" style={{ fontSize: "1.0625rem" }}>
           {pitch.sonic_eyebrow || "The Sonic Identity"}
         </Eyebrow>
 

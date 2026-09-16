@@ -48,7 +48,7 @@ export default function StudioPortfolioLauncher({ projects }: { projects: Studio
           setOpen(true);
         }}
         onMouseEnter={playHover}
-        className="studio-launcher-btn group relative inline-flex items-center gap-[0.5rem] rounded-[0.375rem] border border-white/20 bg-[#0a0a0d] px-[1.375rem] py-[0.6875rem] text-[0.75rem] font-bold uppercase tracking-[0.15em] text-white/80 transition-all duration-200 ease-out hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
+        className="studio-launcher-btn group relative inline-flex items-center gap-[0.5rem] rounded-[0.375rem] border border-white/20 bg-[#0a0a0d] px-[1.625rem] py-[0.8125rem] text-[0.8125rem] font-bold uppercase tracking-[0.15em] text-white/80 transition-all duration-200 ease-out hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
         style={{ outlineColor: PINK }}
       >
         EXPLORE THE WORK

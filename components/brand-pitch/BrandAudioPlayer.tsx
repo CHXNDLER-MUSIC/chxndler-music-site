@@ -39,10 +39,12 @@ export default function BrandAudioPlayer({
   const time = isThis ? currentTime : 0;
   const dur = isThis ? duration : knownDuration ?? 0;
 
-  const buttonSize = size === "lg" ? "w-[4rem] h-[4rem] sm:w-[5rem] sm:h-[5rem]" : "w-[3rem] h-[3rem]";
+  const buttonSize = size === "lg" ? "w-[4.375rem] h-[4.375rem]" : "w-[3rem] h-[3rem]";
 
   return (
-    <div className={`flex items-center gap-[1rem] sm:gap-[1.5rem] w-full ${className}`}>
+    <div
+      className={`flex items-center gap-[0.75rem] w-full ${size === "lg" ? "max-w-[31rem]" : ""} ${className}`}
+    >
       <button
         type="button"
         onClick={() => {
@@ -52,14 +54,16 @@ export default function BrandAudioPlayer({
         onMouseEnter={playHover}
         aria-label={isPlaying ? `Pause ${label}` : `Play ${label}`}
         aria-pressed={isPlaying}
-        className={`flex-shrink-0 ${buttonSize} rounded-full flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] ${
-          isPlaying ? "ring-2 ring-offset-2" : ""
-        }`}
-        style={{
-          backgroundColor: accentColor,
-          outlineColor: accentColor,
-          ...(isPlaying ? ({ "--tw-ring-color": accentColor, "--tw-ring-offset-color": "transparent" } as React.CSSProperties) : {}),
-        }}
+        className={`flex-shrink-0 ${buttonSize} rounded-full flex items-center justify-center border-2 backdrop-blur-sm transition-all duration-200 hover:scale-105 active:scale-95 hover:!bg-[var(--accent)] hover:shadow-[0_0_0.75rem_0_var(--accent-glow)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]`}
+        style={
+          {
+            backgroundColor: "rgba(12,12,18,0.35)",
+            borderColor: accentColor,
+            outlineColor: accentColor,
+            "--accent": accentColor,
+            "--accent-glow": `${accentColor}66`,
+          } as React.CSSProperties
+        }
       >
         {isLoading ? (
           <span
@@ -86,7 +90,7 @@ export default function BrandAudioPlayer({
         )}
       </button>
 
-      <div className="flex-1 min-w-0 flex items-center gap-[0.75rem]">
+      <div className="flex-1 min-w-0 flex items-center gap-[0.5rem]">
         {visibleLabel && (
           <span className="text-[0.8125rem] font-semibold tracking-[0.04em] uppercase flex-shrink-0 max-w-[7rem] sm:max-w-[10rem] truncate">
             {visibleLabel}
