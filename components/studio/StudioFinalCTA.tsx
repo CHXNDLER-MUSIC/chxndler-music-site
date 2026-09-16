@@ -22,9 +22,18 @@ export default function StudioFinalCTA() {
   return (
     <section
       id="start-a-project"
-      className="flex flex-col items-center justify-center text-center px-[6vw] sm:px-[8vw] pt-[4rem] pb-[4.25rem] sm:py-[6.5rem] scroll-mt-[5rem]"
-      style={{ backgroundColor: STUDIO_PINK, color: STUDIO_ON_PINK }}
+      className="relative isolate overflow-hidden flex flex-col items-center justify-center text-center px-[6vw] sm:px-[8vw] pt-[4rem] pb-[4.25rem] sm:py-[6.5rem] scroll-mt-[5rem]"
+      style={{ color: STUDIO_ON_PINK }}
     >
+      <div className="absolute inset-0 -z-10" aria-hidden="true">
+        <img
+          src="/elements/chxndler-studio-background.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          data-no-lazy=""
+        />
+      </div>
+
       <div className="max-w-[34rem] sm:max-w-[42rem] lg:max-w-[60rem]">
         <h2
           className="mx-auto font-black uppercase leading-[0.94] tracking-tighter text-[2.5rem] sm:text-[4rem] lg:text-[5.5rem]"
@@ -52,8 +61,8 @@ export default function StudioFinalCTA() {
           transition={reduceMotion ? undefined : { duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
           whileHover={reduceMotion ? undefined : { scale: 1.06, transition: { duration: 0.2, ease: "easeOut" } }}
           whileTap={{ scale: 0.98, transition: { duration: 0.1 } }}
-          className="group relative mt-[2.25rem] sm:mt-[2.75rem] inline-flex items-center justify-center gap-[0.875rem] rounded-full px-[3.25rem] py-[1.375rem] text-[1.0625rem] sm:text-[1.1875rem] font-bold tracking-[0.08em] uppercase transition-colors duration-200 hover:bg-[#e0eb00] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.35rem]"
-          style={{ backgroundColor: "#F5FF3D", color: STUDIO_ON_PINK, outlineColor: STUDIO_ON_PINK }}
+          className="group relative mt-[2.25rem] sm:mt-[2.75rem] inline-flex items-center justify-center gap-[0.875rem] rounded-full px-[3.25rem] py-[1.375rem] text-[1.0625rem] sm:text-[1.1875rem] font-bold tracking-[0.08em] uppercase text-white transition-opacity duration-200 hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.35rem]"
+          style={{ backgroundColor: STUDIO_PINK, outlineColor: STUDIO_PINK }}
         >
           <span className="relative">Let's Create It</span>
           <span

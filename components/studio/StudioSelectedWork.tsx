@@ -203,13 +203,14 @@ export default function StudioSelectedWork({ projects }: { projects: StudioWorkI
       id="work"
       className="scroll-mt-[4.5rem] !pt-[4rem] sm:!pt-[5.5rem] !pb-[2rem] sm:!pb-[2.75rem]"
       style={{ backgroundColor: STUDIO_BG, color: "#ffffff" }}
+      backgroundImage="/elements/chxndler-studio-background.png"
     >
       <div className="flex flex-wrap items-end justify-between gap-[1.5rem]">
         <div>
-          <Eyebrow color={STUDIO_PINK} style={{ fontSize: "1.125rem" }}>
+          <Eyebrow color={STUDIO_PINK} style={{ fontSize: "1.3rem" }}>
             Hear the Work
           </Eyebrow>
-          <p className="mt-[0.25rem] max-w-[28rem] text-[1.1875rem] sm:text-[1.3125rem] leading-relaxed text-white/60">
+          <p className="mt-[0.25rem] text-[0.8125rem] sm:text-[1.3125rem] lg:text-[1.4375rem] leading-relaxed whitespace-nowrap text-white/60">
             Songs, sounds and worlds built for brands.
           </p>
         </div>
@@ -377,8 +378,8 @@ function WorkCard({ project, inert = false }: { project: StudioWorkItem; inert?:
       )}
 
       <div className="mt-[0.875rem]">
-        <p className="text-[0.9375rem] sm:text-[1.0625rem] font-bold tracking-tight">{project.projectTitle}</p>
-        <p className="mt-[0.125rem] text-[0.8125rem] text-white/50">{project.brandName}</p>
+        <p className="text-[1.1875rem] sm:text-[1.3125rem] font-bold tracking-tight">{project.projectTitle}</p>
+        <p className="mt-[0.125rem] text-[1rem] text-white/50">{project.brandName}</p>
 
         <div className="mt-[0.625rem] min-h-[2.1875rem] flex flex-wrap items-center gap-[0.5rem]">
           {hasSonic && (
@@ -402,7 +403,7 @@ function WorkCard({ project, inert = false }: { project: StudioWorkItem; inert?:
           onMouseEnter={playHover}
           onClick={playClick}
           tabIndex={inert ? -1 : undefined}
-          className="group/link mt-[0.875rem] inline-flex items-center gap-[0.4rem] rounded-full border border-white/[0.12] px-[1rem] py-[0.4375rem] text-[0.8125rem] font-bold uppercase tracking-[0.04em] text-[#EF43A3] transition-all duration-[250ms] hover:scale-110 hover:border-[#EF43A3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
+          className="group/link mt-[0.875rem] inline-flex items-center gap-[0.4rem] rounded-full border border-white/[0.12] px-[1rem] py-[0.4375rem] text-[0.9375rem] font-bold uppercase tracking-[0.04em] text-[#EF43A3] transition-all duration-[250ms] hover:scale-110 hover:border-[#EF43A3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
           style={{ outlineColor: STUDIO_PINK }}
         >
           View Full Campaign

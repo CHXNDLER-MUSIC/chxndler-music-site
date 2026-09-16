@@ -48,8 +48,9 @@ export default function StudioCreatedBy() {
   return (
     <SectionShell
       id="about"
-      className="scroll-mt-[4.5rem] !pt-[4rem] !pb-[2.25rem] sm:!pt-[5.5rem] sm:!pb-[3rem]"
+      className="scroll-mt-[4.5rem] !pt-[7rem] !pb-[2.25rem] sm:!pt-[9.5rem] sm:!pb-[3rem]"
       style={{ backgroundColor: STUDIO_BG, color: STUDIO_BODY }}
+      backgroundImage="/elements/chxndler-studio-background.png"
     >
       <div className="relative w-full grid grid-cols-1 lg:grid-cols-[3fr_4fr] items-center gap-[1.5rem] sm:gap-[2rem]">
         <motion.div
@@ -92,13 +93,13 @@ export default function StudioCreatedBy() {
           </h3>
 
           <p
-            className="mt-[0.75rem] text-[0.6875rem] sm:text-[0.75rem] font-semibold tracking-[0.25em] uppercase"
+            className="mt-[0.75rem] text-[0.8125rem] sm:text-[0.875rem] font-semibold tracking-[0.25em] uppercase"
             style={{ color: "rgba(255,255,255,0.55)" }}
           >
             Artist · Songwriter · Producer
           </p>
 
-          <p className="mt-[1.25rem] text-[1.0625rem] leading-relaxed mx-auto lg:mx-0" style={{ color: STUDIO_BODY }}>
+          <p className="mt-[1.25rem] text-[1.1875rem] leading-relaxed mx-auto lg:mx-0" style={{ color: STUDIO_BODY }}>
             CHXNDLER STUDIO brings an artist's approach to original music, sonic identity and creative worlds for
             brands.
           </p>
@@ -107,7 +108,7 @@ export default function StudioCreatedBy() {
               identical pull-quote: both lines share one color/weight, only
               the accent word per line breaks out in neon yellow. Always
               centered on its own, regardless of how the column above aligns. */}
-          <p className="mt-[1.5rem] text-center text-[1.1875rem] sm:text-[1.3125rem] leading-snug italic" style={{ color: STUDIO_HEADLINE }}>
+          <p className="mt-[1.5rem] text-center text-[1.3125rem] sm:text-[1.4375rem] leading-snug italic" style={{ color: STUDIO_HEADLINE }}>
             <span className="block">
               Every brand has a{" "}
               <span className="font-bold" style={{ color: NEON_YELLOW }}>
@@ -130,7 +131,7 @@ export default function StudioCreatedBy() {
             <img
               src={CHXNDLER_SIGNATURE}
               alt="CHXNDLER"
-              className="-mt-[1rem] sm:-mt-[1.25rem] h-[5.5rem] sm:h-[6.5rem] w-auto object-contain"
+              className="-mt-[1rem] sm:-mt-[1.25rem] h-[8rem] sm:h-[9.5rem] w-auto object-contain"
               data-no-lazy="" // see ui.tsx SectionShell for why
             />
             <a
@@ -139,7 +140,7 @@ export default function StudioCreatedBy() {
               rel="noopener noreferrer"
               onMouseEnter={playHover}
               onClick={playClick}
-              className="group -mt-[1rem] sm:-mt-[1.25rem] inline-flex items-center gap-[0.3rem] text-[0.6875rem] font-semibold tracking-[0.25em] uppercase text-white transition-all duration-200 hover:scale-110 hover:text-[#EF43A3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem] rounded-sm"
+              className="group -mt-[1rem] sm:-mt-[1.25rem] inline-flex items-center gap-[0.3rem] text-[0.8125rem] font-semibold tracking-[0.25em] uppercase text-white transition-all duration-200 hover:scale-110 hover:text-[#EF43A3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem] rounded-sm"
               style={{ outlineColor: STUDIO_PINK }}
             >
               Explore the Artist

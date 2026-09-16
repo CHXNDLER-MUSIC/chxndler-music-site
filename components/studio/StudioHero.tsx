@@ -62,13 +62,13 @@ export default function StudioHero() {
         {/* Mobile: a compact centered vertical stack, no bullets — the
             single-line desktop treatment at this width orphans "Creative
             Worlds" onto its own line, which reads as a layout mistake. */}
-        <div className="sm:hidden mt-[2.125rem] flex flex-col items-center gap-[0.4rem] text-[0.875rem] tracking-[0.08em] uppercase font-medium text-white/65">
+        <div className="sm:hidden mt-[2.125rem] flex flex-col items-center gap-[0.4rem] text-[0.9375rem] tracking-[0.08em] uppercase font-medium text-white/65">
           <span>Original Music</span>
           <span>Sonic Identity</span>
           <span>Creative Worlds</span>
         </div>
 
-        <p className="hidden sm:block mt-[2.125rem] text-[0.875rem] tracking-[0.08em] uppercase font-medium text-white/65">
+        <p className="hidden sm:block mt-[2.125rem] text-[0.9375rem] tracking-[0.08em] uppercase font-medium text-white/65">
           Original Music <span aria-hidden="true" className="mx-[0.5rem] text-white/40">•</span>
           Sonic Identity <span aria-hidden="true" className="mx-[0.5rem] text-white/40">•</span>
           Creative Worlds
@@ -85,7 +85,7 @@ export default function StudioHero() {
           onMouseEnter={playHover}
           whileHover={{ scale: 1.06, transition: { duration: 0.2, ease: "easeOut" } }}
           whileTap={{ scale: 0.97 }}
-          className="group inline-flex items-center gap-[0.625rem] rounded-full px-[1.875rem] py-[1rem] text-[0.9375rem] font-bold tracking-[0.08em] uppercase text-white transition-opacity duration-200 hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
+          className="group inline-flex items-center gap-[0.75rem] rounded-full px-[2.5rem] py-[1.25rem] text-[1.125rem] font-bold tracking-[0.08em] uppercase text-white transition-opacity duration-200 hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
           style={{ backgroundColor: STUDIO_PINK, outlineColor: STUDIO_PINK }}
         >
           Hear the Work
