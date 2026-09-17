@@ -75,11 +75,16 @@ export default function CampaignDetailViewer({
   const momentKey = moment ? `${moment.category}|${moment.title}` : "";
 
   // Exclusive merch — an optional bonus block for the PRODUCT moment only,
-  // shown when the brand has uploaded a "merch.png" sibling next to its
+  // shown when the brand has uploaded a "merch-front.png" sibling next to its
   // other PHOTO assets (same folder-derivation convention as cd.png/vinyl.png
   // in CoverArtViewer). No new Supabase field: brands that haven't uploaded
-  // one simply don't get the section, template-wide.
-  const merchAsset = useAssetAvailable(presentation === "product" ? getDerivedPhotoAsset(pitch, "merch.png") : null);
+  // one simply don't get the section, template-wide. "merch-back.png" is an
+  // optional companion in the same folder — when present, dragging/spinning
+  // the front shot (SpinnableProductImage's TiltSpinCard) reveals it on the
+  // reverse side, same backfaceVisibility trick as CollectibleViewer's card
+  // flip. Its absence just means the back of the spin shows nothing.
+  const merchAsset = useAssetAvailable(presentation === "product" ? getDerivedPhotoAsset(pitch, "merch-front.png") : null);
+  const merchBackAsset = useAssetAvailable(presentation === "product" ? getDerivedPhotoAsset(pitch, "merch-back.png") : null);
   // Toggled by the "Exclusive Merch" button — swaps the stage/title/body to
   // the merch shot in place, rather than appending a second block below.
   const [showMerch, setShowMerch] = useState(false);
@@ -205,7 +210,13 @@ export default function CampaignDetailViewer({
               playClick={playClick}
             />
           ) : (
-            <LookbookStage media={displayMedia} activeIndex={showMerch ? 0 : activeIndex} reduceMotion={reduceMotion} accent={palette.accent} />
+            <LookbookStage
+              media={displayMedia}
+              activeIndex={showMerch ? 0 : activeIndex}
+              reduceMotion={reduceMotion}
+              accent={palette.accent}
+              backSrc={showMerch ? merchBackAsset.src : null}
+            />
           )}
 
           {canNav && (
@@ -254,11 +265,13 @@ function LookbookStage({
   activeIndex,
   reduceMotion,
   accent,
+  backSrc,
 }: {
   media: MediaItem[];
   activeIndex: number;
   reduceMotion: boolean;
   accent: string;
+  backSrc?: string | null;
 }) {
   const item = media[activeIndex];
   if (!item) return null;
@@ -282,7 +295,7 @@ function LookbookStage({
               className="max-w-full max-h-[54vh] w-auto h-auto mx-auto block rounded-[0.75rem]"
             />
           ) : (
-            <SpinnableProductImage src={item.url} accent={accent} />
+            <SpinnableProductImage src={item.url} backSrc={backSrc} accent={accent} />
           )}
         </motion.div>
       </AnimatePresence>
@@ -294,10 +307,17 @@ function LookbookStage({
  * collectible card and the cover-art viewer (TiltSpinCard, applying the
  * reported Y rotation to the image itself since the container's own
  * transform only ever carries the vertical wobble in spin mode). Video
- * assets skip this — dragging would fight the native scrubber/controls. */
-function SpinnableProductImage({ src, accent }: { src: string; accent: string }) {
+ * assets skip this — dragging would fight the native scrubber/controls.
+ *
+ * When `backSrc` resolves (merch-back.png, only ever passed for the merch
+ * shot), a second image sits on the reverse face — same backfaceVisibility
+ * trick as CollectibleViewer's card flip (front at `rotation`, back at
+ * `rotation + 180`) — so spinning the shot past 90° reveals the back of the
+ * merch instead of the mirrored front. */
+function SpinnableProductImage({ src, backSrc, accent }: { src: string; backSrc?: string | null; accent: string }) {
   const [rotation, setRotation] = useState(0);
   const asset = useAssetAvailable(src);
+  const back = useAssetAvailable(backSrc ?? null);
   // A missing/404 asset hides itself here, same as every other image in this
   // template (see useAssetAvailable) — the browser's own broken-image icon
   // otherwise stays visible with no error handling to catch it.
@@ -318,15 +338,27 @@ function SpinnableProductImage({ src, accent }: { src: string; accent: string })
         spinSensitivity={0.8}
         onRotationChange={setRotation}
       >
-        <div style={{ transform: `rotateY(${rotation}deg)`, backfaceVisibility: "hidden" }}>
+        <div className="relative inline-block">
           <img
             src={asset.src}
             alt=""
             className="max-w-full max-h-[54vh] w-auto h-auto mx-auto block"
+            style={{ transform: `rotateY(${rotation}deg)`, backfaceVisibility: "hidden" }}
             draggable={false}
             onError={asset.onError}
             data-no-lazy="" // see ui.tsx SectionShell for why
           />
+          {back.src && (
+            <img
+              src={back.src}
+              alt=""
+              className="absolute inset-0 w-full h-full object-contain"
+              style={{ transform: `rotateY(${rotation + 180}deg)`, backfaceVisibility: "hidden" }}
+              draggable={false}
+              onError={back.onError}
+              data-no-lazy="" // see ui.tsx SectionShell for why
+            />
+          )}
         </div>
       </TiltSpinCard>
       <style jsx>{`
