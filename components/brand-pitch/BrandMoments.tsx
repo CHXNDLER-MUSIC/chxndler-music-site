@@ -21,6 +21,15 @@ import CampaignDetailViewer from "./CampaignDetailViewer";
  * (background_textures[2]) layered low-opacity over it. "background 3.png"
  * belongs to Collectible.
  */
+// The standard 3-card convention is PRODUCT / SOCIAL / IRL (see
+// CampaignDetailViewer's presentationFor, which keys its tailored viewer
+// treatment off the literal category string "IRL") — but "IRL" alone reads
+// as jargon on the card itself, so it displays as "IRL EXPERIENCE" here
+// without changing the stored category brands are keyed off of elsewhere.
+function categoryDisplayLabel(category: string): string {
+  return category.trim().toUpperCase() === "IRL" ? "IRL EXPERIENCE" : category;
+}
+
 export default function BrandMoments({ pitch, palette }: { pitch: BrandPitch; palette: PitchPalette }) {
   const primaryMoments = pitch.campaign_uses.slice(0, 3);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -109,7 +118,7 @@ function MomentCard({
       style={{ outlineColor: palette.accent }}
     >
       <p className="text-[0.75rem] font-bold tracking-[0.2em] uppercase" style={{ color: palette.accent }}>
-        {number} — {moment.category || "Application"}
+        {number} — {moment.category ? categoryDisplayLabel(moment.category) : "Application"}
       </p>
 
       <div

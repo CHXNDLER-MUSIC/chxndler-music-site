@@ -93,7 +93,7 @@ export default function BrandPitchPage({
           <img
             src="/elements/chxndler-studio.png"
             alt="CHXNDLER STUDIO"
-            className="pointer-events-auto absolute left-1/2 top-[92%] -translate-x-1/2 -translate-y-1/2 h-[7.5rem] sm:h-[9.5rem] w-auto drop-shadow-[0_0.125rem_0.5rem_rgba(0,0,0,0.55)]"
+            className="pointer-events-auto absolute left-1/2 top-[98%] -translate-x-1/2 -translate-y-1/2 h-[7.5rem] sm:h-[9.5rem] w-auto drop-shadow-[0_0.125rem_0.5rem_rgba(0,0,0,0.55)]"
             data-no-lazy="" // see ui.tsx SectionShell for why
           />
           <span className="pointer-events-auto text-right text-[0.6875rem] sm:text-[0.75rem] tracking-[0.2em] uppercase font-medium"

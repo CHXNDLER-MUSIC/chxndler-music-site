@@ -1,12 +1,14 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import type { BrandPitch } from "@/lib/brandPitch";
 import type { PitchPalette } from "@/lib/brandPitchPalette";
 import type { PitchAssetRegistry } from "@/lib/brandPitchVisuals";
 import { Eyebrow, SectionShell } from "./ui";
 import StudioPortfolioLauncher, { type StudioProject } from "./StudioPortfolioLauncher";
+import { useInteractionSound } from "./useInteractionSound";
 
 // CHXNDLER's own identity photo and wordmark signature — the same across
 // every brand pitch page, not per-brand content, so they live locally rather
@@ -82,6 +84,10 @@ export default function BrandAbout({
   otherProjects: StudioProject[];
 }) {
   const reduceMotion = useReducedMotion();
+  // Reuses the sitewide "pause" click cue (not the generic "click" one) for
+  // this one interaction, per an explicit ask — the portrait is the only
+  // brand-pitch element that plays it.
+  const { playClick: playPortraitClick } = useInteractionSound({ clickKey: "pause" });
   if (!pitch.about_body) return null;
 
   const fade = (delay = 0) =>
@@ -127,13 +133,42 @@ export default function BrandAbout({
               }}
               aria-hidden="true"
             />
-            <img
-              src={CHXNDLER_PHOTO}
-              alt={pitch.artist_name}
-              className="relative w-full h-full object-cover rounded-full"
-              style={{ WebkitMaskImage: PORTRAIT_MASK, maskImage: PORTRAIT_MASK, objectPosition: "58% 50%" }}
-              data-no-lazy="" // see ui.tsx SectionShell for why
-            />
+            {/* The whole portrait is a link out to CHXNDLER's own site (this
+                site's homepage — the "brand" pages are a sub-section of it).
+                No permanent caption; a hover-only glow ring, slight zoom and
+                "EXPLORE CHXNDLER" label are the only affordances that it's
+                clickable, so the editorial portrait treatment above stays
+                intact at rest. */}
+            <Link
+              href="/"
+              onClick={playPortraitClick}
+              aria-label={`Visit ${pitch.artist_name}'s website`}
+              className="group relative block w-full h-full rounded-full cursor-pointer"
+            >
+              <div
+                className="absolute inset-0 rounded-full pointer-events-none opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                style={{ boxShadow: `0 0 2.5rem 0.35rem ${CHXNDLER_PINK}55` }}
+                aria-hidden="true"
+              />
+              <img
+                src={CHXNDLER_PHOTO}
+                alt={pitch.artist_name}
+                className="relative w-full h-full object-cover rounded-full transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+                style={{ WebkitMaskImage: PORTRAIT_MASK, maskImage: PORTRAIT_MASK, objectPosition: "58% 50%" }}
+                data-no-lazy="" // see ui.tsx SectionShell for why
+              />
+              <span
+                className="absolute inset-x-0 bottom-[9%] flex justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
+                aria-hidden="true"
+              >
+                <span
+                  className="text-[0.625rem] sm:text-[0.6875rem] font-bold tracking-[0.2em] uppercase px-[0.75rem] py-[0.35rem] rounded-full whitespace-nowrap"
+                  style={{ color: "#ffffff", backgroundColor: "rgba(0,0,0,0.45)", backdropFilter: "blur(0.25rem)" }}
+                >
+                  Explore CHXNDLER →
+                </span>
+              </span>
+            </Link>
           </motion.div>
 
           {/* Copy — 60% column. Deliberate rhythm: eyebrow, headline, body,

@@ -134,7 +134,7 @@ export default function HearTheConcept({
   // Canonical tab order regardless of DB row order — anything not in this
   // list (a brand-specific label) keeps its original relative position at
   // the end, so this never hides an unrecognized version.
-  const TAB_ORDER = ["30 SEC", "60 SEC", "FULL SONG", "INSTRUMENTAL"];
+  const TAB_ORDER = ["30 SEC", "60 SEC", "INSTRUMENTAL", "FULL SONG"];
   const primary = useMemo(() => {
     const filtered = versions.filter((v) => v.role === "primary");
     return [...filtered].sort((a, b) => {
@@ -325,8 +325,7 @@ export default function HearTheConcept({
                     onMouseEnter={playHover}
                     aria-expanded={lyricsOpen}
                     aria-controls="brand-lyrics-panel"
-                    className="inline-flex items-center gap-[0.4rem] text-[0.9375rem] font-semibold tracking-[0.08em] uppercase opacity-60 hover:opacity-100 transition-opacity"
-                    style={{ color: "currentColor" }}
+                    className="inline-flex items-center gap-[0.4rem] text-[0.9375rem] font-semibold tracking-[0.08em] uppercase opacity-60 hover:opacity-100 hover:text-[#ff3ea5] transition-all duration-200"
                   >
                     {lyricsOpen ? "Hide Lyrics" : "View Lyrics"} <span aria-hidden="true">{lyricsOpen ? "↑" : "↓"}</span>
                   </button>
