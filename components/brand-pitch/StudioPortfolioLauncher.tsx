@@ -131,8 +131,8 @@ function StudioProjectCard({
         </div>
       </div>
       <div className="mt-[0.625rem] text-center">
-        <p className="text-[0.75rem] font-bold uppercase tracking-[0.1em] text-white">{project.brandName}</p>
-        <p className="mt-[0.125rem] text-[0.6875rem] text-white/50">{project.projectTitle}</p>
+        <p className="text-[0.9375rem] sm:text-[1.0625rem] font-bold uppercase tracking-[0.1em] text-white">{project.brandName}</p>
+        <p className="mt-[0.125rem] text-[0.8125rem] sm:text-[0.875rem] text-white/50">{project.projectTitle}</p>
       </div>
 
       <style jsx>{`
