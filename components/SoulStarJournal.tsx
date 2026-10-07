@@ -10,7 +10,7 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 import { getLocalDateString, getDisplayDateString } from "@/utils/dateHelpers";
 import { triggerHeartCoinCelebration, suppressNextHeartcoinCelebration } from "@/utils/heartcoinCelebration";
 import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
-import { manuallyQueueBadgeCelebration, markBadgeAsSeenInStorage } from "@/lib/useBadgeCelebrations";
+import { markBadgeAsSeenInStorage } from "@/lib/useBadgeCelebrations";
 import { enableCelebrationAudio } from "@/utils/celebrationAudio";
 import { consumeActiveBoost } from "@/lib/boosts";
 import { logHeartcoinTransaction } from "@/utils/heartcoins";
@@ -510,25 +510,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             suppressNextHeartcoinCelebration();
             triggerHeartCoinCelebration(awardedCoins, { force: true });
           }
-          // Celebrate any badges this save just unlocked (e.g. Soul Star) - same
-          // as the ritual-animation path in handleRitualComplete, since this
-          // branch skips the ritual overlay entirely.
-          const newlyAwardedBadgesNoRitual = pendingBadgesRef.current;
-          if (newlyAwardedBadgesNoRitual.length > 0) {
-            enableCelebrationAudio();
-            newlyAwardedBadgesNoRitual.forEach((badge) => {
-              markBadgeAsSeenInStorage(badge.id, badge.earned_at);
-              manuallyQueueBadgeCelebration({
-                id: `${badge.id}_${badge.earned_at}`,
-                badgeId: badge.id,
-                badgeName: badge.badge_name,
-                iconUrl: badge.icon_url || '/elements/badge-default.webp',
-                heartCoins: badge.heart_coins ?? 0,
-                earnedAt: badge.earned_at,
-              });
-            });
-            pendingBadgesRef.current = [];
-          }
+          // Badges this save unlocked are marked seen, not celebrated - a journal
+          // entry shows only the HeartCoin celebration (same as handleRitualComplete).
+          pendingBadgesRef.current.forEach((badge) => markBadgeAsSeenInStorage(badge.id, badge.earned_at));
+          pendingBadgesRef.current = [];
           onJournalCompleted?.();
           try {
             window.dispatchEvent(new CustomEvent('journalCompleted'));
@@ -630,27 +615,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       setPendingRewardData(null);
     }
 
-    // Celebrate any badges this save just unlocked (e.g. Soul Star). These were
-    // awarded with allowCelebration:true (not pre-marked as seen), so mark them
-    // seen now and push them straight into the live celebration queue - this
-    // bypasses the suppression window covering the ritual, which would otherwise
-    // silently drop them once it expires.
-    const newlyAwardedBadges = pendingBadgesRef.current;
-    if (newlyAwardedBadges.length > 0) {
-      enableCelebrationAudio();
-      newlyAwardedBadges.forEach((badge) => {
-        markBadgeAsSeenInStorage(badge.id, badge.earned_at);
-        manuallyQueueBadgeCelebration({
-          id: `${badge.id}_${badge.earned_at}`,
-          badgeId: badge.id,
-          badgeName: badge.badge_name,
-          iconUrl: badge.icon_url || '/elements/badge-default.webp',
-          heartCoins: badge.heart_coins ?? 0,
-          earnedAt: badge.earned_at,
-        });
-      });
-      pendingBadgesRef.current = [];
-    }
+    // Badges this save unlocked (the full badge check can award several at once)
+    // are marked seen but NOT celebrated: a journal entry shows only the HeartCoin
+    // celebration. Marking them seen also stops the realtime handler replaying them.
+    pendingBadgesRef.current.forEach((badge) => markBadgeAsSeenInStorage(badge.id, badge.earned_at));
+    pendingBadgesRef.current = [];
 
     // Notify parent that journal was completed
     onJournalCompleted?.();
