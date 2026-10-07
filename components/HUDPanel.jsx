@@ -5785,23 +5785,25 @@ const HUDPanel = React.memo(function HUDPanel({
                       background: 'transparent',
                       backdropFilter: 'none',
                       zIndex: 2147483647,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
                     }}
                   >
                     <div
                       onClick={(e) => { e.stopPropagation(); }}
                       style={{
-                        position: 'relative',
+                        // Pin the player's bottom edge to the top of the light beam.
+                        // Must use `bottom` (not padding/margin): --light-beam-boundary contains a %,
+                        // which padding/margin would resolve against viewport width instead of height.
+                        position: 'fixed',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        bottom: 'calc(var(--light-beam-boundary) + var(--beam-height))',
                         width: 'min(88vw, 420px)',
                         background: 'transparent',
                         border: '1px solid rgba(29,185,84,0.6)',
                         boxShadow: '0 0 32px rgba(29,185,84,0.35)',
                         borderRadius: 14,
                         overflow: 'hidden',
-                        // Slightly higher on the screen
-                        marginTop: -150
+                        maxHeight: 'calc(100vh - var(--profile-bar-boundary) - var(--light-beam-boundary) - var(--beam-height))'
                       }}
                     >
                       <button
@@ -5854,22 +5856,25 @@ const HUDPanel = React.memo(function HUDPanel({
                       background: 'transparent',
                       backdropFilter: 'none',
                       zIndex: 2147483647,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
                     }}
                   >
                     <div
                       onClick={(e) => { e.stopPropagation(); }}
                       style={{
-                        position: 'relative',
+                        // Pin the player's bottom edge to the top of the light beam.
+                        // Must use `bottom` (not padding/margin): --light-beam-boundary contains a %,
+                        // which padding/margin would resolve against viewport width instead of height.
+                        position: 'fixed',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        bottom: 'calc(var(--light-beam-boundary) + var(--beam-height))',
                         width: 'min(88vw, 420px)',
                         background: 'transparent',
                         border: '1px solid rgba(252,60,68,0.6)',
                         boxShadow: '0 0 32px rgba(252,60,68,0.35)',
                         borderRadius: 14,
                         overflow: 'hidden',
-                        marginTop: -150
+                        maxHeight: 'calc(100vh - var(--profile-bar-boundary) - var(--light-beam-boundary) - var(--beam-height))'
                       }}
                     >
                       <button

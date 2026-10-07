@@ -377,6 +377,8 @@ function CheckoutFlow({
           />
         </Elements>
 
+        {/* Quantity + email share a row on wider screens to keep the form short */}
+        <div className={styles.merchRow}>
         <div className={styles.cardGroup}>
           <span className={styles.cardLabel}>Quantity</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -413,8 +415,9 @@ function CheckoutFlow({
             onChange={(e) => setEmail(e.target.value)}
           />
         </label>
+        </div>
 
-        <div className={styles.cardGroup} style={{ textAlign: 'left' }}>
+        <div className={styles.cardGroup} style={{ textAlign: 'left', width: '100%' }}>
           <span className={styles.cardLabel}>Shipping address</span>
           <AddressElement options={{ mode: 'shipping' }} />
         </div>

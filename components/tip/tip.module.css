@@ -602,6 +602,22 @@
 .merchCompact .shell {
   gap: 0.45rem;
   padding: 0.5rem 0.9rem 0.9rem;
+  /* Use the full overlay width so Stripe's address form can lay fields side by side */
+  width: 100%;
+}
+/* Quantity + email: stacked on phones, one row on wider screens */
+.merchRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.45rem;
+  width: 100%;
+}
+@media (min-width: 40rem) {
+  .merchRow {
+    grid-template-columns: auto 1fr;
+    align-items: end;
+    gap: 1.25rem;
+  }
 }
 .merchCompact .amountBlock {
   gap: 0;

@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { getCelebrationRoot } from '@/utils/celebrationRoot';
 import { MERCH_CELEBRATION_EVENT, type MerchCelebrationDetail } from '@/utils/merchCelebration';
 
 export default function MerchCelebration() {
   const [isVisible, setIsVisible] = useState(false);
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const [itemName, setItemName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
 
@@ -19,6 +22,8 @@ export default function MerchCelebration() {
       setImageUrl(image);
 
       // Show celebration
+      // Paint above the HeartCoin display (see utils/celebrationRoot)
+      setPortalRoot(getCelebrationRoot());
       setIsVisible(true);
 
       // Hide after 3 seconds, then open profile popover with merch collection
@@ -41,10 +46,10 @@ export default function MerchCelebration() {
     };
   }, []);
 
-  if (!isVisible) return null;
+  if (!isVisible || !portalRoot) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100000] flex items-center justify-center pointer-events-none" style={{ alignItems: 'center', paddingBottom: '10vh' }}>
+  return createPortal(
+    <div className="fixed inset-0 z-[2147483647] flex items-center justify-center pointer-events-none" style={{ alignItems: 'center', paddingBottom: '10vh' }}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/20 backdrop-blur-sm heartcoin-backdrop-fade" />
 
@@ -69,5 +74,5 @@ export default function MerchCelebration() {
         </p>
       </div>
     </div>
-  );
+  , portalRoot);
 }

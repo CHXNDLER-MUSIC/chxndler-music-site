@@ -963,8 +963,10 @@ export default function SongDropdown({ items = [], allItems = [], initialActiveI
           box-shadow: 0 0 28px rgba(25,227,255,0.35), 0 0 64px rgba(25,227,255,0.25), inset 0 0 24px rgba(25,227,255,0.25) !important;
           background: linear-gradient(135deg, rgba(25, 227, 255, 0.12) 0%, rgba(25, 227, 255, 0.06) 100%) !important;
         }
+        /* Fill the inside on hover like the other song rows (.opt:hover), keeping its stronger outer glow */
         .next-drop-row:hover{
-          box-shadow: 0 0 52px rgba(25,227,255,0.7), 0 0 90px rgba(25,227,255,0.45), inset 0 0 28px rgba(25,227,255,0.35) !important;
+          background: rgba(25, 227, 255, 0.3) !important;
+          box-shadow: 0 0 28px rgba(25,227,255,0.45), 0 0 64px rgba(25,227,255,0.3), inset 0 0 15px rgba(25,227,255,0.2) !important;
           border-color: rgba(25,227,255,0.85) !important;
         }
         .holo-icon{ display:inline-flex; will-change: transform; }

@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { getCelebrationRoot } from '@/utils/celebrationRoot';
 import { CARD_CELEBRATION_EVENT, type CardCelebrationDetail } from '@/utils/cardCelebration';
 
 export default function CardCelebration() {
   const [isVisible, setIsVisible] = useState(false);
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const [cardImage, setCardImage] = useState('');
   const [cardName, setCardName] = useState('');
 
@@ -20,6 +23,8 @@ export default function CardCelebration() {
       setCardName(celebrationCardName);
 
       // Show celebration
+      // Paint above the HeartCoin display (see utils/celebrationRoot)
+      setPortalRoot(getCelebrationRoot());
       setIsVisible(true);
 
       // Hide after 3 seconds
@@ -37,10 +42,10 @@ export default function CardCelebration() {
     };
   }, []);
 
-  if (!isVisible) return null;
+  if (!isVisible || !portalRoot) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100000] flex items-center justify-center pointer-events-none" style={{ padding: '4vh 2rem' }}>
+  return createPortal(
+    <div className="fixed inset-0 z-[2147483647] flex items-center justify-center pointer-events-none" style={{ padding: '4vh 2rem' }}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/20 backdrop-blur-sm heartcoin-backdrop-fade" />
       
@@ -68,5 +73,5 @@ export default function CardCelebration() {
         </p>
       </div>
     </div>
-  );
+  , portalRoot);
 }

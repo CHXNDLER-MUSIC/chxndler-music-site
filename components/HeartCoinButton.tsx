@@ -6227,7 +6227,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         onClick={(e) => { e.stopPropagation(); setUsdCheckout(null); }}
                       >
                         <div
-                          className="relative w-full max-w-[30rem] max-h-[90vh] overflow-y-auto rounded-2xl"
+                          className="relative w-full max-w-[30rem] sm:max-w-[44rem] max-h-[90vh] overflow-y-auto rounded-2xl"
                           style={{ background: 'rgba(2,0,22,0.96)', border: '1px solid rgba(34,197,94,0.5)', boxShadow: '0 0 30px rgba(34,197,94,0.25)' }}
                           onClick={(e) => e.stopPropagation()}
                         >

@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { getCelebrationRoot } from '@/utils/celebrationRoot';
 import { ELEMENT_CARD_CELEBRATION_EVENT, type ElementCardCelebrationDetail } from '@/utils/elementCardCelebration';
 import { getCardImageUrl } from '@/lib/supabaseCardUrl';
 
@@ -30,6 +32,7 @@ const ELEMENT_COLORS: Record<string, string> = {
 
 export default function ElementCardCelebration() {
   const [isVisible, setIsVisible] = useState(false);
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const [element, setElement] = useState('heart');
   const [userName, setUserName] = useState<string | null>(null);
   const isShowingRef = useRef(false); // Prevent double-triggering
@@ -53,6 +56,8 @@ export default function ElementCardCelebration() {
       setUserName(celebrationUserName || null);
 
       // Show celebration
+      // Paint above the HeartCoin display (see utils/celebrationRoot)
+      setPortalRoot(getCelebrationRoot());
       setIsVisible(true);
 
       // Hide after 4 seconds and trigger callback
@@ -74,14 +79,14 @@ export default function ElementCardCelebration() {
     };
   }, []);
 
-  if (!isVisible) return null;
+  if (!isVisible || !portalRoot) return null;
 
   const elementImage = ELEMENT_CARD_IMAGES[element] || getCardImageUrl(element);
   const elementName = ELEMENT_NAMES[element] || element;
   const glowColor = ELEMENT_COLORS[element] || 'rgba(255, 105, 180, 0.3)';
 
-  return (
-    <div className="fixed inset-0 z-[100000] flex items-center justify-center pointer-events-none" style={{ alignItems: 'center', paddingBottom: '10vh' }}>
+  return createPortal(
+    <div className="fixed inset-0 z-[2147483647] flex items-center justify-center pointer-events-none" style={{ alignItems: 'center', paddingBottom: '10vh' }}>
       {/* Backdrop - 4s animation with forwards fill to prevent flicker */}
       <div
         className="absolute inset-0 bg-black/20 backdrop-blur-sm"
@@ -119,5 +124,5 @@ export default function ElementCardCelebration() {
         </p>
       </div>
     </div>
-  );
+  , portalRoot);
 }
