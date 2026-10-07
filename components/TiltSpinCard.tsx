@@ -1,6 +1,6 @@
 "use client";
 
-import React, { forwardRef, useEffect, useRef } from "react";
+import React, { createContext, forwardRef, useContext, useEffect, useMemo, useRef } from "react";
 import { useCardTiltSpin } from "@/hooks/useCardTiltSpin";
 
 /** Imperative controls for a caller that needs to drive rotation from
@@ -8,6 +8,23 @@ import { useCardTiltSpin } from "@/hooks/useCardTiltSpin";
  * desyncing the hook's own running rotation total. */
 export interface TiltSpinCardControls {
   addSpinRotation: (deltaDegrees: number) => void;
+}
+
+/** Live tilt of the nearest TiltSpinCard — lets children (e.g. TradingCardFace's
+ * holo shine) react to how the card is being held. */
+export interface TiltSpinCardTilt {
+  rotateX: number;
+  rotateY: number;
+  maxRotateX: number;
+  maxRotateY: number;
+  enableSpin: boolean;
+  isInteracting: boolean;
+}
+
+const TiltContext = createContext<TiltSpinCardTilt | null>(null);
+
+export function useTiltSpinCardTilt(): TiltSpinCardTilt | null {
+  return useContext(TiltContext);
 }
 
 interface TiltSpinCardProps {
@@ -70,7 +87,7 @@ export const TiltSpinCard = forwardRef<HTMLDivElement, TiltSpinCardProps>(
       setTimeout(() => { tapFiredRef.current = false; }, 100);
     };
 
-    const { style: tiltStyle, handlers, wasDragged, addSpinRotation } = useCardTiltSpin({
+    const { style: tiltStyle, handlers, wasDragged, addSpinRotation, tiltState } = useCardTiltSpin({
       disabled,
       maxRotateX,
       maxRotateY,
@@ -85,6 +102,15 @@ export const TiltSpinCard = forwardRef<HTMLDivElement, TiltSpinCardProps>(
     useEffect(() => {
       if (controlsRef) controlsRef.current = { addSpinRotation };
     }, [controlsRef, addSpinRotation]);
+
+    const tilt = useMemo<TiltSpinCardTilt>(() => ({
+      rotateX: tiltState.rotateX,
+      rotateY: tiltState.rotateY,
+      maxRotateX,
+      maxRotateY,
+      enableSpin,
+      isInteracting: tiltState.isInteracting,
+    }), [tiltState.rotateX, tiltState.rotateY, tiltState.isInteracting, maxRotateX, maxRotateY, enableSpin]);
 
     const combinedStyle: React.CSSProperties = {
       ...tiltStyle,
@@ -109,7 +135,7 @@ export const TiltSpinCard = forwardRef<HTMLDivElement, TiltSpinCardProps>(
         onClick={handleClick}
         {...handlers}
       >
-        {children}
+        <TiltContext.Provider value={tilt}>{children}</TiltContext.Provider>
       </div>
     );
   }

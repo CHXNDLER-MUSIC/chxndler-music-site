@@ -8,6 +8,8 @@ import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
 import { ELEMENT_COLORS, type Element } from "@/lib/planets";
 import TiltSpinCard from "@/components/TiltSpinCard";
+import TradingCardFace from "@/components/TradingCardFace";
+import { CARD_ASPECT_RATIO } from "@/lib/cardStyle";
 import { useAudio } from "@/app/providers/AudioProvider";
 import { getCardImageUrl, SUPABASE_CARDS_BASE_URL, encodeSupabasePath } from "@/lib/supabaseCardUrl";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -812,14 +814,16 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                 style={{
                   width: 'auto',
                   maxWidth: '100%',
-                  aspectRatio: '3 / 4',
+                  // Real trading-card proportions (63×88mm) — matches the 716×1000 card art,
+                  // so the rounded corners land on the card itself, not on letterbox space
+                  aspectRatio: CARD_ASPECT_RATIO,
                   flex: '1 1 0',
                   minHeight: 0,
                   overflow: 'hidden',
                 }}
               >
                 <TiltSpinCard
-                  className="relative w-full h-full rounded-2xl overflow-hidden"
+                  className="relative w-full h-full"
                   maxRotateX={10}
                   sensitivity={0.3}
                   returnDuration={400}
@@ -842,15 +846,11 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                   }}
                 >
                   {/* Front side */}
-                  <img
+                  <TradingCardFace
                     src={explicitCardSrc || computedCardSrc}
                     alt={title}
-                    className="absolute inset-0 w-full h-full rounded-2xl object-contain pointer-events-none"
-                    style={{
-                      backfaceVisibility: 'hidden',
-                      transform: `rotateY(${cardRotation}deg)`,
-                      transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                    }}
+                    rotation={cardRotation}
+                    animating={isAnimatingFlip}
                     onError={(e)=>{
                       const target = e.currentTarget as HTMLImageElement;
                       const objectKey = title || 'unknown';
@@ -865,22 +865,16 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                         target.src = src;
                       }
                     }}
-                    draggable={false}
                   />
                   {/* Back side */}
-                  <img
+                  <TradingCardFace
                     src={getCardImageUrl('BACK')}
                     alt={`${title} card back`}
-                    className="absolute inset-0 w-full h-full rounded-2xl object-contain pointer-events-none"
-                    style={{
-                      backfaceVisibility: 'hidden',
-                      transform: `rotateY(${cardRotation + 180}deg)`,
-                      transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                    }}
+                    rotation={cardRotation + 180}
+                    animating={isAnimatingFlip}
                     onError={(e)=>{
                       (e.currentTarget as HTMLImageElement).src = "/logo/CHXNDLER_Logo.png";
                     }}
-                    draggable={false}
                   />
                 </TiltSpinCard>
               </div>}

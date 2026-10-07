@@ -15,6 +15,7 @@ import { useMerchItems } from '@/hooks/useMerchItems';
 import { useMerchPurchase } from '@/hooks/useMerchPurchase';
 import { MerchItem } from '@/types/merch';
 import TiltSpinCard from '@/components/TiltSpinCard';
+import TradingCardFace from "@/components/TradingCardFace";
 import { usePlanetRewardsContext } from '@/components/PlanetRewardsProvider';
 import { getElementalPlanetImage } from '@/lib/elementalPlanets';
 import { ELEMENT_COLORS, Element } from '@/lib/planets';
@@ -24,6 +25,7 @@ import { triggerElementCardCelebration } from '@/utils/elementCardCelebration';
 import { triggerCardCelebration } from '@/utils/cardCelebration';
 import { getCardImageUrl } from '@/lib/supabaseCardUrl';
 import { isValidUuid } from '@/lib/cardUtils';
+import { CARD_ASPECT_RATIO, CARD_CORNER_RADIUS } from "@/lib/cardStyle";
 
 // Get basePath from env (supports deployments with basePath like /cockpit)
 const basePath = (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
@@ -5047,7 +5049,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 
                                 {/* Card Image */}
                                 <div
-                                  className="w-32 h-44 rounded-lg border-2 border-yellow-500/80 overflow-hidden relative cursor-pointer hover:border-yellow-400/90 transition-all duration-200 hover:scale-105"
+                                  className="h-44 border-2 border-yellow-500/80 overflow-hidden relative cursor-pointer hover:border-yellow-400/90 transition-all duration-200 hover:scale-105"
+                                  style={{ aspectRatio: CARD_ASPECT_RATIO, borderRadius: CARD_CORNER_RADIUS }}
                                   onMouseEnter={() => { playHoverSfx(0.3) }}
                                 >
                                 <img
@@ -5881,16 +5884,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     }}
                   >
                     {/* Front of card - rotates with cardRotation */}
-                    <img
+                    <TradingCardFace
                       src={getCardImageUrl((enlargedCard as any).image_object_key || enlargedCard.card_name)}
                       alt={enlargedCard.card_name}
-                      className="absolute inset-0 w-full h-full rounded-3xl shadow-2xl object-contain pointer-events-none"
-                      style={{
-                        backfaceVisibility: 'hidden',
-                        transform: `rotateY(${cardRotation}deg)`,
-                        transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                      }}
-                      draggable={false}
+                      rotation={cardRotation}
+                      animating={isAnimatingFlip}
                       onError={(e) => {
                         const objectKey = (enlargedCard as any).image_object_key || enlargedCard.card_name;
                         if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
@@ -5901,16 +5899,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       }}
                     />
                     {/* Back of card - offset by 180° */}
-                    <img
+                    <TradingCardFace
                       src={getCardImageUrl('BACK')}
                       alt="Card back"
-                      className="absolute inset-0 w-full h-full rounded-3xl shadow-2xl object-contain pointer-events-none"
-                      style={{
-                        backfaceVisibility: 'hidden',
-                        transform: `rotateY(${cardRotation + 180}deg)`,
-                        transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                      }}
-                      draggable={false}
+                      rotation={cardRotation + 180}
+                      animating={isAnimatingFlip}
                     />
                   </TiltSpinCard>
                 )}

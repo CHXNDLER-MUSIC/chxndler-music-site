@@ -10,7 +10,9 @@ import { useAudio } from "@/app/providers/AudioProvider";
 // Add, remove, or reorder videos here.
 // Each video needs: id, title, youtubeUrl, type
 // Optional: releaseDate (ISO string) — video is locked until this date
-// type: "heartverse" | "acoustic" | "electric"
+// Optional: featured — row pulses + glows with a START HERE badge until the
+//   visitor plays it once (remembered in their browser)
+// type: "heartverse" | "live" | "acoustic" | "electric"
 // ──────────────────────────────────────────────
 const VIDEOS: Video[] = [
   // ── Episodes ──
@@ -18,9 +20,9 @@ const VIDEOS: Video[] = [
   {
     id: "hv-000",
     title: "Heartverse 00: Welcome to the Heartverse",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    youtubeUrl: "https://www.youtube.com/shorts/Tt9Q08cpluI",
     type: "heartverse",
-    locked: true,
+    featured: true,
   },
   {
     id: "hv-001",
@@ -94,6 +96,15 @@ const VIDEOS: Video[] = [
     type: "heartverse",
     // 1 month after Hosting at Home — 7PM Eastern (EST, UTC-5)
     releaseDate: "2026-11-03T00:00:00Z",
+  },
+
+  // ── Live Signal – Live (in-person shows) ──
+  {
+    id: "lsl-001",
+    title: "LIVE SIGNAL 01 — ARLENE’S GROCERY, NYC",
+    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    type: "live",
+    releaseDate: "2026-10-07T00:00:00",
   },
 
   // ── Live Signal – Acoustic Session ──
@@ -185,34 +196,6 @@ const VIDEOS: Video[] = [
     releaseDate: "2026-08-14T12:00:00",
     postDescription: "Setlist\n00:00 Heartverse\n00:36 Peaches (Justin Bieber)\n02:26 Never (Lauv)\n05:32 Love (Kendrick Lamar)\n08:54 EMO GIRL (mgk)\n11:34 CHEERLEADER\n14:56 MAKE BELIEVE",
   },
-  {
-    id: "lsp-012",
-    title: "Acoustic Signal 12",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "acoustic",
-    releaseDate: "2026-10-23T12:00:00",
-  },
-  {
-    id: "lsp-013",
-    title: "Acoustic Signal 13",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "acoustic",
-    releaseDate: "2026-11-23T12:00:00",
-  },
-  {
-    id: "lsp-014",
-    title: "Acoustic Signal 14",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "acoustic",
-    releaseDate: "2026-12-23T12:00:00",
-  },
-  {
-    id: "lsp-015",
-    title: "Acoustic Signal 15",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "acoustic",
-    releaseDate: "2027-01-23T12:00:00",
-  },
 
   // ── Live Signal – Electric Set ──
   // Releasing weekly on Thursdays at 8 PM starting 2/19/26.
@@ -294,41 +277,6 @@ const VIDEOS: Video[] = [
     type: "electric",
     releaseDate: "2026-11-14T12:00:00",
   },
-  {
-    id: "lsf-011",
-    title: "Electric Signal 11",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "electric",
-    releaseDate: "2026-12-14T12:00:00",
-  },
-  {
-    id: "lsf-012",
-    title: "Electric Signal 12",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "electric",
-    releaseDate: "2027-01-14T12:00:00",
-  },
-  {
-    id: "lsf-013",
-    title: "Electric Signal 13",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "electric",
-    releaseDate: "2027-02-14T12:00:00",
-  },
-  {
-    id: "lsf-014",
-    title: "Electric Signal 14",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "electric",
-    releaseDate: "2027-03-14T12:00:00",
-  },
-  {
-    id: "lsf-015",
-    title: "Electric Signal 15",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "electric",
-    releaseDate: "2027-04-14T12:00:00",
-  },
 
   // ── Karaoke ──
   {
@@ -402,7 +350,7 @@ const VIDEOS: Video[] = [
 // ──────────────────────────────────────────────
 // TYPES
 // ──────────────────────────────────────────────
-type VideoType = "heartverse" | "acoustic" | "electric" | "karaoke";
+type VideoType = "heartverse" | "live" | "acoustic" | "electric" | "karaoke";
 
 interface Video {
   id: string;
@@ -413,10 +361,12 @@ interface Video {
   description?: string;
   postDescription?: string;
   locked?: boolean;
+  /** Pulse + glow with a START HERE badge until this visitor has played it */
+  featured?: boolean;
 }
 
 type TopTab = "heartverse" | "livesignal" | "karaoke";
-type LiveSignalSection = "acoustic" | "electric";
+type LiveSignalSection = "live" | "acoustic" | "electric";
 
 // ──────────────────────────────────────────────
 // HELPERS
@@ -461,6 +411,25 @@ function getNewestId(videos: Video[]): string | null {
   return newest?.id ?? null;
 }
 
+/** Featured videos this visitor has already played (per-browser convenience only) */
+const FEATURED_WATCHED_KEY = "chx_featured_watched";
+
+function readFeaturedWatched(): Set<string> {
+  try {
+    const raw = window.localStorage.getItem(FEATURED_WATCHED_KEY);
+    const ids = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(ids) ? ids.filter((x) => typeof x === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeFeaturedWatched(ids: Set<string>) {
+  try {
+    window.localStorage.setItem(FEATURED_WATCHED_KEY, JSON.stringify([...ids]));
+  } catch {}
+}
+
 /** Format a release date like "2/17/26 @ 8PM" */
 function formatReleaseDate(isoDate: string): string {
   const d = new Date(isoDate);
@@ -480,7 +449,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
   const [isOpen, setIsOpen] = useState(false);
   const setIsOpenAndNotify = useCallback((val: boolean) => { setIsOpen(val); onOpenChange?.(val); }, [onOpenChange]);
   const [topTab, setTopTab] = useState<TopTab>("heartverse");
-  const [liveSignalSection, setLiveSignalSection] = useState<LiveSignalSection>("acoustic");
+  const [liveSignalSection, setLiveSignalSection] = useState<LiveSignalSection>("live");
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [startTime, setStartTime] = useState(0);
   const audio = useAudio();
@@ -488,6 +457,12 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const videoOpenedAtRef = useRef<number>(0);
   const lastPositionsRef = useRef<Map<string, number>>(new Map());
+  const [featuredWatched, setFeaturedWatched] = useState<Set<string>>(() => new Set());
+
+  // Load after mount so server and first client render match
+  useEffect(() => {
+    setFeaturedWatched(readFeaturedWatched());
+  }, []);
 
   const stopVideo = useCallback(() => {
     if (iframeRef.current) {
@@ -559,6 +534,11 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
     const savedPos = lastPositionsRef.current.get(video.id) ?? 0;
     setStartTime(savedPos);
     setActiveVideo(video);
+    if (video.featured && !featuredWatched.has(video.id)) {
+      const next = new Set(featuredWatched).add(video.id);
+      setFeaturedWatched(next);
+      writeFeaturedWatched(next);
+    }
   };
 
   const handleBack = () => {
@@ -742,7 +722,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
               }}
               onMouseEnter={playHover}
             >
-              Live Signal
+              Live
             </button>
             <button
               className={`episodes-tab flex-1 py-1.5 px-2 text-xs font-semibold rounded-md transition-all duration-200 uppercase tracking-wide ${
@@ -768,6 +748,22 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
             <div className="relative flex gap-1 mx-3 mt-2 p-1 rounded-md bg-white/3 border border-[#00FFFF]/15">
               <button
                 className={`flex-1 py-1 px-2 text-xs font-medium rounded transition-all duration-200 tracking-wide ${
+                  liveSignalSection === "live"
+                    ? "bg-[#FC54AF]/15 text-[#FC54AF] border border-[#FC54AF]/30"
+                    : "text-white/40 hover:text-white/70 border border-transparent"
+                }`}
+                onClick={() => {
+                  playClick();
+                  stopVideo();
+                  setLiveSignalSection("live");
+                  setActiveVideo(null);
+                }}
+                onMouseEnter={playHover}
+              >
+                LIVE
+              </button>
+              <button
+                className={`flex-1 py-1 px-2 text-xs font-medium rounded transition-all duration-200 tracking-wide ${
                   liveSignalSection === "acoustic"
                     ? "bg-[#00FFFF]/15 text-[#00FFFF] border border-[#00FFFF]/30"
                     : "text-white/40 hover:text-white/70 border border-transparent"
@@ -780,7 +776,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
                 }}
                 onMouseEnter={playHover}
               >
-                Acoustic
+                ACOUSTIC
               </button>
               <button
                 className={`flex-1 py-1 px-2 text-xs font-medium rounded transition-all duration-200 tracking-wide ${
@@ -796,7 +792,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
                 }}
                 onMouseEnter={playHover}
               >
-                Electric
+                ELECTRIC
               </button>
             </div>
           )}
@@ -913,6 +909,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
                     const isKaraoke = topTab === "karaoke";
                     const accentColor = isElectric ? "#F2EF1D" : isAcoustic ? "#00FFFF" : isKaraoke ? "#F2EF1D" : "#FC54AF";
                     const isNewest = video.id === newestId;
+                    const isStartHere = !!video.featured && !locked && !featuredWatched.has(video.id);
                     const isReleased = !locked;
                     const borderDefault = isReleased
                       ? accentColor
@@ -932,7 +929,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
                           locked
                             ? "bg-white/3 cursor-not-allowed"
                             : "bg-white/3 hover:bg-white/8 episode-row-released"
-                        }${isNewest ? " episode-row-newest" : ""}`}
+                        }${isNewest || isStartHere ? " episode-row-newest" : ""}${!locked ? " episode-row-fill" : ""}`}
                         style={{
                           '--row-accent': accentColor,
                           '--row-border': borderDefault,
@@ -945,7 +942,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
                         {/* Thumbnail placeholder */}
                         <div className="relative flex-shrink-0">
                           <div
-                            className="w-12 h-8 rounded-md border flex items-center justify-center transition-colors duration-200 overflow-hidden bg-white/5"
+                            className="episode-thumb w-12 h-8 rounded-md border flex items-center justify-center transition-all duration-200 overflow-hidden bg-white/5"
                             style={{
                               borderColor: locked ? 'rgba(255,255,255,0.1)' : `${accentColor}AA`,
                             }}
@@ -967,7 +964,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
                                 height="14"
                                 viewBox="0 0 24 24"
                                 fill="none"
-                                style={{ color: `${accentColor}CC`, transition: 'color 200ms' }}
+                                style={{ color: `${accentColor}CC`, transition: 'color 200ms, transform 200ms, filter 200ms' }}
                                 onMouseOver={(e) => { (e.currentTarget as SVGElement).style.color = accentColor; }}
                                 onMouseOut={(e) => { (e.currentTarget as SVGElement).style.color = `${accentColor}CC`; }}
                               >
@@ -978,13 +975,17 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
                               </svg>
                             )}
                           </div>
-                          {video.id === newestId && (
+                          {isStartHere ? (
+                            <span className={`new-badge ${isElectric ? "new-badge-yellow" : !isAcoustic ? "new-badge-pink" : ""}`}>START</span>
+                          ) : video.id === newestId && (
                             <span className={`new-badge ${isElectric ? "new-badge-yellow" : !isAcoustic ? "new-badge-pink" : ""}`}>NEW</span>
                           )}
                         </div>
                         {/* Title + release date */}
                         <div className="flex flex-col min-w-0">
-                          <span className={`text-xs transition-colors duration-200 line-clamp-1 ${
+                          <span className={`episode-title text-xs transition-all duration-200 line-clamp-1${
+                            isElectric || isAcoustic ? " uppercase" : ""
+                          } ${
                             locked
                               ? "text-white/70"
                               : "text-white/70 group-hover:text-white/95"
@@ -1000,7 +1001,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
                                 textShadow: `0 0 4px ${accentColor}4D`,
                               }}
                             >
-                              Releases {formatReleaseDate(video.releaseDate)}
+                              Incoming {formatReleaseDate(video.releaseDate)}
                             </span>
                           )}
                         </div>
@@ -1101,6 +1102,7 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
           border-radius: 3px;
           padding: 1px 4px;
           line-height: 1.2;
+          white-space: nowrap;
           z-index: 1;
           pointer-events: none;
           animation: newBadgePulse 2s ease-in-out infinite;
@@ -1166,13 +1168,48 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
         .episode-row-newest {
           animation: rowGlowPulse 2s ease-in-out infinite;
         }
-        .episode-row-newest:hover {
+        .episode-row-newest:hover,
+        .episode-row-newest:focus-visible {
           animation-play-state: paused;
         }
-        .episode-row-released:hover {
+        /* :focus-visible mirrors :hover so keyboard (Tab) users get the same glow */
+        .episode-row-released:focus-visible {
+          outline: none;
+        }
+        .episode-row-released:hover,
+        .episode-row-released:focus-visible {
           border-color: var(--row-accent) !important;
           box-shadow: var(--row-hover-shadow) !important;
           transform: scale(1.025);
+        }
+        /* All tabs: on hover the glow fills the row evenly and stays inside it —
+           a flat tint + soft inner rim, with only a tight halo outside the border */
+        .episode-row-fill:hover,
+        .episode-row-fill:focus-visible {
+          background-color: color-mix(in srgb, var(--row-accent) 24%, transparent) !important;
+          box-shadow:
+            0 0 6px color-mix(in srgb, var(--row-accent) 55%, transparent),
+            inset 0 0 14px color-mix(in srgb, var(--row-accent) 40%, transparent) !important;
+        }
+        /* Brighten the ▶ box along with the row */
+        .episode-row-fill:hover .episode-thumb,
+        .episode-row-fill:focus-visible .episode-thumb {
+          border-color: var(--row-accent) !important;
+          background-color: color-mix(in srgb, var(--row-accent) 30%, transparent);
+          box-shadow:
+            0 0 8px color-mix(in srgb, var(--row-accent) 70%, transparent),
+            inset 0 0 8px color-mix(in srgb, var(--row-accent) 50%, transparent);
+        }
+        .episode-row-fill:hover .episode-title,
+        .episode-row-fill:focus-visible .episode-title {
+          color: #fff !important;
+          letter-spacing: 0.08em;
+        }
+        .episode-row-fill:hover .episode-thumb svg,
+        .episode-row-fill:focus-visible .episode-thumb svg {
+          color: #fff !important;
+          transform: scale(1.3);
+          filter: drop-shadow(0 0 4px var(--row-accent)) drop-shadow(0 0 8px var(--row-accent));
         }
         .episodes-trigger-btn:hover {
           box-shadow:

@@ -6,8 +6,10 @@ import { supabaseClient } from '@/lib/supabaseClient';
 import { chatService, getElementColor } from '@/lib/supabase/chat';
 import { ElementIcon } from '@/lib/elementIcons';
 import TiltSpinCard from '@/components/TiltSpinCard';
+import TradingCardFace from "@/components/TradingCardFace";
 import { sfx } from '@/lib/sfx';
 import { getCardImageUrl } from '@/lib/supabaseCardUrl';
+import { CARD_THUMB_IMG_STYLE } from "@/lib/cardStyle";
 
 /**
  * ProfileModal Component
@@ -539,11 +541,13 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                               onClick={() => setEnlargedCard(card.cards)}
                             >
                               {card.cards.image_url ? (
-                                <img 
-                                  src={card.cards.image_url} 
-                                  alt={card.cards.card_name}
-                                  className="w-full h-full object-cover rounded"
-                                />
+                                <div className="relative w-full h-full">
+                                  <img
+                                    src={card.cards.image_url}
+                                    alt={card.cards.card_name}
+                                    style={CARD_THUMB_IMG_STYLE}
+                                  />
+                                </div>
                               ) : (
                                 <div className="w-full h-full flex flex-col items-center justify-center">
                                   <ElementIcon 
@@ -697,17 +701,11 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                     }}
                   >
                     {/* Front of card */}
-                    <img
+                    <TradingCardFace
                       src={getCardImageUrl(enlargedCard.image_object_key || enlargedCard.card_name || 'CHXNDLER')}
                       alt={enlargedCard.card_name}
-                      className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
-                      style={{
-                        filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
-                        backfaceVisibility: 'hidden',
-                        transform: `rotateY(${cardRotation}deg)`,
-                        transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                      }}
-                      draggable={false}
+                      rotation={cardRotation}
+                      animating={isAnimatingFlip}
                       onError={(e) => {
                         const objectKey = enlargedCard.image_object_key || enlargedCard.card_name || 'CHXNDLER';
                         if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
@@ -718,17 +716,11 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                       }}
                     />
                     {/* Back of card */}
-                    <img
+                    <TradingCardFace
                       src={getCardImageUrl('BACK')}
                       alt="Card back"
-                      className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
-                      style={{
-                        filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
-                        backfaceVisibility: 'hidden',
-                        transform: `rotateY(${cardRotation + 180}deg)`,
-                        transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                      }}
-                      draggable={false}
+                      rotation={cardRotation + 180}
+                      animating={isAnimatingFlip}
                     />
                   </TiltSpinCard>
                 </div>

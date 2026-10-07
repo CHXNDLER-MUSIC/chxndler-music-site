@@ -67,12 +67,9 @@ export default function HoloJoinButton({
           background:
             radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
             linear-gradient(180deg, #0b0b0b, #000 64%);
+          /* Default: NO pink glow at rest — glow only on hover / active / live (matches yellow hub) */
           box-shadow:
             0 16px 30px rgba(0,0,0,.6),
-            0 0 18px ${hubColor}CC,
-            0 0 40px ${hubColor}99,
-            0 0 70px ${hubColor}66,
-            0 0 110px ${hubColor}33,
             inset 0 2px 0 rgba(255,255,255,.25),
             inset 0 -6px 14px rgba(0,0,0,.7);
           transition: transform 120ms ease, box-shadow 180ms ease, filter 180ms ease;
@@ -90,8 +87,8 @@ export default function HoloJoinButton({
             0 0 48px rgba(252,84,175,0.4);
           filter: brightness(1.12) saturate(1.2);
         }
-        .hub-icon{ width:${Math.round(size*0.62)}px; height:${Math.round(size*0.62)}px; object-fit: contain; filter: saturate(1.5) brightness(1.3) drop-shadow(0 0 14px ${hubColor}) drop-shadow(0 0 30px ${hubColor}) drop-shadow(0 0 50px ${hubColor}) drop-shadow(0 0 80px ${hubColor}); transition: filter 180ms ease, transform 180ms ease; }
-        .hub:hover .hub-icon{ transform: scale(1.06); filter: saturate(1.18) brightness(1.06) drop-shadow(0 0 10px ${hubColor}) drop-shadow(0 0 22px ${hubColor}) drop-shadow(0 0 36px ${hubColor}); }
+        .hub-icon{ width:${Math.round(size*0.62)}px; height:${Math.round(size*0.62)}px; object-fit: contain; filter: saturate(1.1) brightness(1.04); transition: filter 180ms ease, transform 180ms ease; }
+        .hub:hover .hub-icon{ transform: scale(1.06); filter: saturate(1.18) brightness(1.06); }
         .hub-active .hub-icon{ filter: saturate(1.8) brightness(1.5) drop-shadow(0 0 20px ${hubColor}) drop-shadow(0 0 44px ${hubColor}) drop-shadow(0 0 70px ${hubColor}) drop-shadow(0 0 100px ${hubColor}); }
         .hub-active {
           /* Selected state: strongest glow, enhanced pulsing */

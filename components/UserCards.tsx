@@ -5,6 +5,7 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 import { sfx } from "@/lib/sfx";
 import { useUserCards } from "@/hooks/useUserCards";
 import { getCardImageUrl } from "@/lib/supabaseCardUrl";
+import { CARD_THUMB_IMG_STYLE } from "@/lib/cardStyle";
 
 // Types for user owned cards
 type OwnedCardRow = import("@/hooks/useUserCards").OwnedCardRow;
@@ -257,7 +258,7 @@ export default function UserCards({
                   <img
                     src={getCardImageUrl((collectedCard.cards as any).image_object_key || collectedCard.cards.card_name || 'CHXNDLER')}
                     alt={collectedCard.cards.card_name}
-                    className={embedded ? "w-full h-full object-contain" : "w-full h-full object-cover"}
+                    style={CARD_THUMB_IMG_STYLE}
                     draggable={false}
                     onError={(e) => {
                       const objectKey = (collectedCard.cards as any).image_object_key || collectedCard.cards.card_name || 'CHXNDLER';

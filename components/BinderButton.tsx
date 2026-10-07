@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import HeartverseButton from "@/components/HeartverseButton";
 import { sfx } from "@/lib/sfx";
 import { getCardImageUrl } from "@/lib/supabaseCardUrl";
+import { CARD_CORNER_RADIUS, CARD_THUMB_IMG_STYLE } from "@/lib/cardStyle";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   asChild?: boolean;
@@ -901,12 +902,14 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                           e.currentTarget.style.transform = 'scale(1)';
                         }}
                       >
-                        <img
-                          src={getCardImageUrl('CHXNDLER')}
-                          alt="CHXNDLER Card"
-                          className="w-full h-full object-cover rounded"
-                          draggable={false}
-                        />
+                        <div className="relative w-full h-full">
+                          <img
+                            src={getCardImageUrl('CHXNDLER')}
+                            alt="CHXNDLER Card"
+                            style={CARD_THUMB_IMG_STYLE}
+                            draggable={false}
+                          />
+                        </div>
                         {/* Holographic effect */}
                         <div 
                           className="absolute inset-0 opacity-20"
@@ -1050,8 +1053,9 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             <img
               src={selectedCard?.image || getCardImageUrl('CHXNDLER')}
               alt={selectedCard?.name || "CHXNDLER Card"}
-              className="w-full h-auto rounded-lg shadow-2xl"
+              className="w-full h-auto shadow-2xl"
               style={{
+                borderRadius: CARD_CORNER_RADIUS,
                 boxShadow: '0 0 40px rgba(255,105,180,0.8), 0 0 80px rgba(255,105,180,0.5), 0 0 120px rgba(255,105,180,0.3)',
                 border: '2px solid rgba(255,105,180,0.6)',
               }}

@@ -20,6 +20,7 @@ import UserBadges from "./UserBadges";
 import UserCards from "./UserCards";
 import JourneyModal from "./JourneyModal";
 import TiltSpinCard from "./TiltSpinCard";
+import TradingCardFace from "@/components/TradingCardFace";
 import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 import Image from 'next/image';
 import CastToStarsOverlay, { getGlowingPlanetPosition } from "./rituals/CastToStarsOverlay";
@@ -1014,53 +1015,32 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   setTimeout(() => setIsAnimatingFlip(false), 500);
                 }}
               >
-                {/* Front of card - rotates with cardRotation */}
-                <img
-                  src={selectedCard?.image || getCardImageUrl('CHXNDLER')}
-                  alt={selectedCard?.name || "Card"}
-                  className="rounded-2xl pointer-events-none"
-                  style={{
-                    maxHeight: '95%',
-                    maxWidth: '85%',
-                    objectFit: 'contain',
-                    backfaceVisibility: 'hidden',
-                    WebkitBackfaceVisibility: 'hidden',
-                    transform: `rotateY(${cardRotation}deg)`,
-                    transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                    border: '2px solid rgba(255,255,255,0.1)',
-                  }}
-                  draggable={false}
-                  onError={(e) => {
-                    const objectKey = selectedCard?.name || 'CHXNDLER';
-                    if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
-                    const fallback = getCardImageUrl('CHXNDLER');
-                    if (e.currentTarget.src !== fallback) {
-                      e.currentTarget.src = fallback;
-                    }
-                  }}
-                />
+                {/* Card-sized box (faces center a 63×88 card inside it) */}
+                <div className="relative" style={{ width: '85%', height: '95%' }}>
+                  {/* Front of card - rotates with cardRotation */}
+                  <TradingCardFace
+                    src={selectedCard?.image || getCardImageUrl('CHXNDLER')}
+                    alt={selectedCard?.name || "Card"}
+                    rotation={cardRotation}
+                    animating={isAnimatingFlip}
+                    onError={(e) => {
+                      const objectKey = selectedCard?.name || 'CHXNDLER';
+                      if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                      const fallback = getCardImageUrl('CHXNDLER');
+                      if (e.currentTarget.src !== fallback) {
+                        e.currentTarget.src = fallback;
+                      }
+                    }}
+                  />
 
-                {/* Back of card - offset by 180° */}
-                <img
-                  src={getCardImageUrl('BACK')}
-                  alt="Card Back"
-                  className="absolute rounded-2xl pointer-events-none"
-                  style={{
-                    maxHeight: '95%',
-                    maxWidth: '85%',
-                    objectFit: 'contain',
-                    top: '50%',
-                    left: '50%',
-                    transform: `translate(-50%, -50%) rotateY(${cardRotation + 180}deg)`,
-                    backfaceVisibility: 'hidden',
-                    WebkitBackfaceVisibility: 'hidden',
-                    transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                    border: '2px solid rgba(255,255,255,0.1)',
-                  }}
-                  draggable={false}
-                />
+                  {/* Back of card - offset by 180° */}
+                  <TradingCardFace
+                    src={getCardImageUrl('BACK')}
+                    alt="Card Back"
+                    rotation={cardRotation + 180}
+                    animating={isAnimatingFlip}
+                  />
+                </div>
               </TiltSpinCard>
             </div>
           </div>

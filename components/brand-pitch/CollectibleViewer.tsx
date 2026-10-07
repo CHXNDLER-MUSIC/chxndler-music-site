@@ -3,6 +3,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import MediaViewerModal from "./MediaViewerModal";
 import TiltSpinCard, { type TiltSpinCardControls } from "@/components/TiltSpinCard";
+import TradingCardFace from "@/components/TradingCardFace";
+import { CARD_ASPECT_RATIO } from "@/lib/cardStyle";
 import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 import { useInteractionSound } from "./useInteractionSound";
 import { sfx } from "@/lib/sfx";
@@ -98,9 +100,9 @@ export default function CollectibleViewer({
         accent={accent}
         maxWidthClassName="max-w-[34rem]"
       >
-        <div className="relative mx-auto w-full max-w-[28rem] collectible-float" style={{ aspectRatio: "5 / 7" }}>
+        <div className="relative mx-auto w-full max-w-[28rem] collectible-float" style={{ aspectRatio: CARD_ASPECT_RATIO }}>
           <TiltSpinCard
-            className="relative w-full h-full rounded-[1.25rem] overflow-hidden shadow-[0_2rem_4rem_-1rem_rgba(0,0,0,0.6)]"
+            className="relative w-full h-full"
             style={{ backgroundColor: `${accent}14` }}
             maxRotateX={10}
             sensitivity={0.3}
@@ -111,29 +113,17 @@ export default function CollectibleViewer({
             onClick={handleFlip}
             controlsRef={tiltControlsRef}
           >
-            <img
+            <TradingCardFace
               src={src}
               alt={`${songTitle} collectible card`}
-              className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-              style={{
-                backfaceVisibility: "hidden",
-                transform: `rotateY(${cardRotation}deg)`,
-                transition: isAnimatingFlip ? "transform 500ms cubic-bezier(0.4, 0, 0.2, 1)" : "none",
-              }}
-              draggable={false}
-              data-no-lazy="" // see ui.tsx SectionShell for why
+              rotation={cardRotation}
+              animating={isAnimatingFlip}
             />
-            <img
+            <TradingCardFace
               src={getCardImageUrl("BACK")}
               alt={`${songTitle} collectible card back`}
-              className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-              style={{
-                backfaceVisibility: "hidden",
-                transform: `rotateY(${cardRotation + 180}deg)`,
-                transition: isAnimatingFlip ? "transform 500ms cubic-bezier(0.4, 0, 0.2, 1)" : "none",
-              }}
-              draggable={false}
-              data-no-lazy="" // see ui.tsx SectionShell for why
+              rotation={cardRotation + 180}
+              animating={isAnimatingFlip}
             />
           </TiltSpinCard>
         </div>

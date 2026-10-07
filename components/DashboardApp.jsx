@@ -974,6 +974,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         spotify: "https://open.spotify.com/track/4njjJMZBd56rZW9Vrvb3bD?si=dca63e5fce3046d1",
         apple: "https://music.apple.com/us/album/always-on-my-mind-acoustic/6768568702?i=6768568703",
       },
+      'i-would-die-for-your-love': {
+        spotify: "https://open.spotify.com/album/1A8oFBSJmKpOr8pMClxvV8?si=2cc8af20b3594177",
+      },
       'cheerleader': {
         // Actual uploaded file is lowercase; standard uppercase-title convention 404s
         cover: '/covers/cheerleader.webp',
@@ -1962,14 +1965,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               try { setShowWelcomeHomeModal(true); } catch {}
               if (typeof window !== 'undefined') (window).__SHOW_WELCOME_HOME_AFTER_WARP = false;
               welcomeAudio.addEventListener('ended', () => {
-                try { sfx.play('button', 0.9); } catch {}
-                try { setBeamColor('yellow'); } catch {}
+                // Beam-yellow + button.mp3 after welcome audio disabled — re-enable the lines below to restore
+                // try { sfx.play('button', 0.9); } catch {}
+                // try { setBeamColor('yellow'); } catch {}
                 // Auto-popup of claim card disabled — toggle back on by re-enabling the dispatch below
                 // try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
               });
               welcomeAudio.play().catch(() => {
                 setTimeout(() => {
-                  try { setBeamColor('yellow'); } catch {}
+                  // try { setBeamColor('yellow'); } catch {}
                   // try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
                 }, 4000);
               });
@@ -2967,14 +2971,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   try { setShowWelcomeHomeModal(true); } catch {}
                   if (typeof window !== 'undefined') (window).__SHOW_WELCOME_HOME_AFTER_WARP = false;
                   welcomeAudio.addEventListener('ended', () => {
-                    try { sfx.play('button', 0.9); } catch {}
-                    try { setBeamColor('yellow'); } catch {}
+                    // Beam-yellow + button.mp3 after welcome audio disabled — re-enable the lines below to restore
+                    // try { sfx.play('button', 0.9); } catch {}
+                    // try { setBeamColor('yellow'); } catch {}
                     // Auto-popup of claim card disabled — toggle back on by re-enabling the dispatch below
                     // try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
                   });
                   welcomeAudio.play().catch(() => {
                     setTimeout(() => {
-                      try { setBeamColor('yellow'); } catch {}
+                      // try { setBeamColor('yellow'); } catch {}
                       // try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
                     }, 4000);
                   });

@@ -20,6 +20,22 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* In-site embed (SUPPORT THE HEARTVERSE panel): same palette + type as .root,
+   but flows inside its container instead of covering the viewport. */
+.embed {
+  --pink: #fc54af;
+  --pink-soft: rgba(252, 84, 175, 0.5);
+  --pink-faint: rgba(252, 84, 175, 0.14);
+  --ground: #020016;
+
+  position: relative;
+  /* auto margins center it in the panel without clipping when it overflows */
+  margin: auto 0;
+  color: #fff;
+  font-family: InterLocal, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* faint drifting starfield */
 .stars {
   position: absolute;
@@ -521,4 +537,62 @@
   .hvWelcome {
     opacity: 1;
   }
+}
+
+/* ---- compact sizing for the in-site panel embed (.embed) ----
+   /tip is laid out for a full phone screen; inside the SUPPORT THE HEARTVERSE
+   panel everything scales down so the picker fits above the dock. */
+.embed .shell {
+  min-height: 0;
+  gap: 0.55rem;
+  padding: 0.75rem 1rem 1rem;
+  width: min(26rem, 100%);
+}
+.embed .titleIcon {
+  height: clamp(2.5rem, 9vw, 3.25rem);
+  margin: 0;
+}
+.embed .title {
+  font-size: clamp(1.05rem, 4.2vw, 1.3rem);
+  text-shadow: 0 0 8px #fff, 0 0 18px var(--pink);
+}
+.embed .subtitle {
+  font-size: 0.8rem;
+}
+.embed .grid {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.45rem;
+}
+.embed .preset {
+  font-size: clamp(1rem, 4vw, 1.2rem);
+  padding: 0.5rem 0.25rem;
+  border-radius: 0.75rem;
+}
+.embed .other,
+.embed .customWrap,
+.embed .fieldError {
+  grid-column: 1 / -1;
+}
+.embed .other {
+  font-size: 0.8rem;
+  padding: 0.45rem 0.5rem;
+}
+.embed .customWrap {
+  padding: 0.4rem 0.75rem;
+}
+.embed .customCurrency {
+  font-size: 1.1rem;
+}
+.embed .customInput {
+  font-size: 1.15rem;
+}
+.embed .primary {
+  font-size: 0.9rem;
+  padding: 0.6rem 1rem;
+}
+.embed .checkoutCard {
+  gap: 0.6rem;
+}
+.embed .amountLine {
+  font-size: clamp(1.6rem, 7vw, 2.1rem);
 }

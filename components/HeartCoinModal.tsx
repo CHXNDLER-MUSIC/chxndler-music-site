@@ -13,6 +13,7 @@ import { useMerchItems } from '@/hooks/useMerchItems';
 import { useMerchPurchase } from '@/hooks/useMerchPurchase';
 import { MerchItem, NormalizedVariantOption, VariantOptionsData } from '@/types/merch';
 import TiltSpinCard from '@/components/TiltSpinCard';
+import TradingCardFace from "@/components/TradingCardFace";
 import { usePlanetRewardsContext } from '@/components/PlanetRewardsProvider';
 import { getElementalPlanetImage } from '@/lib/elementalPlanets';
 import { playerStore } from '@/store/usePlayerStore';
@@ -21,6 +22,7 @@ import { triggerHeartCoinCelebration, suppressNextHeartcoinCelebration } from '@
 import { useUserCards } from '@/hooks/useUserCards';
 import { useHeartcoinBalance } from '@/providers/HeartcoinBalanceProvider';
 import { getCardImageUrl } from '@/lib/supabaseCardUrl';
+import { CARD_THUMB_IMG_STYLE } from "@/lib/cardStyle";
 
 type Props = {
   open: boolean;
@@ -2958,8 +2960,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     <img
                       src={getCardImageUrl((displayCards[displayCardIndex] as any)?.image_object_key || displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name)}
                       alt={displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name || 'Card'}
-                      className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain hover:scale-105 transition-transform duration-300"
-                      style={{ filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))' }}
+                      className="hover:scale-105 transition-transform duration-300"
+                      style={{ ...CARD_THUMB_IMG_STYLE, filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))' }}
                       onError={(e) => {
                         const objectKey = displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name;
                         if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
@@ -3591,17 +3593,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       }}
                     >
                       {/* Front of card - rotates with cardRotation */}
-                      <img
+                      <TradingCardFace
                         src={getCardImageUrl((displayCards[displayCardIndex] as any)?.image_object_key || displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name)}
                         alt={displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name || 'Card'}
-                        className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
-                        style={{
-                          filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
-                          backfaceVisibility: 'hidden',
-                          transform: `rotateY(${cardRotation}deg)`,
-                          transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                        }}
-                        draggable={false}
+                        rotation={cardRotation}
+                        animating={isAnimatingFlip}
                         onError={(e) => {
                           const objectKey = displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name;
                           if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
@@ -3612,17 +3608,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         }}
                       />
                       {/* Back of card - offset by 180° */}
-                      <img
+                      <TradingCardFace
                         src={getCardImageUrl('BACK')}
                         alt="Card back"
-                        className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
-                        style={{
-                          filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
-                          backfaceVisibility: 'hidden',
-                          transform: `rotateY(${cardRotation + 180}deg)`,
-                          transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                        }}
-                        draggable={false}
+                        rotation={cardRotation + 180}
+                        animating={isAnimatingFlip}
                       />
                     </TiltSpinCard>
                   </div>

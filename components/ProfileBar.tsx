@@ -54,6 +54,9 @@ const ELEMENTS = [
   { name: 'darkness', label: 'Darkness', color: '#9400D3', innerGlow: '#FFFFFF' }
 ];
 
+// Auto-popup of the CLAIM CHXNDLER CARD modal after the welcome audio. Set to true to re-enable.
+const AUTO_OPEN_HEARTVERSE_CARD = false;
+
 
 interface ProfileBarProps {
   onCodeClick?: () => void;
@@ -433,7 +436,9 @@ export default function ProfileBar({
   }, [onCloseBlueDisplay]);
 
   // Listen for openHeartverseCard event (triggered after welcome-to-the-heartverse.mp3 ends)
+  // Gated by AUTO_OPEN_HEARTVERSE_CARD — the card button still opens the modal manually
   useEffect(() => {
+    if (!AUTO_OPEN_HEARTVERSE_CARD) return;
     const handleOpenHeartverseCard = () => setShowCardModal(true);
     window.addEventListener('openHeartverseCard', handleOpenHeartverseCard);
     return () => window.removeEventListener('openHeartverseCard', handleOpenHeartverseCard);

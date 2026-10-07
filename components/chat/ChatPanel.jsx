@@ -19,6 +19,8 @@ import FloatingRoomReactions from './FloatingRoomReactions';
 import { RATE_LIMITS, markSoulStarUsed } from '@/lib/reactions';
 import { useLogOnChange } from '@/lib/useLogOnChange';
 import { TiltSpinCard } from '@/components/TiltSpinCard';
+import TradingCardFace from "@/components/TradingCardFace";
+import { CARD_ASPECT_RATIO } from "@/lib/cardStyle";
 import { getCardImageUrl } from '@/lib/supabaseCardUrl';
 
 // Debug flag to control console logging
@@ -2942,7 +2944,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
             onClick={(e) => e.stopPropagation()}
             style={{
               height: 'min(384px, calc(100% - 2rem))',
-              aspectRatio: '2 / 3',
+              aspectRatio: CARD_ASPECT_RATIO,
               maxWidth: '100%',
               perspective: '1000px',
               animation: 'cardPulse 2s ease-in-out infinite'
@@ -2965,107 +2967,42 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen, collapsedSid
               }}
               style={{ cursor: 'grab', perspective: '1000px' }}
             >
-              <div
-                className="relative w-full h-full preserve-3d"
-                style={{
-                  transformStyle: 'preserve-3d',
-                  transform: `rotateY(${cardRotation}deg)`,
-                  transition: isCardAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none'
-                }}
-              >
               {/* Front of card */}
-              <div
-                className="absolute inset-0 rounded-lg backface-hidden"
-                style={{
-                  backfaceVisibility: 'hidden',
-                  background: `
-                    linear-gradient(135deg, 
-                      rgba(0, 0, 0, 0.05) 0%,
-                      rgba(0, 20, 40, 0.03) 50%,
-                      rgba(0, 0, 0, 0.05) 100%
-                    )
-                  `,
-                  boxShadow: `
-                    0 0 50px rgba(242, 239, 29, 0.08),
-                    inset 0 0 100px rgba(242, 239, 29, 0.01),
-                    0 0 30px rgba(255, 105, 180, 0.3)
-                  `,
-                  backdropFilter: 'blur(2px)',
-                  border: '2px solid rgba(255, 105, 180, 0.4)'
+              <TradingCardFace
+                src={selectedCardPopup.image}
+                alt={selectedCardPopup.name}
+                rotation={cardRotation}
+                animating={isCardAnimatingFlip}
+                onError={(e) => {
+                  // Fallback display if image fails to load
+                  const target = e.target;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    const elementDisplay = getElementDisplay(selectedCardPopup.element);
+                    parent.innerHTML = `
+                      <div class="w-full h-full rounded-lg bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-400/50 flex flex-col items-center justify-center p-4">
+                        <div class="text-6xl mb-4" style="color: ${elementDisplay?.color || '#FFB6C1'}; filter: drop-shadow(0 0 8px rgba(255,182,193,0.8))">
+                          ${elementDisplay?.icon || '🎵'}
+                        </div>
+                        <div class="text-xl font-bold text-center leading-tight" style="color: #FFB6C1; text-shadow: 0 0 8px rgba(255,182,193,0.6)">
+                          ${selectedCardPopup.name}
+                        </div>
+                        <div class="text-sm mt-2" style="color: #FFB6C1; opacity: 0.8">
+                          ${selectedCardPopup.element} • ${selectedCardPopup.rarity}
+                        </div>
+                      </div>
+                    `;
+                  }
                 }}
-              >
-                {/* Card front image */}
-                <div className="w-full h-full rounded-lg overflow-hidden relative">
-                  <img
-                    src={selectedCardPopup.image}
-                    alt={selectedCardPopup.name}
-                    className="w-full h-full object-cover"
-                    draggable={false}
-                    style={{
-                      boxShadow: '0 0 30px rgba(255,105,180,0.6)',
-                    }}
-                    onError={(e) => {
-                      // Fallback display if image fails to load
-                      const target = e.target;
-                      target.style.display = 'none';
-                      const parent = target.parentElement;
-                      if (parent) {
-                        const elementDisplay = getElementDisplay(selectedCardPopup.element);
-                        parent.innerHTML = `
-                          <div class="w-full h-full rounded-lg bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-400/50 flex flex-col items-center justify-center p-4">
-                            <div class="text-6xl mb-4" style="color: ${elementDisplay?.color || '#FFB6C1'}; filter: drop-shadow(0 0 8px rgba(255,182,193,0.8))">
-                              ${elementDisplay?.icon || '🎵'}
-                            </div>
-                            <div class="text-xl font-bold text-center leading-tight" style="color: #FFB6C1; text-shadow: 0 0 8px rgba(255,182,193,0.6)">
-                              ${selectedCardPopup.name}
-                            </div>
-                            <div class="text-sm mt-2" style="color: #FFB6C1; opacity: 0.8">
-                              ${selectedCardPopup.element} • ${selectedCardPopup.rarity}
-                            </div>
-                          </div>
-                        `;
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-
+              />
               {/* Back of card */}
-              <div
-                className="absolute inset-0 rounded-lg backface-hidden"
-                style={{
-                  backfaceVisibility: 'hidden',
-                  transform: 'rotateY(180deg)',
-                  background: `
-                    linear-gradient(135deg, 
-                      rgba(0, 0, 0, 0.05) 0%,
-                      rgba(0, 20, 40, 0.03) 50%,
-                      rgba(0, 0, 0, 0.05) 100%
-                    )
-                  `,
-                  boxShadow: `
-                    0 0 50px rgba(242, 239, 29, 0.08),
-                    inset 0 0 100px rgba(242, 239, 29, 0.01),
-                    0 0 30px rgba(255, 105, 180, 0.3)
-                  `,
-                  backdropFilter: 'blur(2px)',
-                  border: '2px solid rgba(255, 105, 180, 0.4)'
-                }}
-              >
-                {/* Card back image */}
-                <div className="w-full h-full rounded-lg overflow-hidden relative">
-                  <img
-                    src={getCardImageUrl('BACK')}
-                    alt="Card Back"
-                    className="w-full h-full object-cover"
-                    draggable={false}
-                    style={{
-                      boxShadow: '0 0 30px rgba(255,105,180,0.6)',
-                    }}
-                  />
-                </div>
-              </div>
-              </div>
+              <TradingCardFace
+                src={getCardImageUrl('BACK')}
+                alt="Card Back"
+                rotation={cardRotation + 180}
+                animating={isCardAnimatingFlip}
+              />
             </TiltSpinCard>
           
             {/* Close button */}

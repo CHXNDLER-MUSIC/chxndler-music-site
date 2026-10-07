@@ -11,10 +11,12 @@ import { triggerCardCelebration } from "@/utils/cardCelebration";
 import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import TiltSpinCard from "@/components/TiltSpinCard";
+import TradingCardFace from "@/components/TradingCardFace";
 import { useUserCards } from "@/hooks/useUserCards";
 import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 import { useBinderSlots, BinderSlot, TOTAL_SLOTS } from "@/hooks/useBinderSlots";
 import { isValidUuid, fetchStarterCardId } from "@/lib/cardUtils";
+import { CARD_THUMB_IMG_STYLE } from "@/lib/cardStyle";
 
 // Guest mode defaults (when user is not authenticated)
 const GUEST_DEFAULT_SLOTS = 2;
@@ -1320,22 +1322,11 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     }}
                   >
                     {/* Front of card - rotates with cardRotation */}
-                    <img
+                    <TradingCardFace
                       src={selectedCard?.image || getCardImageUrl(selectedCard?.name || 'CHXNDLER')}
                       alt={selectedCard?.name || "Card"}
-                      className="rounded-2xl pointer-events-none"
-                      style={{
-                        height: '100%',
-                        width: '100%',
-                        objectFit: 'contain',
-                        backfaceVisibility: 'hidden',
-                        WebkitBackfaceVisibility: 'hidden',
-                        transform: `rotateY(${cardRotation}deg)`,
-                        transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                        border: '2px solid rgba(255,255,255,0.1)',
-                      }}
-                      draggable={false}
+                      rotation={cardRotation}
+                      animating={isAnimatingFlip}
                       onError={(e) => {
                         const objectKey = selectedCard?.name || 'CHXNDLER';
                         if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
@@ -1347,22 +1338,11 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     />
 
                     {/* Back of card - fills same container as front */}
-                    <img
+                    <TradingCardFace
                       src={getCardImageUrl('BACK')}
                       alt="Card Back"
-                      className="absolute top-0 left-0 rounded-2xl pointer-events-none"
-                      style={{
-                        height: '100%',
-                        width: '100%',
-                        objectFit: 'contain',
-                        backfaceVisibility: 'hidden',
-                        WebkitBackfaceVisibility: 'hidden',
-                        transform: `rotateY(${cardRotation + 180}deg)`,
-                        transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                        border: '2px solid rgba(255,255,255,0.1)',
-                      }}
-                      draggable={false}
+                      rotation={cardRotation + 180}
+                      animating={isAnimatingFlip}
                     />
                   </div>
                 </TiltSpinCard>
@@ -1489,7 +1469,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                               <img
                                 src={getCardImageUrl(slot.card_name)}
                                 alt={slot.card_name}
-                                className="w-full h-full object-contain transition-all duration-300"
+                                className="transition-all duration-300"
+                                style={CARD_THUMB_IMG_STYLE}
                                 draggable={false}
                                 onError={(e) => {
                                   const objectKey = slot.card_name;
@@ -1767,12 +1748,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                                 }
                               }}
                             >
-                              <img
-                                src={getCardImageUrl(getFilteredCards()[currentCardIndex]?.name)}
-                                alt={getFilteredCards()[currentCardIndex]?.name || 'Card'}
-                                className="w-full h-full object-cover rounded-lg"
-                                draggable={false}
-                              />
+                              <div className="relative w-full h-full">
+                                <img
+                                  src={getCardImageUrl(getFilteredCards()[currentCardIndex]?.name)}
+                                  alt={getFilteredCards()[currentCardIndex]?.name || 'Card'}
+                                  style={CARD_THUMB_IMG_STYLE}
+                                  draggable={false}
+                                />
+                              </div>
                             </div>
 
                             {/* Card Counter */}

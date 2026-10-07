@@ -11,6 +11,7 @@ import UserBadges from "./UserBadges";
 import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 import UserCards from "./UserCards";
 import TiltSpinCard from "./TiltSpinCard";
+import TradingCardFace from "@/components/TradingCardFace";
 
 const ELEMENT_COLORS: Record<string, { color: string; glow: string; emoji: string; label: string }> = {
   heart: { color: "#F91880", glow: "#F918B0", emoji: "💖", label: "HEART" },
@@ -424,53 +425,32 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
                   setIsCardFlipped(prev => !prev);
                 }}
               >
-                {/* Front of card - rotates with spinRotation */}
-                <img
-                  src={getCardImageUrl((enlargedCard.card as any).image_object_key || enlargedCard.card.card_name || 'CHXNDLER')}
-                  alt={enlargedCard.card.card_name}
-                  className="rounded-2xl pointer-events-none"
-                  style={{
-                    maxHeight: '50vh',
-                    maxWidth: '70%',
-                    objectFit: 'contain',
-                    backfaceVisibility: 'hidden',
-                    WebkitBackfaceVisibility: 'hidden',
-                    transform: `rotateY(${spinRotation + (isCardFlipped ? 180 : 0)}deg)`,
-                    transition: 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                    border: '2px solid rgba(255,255,255,0.1)',
-                  }}
-                  draggable={false}
-                  onError={(e) => {
-                    const objectKey = (enlargedCard.card as any).image_object_key || enlargedCard.card.card_name || 'CHXNDLER';
-                    if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
-                    const fallback = getCardImageUrl('CHXNDLER');
-                    if (e.currentTarget.src !== fallback) {
-                      e.currentTarget.src = fallback;
-                    }
-                  }}
-                />
+                {/* Card-sized box (faces center a 63×88 card inside it) */}
+                <div className="relative" style={{ width: '70%', height: '50vh' }}>
+                  {/* Front of card - rotates with spinRotation */}
+                  <TradingCardFace
+                    src={getCardImageUrl((enlargedCard.card as any).image_object_key || enlargedCard.card.card_name || 'CHXNDLER')}
+                    alt={enlargedCard.card.card_name}
+                    rotation={spinRotation + (isCardFlipped ? 180 : 0)}
+                    transition={'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)'}
+                    onError={(e) => {
+                      const objectKey = (enlargedCard.card as any).image_object_key || enlargedCard.card.card_name || 'CHXNDLER';
+                      if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                      const fallback = getCardImageUrl('CHXNDLER');
+                      if (e.currentTarget.src !== fallback) {
+                        e.currentTarget.src = fallback;
+                      }
+                    }}
+                  />
 
-                {/* Back of card - offset by 180° */}
-                <img
-                  src={getCardImageUrl('BACK')}
-                  alt="Card Back"
-                  className="absolute rounded-2xl pointer-events-none"
-                  style={{
-                    maxHeight: '50vh',
-                    maxWidth: '70%',
-                    objectFit: 'contain',
-                    top: '50%',
-                    left: '50%',
-                    transform: `translate(-50%, -50%) rotateY(${spinRotation + (isCardFlipped ? 180 : 0) + 180}deg)`,
-                    backfaceVisibility: 'hidden',
-                    WebkitBackfaceVisibility: 'hidden',
-                    transition: 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                    border: '2px solid rgba(255,255,255,0.1)',
-                  }}
-                  draggable={false}
-                />
+                  {/* Back of card - offset by 180° */}
+                  <TradingCardFace
+                    src={getCardImageUrl('BACK')}
+                    alt="Card Back"
+                    rotation={spinRotation + (isCardFlipped ? 180 : 0) + 180}
+                    transition={'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)'}
+                  />
+                </div>
               </TiltSpinCard>
             </div>
 

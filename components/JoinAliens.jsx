@@ -11,6 +11,7 @@ import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import EpisodesLibrary from "@/components/EpisodesLibrary";
 import { useGoLiveOverride } from "@/hooks/useGoLiveOverride";
 import YouTubeLive from "@/components/YouTubeLive";
+import TipPanelFlow from "@/components/tip/TipPanelFlow";
 // IRL shows now fetched from Supabase instead of static list
 
 export default function JoinAliens({ visible = true } = {}) {
@@ -1448,95 +1449,12 @@ export default function JoinAliens({ visible = true } = {}) {
                 </button>
               </div>
 
-              {/* Content */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 20, padding: '16px', overflowY: 'auto' }}>
-                {/* Amount buttons row */}
-                <div style={{ display: 'flex', gap: 20, justifyContent: 'center' }}>
-                  {[
-                    { amount: 3, showState: showPaymentOptions, setShow: setShowPaymentOptions, closeOthers: () => { setShowPaymentOptions5(false); setShowPaymentOptions10(false); } },
-                    { amount: 5, showState: showPaymentOptions5, setShow: setShowPaymentOptions5, closeOthers: () => { setShowPaymentOptions(false); setShowPaymentOptions10(false); } },
-                    { amount: 10, showState: showPaymentOptions10, setShow: setShowPaymentOptions10, closeOthers: () => { setShowPaymentOptions(false); setShowPaymentOptions5(false); } },
-                  ].map(({ amount, showState, setShow, closeOthers }) => (
-                    <button
-                      key={amount}
-                      onClick={() => { try { sfx.play('audio/click.mp3', 0.3); } catch {} if (showState) { setShow(false); } else { closeOthers(); setShow(true); setSelectedTipAmount(amount); } }}
-                      style={{
-                        width: 64, height: 64,
-                        background: showState ? 'rgba(252,84,175,0.25)' : 'rgba(252,84,175,0.1)',
-                        border: `2px solid ${showState ? '#FC54AF' : 'rgba(252,84,175,0.6)'}`,
-                        borderRadius: '50%',
-                        color: '#FC54AF', fontSize: amount === 10 ? 14 : 16, fontWeight: 'bold',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        transition: 'all 300ms ease',
-                        textShadow: '0 0 8px #FC54AF',
-                        boxShadow: showState ? '0 0 24px rgba(252,84,175,0.5)' : '0 0 15px rgba(252,84,175,0.3)',
-                      }}
-                    >
-                      ${amount}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Payment method buttons — shown when an amount is selected */}
-                {(() => {
-                  const stripeUrls = { 3: 'https://buy.stripe.com/bJeeVe5X3fZH9Nnchh4gg0P', 5: 'https://buy.stripe.com/3cIaEYbhn00JbVv4OP4gg0Q', 10: 'https://buy.stripe.com/4gM5kEdpv3cV9Nn6WX4gg0R' };
-                  const venmoNotes = { 3: 'Fuel the Signal', 5: 'Boost the Transmission', 10: 'Ignite the Heartverse' };
-                  const activeEntry = [
-                    { amount: 3, showState: showPaymentOptions, setShow: setShowPaymentOptions },
-                    { amount: 5, showState: showPaymentOptions5, setShow: setShowPaymentOptions5 },
-                    { amount: 10, showState: showPaymentOptions10, setShow: setShowPaymentOptions10 },
-                  ].find(e => e.showState);
-                  if (!activeEntry) return null;
-                  const { amount, setShow } = activeEntry;
-                  return (
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={amount}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 8 }}
-                        transition={{ duration: 0.18 }}
-                        style={{ display: 'flex', gap: 16, justifyContent: 'center', alignItems: 'center' }}
-                      >
-                        {/* Card / Stripe */}
-                        <button
-                          onClick={() => { try { sfx.play('card-ding', 0.7); } catch {} window.open(stripeUrls[amount], '_blank'); setShow(false); }}
-                          style={{
-                            padding: 0, width: 64, height: 42,
-                            background: 'rgba(252,84,175,0.1)', border: '2px solid #FC54AF', borderRadius: 8,
-                            cursor: 'pointer', transition: 'all 300ms ease', boxShadow: '0 0 15px rgba(252,84,175,0.3)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 0 25px rgba(252,84,175,0.6)'; e.currentTarget.style.background = 'rgba(252,84,175,0.2)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 0 15px rgba(252,84,175,0.3)'; e.currentTarget.style.background = 'rgba(252,84,175,0.1)'; }}
-                        >
-                          <img src="/elements/credit-card.webp" alt="Card" style={{ width: 58, height: 36, filter: 'brightness(0) saturate(100%) invert(19%) sepia(95%) saturate(1646%) hue-rotate(300deg) brightness(102%) contrast(98%)' }} />
-                        </button>
-                        {/* Venmo */}
-                        <button
-                          onClick={() => {
-                            try { sfx.play('card-ding', 0.7); } catch {}
-                            const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=${amount}&note=${encodeURIComponent(venmoNotes[amount])}`;
-                            const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=${amount}&note=${encodeURIComponent(venmoNotes[amount])}`;
-                            window.open(venmoUrl, '_blank');
-                            setTimeout(() => { window.open(webVenmoUrl, '_blank'); }, 1000);
-                            setShow(false);
-                          }}
-                          style={{
-                            padding: 0, width: 54, height: 54,
-                            background: 'rgba(0,255,255,0.1)', border: '2px solid #00FFFF', borderRadius: '50%',
-                            cursor: 'pointer', transition: 'all 300ms ease', boxShadow: '0 0 15px rgba(0,255,255,0.3)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 0 25px rgba(0,255,255,0.6)'; e.currentTarget.style.background = 'rgba(0,255,255,0.2)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 0 15px rgba(0,255,255,0.3)'; e.currentTarget.style.background = 'rgba(0,255,255,0.1)'; }}
-                        >
-                          <img src="/elements/venmo.webp" alt="Venmo" style={{ width: 48, height: 48 }} />
-                        </button>
-                      </motion.div>
-                    </AnimatePresence>
-                  );
-                })()}
+              {/* Content — same tip flow as chxndler.world/tip, embedded */}
+              {/* Bottom padding keeps the picker clear of the fixed dock buttons that overlap this panel */}
+              <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column', paddingBottom: 'calc(90px + env(safe-area-inset-bottom, 0px))' }}>
+                <TipPanelFlow
+                  onClose={() => { try { sfx.play('close', 0.4); } catch {} setShowTipOptions(false); setShowPaymentOptions(false); setShowPaymentOptions5(false); setShowPaymentOptions10(false); }}
+                />
               </div>
             </motion.div>
           </>
