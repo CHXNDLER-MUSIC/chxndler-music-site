@@ -1964,13 +1964,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               welcomeAudio.addEventListener('ended', () => {
                 try { sfx.play('button', 0.9); } catch {}
                 try { setBeamColor('yellow'); } catch {}
-                // Open card — keep the modal open so it stays visible behind the card
-                try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
+                // Auto-popup of claim card disabled — toggle back on by re-enabling the dispatch below
+                // try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
               });
               welcomeAudio.play().catch(() => {
                 setTimeout(() => {
                   try { setBeamColor('yellow'); } catch {}
-                  try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
+                  // try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
                 }, 4000);
               });
             } else {
@@ -2969,13 +2969,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   welcomeAudio.addEventListener('ended', () => {
                     try { sfx.play('button', 0.9); } catch {}
                     try { setBeamColor('yellow'); } catch {}
-                    // Open card — keep the modal open so it stays visible behind the card
-                    try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
+                    // Auto-popup of claim card disabled — toggle back on by re-enabling the dispatch below
+                    // try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
                   });
                   welcomeAudio.play().catch(() => {
                     setTimeout(() => {
                       try { setBeamColor('yellow'); } catch {}
-                      try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
+                      // try { window.dispatchEvent(new CustomEvent('openHeartverseCard')); } catch {}
                     }, 4000);
                   });
                 } else {
