@@ -6,6 +6,8 @@ export interface OrderConfirmationData {
   customerEmail: string;
   itemName: string;
   heartCoinsSpent: number;
+  /** Card (USD) orders: shown instead of the HeartCoin amount, e.g. "$16.33" */
+  amountPaidLabel?: string;
   shippingAddress?: {
     fullName: string;
     addressLine1: string;
@@ -201,7 +203,7 @@ class EmailService {
                   <small>${orderData.isPhysicalItem ? 'Physical Item' : 'Digital Item'}</small>
                 </div>
                 <div class="heartcoin">
-                  ${orderData.heartCoinsSpent} ♡
+                  ${orderData.amountPaidLabel ?? `${orderData.heartCoinsSpent} ♡`}
                 </div>
               </div>
             </div>

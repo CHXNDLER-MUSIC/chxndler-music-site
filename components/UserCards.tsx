@@ -258,7 +258,7 @@ export default function UserCards({
                   <img
                     src={getCardImageUrl((collectedCard.cards as any).image_object_key || collectedCard.cards.card_name || 'CHXNDLER')}
                     alt={collectedCard.cards.card_name}
-                    style={CARD_THUMB_IMG_STYLE}
+                    style={embedded ? { ...CARD_THUMB_IMG_STYLE, boxShadow: '0 0 10px rgba(255,105,180,0.6)' } : CARD_THUMB_IMG_STYLE}
                     draggable={false}
                     onError={(e) => {
                       const objectKey = (collectedCard.cards as any).image_object_key || collectedCard.cards.card_name || 'CHXNDLER';
@@ -268,7 +268,6 @@ export default function UserCards({
                         e.currentTarget.src = fallback;
                       }
                     }}
-                    style={embedded ? { boxShadow: '0 0 10px rgba(255,105,180,0.6)', padding: 2 } : undefined}
                   />
                 ) : (
                   embedded ? (

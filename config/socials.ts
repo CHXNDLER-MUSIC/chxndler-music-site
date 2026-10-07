@@ -1,3 +1,5 @@
+import { CHXNDLER_YOUTUBE_CHANNEL_URL } from "@/lib/chxndlerLinks";
+
 // export const SOCIALS = {
 //   instagram: "https://www.instagram.com/chxndlerthealien/",
 //   tiktok:    "https://www.tiktok.com/@chxndler_music",
@@ -19,7 +21,7 @@ export type SocialItem = {
 export const SOCIALS: SocialItem[] = [
   { id: "Instagram", href: "https://www.instagram.com/chxndlerthealien/" },
   { id: "TikTok",    href: "https://www.tiktok.com/@chxndler_music" },
-  { id: "YouTube",   href: "https://www.youtube.com/@chxndlerthealien" },
+  { id: "YouTube",   href: CHXNDLER_YOUTUBE_CHANNEL_URL },
 ];
 
 // keep a default export too, so either import style works

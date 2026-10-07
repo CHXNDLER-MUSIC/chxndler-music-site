@@ -12,10 +12,6 @@ export type AudioSource = {
 export type Song = {
   title: string;
   slug: string;
-  spotify?: string;
-  apple?: string;
-  youtube?: string;
-  karaoke?: string;
   src?: string;         // Legacy: defaults to /tracks/<slug>.mp3 (deprecated in favor of sources)
   sources: AudioSource[]; // New: dual format support
   cover?: string;       // defaults to /cover/<slug>.png
@@ -186,22 +182,18 @@ function buildAudioSources(providedSrc: string | undefined, slug: string): Audio
 
 const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" | "sources">[] = [
   // Unreleased: ALONE (kept for warp/planet + UI; audio loads via Supabase by slug)
-  // Add per-track YouTube so the YouTube button opens the correct video
+  // Streaming / music-video / karaoke links live in Supabase (public.songs), not here
   { 
     title: "ALONE",
-    youtube: "https://youtu.be/ZTE6aFi_cqk",
-    karaoke: "https://youtu.be/ca3a6wiERQE",
-    spotify: "https://open.spotify.com/track/3moEeEzk2lA9CtJ5ieiTrz?si=adae3599e6d84e2b",
-    apple: "https://music.apple.com/us/album/alone/1890354455?i=1890354456",
     hasLyrics: true
   },
   // Unreleased early access: ALONE (ACOUSTIC)
   // Audio sources default to Supabase Storage paths: alone-acoustic.opus/mp3
-  { title: "ALONE (ACOUSTIC)", karaoke: "https://youtu.be/07Vs6Dmi8tE", hasLyrics: true },
+  { title: "ALONE (ACOUSTIC)", hasLyrics: true },
   // Supabase Storage file is named with spaces/caps, not the slugified default — must override src
-  { title: "ALWAYS ON MY MIND", spotify: "https://open.spotify.com/track/0V0apkjLLjRny9VNn6IKFE?si=c6baf79640fa451f", apple: "https://music.apple.com/us/album/always-on-my-mind/6769572937?i=6769572938", cover: "/covers/ALWAYS ON MY MIND.webp", src: "/tracks/ALWAYS ON MY MIND.mp3", hasLyrics: true },
+  { title: "ALWAYS ON MY MIND", cover: "/covers/ALWAYS ON MY MIND.webp", src: "/tracks/ALWAYS ON MY MIND.mp3", hasLyrics: true },
   { title: "ALWAYS ON MY MIND (ACOUSTIC)", cover: "/covers/ALWAYS ON MY MIND (ACOUSTIC).webp", src: "/tracks/ALWAYS ON MY MIND (ACOUSTIC).mp3", hasLyrics: true },
-  { title: "BABY", spotify:"https://open.spotify.com/track/3UEVjChARWDbY4ruOIbIl3", apple:"https://music.apple.com/us/album/baby/1823220422?i=1823220423", youtube:"https://youtu.be/RqBs_MYhM6c", cover: "/covers/BABY.webp", src: "/tracks/baby.opus", hasLyrics: true, sections: [
+  { title: "BABY", cover: "/covers/BABY.webp", src: "/tracks/baby.opus", hasLyrics: true, sections: [
     { time: 15.8, label: "Verse 1", kind: "verse" },
     { time: 47.4, label: "Chorus 1", kind: "chorus" },
     { time: 79.0, label: "Verse 2", kind: "verse" },
@@ -209,7 +201,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 142.2, label: "Bridge", kind: "bridge" },
     { time: 157.8, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "BE MY BEE", spotify:"https://open.spotify.com/track/12iLygYksfcZ3nv6NkrnEr", karaoke: "https://youtu.be/ooTTnsrQqOc", apple:"https://music.apple.com/us/album/be-my-bee/1784058027?i=1784058028", cover:"/covers/BE MY BEE.webp", src: "/tracks/be-my-bee.opus", sections: [
+  { title: "BE MY BEE", cover:"/covers/BE MY BEE.webp", src: "/tracks/be-my-bee.opus", sections: [
     { time: 14.1, label: "Verse 1", kind: "verse" },
     { time: 45.7, label: "Chorus 1", kind: "chorus" },
     { time: 77.3, label: "Verse 2", kind: "verse" },
@@ -217,7 +209,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 140.5, label: "Bridge", kind: "bridge" },
     { time: 156.1, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "BRAIN FREEZE", spotify:"https://open.spotify.com/track/5ou8AyA71rLFK6Ysxr2CpT", apple:"https://music.apple.com/us/album/brain-freeze/1823925483?i=1823925484", cover:"/covers/BRAIN FREEZE.webp", src: "/tracks/brain-freeze.mp3", sections: [
+  { title: "BRAIN FREEZE", cover:"/covers/BRAIN FREEZE.webp", src: "/tracks/brain-freeze.mp3", sections: [
     { time: 18.7, label: "Verse 1", kind: "verse" },
     { time: 51.3, label: "Chorus 1", kind: "chorus" },
     { time: 84.6, label: "Verse 2", kind: "verse" },
@@ -225,7 +217,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 149.8, label: "Bridge", kind: "bridge" },
     { time: 165.4, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "GAME BOY HEART (ゲームボーイの心)", spotify:"https://open.spotify.com/track/5VypE0QkaggJemaNG6sMsF", apple:"https://music.apple.com/us/album/game-boy-heart-%E3%82%B2%E3%83%BC%E3%83%A0%E3%83%9C%E3%83%BC%E3%82%A4%E3%81%AE%E5%BF%83/1826340576?i=1826340577", cover:"/covers/GAME BOY HEART.webp", src: "/tracks/game-boy-heart.mp3", sections: [
+  { title: "GAME BOY HEART (ゲームボーイの心)", cover:"/covers/GAME BOY HEART.webp", src: "/tracks/game-boy-heart.mp3", sections: [
     { time: 15.5, label: "Verse 1", kind: "verse" },
     { time: 47.2, label: "Chorus 1", kind: "chorus" },
     { time: 78.8, label: "Verse 2", kind: "verse" },
@@ -233,7 +225,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 142.1, label: "Bridge", kind: "bridge" },
     { time: 158.7, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "COLLIDE", spotify:"https://open.spotify.com/track/4CCfWIk6SDUwmcUvGvgVQG?si=2788de692cc3435d", apple:"https://music.apple.com/us/album/collide/1814599250?i=1814599264", cover:"/covers/COLLIDE.webp", src: "/tracks/collide.opus", sections: [
+  { title: "COLLIDE", cover:"/covers/COLLIDE.webp", src: "/tracks/collide.opus", sections: [
     { time: 18.4, label: "Verse 1", kind: "verse" },
     { time: 51.0, label: "Chorus 1", kind: "chorus" },
     { time: 83.6, label: "Verse 2", kind: "verse" },
@@ -254,14 +246,14 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     cover: "/covers/COLORS OF OUR HOME (BLUMA Game Soundtrack).webp",
     src: "/tracks/COLORS-OF-OUR-HOME-_BLUMA-Game-Soundtrack_.opus",
   },
-  { title: "KID FOREVER (永遠の子供)", spotify:"https://open.spotify.com/track/5X27jqHBvMBsDvvFixeZdN", apple:"https://music.apple.com/us/album/kid-forever-%E6%B0%B8%E9%81%A0%E3%81%AE%E5%AD%90%E4%BE%9B-single/1826397337", src: "/tracks/kid-forever.opus", cover: "/covers/KID FOREVER.webp", sections: [
+  { title: "KID FOREVER (永遠の子供)", src: "/tracks/kid-forever.opus", cover: "/covers/KID FOREVER.webp", sections: [
     { time: 12.3, label: "Verse 1", kind: "verse" },
     { time: 42.8, label: "Chorus 1", kind: "chorus" },
     { time: 73.5, label: "Verse 2", kind: "verse" },
     { time: 104.2, label: "Chorus 2", kind: "chorus" },
     { time: 134.9, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "OCEAN GIRL", spotify:"https://open.spotify.com/album/37niwECG0TJMuYFQdrJE3y?si=S_Btj1hMRU-RsnsVL2PBmQ", apple:"https://music.apple.com/us/album/ocean-girl/1829503198?i=1829503199", youtube:"https://www.youtube.com/watch?v=GKfczFiNLn0", karaoke: "https://youtu.be/2FJyPj5andI", cover:"/covers/OCEAN GIRL.webp", src: "/tracks/ocean-girl.opus", sections: [
+  { title: "OCEAN GIRL", cover:"/covers/OCEAN GIRL.webp", src: "/tracks/ocean-girl.opus", sections: [
     { time: 16.7, label: "Verse 1", kind: "verse" },
     { time: 48.3, label: "Chorus 1", kind: "chorus" },
     { time: 79.9, label: "Verse 2", kind: "verse" },
@@ -269,22 +261,22 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 143.1, label: "Bridge", kind: "bridge" },
     { time: 158.7, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "OCEAN GIRL (ACOUSTIC)", spotify:"https://open.spotify.com/track/62KREyqgAQxmq3zqCT7oMh?si=506cf1906fac4275", apple:"https://music.apple.com/us/album/ocean-girl-acoustic/1830685266?i=1830685267", youtube:"https://www.youtube.com/watch?v=NsL3WC6L3fw", karaoke: "https://youtu.be/9PXDM5HogoY", cover:"/covers/OCEAN GIRL (ACOUSTIC).webp", src: "/tracks/ocean-girl-acoustic.opus", sections: [
+  { title: "OCEAN GIRL (ACOUSTIC)", cover:"/covers/OCEAN GIRL (ACOUSTIC).webp", src: "/tracks/ocean-girl-acoustic.opus", sections: [
     { time: 14.2, label: "Verse 1", kind: "verse" },
     { time: 43.8, label: "Chorus 1", kind: "chorus" },
     { time: 73.4, label: "Verse 2", kind: "verse" },
     { time: 103.0, label: "Chorus 2", kind: "chorus" },
     { time: 132.6, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "LETTING GO", spotify:"https://open.spotify.com/track/3aKp9MEmCd96LSCKtIYCzV?si=46380abdd7b5424d", apple:"https://music.apple.com/us/album/letting-go-feat-birding-single/1892480318", youtube:"https://youtu.be/rE01eet43DA", karaoke:"https://youtu.be/0rqWRJ-Lors" },
-  { title: "OCEAN GIRL (REMIX)", spotify:"https://open.spotify.com/track/1wbgLONY1GsBZC5XW4MUzu?si=ff27a874552948c4", apple:"https://music.apple.com/us/album/ocean-girl-remix-single/1830764323", youtube:"https://www.youtube.com/watch?v=oGiRQCARek4", cover:"/covers/OCEAN GIRL (REMIX).webp", src: "/tracks/ocean-girl-remix.opus", sections: [
+  { title: "LETTING GO" },
+  { title: "OCEAN GIRL (REMIX)", cover:"/covers/OCEAN GIRL (REMIX).webp", src: "/tracks/ocean-girl-remix.opus", sections: [
     { time: 22.1, label: "Build Up", kind: "verse" },
     { time: 54.7, label: "Drop 1", kind: "chorus" },
     { time: 87.3, label: "Break", kind: "verse" },
     { time: 119.9, label: "Drop 2", kind: "chorus" },
     { time: 152.5, label: "Final Drop", kind: "chorus" }
   ] },
-  { title: "POKÉMON", spotify:"https://open.spotify.com/track/7uzO8MyTy8402703kP2Xuk", apple:"https://music.apple.com/us/album/pok%C3%A9mon-single/1807448784", cover:"/covers/POKEMON.webp", src: "/tracks/pokemon.opus", sections: [
+  { title: "POKÉMON", cover:"/covers/POKEMON.webp", src: "/tracks/pokemon.opus", sections: [
     { time: 11.6, label: "Verse 1", kind: "verse" },
     { time: 41.3, label: "Chorus 1", kind: "chorus" },
     { time: 71.0, label: "Verse 2", kind: "verse" },
@@ -292,24 +284,24 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 130.4, label: "Bridge", kind: "bridge" },
     { time: 145.1, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "WE'RE JUST FRIENDS", spotify:"https://open.spotify.com/track/2IffMAupdw2alpsISKFs8y?si=b8b55f8734a04a46", youtube:"https://www.youtube.com/watch?v=eQ4uBMn6cQ0" },
-  { title: "WE'RE JUST FRIENDS (DMVRCO Remix)", spotify:"https://open.spotify.com/track/1WfJUtDFUiz0rUdlGfLQBA", apple:"https://music.apple.com/us/album/were-just-friends-dmvrco-remix/1680307531?i=1680307532", src: "/tracks/we're-just-friends-dmvrco-remix.opus", sections: [
+  { title: "WE'RE JUST FRIENDS" },
+  { title: "WE'RE JUST FRIENDS (DMVRCO Remix)", src: "/tracks/we're-just-friends-dmvrco-remix.opus", sections: [
     { time: 20.5, label: "Build Up", kind: "verse" },
     { time: 53.2, label: "Drop 1", kind: "chorus" },
     { time: 85.9, label: "Break", kind: "verse" },
     { time: 118.6, label: "Drop 2", kind: "chorus" },
     { time: 151.3, label: "Outro", kind: "verse" }
   ] },
-  { title: "WE'RE JUST FRIENDS (mickey jas Remix)", spotify:"https://open.spotify.com/track/28wYsy2LrfVUT5glavy7hJ", apple:"https://music.apple.com/us/album/were-just-friends-mickey-jas-remix/1785153493?i=1785153499", src: "/tracks/we're-just-friends-mickey-jas-remix.opus", sections: [
+  { title: "WE'RE JUST FRIENDS (mickey jas Remix)", src: "/tracks/we're-just-friends-mickey-jas-remix.opus", sections: [
     { time: 16.2, label: "Build Up", kind: "verse" },
     { time: 48.9, label: "Drop 1", kind: "chorus" },
     { time: 81.5, label: "Break", kind: "verse" },
     { time: 114.2, label: "Drop 2", kind: "chorus" },
     { time: 146.9, label: "Outro", kind: "verse" }
   ] },
-  { title: "HOUSE PARTY", spotify:"https://open.spotify.com/track/0b5y0gHMf3wLYX69B8S6g4?si=75a45f33ec1f47c0", youtube:"https://www.youtube.com/watch?v=B6EyIK-gE1c" },
-  { title: "MR. BRIGHTSIDE", spotify:"https://open.spotify.com/track/4CId3TUsrGauVNQ1slN6dT?si=68f958b831694cb4", youtube:"https://youtu.be/ZBU5x5plj2E", cover: "/covers/MR. BRIGHTSIDE.webp", src: "/tracks/MR.BRIGHTSIDE.mp3" },
-  { title: "PARIS", spotify:"https://open.spotify.com/track/2luPTqZK9w5fJ30T4rLZut?si=9f27fb47e15941c4", apple:"https://music.apple.com/us/album/paris-single/1779879728", youtube:"https://www.youtube.com/watch?v=J2qrS9EGRw8" },
+  { title: "HOUSE PARTY" },
+  { title: "MR. BRIGHTSIDE", cover: "/covers/MR. BRIGHTSIDE.webp", src: "/tracks/MR.BRIGHTSIDE.mp3" },
+  { title: "PARIS" },
 ];
 
 const MAPPED = RAW.map((t, idx) => {

@@ -3,10 +3,12 @@ import type Stripe from 'stripe';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
 import { getStripe } from '@/lib/stripe/server';
 import { DEFAULT_CAMPAIGN, DEFAULT_SOURCE } from '@/lib/tip/constants';
+import { fulfillStripeMerchOrder } from '@/lib/merch/fulfillStripeOrder';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// Handles both tips and in-site merch card orders (metadata.kind 'tip' | 'merch').
 // Stripe is the source of truth for money. A frontend "success" is not enough —
 // tip_transactions is written only from here, after signature verification, and
 // keyed on the PaymentIntent id so duplicate deliveries are no-ops.
@@ -39,7 +41,15 @@ export async function POST(req: NextRequest) {
     ) {
       const pi = event.data.object as Stripe.PaymentIntent;
 
-      // Ignore anything that isn't one of our tips (e.g. merch, other flows).
+      // In-site merch card checkout (/api/merch/checkout) — record the paid order.
+      if (pi.metadata?.kind === 'merch') {
+        if (event.type === 'payment_intent.succeeded') {
+          await fulfillStripeMerchOrder(pi, event.livemode);
+        }
+        return NextResponse.json({ received: true });
+      }
+
+      // Ignore anything else that isn't one of our tips (other flows).
       if (pi.metadata?.kind !== 'tip') {
         return NextResponse.json({ received: true, ignored: true });
       }

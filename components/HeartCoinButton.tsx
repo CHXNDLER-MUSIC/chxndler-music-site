@@ -16,6 +16,7 @@ import { useMerchPurchase } from '@/hooks/useMerchPurchase';
 import { MerchItem } from '@/types/merch';
 import TiltSpinCard from '@/components/TiltSpinCard';
 import TradingCardFace from "@/components/TradingCardFace";
+import MerchCheckout, { type MerchCheckoutItem } from '@/components/merch/MerchCheckout';
 import { usePlanetRewardsContext } from '@/components/PlanetRewardsProvider';
 import { getElementalPlanetImage } from '@/lib/elementalPlanets';
 import { ELEMENT_COLORS, Element } from '@/lib/planets';
@@ -1255,6 +1256,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [merchRotation, setMerchRotation] = useState(0); // For merch 360° spin mode
   const [isMerchAnimatingFlip, setIsMerchAnimatingFlip] = useState(false); // For merch flip transition
   const [isMerchFlipped, setIsMerchFlipped] = useState(false); // Which side of merch is showing
+  // In-site card checkout for PAY WITH $ (replaces opening the Stripe Payment Link)
+  const [usdCheckout, setUsdCheckout] = useState<{ item: MerchCheckoutItem; color: string | null } | null>(null);
   const [merchFlipScale, setMerchFlipScale] = useState(1); // For 2D scaleX flip animation
   // activeMerchItem state is declared earlier for effect ordering
   const [showCheckInSuccess, setShowCheckInSuccess] = useState(false);
@@ -6197,10 +6200,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       onClick={(e) => {
                         e.stopPropagation();
                         try { sfx.play('click', 0.6); } catch {}
-                        // Open Stripe checkout in new tab
-                        if (activeMerchItem.stripe_url) {
-                          window.open(activeMerchItem.stripe_url, '_blank');
-                        }
+                        if (!activeMerchItem.cost_usd) return;
+                        // Same colour resolution as HeartCoin purchases: explicit pick, else first option
+                        const merchIndex = merchItems.findIndex(item => item.id === activeMerchItem.id);
+                        const storeItem = merchIndex >= 0 ? PHYSICAL_ITEMS[merchIndex] : undefined;
+                        const color = (merchIndex >= 0 ? selectedVariants[merchIndex]?.value : undefined)
+                          || (storeItem && hasVariants(storeItem) ? getVariantOptions(storeItem)[0]?.value : undefined)
+                          || null;
+                        setUsdCheckout({
+                          item: { id: activeMerchItem.id, name: activeMerchItem.name, priceUsd: Number(activeMerchItem.cost_usd) },
+                          color,
+                        });
                       }}
                       onMouseEnter={() => { playHoverSfx(0.3) }}
                       className="-mt-10 px-6 py-3 rounded border border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:scale-110 hover:border-green-400 hover:shadow-[0_0_25px_rgba(34,197,94,0.7)] transition-all duration-200 text-white font-semibold text-sm flex items-center gap-2 whitespace-nowrap z-20 relative"
@@ -6208,6 +6218,37 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     >
                       PAY WITH ${activeMerchItem.cost_usd || 0}
                     </button>
+
+                    {/* In-site card checkout overlay */}
+                    {usdCheckout && (
+                      <div
+                        className="fixed inset-0 flex items-center justify-center p-4"
+                        style={{ zIndex: 10000, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
+                        onClick={(e) => { e.stopPropagation(); setUsdCheckout(null); }}
+                      >
+                        <div
+                          className="relative w-full max-w-[30rem] max-h-[90vh] overflow-y-auto rounded-2xl"
+                          style={{ background: 'rgba(2,0,22,0.96)', border: '1px solid rgba(34,197,94,0.5)', boxShadow: '0 0 30px rgba(34,197,94,0.25)' }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            aria-label="Close checkout"
+                            onClick={() => { try { sfx.play('close', 0.4); } catch {} setUsdCheckout(null); }}
+                            className="sticky top-0 ml-auto mr-2 mt-2 flex h-8 w-8 items-center justify-center rounded-full text-white/70 hover:text-white"
+                            style={{ zIndex: 1 }}
+                          >
+                            ×
+                          </button>
+                          <MerchCheckout
+                            item={usdCheckout.item}
+                            color={usdCheckout.color}
+                            defaultEmail={profile?.email}
+                            onClose={() => setUsdCheckout(null)}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               </div>

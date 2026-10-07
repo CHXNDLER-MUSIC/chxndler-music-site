@@ -19,6 +19,26 @@ function addElements(data: SongRow[]): SongWithElement[] {
   });
 }
 
+// One shared load per page session: every useSongs() caller (Dashboard, Heartverse
+// Library, planets…) reuses the same request instead of refetching public.songs.
+// An empty/failed load isn't cached, so the next mount retries.
+let songsRequest: Promise<[SongRow[], SongRow[]]> | null = null;
+function loadSongRows(): Promise<[SongRow[], SongRow[]]> {
+  if (!songsRequest) {
+    songsRequest = Promise.all([fetchReleasedSongs(), fetchSongs()]).then(
+      (result) => {
+        if (result[1].length === 0) songsRequest = null;
+        return result;
+      },
+      (err) => {
+        songsRequest = null;
+        throw err;
+      },
+    );
+  }
+  return songsRequest;
+}
+
 export function useSongs() {
   const [songs, setSongs] = useState<SongWithElement[]>([]);
   const [allSongs, setAllSongs] = useState<SongWithElement[]>([]);
@@ -30,7 +50,7 @@ export function useSongs() {
 
     async function loadSongs() {
       try {
-        const [released, all] = await Promise.all([fetchReleasedSongs(), fetchSongs()]);
+        const [released, all] = await loadSongRows();
 
         // Sort alphabetically by title (case-insensitive)
         const sortByTitle = (a: SongRow, b: SongRow) =>

@@ -19,10 +19,8 @@ const HUDPanel = dynamic(() => import("@/components/HUDPanel"), { ssr: false });
 const HoloHUD = dynamic(() => import("@/components/HoloHUD"), { ssr: false });
 import { skyFor, introSky } from "@/lib/sky";
 import { youtubeSkyFor } from "@/lib/sky-youtube";
-// MediaPlayer disabled - using unified audio system instead
-// const MediaPlayer = dynamic(() => import("@/components/MediaPlayer"), { ssr: false });
 import { sfx } from "@/lib/sfx";
-import { LINKS, POS } from "@/config/cockpit";
+import { POS } from "@/config/cockpit";
 import { tracks } from "@/lib/songs-consolidated";
 import { buildPlanetSongs } from "@/lib/planets";
 import { playerStore } from "@/store/usePlayerStore";
@@ -256,7 +254,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     if (!newSky || (sky && newSky.key === sky.key)) return;
     setSkyInternal(newSky);
   }, [sky]);
-  const [links, setLinks] = useState({ spotify: LINKS.spotify, apple: LINKS.apple });
   const [userSelected, setUserSelected] = useState(false);
   const [curTrack, setCurTrack] = useState(null); // No default track - user must explicitly select
   const [playSignal, setPlaySignal] = useState(0);
@@ -752,9 +749,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           slug,
           title: hudSong.title || slug,
           cover: hudSong.cover || null,
-          spotify: hudSong.spotify || null,
-          apple: hudSong.apple || null,
-          youtube: hudSong.youtube || null,
           hasLyrics: hudSong.hasLyrics || false,
           element: (hudSong.icon || 'heart'),
           sources: [],
@@ -845,7 +839,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
     // Get track and update links immediately to avoid race conditions
     const t = idx >= 0 ? tracks[idx] : synthTrack;
-    setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple });
     
     // Update player store so HoloAudioBridge plays the correct song
     try { playerStore.getState().setMain(selectedTrack.slug || ''); } catch {}
@@ -950,16 +943,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     darkness: "#8B5A8B"
   };
 
-  // Build hudSongs from database (includes ALL songs, released and unreleased)
-  // Use static data to supplement with spotify/apple/youtube links where available
+  // Build hudSongs from database (includes ALL songs, released and unreleased).
+  // public.songs is the single source of truth for release status and every
+  // song-specific link (Spotify / Apple Music / music video / karaoke / sky).
   const hudSongs = React.useMemo(() => {
-    // Per-song link overrides for songs that live in the DB but not in static tracks
-    const SONG_LINK_OVERRIDES = {
+    // Per-song cover overrides for songs whose art doesn't follow /covers/<TITLE>.webp
+    const SONG_COVER_OVERRIDES = {
       'make-believe': {
-        spotify: 'https://open.spotify.com/track/39ArZKiv8TK2fkUIX0KbYV?si=f4086c9e755a4151',
-        apple: 'https://music.apple.com/us/album/make-believe-feat-arines/1890757188?i=1890757189',
-        youtube: 'https://youtu.be/lv9XF-nWbNc?si=vX5c4RDnnruxqrtk',
-        karaoke: 'https://youtu.be/HDSZ0QJuqdQ',
         cover: '/covers/MAKE BELIEVE.webp',
       },
       'sugar-were-going-down': {
@@ -967,15 +957,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       },
       'whats-my-age-again': {
         cover: "/covers/WHAT'S MY AGE AGAIN.webp",
-        spotify: "https://open.spotify.com/track/1ruK5nzccgGOr882nCyKHS?si=2fc407b2d0f54de8",
-        apple: "https://music.apple.com/us/album/whats-my-age-again-single/6766415909",
-      },
-      'always-on-my-mind-acoustic': {
-        spotify: "https://open.spotify.com/track/4njjJMZBd56rZW9Vrvb3bD?si=dca63e5fce3046d1",
-        apple: "https://music.apple.com/us/album/always-on-my-mind-acoustic/6768568702?i=6768568703",
-      },
-      'i-would-die-for-your-love': {
-        spotify: "https://open.spotify.com/album/1A8oFBSJmKpOr8pMClxvV8?si=2cc8af20b3594177",
       },
       'cheerleader': {
         // Actual uploaded file is lowercase; standard uppercase-title convention 404s
@@ -1004,7 +985,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       .filter(song => !PLANET_EXCLUDED_TITLES.includes((song.title || '').toLowerCase()))
       .map(song => {
         const staticData = staticMap.get(song.slug) || {};
-        const linkOverride = SONG_LINK_OVERRIDES[song.slug] || {};
+        const coverOverride = SONG_COVER_OVERRIDES[song.slug] || {};
         const element = (song.element || 'heart').toLowerCase();
         return {
           id: song.slug,
@@ -1013,11 +994,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           color: ELEMENT_COLORS[element] || ELEMENT_COLORS.heart,
           is_released: song.is_released,
           // Overrides take priority, then static data, then the standard /covers/<TITLE>.webp convention
-          cover: linkOverride.cover || staticData.cover || `/covers/${(song.title || '').normalize('NFD').replace(/[̀-ͯ]/g, '')}.webp`,
-          spotify: linkOverride.spotify || staticData.spotify,
-          apple: linkOverride.apple || staticData.apple,
-          youtube: linkOverride.youtube || staticData.youtube,
-          karaoke: linkOverride.karaoke || staticData.karaoke,
+          cover: coverOverride.cover || staticData.cover || `/covers/${(song.title || '').normalize('NFD').replace(/[̀-ͯ]/g, '')}.webp`,
+          // Song-specific links straight from the songs row (null → generic fallback in the UI)
+          spotify_url: song.spotify_url || null,
+          apple_music_url: song.apple_music_url || null,
+          youtube_music_video_url: song.youtube_music_video_url || null,
+          karaoke_url: song.karaoke_url || null,
+          sky_video_url: song.sky_video_url || null,
           hasLyrics: staticData.hasLyrics
         };
       });
@@ -1045,9 +1028,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     if (elementWarpYoutubeUrl) return elementWarpYoutubeUrl;
     if (homeMode) return 'https://youtu.be/DkEeJbEYt_E';
     const slug = curTrack?.slug;
-    const mapped = slug ? youtubeSkyFor(slug) : undefined;
-    return mapped || undefined;
-  }, [isIntro, elementWarpYoutubeUrl, homeMode, curTrack?.slug]);
+    if (!slug) return undefined;
+    // songs.sky_video_url controls the cockpit background (never the music video);
+    // the static map covers the moment before the songs table has loaded.
+    const row = hudSongs?.find(s => (s.id || '').toLowerCase() === String(slug).toLowerCase());
+    return row?.sky_video_url || youtubeSkyFor(slug) || undefined;
+  }, [isIntro, elementWarpYoutubeUrl, homeMode, curTrack?.slug, hudSongs]);
 
   // Committed YouTube sky URL — deferred until the warp lightspeed overlay is
   // visually active (allowWarp=true), so the iframe never swaps while the raw
@@ -1166,7 +1152,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     setCurTrack(t);
     setUserSelected(true);
     setHomeMode(false);
-    setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple });
     // Hide UI before warp
     setShowHUD(false);
     setShowOverlayUI(false);
@@ -1828,7 +1813,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       setFlySignal(n => n + 1);
       setHomeMode(true);
       setUserSelected(false);
-      setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
 
       if (process.env.NODE_ENV !== "production") console.log("🏠 Going to Heartverse - onboarding mode:", onboardingModeRef.current);
     } catch (error) {
@@ -3176,7 +3160,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             try { setHomeMode(true); } catch {}
             try { setUserSelected(false); } catch {}
             try { playerStore.setState({ mainId: null }); } catch {}
-            try { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } catch {}
             // Enable welcome VO only if it hasn't played this session
             try {
               const playedFlag = (typeof window !== 'undefined' && (window).__CHX_WELCOME_PLAYED === true);
@@ -3358,7 +3341,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             // Don't enable welcome VO in this path - it's handled in onWarpSfxEnd
             setFirstStartDone(true);
             setUserSelected(false);
-            setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
             // Keep ambient suspended until warp SFX fully ends; we'll enable it in onWarpSfxEnd
             // so ambient (space-music.mp3) starts only after the blue display is showing.
             setAmbientSuspended(true);
@@ -3670,7 +3652,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                       setHomeIntroEnabled(false);
                     }
                     setUserSelected(false);
-                    setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
                     triggerHudPower(true);
                   }}
                 />

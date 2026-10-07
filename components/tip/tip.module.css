@@ -596,3 +596,49 @@
 .embed .amountLine {
   font-size: clamp(1.6rem, 7vw, 2.1rem);
 }
+
+/* ---- compact merch checkout (PAY WITH $ overlay) ----
+   Scoped to .merchCompact so the tip panel keeps its own sizing. */
+.merchCompact .shell {
+  gap: 0.45rem;
+  padding: 0.5rem 0.9rem 0.9rem;
+}
+.merchCompact .amountBlock {
+  gap: 0;
+}
+.merchCompact .amountCaption {
+  font-size: 0.72rem;
+}
+.merchCompact .amountLine {
+  font-size: clamp(1.35rem, 5.5vw, 1.6rem);
+}
+.merchCompact .methodPanel {
+  gap: 0.5rem;
+}
+.merchCompact .cardGroup {
+  gap: 0.2rem;
+}
+.merchCompact .cardLabel {
+  font-size: 0.64rem;
+}
+.merchCompact .cardRow {
+  gap: 0.45rem;
+}
+.merchCompact .cardField {
+  padding: 0.55rem 0.7rem;
+}
+.merchCompact .cardZip {
+  padding: 0.5rem 0.7rem;
+  font-size: 14px;
+}
+.merchCompact .back {
+  font-size: 0.78rem;
+  padding: 0.2rem 0.4rem;
+}
+.merchCompact .primary {
+  font-size: 0.85rem;
+  padding: 0.6rem 1rem;
+}
+.merchCompact .divider {
+  font-size: 0.6rem;
+}

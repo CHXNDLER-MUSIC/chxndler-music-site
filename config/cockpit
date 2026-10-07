@@ -1,4 +1,5 @@
 // Central config for FAST edits (positions, playlist, links, paths)
+import { CHXNDLER_APPLE_MUSIC_ARTIST_URL, CHXNDLER_SPOTIFY_ARTIST_URL, CHXNDLER_YOUTUBE_CHANNEL_URL } from "@/lib/chxndlerLinks";
 export const BUILD_TAG = "Cockpit v3.2 — integrated";
 
 export const PATHS = {
@@ -35,9 +36,9 @@ export const LINKS = {
   // Updated to current handles (lowercase, canonical URLs)
   instagram: "https://www.instagram.com/chxndlerthealien/",
   tiktok: "https://www.tiktok.com/@chxndlerthealien",
-  youtube: "https://www.youtube.com/@chxndlerthealien",
-  spotify: "https://open.spotify.com/artist/6O2eoUA8ZWY0lwjsa3E3Yo?si=XjqSGq-zT6CtaRoefZ5Pfg",
-  apple: "https://music.apple.com/us/artist/chxndler/1660901437",
+  youtube: CHXNDLER_YOUTUBE_CHANNEL_URL,
+  spotify: CHXNDLER_SPOTIFY_ARTIST_URL,
+  apple: CHXNDLER_APPLE_MUSIC_ARTIST_URL,
 };
 
 /* Positions for HUD + left console icons (responsive for all screen sizes) */

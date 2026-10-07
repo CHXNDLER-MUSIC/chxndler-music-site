@@ -44,7 +44,7 @@ function ElementIcon({ name }) {
   );
 }
 
-export default function SongDropdown({ items = [], initialActiveId, onChange, currentId }) {
+export default function SongDropdown({ items = [], allItems = [], initialActiveId, onChange, currentId }) {
   const audioManager = useAudio();
   const { activeId, setActiveId, next, prev, handleKeyDown } = useCycleList(items, initialActiveId, onChange);
   const [open, setOpen] = useState(false);
@@ -354,10 +354,16 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             {(() => {
               if (!currentId) return 'MUSIC';
               if (isElementWarp) return elementDisplayName;
+              // Real song titles first — the dropdown list only holds released songs, so look
+              // early-access/unreleased songs up in allItems. Slug-derived names (audio player /
+              // fallback) drop punctuation like "(ACOUSTIC)", so they're last resorts.
+              const currentSlug = normalizeSlug(currentId);
+              const fromAll = allItems.find(i => normalizeSlug(i.id) === currentSlug)?.title;
+              const fromItems = items.find(i => normalizeSlug(i.id) === currentSlug)?.title;
+              const fromNextDrop = nextDrop && normalizeSlug(nextDrop.slug) === currentSlug ? nextDrop.title : null;
               const audioTitle = audioManager?.currentTrack?.title;
-              const fromItems = current?.title;
               const fallbackFromSlug = String(currentId).toUpperCase().replace(/-/g, ' ');
-              return audioTitle || fromItems || fallbackFromSlug || 'SONGS';
+              return fromAll || fromItems || fromNextDrop || audioTitle || current?.title || fallbackFromSlug || 'SONGS';
             })()}
           </span>
         </span>

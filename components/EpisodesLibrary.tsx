@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { sfx } from "@/lib/sfx";
 import { useAudio } from "@/app/providers/AudioProvider";
+import { useSongs } from "@/hooks/useSongs";
 
 // ──────────────────────────────────────────────
 // VIDEO DATA STRUCTURE
@@ -278,73 +279,7 @@ const VIDEOS: Video[] = [
     releaseDate: "2026-11-14T12:00:00",
   },
 
-  // ── Karaoke ──
-  {
-    id: "kar-001",
-    title: "ALONE (ACOUSTIC)",
-    youtubeUrl: "https://youtu.be/07Vs6Dmi8tE",
-    type: "karaoke",
-  },
-  {
-    id: "kar-002",
-    title: "ALONE",
-    youtubeUrl: "https://youtu.be/ca3a6wiERQE",
-    type: "karaoke",
-  },
-  {
-    id: "kar-003",
-    title: "BE MY BEE",
-    youtubeUrl: "https://youtu.be/ooTTnsrQqOc",
-    type: "karaoke",
-  },
-  {
-    id: "kar-004",
-    title: "LETTING GO",
-    youtubeUrl: "https://youtu.be/0rqWRJ-Lors",
-    type: "karaoke",
-  },
-  {
-    id: "kar-005",
-    title: "OCEAN GIRL",
-    youtubeUrl: "https://youtu.be/2FJyPj5andI",
-    type: "karaoke",
-  },
-  {
-    id: "kar-006",
-    title: "OCEAN GIRL (ACOUSTIC)",
-    youtubeUrl: "https://youtu.be/9PXDM5HogoY",
-    type: "karaoke",
-  },
-  {
-    id: "kar-007",
-    title: "OCEAN GIRL (REMIX)",
-    youtubeUrl: "https://youtu.be/rfRz3QDLNmM",
-    type: "karaoke",
-  },
-  {
-    id: "kar-008",
-    title: "WE'RE JUST FRIENDS",
-    youtubeUrl: "https://youtu.be/dYeVIV3RqXg",
-    type: "karaoke",
-  },
-  {
-    id: "kar-009",
-    title: "MAKE BELIEVE",
-    youtubeUrl: "https://youtu.be/HDSZ0QJuqdQ",
-    type: "karaoke",
-  },
-  {
-    id: "kar-010",
-    title: "BABY",
-    youtubeUrl: "https://youtu.be/z-EnAJomZ3M",
-    type: "karaoke",
-  },
-  {
-    id: "kar-011",
-    title: "POKÉMON",
-    youtubeUrl: "https://youtu.be/6xV_72SlBRM",
-    type: "karaoke",
-  },
+  // ── Karaoke ── built at runtime from public.songs.karaoke_url (see karaokeVideos)
 ];
 
 // ──────────────────────────────────────────────
@@ -457,6 +392,20 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const videoOpenedAtRef = useRef<number>(0);
   const lastPositionsRef = useRef<Map<string, number>>(new Map());
+
+  // KARAOKE tab: every song with a karaoke_url in public.songs (shared songs load, no extra request)
+  const { allSongs } = useSongs();
+  const karaokeVideos = React.useMemo<Video[]>(
+    () => allSongs
+      .filter((song) => !!song.karaoke_url?.trim())
+      .map((song) => ({
+        id: `kar-${song.slug}`,
+        title: song.title,
+        youtubeUrl: song.karaoke_url!.trim(),
+        type: "karaoke" as const,
+      })),
+    [allSongs],
+  );
   const [featuredWatched, setFeaturedWatched] = useState<Set<string>>(() => new Set());
 
   // Load after mount so server and first client render match
@@ -514,9 +463,8 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
   }, [visible]);
 
   // Filter videos based on current tab/section
-  const filteredVideos = VIDEOS.filter((v) => {
+  const filteredVideos = topTab === "karaoke" ? [...karaokeVideos] : VIDEOS.filter((v) => {
     if (topTab === "heartverse") return v.type === "heartverse";
-    if (topTab === "karaoke") return v.type === "karaoke";
     return v.type === liveSignalSection;
   });
   if (topTab === "karaoke") {

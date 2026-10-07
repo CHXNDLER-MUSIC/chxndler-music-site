@@ -71,6 +71,7 @@ import { useFocusElementOfDay } from "@/hooks/useFocusElementOfDay";
 
 // Constants to prevent recreating URLs on every render
 import { getCardImageUrl } from '@/lib/supabaseCardUrl';
+import { resolveSongLinks } from "@/lib/chxndlerLinks";
 
 const DEFAULT_COVER = '/covers/CHXNDLER.webp';
 const DEFAULT_CARD = getCardImageUrl('CHXNDLER');
@@ -3254,6 +3255,7 @@ const HUDPanel = React.memo(function HUDPanel({
               {/* Song dropdown only (outer container removed) */}
               <SongDropdown
                 items={dropdownSongs}
+                allItems={resolvedSongs}
                 initialActiveId={active || dropdownSongs[0]?.id}
                 currentId={currentId}
                 onChange={(id) => {
@@ -3305,28 +3307,18 @@ const HUDPanel = React.memo(function HUDPanel({
                   const lyricsTitle = isHome ? 'Lyrics for CHXNDLER' : `Lyrics for ${currentSong?.title || 'current track'}`;
                   const lyricsAria = isHome ? 'View lyrics for CHXNDLER' : `View lyrics for ${currentSong?.title || 'current track'}`;
 
-                  // Define streaming URLs at top level to avoid closure issues
-                  const CHXNDLER_SPOTIFY_PROFILE = 'https://open.spotify.com/artist/6O2eoUA8ZWY0lwjsa3E3Yo?si=7gxP4bNnQ1ax1ODrZ6RvtA';
-                  const CHXNDLER_APPLE_PROFILE = 'https://music.apple.com/us/artist/chxndler/1660901437';
-                  const CHXNDLER_YOUTUBE_CHANNEL = 'https://www.youtube.com/@chxndlerthealien';
+                  // Streaming URLs come from the song's public.songs row; empty → CHXNDLER
+                  // artist page / channel (lib/chxndlerLinks.ts). Home always uses the artist pages.
+                  const songLinks = resolveSongLinks(isHome ? null : currentSong);
+                  const spotifyUrl = songLinks.spotifyUrl;
+                  const appleUrl = songLinks.appleMusicUrl;
+                  const youtubeUrl = songLinks.youtubeUrl;
 
-                  const spotifyUrl = isHome ? CHXNDLER_SPOTIFY_PROFILE : (currentSong?.spotify || CHXNDLER_SPOTIFY_PROFILE);
-                  let appleUrl = isHome ? CHXNDLER_APPLE_PROFILE : (currentSong?.apple || CHXNDLER_APPLE_PROFILE);
-                  // Override Apple Music link for MR. BRIGHTSIDE
-                  try {
-                    const slugId = String(currentSong?.id || '').toLowerCase();
-                    if (!isHome && slugId === 'mr-brightside') {
-                      appleUrl = 'https://music.apple.com/us/album/mr-brightside-single/1881001013';
-                    }
-                  } catch {}
-                  // Use per-song YouTube when available; otherwise open channel
-                  const youtubeUrl = isHome ? CHXNDLER_YOUTUBE_CHANNEL : (currentSong?.youtube || CHXNDLER_YOUTUBE_CHANNEL);
-
-                  const isSpotifyProfile = isHome || !currentSong?.spotify;
-                  const isAppleProfile = isHome || !currentSong?.apple;
-                  // A song is "released" for button purposes if marked released OR if it has streaming links
-                  const isReleased = isHome ? true : (currentSong?.is_released === true || !!(currentSong?.spotify || currentSong?.apple || currentSong?.youtube));
-                  const isYouTubeProfile = isHome || !currentSong?.youtube;
+                  const isSpotifyProfile = songLinks.isSpotifyFallback;
+                  const isAppleProfile = songLinks.isAppleMusicFallback;
+                  // songs.is_released is authoritative — never inferred from which links exist
+                  const isReleased = isHome ? true : currentSong?.is_released === true;
+                  const isYouTubeProfile = songLinks.isYouTubeFallback;
 
                   const isElementPlanet = ELEMENT_PLANETS.includes(String(active).toLowerCase()) ||
                     ELEMENT_PLANETS.includes(String(selectedPlanetId).toLowerCase());
@@ -3546,7 +3538,7 @@ const HUDPanel = React.memo(function HUDPanel({
                       )}
 
 
-                      {(isCenterPlanet || isElementPlanet) && !currentSong?.youtube || !isReleased ? (
+                      {(isCenterPlanet || isElementPlanet) && !currentSong?.youtube_music_video_url || !isReleased ? (
                         <div className="youtube-btn-unavailable-hud" title={isCenterPlanet ? "YouTube not available for Heartverse" : "YouTube not available for elemental planets"} style={{ marginTop: 1 }}>
                           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
                             <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
@@ -6805,7 +6797,7 @@ const HUDPanel = React.memo(function HUDPanel({
                       {/* KARAOKE button — toggles embedded YouTube video inside the lyrics panel */}
                       {(() => {
                         const _isElementPlanetBtn = currentId && ['heart', 'water', 'lightning', 'darkness', 'center'].includes(String(currentId).toLowerCase());
-                        const hasKaraoke = !_isElementPlanetBtn && !isHome && !!currentSong?.karaoke;
+                        const hasKaraoke = !_isElementPlanetBtn && !isHome && !!resolveSongLinks(currentSong).karaokeUrl;
                         const isActive = lyricsKaraokeMode && hasKaraoke;
                         return (
                           <button
@@ -6862,10 +6854,10 @@ const HUDPanel = React.memo(function HUDPanel({
                           return lyricsKaraokeMode ? <>KARAOKE — {title}</> : <>LYRICS — {title}</>;
                         })()}
                       </div>
-                    {lyricsKaraokeMode && currentSong?.karaoke ? (
+                    {lyricsKaraokeMode && resolveSongLinks(currentSong).karaokeUrl ? (
                       <div style={{ marginTop: 8, borderRadius: 8, overflow: 'hidden', lineHeight: 0 }}>
                         <iframe
-                          src={`${toYouTubeEmbed(currentSong.karaoke)}?autoplay=1`}
+                          src={`${toYouTubeEmbed(resolveSongLinks(currentSong).karaokeUrl)}?autoplay=1`}
                           title="Karaoke"
                           allow="autoplay; encrypted-media; picture-in-picture"
                           allowFullScreen
@@ -8265,6 +8257,7 @@ const HUDPanel = React.memo(function HUDPanel({
             {/* Song dropdown only (outer container removed) */}
             <SongDropdown
               items={dropdownSongs}
+              allItems={resolvedSongs}
               initialActiveId={active || dropdownSongs[0]?.id}
               currentId={currentId}
               onChange={(id) => {
