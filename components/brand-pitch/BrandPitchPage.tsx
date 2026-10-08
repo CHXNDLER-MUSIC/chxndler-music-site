@@ -5,6 +5,7 @@ import type { BrandPitch } from "@/lib/brandPitch";
 import { buildPitchPalette } from "@/lib/brandPitchPalette";
 import { createAssetRegistry, getHeroImageCandidates } from "@/lib/brandPitchVisuals";
 import { BrandAudioProvider } from "./BrandAudioContext";
+import { getBrandArtUrl } from "@/lib/brandPitchStorage";
 import BrandHero from "./BrandHero";
 import CreativeIdea from "./CreativeIdea";
 import HearTheConcept from "./HearTheConcept";
@@ -15,7 +16,7 @@ import Collectible from "./Collectible";
 import BrandAbout from "./BrandAbout";
 import BrandCTA from "./BrandCTA";
 import BrandSectionDivider from "./BrandSectionDivider";
-import type { StudioProject } from "./StudioPortfolioLauncher";
+import type { StudioProject, ArtistRelease } from "./StudioPortfolioLauncher";
 
 // The narrative spine, in order: ENTER THE WORLD (hero) -> UNDERSTAND THE
 // IDEA -> HEAR IT -> UNDERSTAND THE BRAND ASSET -> SEE THE WORLD (one
@@ -38,12 +39,15 @@ import type { StudioProject } from "./StudioPortfolioLauncher";
 export default function BrandPitchPage({
   pitch,
   otherProjects = [],
+  artistReleases = [],
 }: {
   pitch: BrandPitch;
   /** Every OTHER published brand project, for the "EXPLORE THE STUDIO"
    * gallery in BrandAbout — see app/brands/[slug]/page.tsx, which fetches
    * the canonical brand_pitches list and excludes the current slug. */
   otherProjects?: StudioProject[];
+  /** Every released CHXNDLER song, for the gallery's "ARTIST RELEASES" tab. */
+  artistReleases?: ArtistRelease[];
 }) {
   const palette = buildPitchPalette(pitch);
   const year = pitch.year || new Date().getFullYear();
@@ -55,6 +59,15 @@ export default function BrandPitchPage({
   // "background 2.png", How It Could Live's "background 3.png", the campaign
   // image break, application mockups, the collectible card) can ever
   // accidentally reuse it.
+  // Lock-screen / Control Center info for the pitch's own clips (hero song,
+  // versions, sonic logo) — same artwork the page's share image uses.
+  const nowPlaying = {
+    title: pitch.song_title,
+    artist: pitch.artist_name || "CHXNDLER",
+    album: `${pitch.brand_name} × ${pitch.artist_name || "CHXNDLER"}`,
+    artwork: getBrandArtUrl(pitch.cover_art_path || pitch.hero_art_path),
+  };
+
   const assets = createAssetRegistry([getHeroImageCandidates(pitch)[0] ?? null]);
 
   // Exposed as CSS custom properties at the page root so any section (now or
@@ -71,7 +84,7 @@ export default function BrandPitchPage({
   } as React.CSSProperties;
 
   return (
-    <BrandAudioProvider>
+    <BrandAudioProvider nowPlaying={nowPlaying}>
       <div className="min-h-screen w-full overflow-x-hidden" style={themeVars}>
         {/* mix-blend-mode makes the year label legible over any hero backdrop
             (light, dark, image, video) without brand-specific logic — white
@@ -129,7 +142,7 @@ export default function BrandPitchPage({
           <BrandSectionDivider targetId="collectible" />
           <Collectible pitch={pitch} palette={palette} assets={assets} />
           <BrandSectionDivider targetId="about" />
-          <BrandAbout pitch={pitch} palette={palette} assets={assets} otherProjects={otherProjects} />
+          <BrandAbout pitch={pitch} palette={palette} assets={assets} otherProjects={otherProjects} artistReleases={artistReleases} />
           <BrandSectionDivider targetId="cta" />
           <BrandCTA pitch={pitch} palette={palette} />
         </main>

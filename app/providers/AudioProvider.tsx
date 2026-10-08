@@ -3,6 +3,8 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import { supabaseTrackUrl as S } from "@/lib/supabaseTrackUrl";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { bindMediaSession, type MediaSessionBinding, type NowPlaying } from "@/lib/mediaSession";
+import { songCoverPath } from "@/lib/songCover";
 import { useDailySongProgress, recordSongEndedPlay } from "@/hooks/useDailySongProgress";
 import { getNYDateString } from "@/lib/time";
 
@@ -76,6 +78,48 @@ async function getSongUuidBySlug(slug: string): Promise<string | null> {
     console.error('🎧 Error looking up song UUID:', err);
     return null;
   }
+}
+
+// Lock-screen (Media Session) titles come from public.songs — the TrackInfo
+// title is only a fallback (dynamic entries are derived from the slug, e.g.
+// "WERE JUST FRIENDS"). Loaded once, on the first song play.
+const songTitlesBySlug = new Map<string, string>();
+let songTitlesLoad: Promise<void> | null = null;
+function loadSongTitles(): Promise<void> {
+  if (!songTitlesLoad) {
+    songTitlesLoad = (async () => {
+      try {
+        const { data } = await supabaseBrowser.from("songs").select("slug, title");
+        for (const row of data ?? []) {
+          if (row?.slug && row?.title) songTitlesBySlug.set(String(row.slug).toLowerCase(), String(row.title));
+        }
+      } catch {
+        songTitlesLoad = null; // retry on a later play
+      }
+    })();
+  }
+  return songTitlesLoad;
+}
+
+// Ambient beds, voiceovers and element-planet themes play on the same element
+// but aren't songs — they get no lock-screen title/artwork.
+const NON_SONG_TRACK_IDS = new Set([
+  "space-music",
+  "welcome-to-the-heartverse",
+  "welcome-back",
+  "you-are-home",
+  "water",
+  "lightning",
+  "darkness",
+  "heart",
+  "center",
+]);
+
+function nowPlayingForTrack(track: TrackInfo | null): NowPlaying | null {
+  if (!track?.id || NON_SONG_TRACK_IDS.has(track.id)) return null;
+  const slug = track.id.toLowerCase();
+  const title = songTitlesBySlug.get(slug) || track.title;
+  return { title, artist: track.artist || "CHXNDLER", artwork: track.coverUrl || songCoverPath(slug, title) };
 }
 
 // Track info for audio and visual display
@@ -418,6 +462,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     warpCompleted: false,
     trackingSlug: null
   });
+
+  // Media Session reads the latest track through a ref (its listeners are bound once).
+  const currentTrackInfoRef = useRef<TrackInfo | null>(null);
+  currentTrackInfoRef.current = state.currentTrack;
+  const mediaSessionRef = useRef<MediaSessionBinding | null>(null);
 
   // Listen session tracking - robust lifecycle
   type ListenSession = {
@@ -1281,11 +1330,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const onPlay = () => {
       if (process.env.NODE_ENV !== "production") console.log('🎵 AudioProvider: onPlay event fired');
       setState(s => ({ ...s, playing: true, isLoading: false }));
-      // Suppress macOS Now Playing / Apple Music HUD on every play event
-      if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = null;
-        navigator.mediaSession.playbackState = "none";
-      }
 
       // Record play event for analytics
       if (currentTrackRef.current) {
@@ -1440,17 +1484,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
     a.addEventListener("ended", onEndedDebug);
 
-    // Disable browser media session to prevent title overlays
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.metadata = null;
-      navigator.mediaSession.playbackState = "none";
-      navigator.mediaSession.setActionHandler('play', null);
-      navigator.mediaSession.setActionHandler('pause', null);
-      navigator.mediaSession.setActionHandler('previoustrack', null);
-      navigator.mediaSession.setActionHandler('nexttrack', null);
-    }
+    // Lock screen / Control Center / media keys for songs on this element.
+    const mediaSession = bindMediaSession(a, () => nowPlayingForTrack(currentTrackInfoRef.current));
+    mediaSessionRef.current = mediaSession;
 
     return () => {
+      mediaSession.dispose();
+      mediaSessionRef.current = null;
       a.removeEventListener("timeupdate", onTime);
       a.removeEventListener("durationchange", onDur);
       a.removeEventListener("loadedmetadata", onDur);
@@ -1495,6 +1535,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       } catch {}
     };
   }, []);
+
+  // Keep the lock screen in step with the current song: refresh right away,
+  // and again once the Supabase titles have loaded.
+  useEffect(() => {
+    mediaSessionRef.current?.refresh();
+    if (state.currentTrack && !NON_SONG_TRACK_IDS.has(state.currentTrack.id)) {
+      loadSongTitles().then(() => mediaSessionRef.current?.refresh());
+    }
+  }, [state.currentTrack]);
 
   // Sync currentTrackRef when track changes and handle track-to-track transitions
   useEffect(() => {
@@ -2162,16 +2211,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Load and play the track
       const a = audioRef.current;
       if (!a) return;
-
-      // Disable browser media session before playing to prevent title overlays
-      if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = null;
-        navigator.mediaSession.playbackState = "none";
-        navigator.mediaSession.setActionHandler('play', null);
-        navigator.mediaSession.setActionHandler('pause', null);
-        navigator.mediaSession.setActionHandler('previoustrack', null);
-        navigator.mediaSession.setActionHandler('nexttrack', null);
-      }
 
       // Skip reload if selectTrack already pre-loaded this track — calling a.load() again
       // resets readyState to 0 and discards the buffer, causing the canplay timeout.

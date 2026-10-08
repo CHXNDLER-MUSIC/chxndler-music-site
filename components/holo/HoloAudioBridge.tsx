@@ -183,16 +183,6 @@ export default function HoloAudioBridge() {
 
           if (process.env.NODE_ENV !== "production") console.log('🎵 HoloAudioBridge: Pre-loading track:', trackSrc);
 
-          // Disable browser media session before playing to prevent title overlays
-          if ('mediaSession' in navigator) {
-            navigator.mediaSession.metadata = null;
-            navigator.mediaSession.playbackState = "none";
-            navigator.mediaSession.setActionHandler('play', null);
-            navigator.mediaSession.setActionHandler('pause', null);
-            navigator.mediaSession.setActionHandler('previoustrack', null);
-            navigator.mediaSession.setActionHandler('nexttrack', null);
-          }
-
           // Pre-load the track
           a.src = trackSrc;
           a.load();

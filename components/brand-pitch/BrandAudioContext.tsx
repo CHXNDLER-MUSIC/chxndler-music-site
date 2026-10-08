@@ -5,6 +5,7 @@
 // play()/toggle() — because there is only ever one underlying element, only
 // one clip can ever be audible at a time, no manual "stop the others" bookkeeping needed.
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { bindMediaSession, type NowPlaying } from "@/lib/mediaSession";
 
 type BrandAudioState = {
   activeId: string | null;
@@ -16,8 +17,10 @@ type BrandAudioState = {
 };
 
 type BrandAudioContextValue = BrandAudioState & {
-  toggle: (id: string, src: string) => void;
-  play: (id: string, src: string) => void;
+  /** `nowPlaying` is what the lock screen shows for this clip; omitted, the
+   * provider's page-level default (the pitch's own song) is used. */
+  toggle: (id: string, src: string, nowPlaying?: NowPlaying) => void;
+  play: (id: string, src: string, nowPlaying?: NowPlaying) => void;
   pause: () => void;
   seek: (time: number) => void;
   /** Lazily wires the single shared <audio> element into a Web Audio
@@ -30,9 +33,19 @@ type BrandAudioContextValue = BrandAudioState & {
 
 const BrandAudioContext = createContext<BrandAudioContextValue | null>(null);
 
-export function BrandAudioProvider({ children }: { children: React.ReactNode }) {
+export function BrandAudioProvider({
+  children,
+  nowPlaying,
+}: {
+  children: React.ReactNode;
+  /** Lock-screen info for any clip played without its own (the pitch's song). */
+  nowPlaying?: NowPlaying;
+}) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const activeIdRef = useRef<string | null>(null);
+  const defaultNowPlayingRef = useRef(nowPlaying);
+  defaultNowPlayingRef.current = nowPlaying;
+  const clipNowPlayingRef = useRef<NowPlaying | undefined>(undefined);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const [state, setState] = useState<BrandAudioState>({
@@ -69,7 +82,10 @@ export function BrandAudioProvider({ children }: { children: React.ReactNode }) 
     audio.addEventListener("canplay", onCanPlay);
     audio.addEventListener("error", onError);
 
+    const mediaSession = bindMediaSession(audio, () => clipNowPlayingRef.current ?? defaultNowPlayingRef.current ?? null);
+
     return () => {
+      mediaSession.dispose();
       audio.removeEventListener("timeupdate", onTime);
       audio.removeEventListener("durationchange", onDuration);
       audio.removeEventListener("loadedmetadata", onDuration);
@@ -84,12 +100,13 @@ export function BrandAudioProvider({ children }: { children: React.ReactNode }) 
     };
   }, []);
 
-  const play = useCallback((id: string, src: string) => {
+  const play = useCallback((id: string, src: string, nowPlaying?: NowPlaying) => {
     const audio = audioRef.current;
     if (!audio || !src) return;
 
     if (activeIdRef.current !== id) {
       activeIdRef.current = id;
+      clipNowPlayingRef.current = nowPlaying;
       audio.src = src;
       setState((s) => ({ ...s, activeId: id, currentTime: 0, duration: 0, error: null, loading: true }));
     }
@@ -104,13 +121,13 @@ export function BrandAudioProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const toggle = useCallback(
-    (id: string, src: string) => {
+    (id: string, src: string, nowPlaying?: NowPlaying) => {
       const audio = audioRef.current;
       if (!audio) return;
       if (activeIdRef.current === id && !audio.paused) {
         audio.pause();
       } else {
-        play(id, src);
+        play(id, src, nowPlaying);
       }
     },
     [play]

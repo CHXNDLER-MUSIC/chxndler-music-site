@@ -7,7 +7,7 @@ import type { BrandPitch } from "@/lib/brandPitch";
 import type { PitchPalette } from "@/lib/brandPitchPalette";
 import type { PitchAssetRegistry } from "@/lib/brandPitchVisuals";
 import { Eyebrow, SectionShell } from "./ui";
-import StudioPortfolioLauncher, { type StudioProject } from "./StudioPortfolioLauncher";
+import StudioPortfolioLauncher, { type StudioProject, type ArtistRelease } from "./StudioPortfolioLauncher";
 import { useInteractionSound } from "./useInteractionSound";
 
 // CHXNDLER's own identity photo and wordmark signature — the same across
@@ -74,6 +74,7 @@ export default function BrandAbout({
   palette,
   assets,
   otherProjects,
+  artistReleases,
 }: {
   pitch: BrandPitch;
   palette: PitchPalette;
@@ -82,6 +83,8 @@ export default function BrandAbout({
    * excluded by the caller (app/brands/[slug]/page.tsx), derived from the
    * brand_pitches row's own slug, never a route/pathname check here. */
   otherProjects: StudioProject[];
+  /** Every released CHXNDLER song, for the gallery's "ARTIST RELEASES" tab. */
+  artistReleases: ArtistRelease[];
 }) {
   const reduceMotion = useReducedMotion();
   // Reuses the sitewide "pause" click cue (not the generic "click" one) for
@@ -240,9 +243,9 @@ export default function BrandAbout({
             {/* Portfolio launcher — same centered-on-its-own-axis treatment
                 as the mark above, with its own breathing room so it reads as
                 a deliberate closing beat, not an appendage. Renders nothing
-                if the current pitch is the only published project. */}
+                if there are no other projects and no artist releases. */}
             <div className="-mt-[1rem] sm:-mt-[1.25rem] flex justify-center">
-              <StudioPortfolioLauncher projects={otherProjects} />
+              <StudioPortfolioLauncher projects={otherProjects} releases={artistReleases} />
             </div>
           </motion.div>
         </div>
