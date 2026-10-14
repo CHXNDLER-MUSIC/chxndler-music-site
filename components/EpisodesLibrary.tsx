@@ -462,6 +462,29 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
     }
   }, [visible]);
 
+  // Swipe left/right on the video list (touch only) to move between Live Signal sub-sections
+  const LIVE_SIGNAL_ORDER: LiveSignalSection[] = ["live", "electric", "acoustic"];
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const handleListTouchStart = useCallback((e: React.TouchEvent) => {
+    if (topTab !== "livesignal" || e.touches.length !== 1) { swipeStartRef.current = null; return; }
+    swipeStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, [topTab]);
+  const handleListTouchEnd = useCallback((e: React.TouchEvent) => {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start || topTab !== "livesignal") return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    // Require a deliberate, mostly-horizontal swipe so vertical scrolling isn't hijacked
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const idx = LIVE_SIGNAL_ORDER.indexOf(liveSignalSection);
+    const nextIdx = dx < 0 ? idx + 1 : idx - 1;
+    if (nextIdx < 0 || nextIdx >= LIVE_SIGNAL_ORDER.length) return;
+    playClick();
+    setLiveSignalSection(LIVE_SIGNAL_ORDER[nextIdx]);
+  }, [topTab, liveSignalSection, playClick]);
+
   // Filter videos based on current tab/section
   const filteredVideos = topTab === "karaoke" ? [...karaokeVideos] : VIDEOS.filter((v) => {
     if (topTab === "heartverse") return v.type === "heartverse";
@@ -712,22 +735,6 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
               </button>
               <button
                 className={`flex-1 py-1 px-2 text-xs font-medium rounded transition-all duration-200 tracking-wide ${
-                  liveSignalSection === "acoustic"
-                    ? "bg-[#00FFFF]/15 text-[#00FFFF] border border-[#00FFFF]/30"
-                    : "text-white/40 hover:text-white/70 border border-transparent"
-                }`}
-                onClick={() => {
-                  playClick();
-                  stopVideo();
-                  setLiveSignalSection("acoustic");
-                  setActiveVideo(null);
-                }}
-                onMouseEnter={playHover}
-              >
-                ACOUSTIC
-              </button>
-              <button
-                className={`flex-1 py-1 px-2 text-xs font-medium rounded transition-all duration-200 tracking-wide ${
                   liveSignalSection === "electric"
                     ? "bg-[#F2EF1D]/15 text-[#F2EF1D] border border-[#F2EF1D]/30"
                     : "text-white/40 hover:text-white/70 border border-transparent"
@@ -741,6 +748,22 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
                 onMouseEnter={playHover}
               >
                 ELECTRIC
+              </button>
+              <button
+                className={`flex-1 py-1 px-2 text-xs font-medium rounded transition-all duration-200 tracking-wide ${
+                  liveSignalSection === "acoustic"
+                    ? "bg-[#00FFFF]/15 text-[#00FFFF] border border-[#00FFFF]/30"
+                    : "text-white/40 hover:text-white/70 border border-transparent"
+                }`}
+                onClick={() => {
+                  playClick();
+                  stopVideo();
+                  setLiveSignalSection("acoustic");
+                  setActiveVideo(null);
+                }}
+                onMouseEnter={playHover}
+              >
+                ACOUSTIC
               </button>
             </div>
           )}
@@ -843,7 +866,11 @@ export default function EpisodesLibrary({ isChatOpen = false, visible = true, on
 
           {/* ── Video List ── */}
           {!activeVideo && (
-            <div className="relative flex-1 min-h-0 overflow-y-auto custom-scroll mt-2 px-3 pb-3">
+            <div
+              className="relative flex-1 min-h-0 overflow-y-auto custom-scroll mt-2 px-3 pb-3"
+              onTouchStart={handleListTouchStart}
+              onTouchEnd={handleListTouchEnd}
+            >
               {filteredVideos.length === 0 ? (
                 <p className="text-white/30 text-xs text-center py-6">
                   No videos yet.

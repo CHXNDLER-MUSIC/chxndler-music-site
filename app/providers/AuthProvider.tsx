@@ -14,6 +14,28 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+// Re-issue the Supabase session cookies from the server so Safari's 7-day cap
+// on script-written cookies doesn't log fans out (see app/api/auth/persist).
+// Called whenever the client has just written a session; debounced because
+// several auth events can land at once, and the last write is the one to keep.
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+let persistAbort: AbortController | null = null;
+function persistSessionCookies() {
+  cancelPersistSessionCookies();
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    persistAbort = new AbortController();
+    fetch('/api/auth/persist', { method: 'POST', credentials: 'same-origin', signal: persistAbort.signal }).catch(() => {});
+  }, 1000);
+}
+// On sign-out, make sure an in-flight persist can't put the old cookies back.
+function cancelPersistSessionCookies() {
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = null;
+  persistAbort?.abort();
+  persistAbort = null;
+}
+
 // Helper to create a stable fingerprint for session comparison
 function sessionFingerprint(session: Session | null): string {
   if (!session) return "no-session";
@@ -44,7 +66,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearSession = async () => {
     try {
       explicitSignOutRef.current = true;
-      await supabaseBrowser.auth.signOut();
+      cancelPersistSessionCookies();
+      // 'local' ends only this device's session; other phones/browsers stay logged in
+      await supabaseBrowser.auth.signOut({ scope: 'local' });
       // Clear cookies manually
       document.cookie = 'sb-access-token=; path=/; max-age=0';
       document.cookie = 'sb-refresh-token=; path=/; max-age=0';
@@ -79,9 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const isSecure = window.location.protocol === 'https:';
       const secureFlag = isSecure ? '; Secure' : '';
       document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=3600; SameSite=Lax${secureFlag}`;
-      if (session.refresh_token) {
-        document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
-      }
+      persistSessionCookies();
     }
 
     if (isDebug()) debugLog('AuthProvider: Session confirmed directly', { userId: session.user.id });
@@ -93,6 +115,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     didInitRef.current = true;
+
+    // Older builds kept a second copy of the refresh token in this cookie. Nothing
+    // reads it and it goes stale on every rotation, so remove it.
+    document.cookie = 'sb-refresh-token=; path=/; max-age=0';
 
     const getInitialSession = async () => {
       try {
@@ -134,9 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const isSecure = window.location.protocol === 'https:';
             const secureFlag = isSecure ? '; Secure' : '';
             document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=3600; SameSite=Lax${secureFlag}`;
-            if (session.refresh_token) {
-              document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
-            }
+            persistSessionCookies();
           }
         }
       } catch (error) {
@@ -157,6 +181,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           userId: session?.user?.id,
           email: session?.user?.email
         });
+
+        // Before any de-dupe/grace checks below, so every sign-out path is covered
+        if (event === 'SIGNED_OUT') cancelPersistSessionCookies();
 
         const fingerprint = sessionFingerprint(session);
 
@@ -195,9 +222,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const isSecure = window.location.protocol === 'https:';
           const secureFlag = isSecure ? '; Secure' : '';
           document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=3600; SameSite=Lax${secureFlag}`;
-          if (session.refresh_token) {
-            document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
-          }
+          persistSessionCookies();
         } else {
           // Clear cookies when no session
           document.cookie = 'sb-access-token=; path=/; max-age=0';

@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
+import type { User } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 
 // Routes that should bypass auth checks completely
@@ -62,14 +63,50 @@ export async function middleware(request: NextRequest) {
   // Then validate with getUser() only if session exists (to refresh tokens if needed)
   const { data: { session } } = await supabase.auth.getSession();
 
-  let user = null;
+  let user: User | null = null;
+  let userCheckFailedTransiently = false;
   if (session) {
     // Only call getUser() when we have a session - this validates the token
     // and refreshes cookies if needed
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
     user = userData?.user ?? null;
+    // Network blips / Supabase 5xx aren't proof the session is bad
+    userCheckFailedTransiently = !user && !!userError && !(userError.status && userError.status < 500);
   }
   // If no session, user remains null - this is expected for logged-out users (no error logged)
+
+  // Many API routes authenticate via the legacy `sb-access-token` cookie, which
+  // the browser only re-writes after AuthProvider boots. On a returning visit
+  // that cookie has long expired (1h), so the first API calls would 401 even
+  // though the Supabase session is valid. Mirror the validated (and, if needed,
+  // just-refreshed) access token into it here, for this request and the browser.
+  // If Supabase couldn't be reached, leave the cookie as-is rather than
+  // logging the fan out of API routes over a transient error.
+  const legacyToken = request.cookies.get('sb-access-token')?.value;
+  const accessToken = user && session ? session.access_token : null;
+  if (!userCheckFailedTransiently && accessToken !== (legacyToken ?? null)) {
+    const pendingCookies = supabaseResponse.cookies.getAll();
+    if (accessToken) {
+      request.cookies.set('sb-access-token', accessToken);
+    } else {
+      request.cookies.delete('sb-access-token');
+    }
+    supabaseResponse = NextResponse.next({ request });
+    pendingCookies.forEach((cookie) => supabaseResponse.cookies.set(cookie));
+    if (accessToken) {
+      const maxAge = session?.expires_at
+        ? Math.max(session.expires_at - Math.floor(Date.now() / 1000), 60)
+        : 3600;
+      supabaseResponse.cookies.set('sb-access-token', accessToken, {
+        path: '/',
+        maxAge,
+        sameSite: 'lax',
+        secure: request.nextUrl.protocol === 'https:',
+      });
+    } else {
+      supabaseResponse.cookies.set('sb-access-token', '', { path: '/', maxAge: 0 });
+    }
+  }
 
   return supabaseResponse;
 }

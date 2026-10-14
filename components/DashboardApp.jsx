@@ -34,6 +34,7 @@ import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
 import { acquireCelebrationLock, releaseCelebrationLock } from "@/lib/celebrationQueue";
 import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import { useAudio } from "@/app/providers/AudioProvider";
+import { useAuth } from "@/app/providers/AuthProvider";
 import ProfileBarWrapper from "@/components/ProfileBarWrapper";
 import HoloStarsButton from "@/components/HoloStarsButton";
 import SoulStareModal from "@/components/SoulStareModal";
@@ -152,6 +153,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   
   // Profile context for user and profile data
   const { profile, isJournalOpen } = useProfile();
+
+  // AuthProvider's already-restored user, used as a fallback when getSession() stalls
+  const { user: authUser } = useAuth();
+  const authUserRef = React.useRef(authUser);
+  React.useEffect(() => { authUserRef.current = authUser; }, [authUser]);
 
   // Ref to track latest profile for use in setTimeout closures (avoids stale closure issues)
   const profileRef = React.useRef(profile);
@@ -1556,15 +1562,21 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
     // Safari has a known bug where supabase.auth.getSession() can hang indefinitely
     // (e.g. after the tab was backgrounded). Race it against a timeout so START
-    // always proceeds instead of appearing unresponsive.
+    // always proceeds instead of appearing unresponsive. If it stalls, fall back to
+    // the user AuthProvider already restored so a logged-in fan isn't shown the
+    // login screen just because the check was slow (e.g. a token refresh on a
+    // weak mobile connection).
     const getSessionWithTimeout = async (ms = 2500) => {
+      const fallback = () => ({
+        data: { session: authUserRef.current ? { user: authUserRef.current } : null },
+      });
       try {
         return await Promise.race([
           supabaseClient.auth.getSession(),
-          new Promise((resolve) => setTimeout(() => resolve({ data: { session: null } }), ms)),
+          new Promise((resolve) => setTimeout(() => resolve(fallback()), ms)),
         ]);
       } catch {
-        return { data: { session: null } };
+        return fallback();
       }
     };
 

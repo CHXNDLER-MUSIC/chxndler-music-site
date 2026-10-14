@@ -877,7 +877,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
     try { sfx.play('click', 0.8); } catch {}
     
     try {
-      const { error } = await supabaseBrowser.auth.signOut();
+      // 'local' ends only this device's session; other phones/browsers stay logged in
+      const { error } = await supabaseBrowser.auth.signOut({ scope: 'local' });
       if (error) {
         console.error('Error signing out:', error);
       } else {

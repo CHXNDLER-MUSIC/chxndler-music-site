@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
+import { getApiUser, unauthorized } from '@/lib/apiAuth';
 
 export async function POST(req: NextRequest) {
   if (process.env.NODE_ENV !== "production") console.log('[updateShipping] POST request received');
@@ -64,6 +65,10 @@ export async function POST(req: NextRequest) {
 
     if (process.env.NODE_ENV !== "production") console.log('[updateShipping] Updating order:', orderId);
 
+    // Only the signed-in owner of the order may change its shipping details
+    const auth = await getApiUser();
+    if (!auth) return unauthorized();
+
     const supabase = getSupabaseAdmin();
 
     const { data, error } = await supabase
@@ -80,7 +85,8 @@ export async function POST(req: NextRequest) {
         updated_at: new Date().toISOString(),
       })
       .eq('id', orderId)
-      .select()
+      .eq('user_id', auth.user.id)
+      .select('id')
       .single();
 
     if (error) {

@@ -66,7 +66,10 @@ export async function POST(req: Request) {
       admin = null;
     }
 
-    const isSystem = Boolean(body?.is_system);
+    // Clients may only send the "<name> connected to the signal" join notice as a
+    // system message; anything else is posted as a normal message so it can't
+    // impersonate an official announcement.
+    const isSystem = Boolean(body?.is_system) && message.endsWith(' connected to the signal');
     const clientNonce = (body?.client_nonce ?? '').toString().trim() || null;
     const dedupeKey = (body?.dedupe_key ?? clientNonce ?? '').toString().trim() || null;
 
@@ -156,8 +159,6 @@ export async function POST(req: Request) {
       {
         ok: false,
         error: "Route crashed",
-        details: err?.message ?? String(err),
-        stack: err?.stack ?? null,
       },
       { status: 500 }
     );
@@ -170,7 +171,7 @@ export async function GET(req: NextRequest) {
   try {
     const admin = getSupabaseAdmin();
     const url = new URL(req.url);
-    const limit = parseInt(url.searchParams.get('limit') || '50');
+    const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit') || '50') || 50, 1), 200);
 
     const { data, error } = await admin
       .from('heart_signal_messages_public')

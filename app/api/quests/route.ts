@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getApiUser } from '@/lib/apiAuth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +11,14 @@ export async function GET(request: NextRequest) {
     );
 
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const requestedUserId = searchParams.get('userId');
+
+    // Completion history is private: only honor userId when it is the caller's own
+    let userId: string | null = null;
+    if (requestedUserId) {
+      const auth = await getApiUser();
+      if (auth?.user.id === requestedUserId) userId = requestedUserId;
+    }
 
     // Fetch all active quests
     const { data: quests, error: questsError } = await supabase

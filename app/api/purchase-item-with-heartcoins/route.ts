@@ -14,6 +14,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // A zero/negative price would turn the "spend" into a HeartCoin credit
+    if (typeof priceHeartCoins !== 'number' || !Number.isFinite(priceHeartCoins) || priceHeartCoins <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid price' },
+        { status: 400 }
+      );
+    }
+
     // Get user from session
     const cookieStore = await cookies();
     const token = cookieStore.get('sb-access-token')?.value || '';

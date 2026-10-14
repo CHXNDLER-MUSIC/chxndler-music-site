@@ -1847,6 +1847,7 @@ const HUDPanel = React.memo(function HUDPanel({
   // Volume popover (HUD waveform controls)
   const [showHudVolumePopover, setShowHudVolumePopover] = useState(false);
   const hudVolRef = useRef(null);
+  const hudVolPopRef = useRef(null);
   const hudVolBtnRef = useRef(null);
   const [hudPopoverPos, setHudPopoverPos] = useState(null);
   // Direct ref to the currently tracked audio element for live reads during render
@@ -2136,10 +2137,13 @@ const HUDPanel = React.memo(function HUDPanel({
   useEffect(() => {
     const onDocDown = (e) => {
       const t = e.target;
-      if (hudVolRef.current && t && !hudVolRef.current.contains(t)) {
-        try { sfx.play('close', 0.4); } catch {}
-        setShowHudVolumePopover(false);
-      }
+      if (!t) return;
+      if (hudVolBtnRef.current && hudVolBtnRef.current.contains(t)) return;
+      if (hudVolPopRef.current && hudVolPopRef.current.contains(t)) return;
+      setShowHudVolumePopover(v => {
+        if (v) { try { sfx.play('close', 0.4); } catch {} }
+        return false;
+      });
     };
     const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowHudVolumePopover(false); } };
     document.addEventListener('mousedown', onDocDown);
@@ -2151,6 +2155,13 @@ const HUDPanel = React.memo(function HUDPanel({
       document.removeEventListener('keydown', onKey);
     };
   }, []);
+
+  // Auto-close volume popover when another HUD popover (lyrics, Apple, Spotify, YouTube) opens
+  useEffect(() => {
+    if (showLyricsPopover || showApplePopover || showSpotifyPopover || showYouTubePopover) {
+      setShowHudVolumePopover(false);
+    }
+  }, [showLyricsPopover, showApplePopover, showSpotifyPopover, showYouTubePopover]);
 
   // Close volume popover and dismiss planet popup when blue display closes
   useEffect(() => {
@@ -3929,6 +3940,7 @@ const HUDPanel = React.memo(function HUDPanel({
 
                 {typeof document !== 'undefined' && showHudVolumePopover && hudPopoverPos ? createPortal(
                   <div
+                    ref={hudVolPopRef}
                     role="dialog"
                     aria-label="Adjust volume"
                     style={{

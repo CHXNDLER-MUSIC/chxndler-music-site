@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
+import { getApiUser, isAdminUser, unauthorized, forbidden } from '@/lib/apiAuth';
 import { emailService, type ShippingNotificationData } from '@/lib/emailService';
 
 export async function POST(request: NextRequest) {
@@ -19,16 +18,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user from session (this would typically be called by admin/shipping system)
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value || '';
-    
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Admin only: this marks orders shipped and emails customers
+    const auth = await getApiUser();
+    if (!auth) return unauthorized();
+    if (!isAdminUser(auth.user)) return forbidden();
+    const { supabase } = auth;
 
-    const supabase = createSupabaseServerClientWithJwt(token);
-    
     // Get order details with user information
     const { data: orderWithUser, error: orderError } = await supabase
       .from('orders')
