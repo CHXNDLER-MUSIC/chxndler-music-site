@@ -1181,15 +1181,17 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
           position: relative;
           display:grid; place-items:center;
           border-radius:9999px;
-          /* Match Live Stream button: black glass shell */
+          /* Translucent cyan glass with a matching neon ring */
           background:
-            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
-            linear-gradient(180deg, #0b0b0b, #000 64%);
-          border:1px solid rgba(255,255,255,.18);
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.5), rgba(255,255,255,.04) 48%),
+            linear-gradient(180deg, rgba(25,227,255,.42), rgba(25,227,255,.16));
+          border:1px solid rgba(25,227,255,.95);
           box-shadow:
-            0 14px 24px rgba(0,0,0,.55),
-            inset 0 1px 0 rgba(255,255,255,.22),
-            inset 0 -6px 14px rgba(0,0,0,.6);
+            0 0 0 2px rgba(25,227,255,.32),
+            0 0 16px rgba(25,227,255,.78),
+            0 0 32px rgba(25,227,255,.42),
+            inset 0 1px 0 rgba(255,255,255,.62),
+            inset 0 -4px 12px rgba(25,227,255,.2);
           backdrop-filter: blur(8px);
           -webkit-backdrop-filter: blur(8px);
           transition: transform .15s ease, box-shadow .2s ease, filter .18s ease;
@@ -1250,20 +1252,19 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         
         /* Enhanced glow effects when blue display is active */
         .power-btn-active {
-          /* Keep dark shell, add cyan tint overlay when active */
+          /* Keep the cyan glass and intensify its matching glow when active */
           background:
-            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
-            rgba(25,227,255,0.35),
-            linear-gradient(180deg, #0b0b0b, #000 64%);
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.52), rgba(255,255,255,.04) 48%),
+            linear-gradient(180deg, rgba(25,227,255,.62), rgba(25,227,255,.28));
           animation: powerActiveGlow 2s ease-in-out infinite, powerPulse 2.6s ease-in-out infinite;
           box-shadow:
-            0 14px 28px rgba(0,0,0,.6),
+            0 0 0 2px rgba(25,227,255,.48),
             0 0 40px #19E3FF,
             0 0 80px #19E3FFFF,
             0 0 120px #19E3FFCC,
             0 0 160px #19E3FF88,
-            inset 0 1px 0 rgba(255,255,255,.22),
-            inset 0 -6px 14px rgba(0,0,0,.6);
+            inset 0 1px 0 rgba(255,255,255,.68),
+            inset 0 -4px 12px rgba(25,227,255,.25);
         }
         .power-btn-active::before { /* outer halo when active */
           content:""; position:absolute; inset:-1%; border-radius:9999px; pointer-events:none;

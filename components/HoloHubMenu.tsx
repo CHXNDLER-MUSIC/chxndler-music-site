@@ -857,36 +857,38 @@ export default function HoloHubMenu({
           position:absolute; border-radius:9999px; cursor:pointer;
           display:grid; place-items:center;
           background:
-            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
-            linear-gradient(180deg, #0b0b0b, #000 64%);
-          border:1px solid rgba(255,255,255,.18);
-          /* Default: NO yellow glow when closed */
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.5), rgba(255,255,255,.04) 48%),
+            linear-gradient(180deg, rgba(242,239,29,.42), rgba(242,239,29,.16));
+          border:1px solid rgba(242,239,29,.95);
+          /* Matching yellow neon ring stays visible while closed */
           box-shadow:
-            0 18px 36px rgba(0,0,0,.65),
-            inset 0 2px 0 rgba(255,255,255,.22),
-            inset 0 -6px 14px rgba(0,0,0,.8);
+            0 0 0 2px rgba(242,239,29,.32),
+            0 0 16px rgba(242,239,29,.75),
+            0 0 32px rgba(242,239,29,.4),
+            inset 0 2px 0 rgba(255,255,255,.62),
+            inset 0 -4px 12px rgba(242,239,29,.2);
           backdrop-filter: blur(8px);
           -webkit-backdrop-filter: blur(8px);
           animation: none; /* only pulse when open/active */
           transition: transform 150ms ease, box-shadow 200ms ease, filter 180ms ease;
         }
         .hub::before{ content:""; position:absolute; inset:-2%; border-radius:9999px; pointer-events:none;
-          /* Yellow halo disabled by default; enabled for open/active */
+          /* Extra yellow halo for the open/active state */
           box-shadow: none;
           opacity: 0;
           animation: none;
           transition: opacity 180ms ease;
         }
         .hub::after{ content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.65;
-          /* Neutral sheen by default; no yellow tint when closed */
+          /* Glass sheen */
           background:
             linear-gradient(120deg, rgba(255,255,255,.25), rgba(255,255,255,0) 60%),
             repeating-linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.12) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
         }
         .hub:hover{ transform: scale(1.05); box-shadow:
-            0 22px 44px rgba(0,0,0,.7),
-            inset 0 2px 0 rgba(255,255,255,.35),
-            inset 0 -8px 18px rgba(0,0,0,.65),
+            0 0 0 2px rgba(242,239,29,.48),
+            inset 0 2px 0 rgba(255,255,255,.6),
+            inset 0 -5px 14px rgba(242,239,29,.28),
             0 0 22px rgba(242,239,29,0.75),
             0 0 48px rgba(242,239,29,0.4);
           filter: brightness(1.12) saturate(1.2);
@@ -895,11 +897,11 @@ export default function HoloHubMenu({
         .hub.on{
           transform: none;
           box-shadow:
-            0 18px 36px rgba(0,0,0,.65),
+            0 0 0 2px rgba(242,239,29,.42),
             0 0 20px #F2EF1DBB,
             0 0 40px #F2EF1D66,
-            inset 0 2px 0 rgba(255,255,255,.22),
-            inset 0 -6px 14px rgba(0,0,0,.8);
+            inset 0 2px 0 rgba(255,255,255,.62),
+            inset 0 -4px 12px rgba(242,239,29,.24);
           filter: brightness(1.0) saturate(1.06);
           animation: holoPulse 2.6s ease-in-out infinite;
         }
@@ -926,13 +928,13 @@ export default function HoloHubMenu({
         .hub-active {
           animation: hubActiveGlow 2s ease-in-out infinite, holoPulse 2.6s ease-in-out infinite;
           box-shadow:
-            0 14px 28px rgba(0,0,0,.7),
+            0 0 0 2px rgba(242,239,29,.5),
             0 0 70px #F2EF1DFF,
             0 0 140px #F2EF1DFF,
             0 0 210px #F2EF1DCC,
             0 0 280px #F2EF1D88,
-            inset 0 2px 0 rgba(255,255,255,.25),
-            inset 0 -6px 14px rgba(0,0,0,.6),
+            inset 0 2px 0 rgba(255,255,255,.65),
+            inset 0 -4px 12px rgba(242,239,29,.25),
             inset 0 0 20px #F2EF1D22;
         }
         .hub-active::before {

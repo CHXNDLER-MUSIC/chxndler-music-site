@@ -62,16 +62,18 @@ export default function HoloJoinButton({
         .join-wrap{ position: relative; }
         .hub{
           position:relative; display:grid; place-items:center; border-radius:9999px;
-          /* Instagram-style black glass shell with neon */
-          border:1px solid rgba(255,255,255,.18);
+          /* Translucent pink glass with a matching neon ring */
+          border:1px solid rgba(255,105,180,.95);
           background:
-            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
-            linear-gradient(180deg, #0b0b0b, #000 64%);
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.48), rgba(255,255,255,.05) 48%),
+            linear-gradient(180deg, rgba(255,105,180,.38), rgba(255,105,180,.16));
           /* Default: NO pink glow at rest — glow only on hover / active / live (matches yellow hub) */
           box-shadow:
-            0 16px 30px rgba(0,0,0,.6),
-            inset 0 2px 0 rgba(255,255,255,.25),
-            inset 0 -6px 14px rgba(0,0,0,.7);
+            0 0 0 2px rgba(255,105,180,.32),
+            0 0 16px rgba(255,105,180,.72),
+            0 0 32px rgba(255,105,180,.38),
+            inset 0 2px 0 rgba(255,255,255,.6),
+            inset 0 -4px 12px rgba(255,105,180,.2);
           transition: transform 120ms ease, box-shadow 180ms ease, filter 180ms ease;
         }
         .hub::before{ content:""; position:absolute; inset:-2px; border-radius:9999px; pointer-events:none; box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 0 0 1px rgba(0,255,255,.06); }
@@ -80,11 +82,11 @@ export default function HoloJoinButton({
         .hub:hover{
           transform: scale(1.05);
           box-shadow:
-            0 20px 38px rgba(0,0,0,.65),
+            0 0 0 2px rgba(255,105,180,.42),
+            0 0 22px rgba(255,105,180,.9),
+            0 0 48px rgba(255,105,180,.55),
             inset 0 2px 0 rgba(255,255,255,.3),
-            inset 0 -8px 18px rgba(0,0,0,.7),
-            0 0 22px rgba(252,84,175,0.75),
-            0 0 48px rgba(252,84,175,0.4);
+            inset 0 -5px 14px rgba(255,105,180,.28);
           filter: brightness(1.12) saturate(1.2);
         }
         .hub-icon{ width:${Math.round(size*0.62)}px; height:${Math.round(size*0.62)}px; object-fit: contain; filter: saturate(1.1) brightness(1.04); transition: filter 180ms ease, transform 180ms ease; }
@@ -94,13 +96,13 @@ export default function HoloJoinButton({
           /* Selected state: strongest glow, enhanced pulsing */
           animation: joinActivePulse 2.0s ease-in-out infinite;
           box-shadow:
-            0 18px 36px rgba(0,0,0,.8),
+            0 0 0 2px rgba(255,105,180,.5),
             0 0 28px ${hubColor}EE,
             0 0 56px ${hubColor}AA,
             0 0 90px ${hubColor}77,
             0 0 130px ${hubColor}44,
-            inset 0 2px 0 rgba(255,255,255,.4),
-            inset 0 -6px 14px rgba(0,0,0,.7);
+            inset 0 2px 0 rgba(255,255,255,.6),
+            inset 0 -5px 14px rgba(255,105,180,.25);
           filter: brightness(1.5) saturate(1.6);
         }
         
