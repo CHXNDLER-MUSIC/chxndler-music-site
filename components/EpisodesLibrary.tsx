@@ -102,8 +102,8 @@ const VIDEOS: Video[] = [
   // ── Live Signal – Live (in-person shows) ──
   {
     id: "lsl-001",
-    title: "LIVE SIGNAL 01 — ARLENE’S GROCERY, NYC",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    title: "LIVE SIGNAL 01 | ARLENE'S GROCERY (NYC)",
+    youtubeUrl: "https://www.youtube.com/watch?v=wrw9pN4LJLc",
     type: "live",
     releaseDate: "2026-10-07T00:00:00",
   },

@@ -13,6 +13,8 @@ import SoulStarJournal from "@/components/SoulStarJournal";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { logHeartcoinTransaction } from "@/utils/heartcoins";
 import { useProfile } from "@/contexts/ProfileContext";
+import { isAdminEmail } from "@/lib/adminAccess";
+import { useAuth } from "@/app/providers/AuthProvider";
 import { useAudio } from "@/app/providers/AudioProvider";
 import { useHeartcoinBalance } from "@/providers/HeartcoinBalanceProvider";
 import { useUIState } from "@/lib/use-ui-state";
@@ -168,6 +170,7 @@ const HUDPanel = React.memo(function HUDPanel({
 
   // Profile context (journal open state, refresh)
   const { profile, refreshProfile, setIsJournalOpen } = useProfile();
+  const { user: authUser } = useAuth();
 
   // Temporary kill-switch to disable 3D planets for performance testing
   // Set to true to disable. You can also override at runtime by setting
@@ -2318,9 +2321,11 @@ const HUDPanel = React.memo(function HUDPanel({
     },
   };
 
+  const isAdmin = isAdminEmail(authUser?.email) || isAdminEmail(profile?.email);
+
   const resolvedSongs = baseSongs.map(s => {
     const config = TIME_LOCKED_TRACKS[s.id];
-    if (!config) return s;
+    if (!config || isAdmin) return s;
     const now = Date.now();
     const unlock = new Date(config.unlockDate).getTime();
     if (now >= unlock) return s;
@@ -2329,10 +2334,10 @@ const HUDPanel = React.memo(function HUDPanel({
     return { ...s, locked: true, unlockDate: config.unlockDate };
   });
 
-  // Only show released songs in the dropdown. Keep planets unchanged.
+  // Only show released songs in the dropdown (admins see everything). Keep planets unchanged.
   const dropdownSongs = React.useMemo(
-    () => (resolvedSongs || []).filter(s => s && (s.is_released === true)),
-    [resolvedSongs]
+    () => (resolvedSongs || []).filter(s => s && (isAdmin || s.is_released === true)),
+    [resolvedSongs, isAdmin]
   );
   
   // Initialize player store with holoSongs for 3D planet system

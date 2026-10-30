@@ -552,7 +552,16 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
               )}
             </form>
           ) : (
-            <div className="space-y-2">
+            <form
+              id="welcome-verify-form"
+              className="space-y-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                try { new Audio('/audio/alien-wave.MP3').play().catch(() => {}); } catch {}
+                verifyCode();
+              }}
+              autoComplete="on"
+            >
               <div className="flex items-center justify-between text-xs" style={{ color: '#00FFFF' }}>
                 <button
                   type="button"
@@ -582,6 +591,9 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
                 maxLength={6}
                 value={codeSanitized}
                 onChange={(e) => setCode(e.target.value)}
+                aria-label="Six digit email verification code"
+                autoCapitalize="off"
+                spellCheck={false}
                 onPaste={(e) => {
                   const text = e.clipboardData.getData('text');
                   const digits = (text || '').replace(/\D/g, '').slice(0, 6);
@@ -633,18 +645,20 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
               >
                 Signal lost? Check your spam or junk folder.
               </p>
-            </div>
+            </form>
           )}
 
           {/* Primary Button: changes by step; stays in place */}
           <div className="flex justify-center" style={{ marginTop: '8px' }}>
             <button
+              type={step === 'verify' ? 'submit' : 'button'}
+              form={step === 'verify' ? 'welcome-verify-form' : undefined}
               onClick={() => {
                 if (step === 'request') {
                   if (email.length > 0) signInWithEmail({ preventDefault: () => {} } as any);
                 } else if (step === 'verify') {
-                  try { new Audio('/audio/alien-wave.MP3').play().catch(() => {}); } catch {}
-                  verifyCode();
+                  // The verification form's submit handler owns this action.
+                  return;
                 }
               }}
               disabled={loading || otpRequestInFlightRef.current || (step === 'request' ? (email.length === 0 || resendSeconds > 0) : (codeSanitized.length !== 6 && !justSent))}

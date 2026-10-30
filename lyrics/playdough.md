@@ -1,35 +1,37 @@
-Ocean girl, you float like light
-Fade in slow, kiss me right
-Emerald eyes shine like the sea 
-You light up every part of me
+Yo Lil Surf
+Yeah
+It’s CHXNDLER, with an X, Huh
+I got a studio around the block
+Come by around 3
+Yeah
+Alright bet I’ll see you then
 
-You’re my wave, you’re my sun
-You show up, then you run
-I don’t mind, I don’t fight
-I just wanna feel this right
+I know they gonna rive my wave though
+I know they gonna rive the wave though
+They be fake just like some play dough
+Any niggas in the way though
+The chopper get that boy a halo
+The chopper get that boy a halo
+They get em going and it’s case closed
+Took a trip to turks & Caicos 
+Took a trip to Turks & Caicos 
 
-Ooh… don’t need to say much
-Ooh… love moves like us
+Everybody acting plastic
+Fake love, all for status
+Same life, automatic
+Fuck it, vanish like magic
+I came here chasing something I could only see in dreams Funny, I thought I had it all But I hated everything
+Everybody told me “Get a real job, grow up”
+Let ’em shape you for too long That’s what you become
+I’m an alien, baby But I come in peace
+I won’t change for anyone
+I’ll be who I’m meant to be
 
-Ocean girl, you speak in tides
-Say one word, shift my mind
-You see the storm behind my eyes 
-Then drown the noise in lullabies
-
-Ocean girl, your love runs deep
-You are wild and you are free
-Every time you drift to sea
-You always come right back to me
-
-You’re my wave, you’re my sun
-You show up, then you run
-I don’t mind, I don’t fight
-I just wanna feel this right
-
-Ooh… don’t need to say much
-Ooh… love moves like us
-
-You’re my wave, you’re my sun
-You show up, then you run
-I don’t mind, I don’t fight
-I just wanna feel this right
+Okay, okay I been way too high
+I need to come down Spent my whole life tryna fit in Now I try to stand out
+Maybe I’m delusional I don’t fit inside the mold I’m living inside my dream 
+Now my world is made of playdoh, huh
+And they be fake just like some play dough, huh
+Any niggas in the way though, huh 
+The chopper get that boy a halo, huh
+They get em done and it’s case closed

@@ -1,35 +1,70 @@
-Ocean girl, you float like light
-Fade in slow, kiss me right
-Emerald eyes shine like the sea 
-You light up every part of me
+Bring the tide in, tide in
+Baby, let me dive in, dive in
+No sleep till the sky is bright
+we keep ridin’, ridin’ ridin’, ridin’
+ridin’, ridin’, ridin’, riding’
+Lil Surf, bring the tide 
+Tide in tide in tide in tide in
 
-You’re my wave, you’re my sun
-You show up, then you run
-I don’t mind, I don’t fight
-I just wanna feel this right
+I’m in New York 4AM
+And the Bitch i’m with a ten
+Huh, can’t give you my heart never again
+Never thought that love would ever end
+I’m fucking two hoes and they twins
+Huh yeah, I try to dive right in
+Huh yeah, you and diamonds
+Huh yeah, yeah, it’s perfect timing
+Huh, yeah, and now I’m shining
+Huh, lately I be counting Benjamins
+Huh, tell them bring you and your friends
+Huh, we can party to the night end
+Huh, we can party to the night end
+Bring the tide in, tide in
+Baby, let me dive in, dive in
+All night we been ridin’, ridin’
+Lil surf bring the tide in, tide in
 
-Ooh… don’t need to say much
-Ooh… love moves like us
+Bring the tide in, tide in
+Baby, let me dive in, dive in
+All night we been ridin’, ridin’
+Lil surf bring the tide in, tide in
+Bring the tide in, tide in
+Baby, let me dive in, dive in
+No sleep till the sky is bright
+we keep ridin’, ridin’ ridin’, ridin’
+Bring the tide in, tide in
+Baby, let me dive in, dive in
+No sleep till the sky gets bright
+We keep ridin’, ridin’, ridin’, ridin
 
-Ocean girl, you speak in tides
-Say one word, shift my mind
-You see the storm behind my eyes 
-Then drown the noise in lullabies
+I can see Manhattan
+Like I saw it in my dreams
+I used to picture nights like this When I was seventeen 
+Now I’m in over my head I should have learned how to swim Spent too long on the edge
+So I just dove right in
+4AM, city glows
+Ridin’ high from the show
+Bring the tide in, let it roll
+We ain’t ready to go home
+We’re too young to play it safe 
+We’re too deep to turn around
+See, Brooklyn got no ocean
+But we’re surfing through the town
+Hands up to the skyline 
+We could do this all night
+Never felt so alive
+No sleep ’til sunrise
+Look around, we made it
+Whole rooftop, getting faded
+See the tide, the wave hit
 
-Ocean girl, your love runs deep
-You are wild and you are free
-Every time you drift to sea
-You always come right back to me
-
-You’re my wave, you’re my sun
-You show up, then you run
-I don’t mind, I don’t fight
-I just wanna feel this right
-
-Ooh… don’t need to say much
-Ooh… love moves like us
-
-You’re my wave, you’re my sun
-You show up, then you run
-I don’t mind, I don’t fight
-I just wanna feel this right
+Lil surf bring the tide in
+Bring the tide in, tide in
+Baby, let me dive in, dive in
+All night we been ridin’, ridin’
+Lil surf bring the tide in, tide in
+Keep up with the icks and the party never ends
+Bring the tide in, tide in
+Baby, let me dive in, dive in
+No sleep till the sky gets bright
+we keep ridin’, ridin’ ridin’, ridin’, ridin’

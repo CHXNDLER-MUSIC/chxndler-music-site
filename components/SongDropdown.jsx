@@ -10,6 +10,8 @@ import { useCycleList } from "@/lib/useCycleList";
 import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
 import { useNextDrop } from "@/hooks/useNextDrop";
 import { useProfile } from "@/contexts/ProfileContext";
+import { useAuth } from "@/app/providers/AuthProvider";
+import { isAdminEmail } from "@/lib/adminAccess";
 import { slugify } from "@/lib/slug";
 import { SONG_ELEMENT_MAPPING as PLANET_SONG_ELEMENTS } from "@/lib/planetConfig";
 
@@ -84,9 +86,11 @@ export default function SongDropdown({ items = [], allItems = [], initialActiveI
   const { nextDrop } = useNextDrop();
   // Profile for journey-based early access gating
   const { profile } = useProfile();
+  const { user: authUser } = useAuth();
   const userJourneyRaw = (profile?.journey || profile?.tier || 'wanderer');
   const userJourney = typeof userJourneyRaw === 'string' ? userJourneyRaw.toLowerCase() : String(userJourneyRaw || 'wanderer');
-  const hasEarlyAccess = userJourney === 'dreamer' || userJourney === 'lover';
+  const isAdmin = isAdminEmail(authUser?.email) || isAdminEmail(profile?.email);
+  const hasEarlyAccess = userJourney === 'dreamer' || userJourney === 'lover' || isAdmin;
 
   // Next-drop countdown (ticks only while dropdown is open and nextDrop exists)
   const [dropCountdown, setDropCountdown] = useState(0);
@@ -776,7 +780,7 @@ export default function SongDropdown({ items = [], allItems = [], initialActiveI
           {displayItems.map((s, i) => {
             const isActive = s.id === activeId;
             const isHighlight = i === highlight;
-            const isLocked = !!s.locked;
+            const isLocked = !!s.locked && !isAdmin;
 
             // Build countdown string for locked tracks
             let lockCountdown = null;
