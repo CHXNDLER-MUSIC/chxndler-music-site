@@ -248,6 +248,18 @@ export default function StudioPortfolioLauncher({
             </div>
           )}
         </div>
+        {!selectedRelease && activeTab === "brand" && (
+          <div className="mt-[1.5rem] border-t border-white/[0.08] pt-[1.25rem] text-center">
+            <Link
+              href="/collab"
+              onClick={playClick}
+              onMouseEnter={playHover}
+              className="inline-flex items-center gap-[0.45rem] text-[0.7rem] font-bold uppercase tracking-[0.18em] text-white/55 transition-colors hover:text-white"
+            >
+              Explore all collaborations <span aria-hidden="true">↗</span>
+            </Link>
+          </div>
+        )}
       </MediaViewerModal>
 
       <style jsx>{`
