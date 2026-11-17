@@ -9,6 +9,9 @@ import type { NowPlaying } from "@/lib/mediaSession";
 export type ArtistRelease = {
   slug: string;
   title: string;
+  /** True when the corresponding audio object exists in the Supabase tracks bucket. */
+  audioAvailable?: boolean;
+  artist?: string;
   coverArt: string;
   spotifyUrl: string;
   appleMusicUrl: string;
@@ -37,5 +40,5 @@ export function releaseAudioSrc(slug: string): string {
 
 /** Lock-screen / Control Center info for a release. */
 export function releaseNowPlaying(release: ArtistRelease): NowPlaying {
-  return { title: release.title, artist: "CHXNDLER", artwork: release.coverArt };
+  return { title: release.title, artist: release.artist || "CHXNDLER", artwork: release.coverArt };
 }

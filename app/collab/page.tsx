@@ -1,5 +1,13 @@
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { createClient } from "@supabase/supabase-js";
 import CollabGallery, { type CollabProject } from "@/components/collab/CollabGallery";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { songCoverPath } from "@/lib/songCover";
+import { resolveSongLinks } from "@/lib/chxndlerLinks";
+import { toYouTubeEmbed } from "@/lib/youtube";
+import { getCardImageUrl } from "@/lib/supabaseCardUrl";
+import { youtubeSkyFor } from "@/lib/sky-youtube";
+import { releaseAudioSrc } from "@/components/brand-pitch/artistRelease";
+import type { ArtistRelease } from "@/components/brand-pitch/artistRelease";
 
 export const dynamic = "force-dynamic";
 
@@ -24,11 +32,99 @@ function titleFor(stem: string) {
   return stem.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
+const NON_RELEASE_TITLES = ["welcome to the heartverse", "you are home", "space music", "welcome back"];
+const normalizeTitle = (title: string) => title.trim().replace(/[‘’ʼ`]/g, "'").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+
+async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleased: ArtistRelease[] }> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const [songsRes, cardsRes] = await Promise.all([
+      supabase.from("songs").select("slug, title, is_released, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url"),
+      supabase.from("cards").select("card_name"),
+    ]);
+    if (songsRes.error || !songsRes.data) return { released: [], unreleased: [] };
+
+    const cardNames = new Map<string, string>();
+    for (const card of cardsRes.data ?? []) {
+      if (card.card_name) cardNames.set(normalizeTitle(String(card.card_name)), String(card.card_name));
+    }
+
+    const songs = songsRes.data
+      .filter((row) => !!row.slug && !!row.title && !NON_RELEASE_TITLES.includes(String(row.title).toLowerCase()))
+      .map((row) => {
+        const slug = String(row.slug);
+        const title = String(row.title);
+        const released = row.is_released === true;
+        const links = resolveSongLinks(row);
+        const rawLink = (value: unknown) => typeof value === "string" ? value : "";
+        const cardName = cardNames.get(normalizeTitle(title));
+        return {
+          released,
+          release: {
+            slug,
+            title,
+            artist: "CHXNDLER",
+            coverArt: songCoverPath(slug, title),
+            spotifyUrl: released ? links.spotifyUrl : rawLink(row.spotify_url),
+            appleMusicUrl: released ? links.appleMusicUrl : rawLink(row.apple_music_url),
+            youtubeUrl: released ? links.youtubeUrl : rawLink(row.youtube_music_video_url),
+            videoEmbedUrl: released && !links.isYouTubeFallback ? toYouTubeEmbed(links.youtubeUrl) : null,
+            cardArt: cardName ? getCardImageUrl(cardName) : null,
+            skyVideoUrl: (row.sky_video_url as string | null) || youtubeSkyFor(slug) || null,
+          },
+        };
+      });
+
+    // Compare unreleased tracks with actual objects in the public Supabase
+    // `tracks` bucket. The songs table alone can contain rows before audio is uploaded.
+    let availableAudio: Set<string> | null = null;
+    try {
+      const trackStorage = supabase.storage.from("tracks");
+      const paths: string[] = [];
+      const walkTracks = async (folder = "", depth = 0): Promise<void> => {
+        if (depth > 8) return;
+        const { data, error } = await trackStorage.list(folder, { limit: 1000 });
+        if (error) throw error;
+        for (const entry of data ?? []) {
+          if (!entry.name) continue;
+          const path = folder ? `${folder}/${entry.name}` : entry.name;
+          if (entry.id) paths.push(path.toLowerCase());
+          else await walkTracks(path, depth + 1);
+        }
+      };
+      await walkTracks();
+      availableAudio = new Set(paths);
+    } catch (error) {
+      console.error("[collab] Could not check Supabase track audio:", error);
+    }
+
+    return {
+      released: songs.filter((song) => song.released).map((song) => song.release).sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" })),
+      unreleased: songs.filter((song) => !song.released).map((song) => ({
+        ...song.release,
+        ...(availableAudio ? {
+          audioAvailable: availableAudio.has(decodeURIComponent(new URL(releaseAudioSrc(song.release.slug)).pathname.split("/tracks/").pop() || "").toLowerCase()),
+        } : {}),
+      })).sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" })),
+    };
+  } catch (error) {
+    console.error("[collab] Could not load artist songs:", error);
+    return { released: [], unreleased: [] };
+  }
+}
+
 export default async function CollabPage() {
   let projects: CollabProject[] = [];
 
   try {
-    const storage = getSupabaseAdmin().storage.from(BUCKET);
+    const supabaseUrl = process.env.COLLABS_SUPABASE_URL;
+    const supabaseSecretKey = process.env.COLLABS_SUPABASE_SECRET_KEY;
+    if (!supabaseUrl || !supabaseSecretKey) {
+      throw new Error("Collabs storage environment is not configured");
+    }
+    const storage = createClient(supabaseUrl, supabaseSecretKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    }).storage.from(BUCKET);
     const objects: Array<{ path: string; name: string }> = [];
     const walk = async (folder = "", depth = 0): Promise<void> => {
       // Keep traversal bounded in case an unexpected deeply nested path exists.
@@ -50,24 +146,29 @@ export default async function CollabPage() {
 
     const publicUrl = (path: string) => storage.getPublicUrl(path).data.publicUrl;
     const byType = objects.map((file) => ({ ...file, ...fileParts(file.name) }));
-    const covers = byType.filter((file) => IMAGE_EXTENSIONS.has(file.extension) && !/(?:[-_ .])(background|backdrop|bg)$/i.test(file.stem));
+    const projectFolders = [...new Set(byType
+      .filter((file) => file.path.includes("/"))
+      .map((file) => file.path.split("/")[0]))];
+    const isBackground = (stem: string) => /(?:[-_ .])(background|backdrop|bg)$/i.test(stem);
 
-    projects = covers.map((cover) => {
-      const key = keyFor(cover.stem);
-      const directory = cover.path.includes("/") ? cover.path.slice(0, cover.path.lastIndexOf("/")) : "";
-      const related = byType.filter((file) => {
-        const fileDirectory = file.path.includes("/") ? file.path.slice(0, file.path.lastIndexOf("/")) : "";
-        return fileDirectory === directory && (keyFor(file.stem) === key || keyFor(file.stem.replace(/(?:[-_ .])(background|backdrop|bg)$/i, "")) === key);
-      });
-      const audio = related.find((file) => AUDIO_EXTENSIONS.has(file.extension));
-      const lyrics = related.find((file) => ["lrc", "txt"].includes(file.extension));
-      const background = related.find((file) => VIDEO_EXTENSIONS.has(file.extension) && /(?:[-_ .])(background|backdrop|bg)$/i.test(file.stem))
-        ?? related.find((file) => IMAGE_EXTENSIONS.has(file.extension) && /(?:[-_ .])(background|backdrop|bg)$/i.test(file.stem));
+    projects = projectFolders.map((folder) => {
+      const folderFiles = byType.filter((file) => file.path.startsWith(`${folder}/`) && file.name !== ".emptyFolderPlaceholder");
+      const folderKey = keyFor(folder);
+      const covers = folderFiles.filter((file) => IMAGE_EXTENSIONS.has(file.extension) && !isBackground(file.stem));
+      const cover = covers.find((file) => keyFor(file.stem) === folderKey) ?? covers[0];
+      const audio = folderFiles.find((file) => AUDIO_EXTENSIONS.has(file.extension) && keyFor(file.stem) === folderKey)
+        ?? folderFiles.find((file) => AUDIO_EXTENSIONS.has(file.extension));
+      const audioKey = audio ? keyFor(audio.stem.replace(/(?:[-_ .])\((?:demo|acoustic|instrumental)\)$/i, "")) : folderKey;
+      const lyrics = folderFiles.find((file) => ["lrc", "txt"].includes(file.extension) && keyFor(file.stem) === audioKey)
+        ?? folderFiles.find((file) => ["lrc", "txt"].includes(file.extension));
+      const background = folderFiles.find((file) => VIDEO_EXTENSIONS.has(file.extension) && isBackground(file.stem) && keyFor(file.stem) === audioKey)
+        ?? folderFiles.find((file) => IMAGE_EXTENSIONS.has(file.extension) && isBackground(file.stem) && keyFor(file.stem) === audioKey)
+        ?? folderFiles.find((file) => (VIDEO_EXTENSIONS.has(file.extension) || IMAGE_EXTENSIONS.has(file.extension)) && isBackground(file.stem));
 
       return {
-        id: cover.path,
-        title: titleFor(cover.stem),
-        coverUrl: publicUrl(cover.path),
+        id: folder,
+        title: titleFor(folder),
+        coverUrl: cover ? publicUrl(cover.path) : null,
         audioUrl: audio ? publicUrl(audio.path) : null,
         lyricsUrl: lyrics ? publicUrl(lyrics.path) : null,
         backgroundUrl: background ? publicUrl(background.path) : null,
@@ -78,5 +179,6 @@ export default async function CollabPage() {
     console.error("[collab] Could not load Collabs bucket:", error);
   }
 
-  return <CollabGallery projects={projects} />;
+  const { released, unreleased } = await fetchArtistSongs();
+  return <CollabGallery projects={projects} artistReleases={released} unreleasedSongs={unreleased} />;
 }

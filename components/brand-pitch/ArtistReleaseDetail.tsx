@@ -36,7 +36,17 @@ type LyricsState = { status: "loading" } | { status: "ready"; text: string } | {
  * scrollable lyrics, the collectible card, and the music video. Sections
  * with nothing to show (no lyrics file, no card, no video) are left out.
  */
-export default function ArtistReleaseDetail({ release }: { release: ArtistRelease }) {
+export default function ArtistReleaseDetail({
+  release,
+  audioSrcOverride,
+  audioIdOverride,
+  lyricsUrlOverride,
+}: {
+  release: ArtistRelease;
+  audioSrcOverride?: string;
+  audioIdOverride?: string;
+  lyricsUrlOverride?: string | null;
+}) {
   const { activeId, playing, loading, error, currentTime, duration, toggle, seek } = useBrandAudio();
   const { playHover, playClick } = useInteractionSound();
   const [lyrics, setLyrics] = useState<LyricsState>({ status: "loading" });
@@ -44,7 +54,9 @@ export default function ArtistReleaseDetail({ release }: { release: ArtistReleas
   const rootRef = useRef<HTMLDivElement>(null);
   // Latest toggle for the Space shortcut below (its listener is bound once).
   const togglePlaybackRef = useRef(() => {});
-  togglePlaybackRef.current = () => toggle(id, releaseAudioSrc(release.slug), releaseNowPlaying(release));
+  togglePlaybackRef.current = () => {
+    if (audioSrc) toggle(id, audioSrc, releaseNowPlaying(release));
+  };
 
   // Space plays/pauses the song while this view is open. Left alone when
   // Space already means something: typing, a button/link the user tabbed to
@@ -71,7 +83,8 @@ export default function ArtistReleaseDetail({ release }: { release: ArtistReleas
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const id = releaseAudioId(release.slug);
+  const id = audioIdOverride || releaseAudioId(release.slug);
+  const audioSrc = audioSrcOverride !== undefined ? audioSrcOverride : releaseAudioSrc(release.slug);
   const isActive = activeId === id;
   const isPlaying = isActive && playing;
   const isLoading = isActive && loading;
@@ -81,12 +94,19 @@ export default function ArtistReleaseDetail({ release }: { release: ArtistReleas
   // Same lyrics source the HUD uses (lyrics/<slug>.md via /api/lyrics).
   useEffect(() => {
     let cancelled = false;
+    if (lyricsUrlOverride === null) {
+      setLyrics({ status: "missing" });
+      return () => { cancelled = true; };
+    }
     setLyrics({ status: "loading" });
-    fetch(`/api/lyrics/${encodeURIComponent(release.slug)}`)
-      .then((res) => (res.ok ? res.json() : null))
+    const request = typeof lyricsUrlOverride === "string"
+      ? fetch(lyricsUrlOverride).then((res) => (res.ok ? res.text() : ""))
+      : fetch(`/api/lyrics/${encodeURIComponent(release.slug)}`).then((res) => (res.ok ? res.json() : null));
+    request
       .then((data) => {
         if (cancelled) return;
-        const text = typeof data?.content === "string" ? data.content.trim() : "";
+        const rawText = typeof data === "string" ? data : typeof data?.content === "string" ? data.content : "";
+        const text = rawText.replace(/^\[\d{1,2}:\d{2}(?:\.\d{1,3})?\]\s*/gm, "").trim();
         setLyrics(text ? { status: "ready", text } : { status: "missing" });
       })
       .catch(() => {
@@ -95,7 +115,7 @@ export default function ArtistReleaseDetail({ release }: { release: ArtistReleas
     return () => {
       cancelled = true;
     };
-  }, [release.slug]);
+  }, [release.slug, lyricsUrlOverride]);
 
   const streamingLinks = [
     { label: "Spotify", href: release.spotifyUrl, color: "#1ed760" },
@@ -110,13 +130,15 @@ export default function ArtistReleaseDetail({ release }: { release: ArtistReleas
         {/* The cover doubles as a play/pause button. */}
         <button
           type="button"
+          disabled={!audioSrc}
           onClick={() => {
+            if (!audioSrc) return;
             playClick();
-            toggle(id, releaseAudioSrc(release.slug), releaseNowPlaying(release));
+            toggle(id, audioSrc, releaseNowPlaying(release));
           }}
           onMouseEnter={playHover}
-          aria-label={`${isPlaying ? "Pause" : "Play"} ${release.title}`}
-          className="group grid w-full max-w-[22rem] mx-auto sm:max-w-none overflow-hidden rounded-[0.75rem] border border-white/10 bg-white/5 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
+          aria-label={audioSrc ? `${isPlaying ? "Pause" : "Play"} ${release.title}` : `${release.title} cover art`}
+          className={`group grid w-full max-w-[22rem] mx-auto sm:max-w-none overflow-hidden rounded-[0.75rem] border border-white/10 bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem] ${audioSrc ? "cursor-pointer" : "cursor-default"}`}
           style={{ aspectRatio: "1 / 1", boxShadow: `0 0 2.5rem -1rem ${PINK}88`, outlineColor: PINK }}
         >
           <img
@@ -126,7 +148,7 @@ export default function ArtistReleaseDetail({ release }: { release: ArtistReleas
             data-no-lazy=""
           />
           {/* Play/pause glyph — shows on hover, and stays while paused. */}
-          <span
+          {audioSrc && <span
             aria-hidden="true"
             className={`[grid-area:1/1] flex items-center justify-center bg-black/25 transition-opacity duration-200 ${
               isPlaying ? "opacity-0 group-hover:opacity-100" : "opacity-100"
@@ -144,7 +166,7 @@ export default function ArtistReleaseDetail({ release }: { release: ArtistReleas
                 </svg>
               )}
             </span>
-          </span>
+          </span>}
         </button>
 
         <div className="min-w-0">
@@ -159,13 +181,15 @@ export default function ArtistReleaseDetail({ release }: { release: ArtistReleas
           <div className="mt-[1.25rem] flex items-center gap-[0.875rem]">
             <button
               type="button"
+              disabled={!audioSrc}
               onClick={() => {
+                if (!audioSrc) return;
                 playClick();
-                toggle(id, releaseAudioSrc(release.slug), releaseNowPlaying(release));
+                toggle(id, audioSrc, releaseNowPlaying(release));
               }}
               onMouseEnter={playHover}
-              aria-label={`${isPlaying ? "Pause" : "Play"} ${release.title}`}
-              className="flex-none inline-flex items-center justify-center w-[3.25rem] h-[3.25rem] rounded-full text-black transition-transform duration-200 hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
+              aria-label={audioSrc ? `${isPlaying ? "Pause" : "Play"} ${release.title}` : `${release.title} audio coming soon`}
+              className={`flex-none inline-flex items-center justify-center w-[3.25rem] h-[3.25rem] rounded-full text-black transition-transform duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem] ${audioSrc ? "hover:scale-105" : "opacity-45 cursor-not-allowed"}`}
               style={{ background: PINK, outlineColor: PINK }}
             >
               {isLoading ? (
@@ -188,7 +212,7 @@ export default function ArtistReleaseDetail({ release }: { release: ArtistReleas
                 max={shownDuration || 0}
                 step={0.1}
                 value={Math.min(shownTime, shownDuration || 0)}
-                disabled={!isActive || shownDuration <= 0}
+                disabled={!audioSrc || !isActive || shownDuration <= 0}
                 onChange={(e) => seek(Number(e.target.value))}
                 aria-label="Seek"
                 className="release-seek w-full"
@@ -202,11 +226,12 @@ export default function ArtistReleaseDetail({ release }: { release: ArtistReleas
               </div>
             </div>
           </div>
-          {isActive && error && <p className="mt-[0.5rem] text-[0.75rem] text-white/50">{error}</p>}
+          {!audioSrc && <p className="mt-[0.5rem] text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-white/40">Audio file coming soon</p>}
+          {audioSrc && isActive && error && <p className="mt-[0.5rem] text-[0.75rem] text-white/50">{error}</p>}
 
           {/* Streaming links */}
           <div className="mt-[1.25rem] flex flex-wrap gap-[0.5rem]">
-            {streamingLinks.map((link) => (
+            {streamingLinks.filter((link) => !!link.href).map((link) => (
               <a
                 key={link.label}
                 href={link.href}
