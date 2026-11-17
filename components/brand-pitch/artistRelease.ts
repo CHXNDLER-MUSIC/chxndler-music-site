@@ -11,6 +11,8 @@ export type ArtistRelease = {
   title: string;
   /** True when the corresponding audio object exists in the Supabase tracks bucket. */
   audioAvailable?: boolean;
+  /** Public URL resolved from the actual uploaded storage object, preserving its filename casing. */
+  audioUrl?: string;
   artist?: string;
   coverArt: string;
   spotifyUrl: string;

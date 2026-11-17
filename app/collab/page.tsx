@@ -1,4 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
 import CollabGallery, { type CollabProject } from "@/components/collab/CollabGallery";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { songCoverPath } from "@/lib/songCover";
@@ -64,7 +63,7 @@ async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleas
             slug,
             title,
             artist: "CHXNDLER",
-            coverArt: songCoverPath(slug, title),
+            coverArt: cardName ? getCardImageUrl(cardName) : songCoverPath(slug, title),
             spotifyUrl: released ? links.spotifyUrl : rawLink(row.spotify_url),
             appleMusicUrl: released ? links.appleMusicUrl : rawLink(row.apple_music_url),
             youtubeUrl: released ? links.youtubeUrl : rawLink(row.youtube_music_video_url),
@@ -77,7 +76,7 @@ async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleas
 
     // Compare unreleased tracks with actual objects in the public Supabase
     // `tracks` bucket. The songs table alone can contain rows before audio is uploaded.
-    let availableAudio: Set<string> | null = null;
+    let trackPaths: string[] | null = null;
     try {
       const trackStorage = supabase.storage.from("tracks");
       const paths: string[] = [];
@@ -88,24 +87,34 @@ async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleas
         for (const entry of data ?? []) {
           if (!entry.name) continue;
           const path = folder ? `${folder}/${entry.name}` : entry.name;
-          if (entry.id) paths.push(path.toLowerCase());
+          if (entry.id) paths.push(path);
           else await walkTracks(path, depth + 1);
         }
       };
       await walkTracks();
-      availableAudio = new Set(paths);
+      trackPaths = paths;
     } catch (error) {
       console.error("[collab] Could not check Supabase track audio:", error);
     }
 
+    const withAudio = (release: ArtistRelease): ArtistRelease => {
+      if (!trackPaths) return release;
+      const expected = decodeURIComponent(new URL(releaseAudioSrc(release.slug)).pathname.split("/tracks/").pop() || "").toLowerCase();
+      const expectedKey = keyFor(fileParts(expected).stem);
+      const titleKey = keyFor(release.title);
+      const actualPath = trackPaths.find((path) => path.toLowerCase() === expected)
+        ?? trackPaths.find((path) => keyFor(fileParts(path.split("/").pop() || path).stem) === expectedKey)
+        ?? trackPaths.find((path) => keyFor(fileParts(path.split("/").pop() || path).stem) === titleKey);
+      return {
+        ...release,
+        audioAvailable: !!actualPath,
+        ...(actualPath ? { audioUrl: supabase.storage.from("tracks").getPublicUrl(actualPath).data.publicUrl } : {}),
+      };
+    };
+
     return {
-      released: songs.filter((song) => song.released).map((song) => song.release).sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" })),
-      unreleased: songs.filter((song) => !song.released).map((song) => ({
-        ...song.release,
-        ...(availableAudio ? {
-          audioAvailable: availableAudio.has(decodeURIComponent(new URL(releaseAudioSrc(song.release.slug)).pathname.split("/tracks/").pop() || "").toLowerCase()),
-        } : {}),
-      })).sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" })),
+      released: songs.filter((song) => song.released).map((song) => withAudio(song.release)).sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" })),
+      unreleased: songs.filter((song) => !song.released).map((song) => withAudio(song.release)).sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" })),
     };
   } catch (error) {
     console.error("[collab] Could not load artist songs:", error);
@@ -117,14 +126,7 @@ export default async function CollabPage() {
   let projects: CollabProject[] = [];
 
   try {
-    const supabaseUrl = process.env.COLLABS_SUPABASE_URL;
-    const supabaseSecretKey = process.env.COLLABS_SUPABASE_SECRET_KEY;
-    if (!supabaseUrl || !supabaseSecretKey) {
-      throw new Error("Collabs storage environment is not configured");
-    }
-    const storage = createClient(supabaseUrl, supabaseSecretKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    }).storage.from(BUCKET);
+    const storage = getSupabaseAdmin().storage.from(BUCKET);
     const objects: Array<{ path: string; name: string }> = [];
     const walk = async (folder = "", depth = 0): Promise<void> => {
       // Keep traversal bounded in case an unexpected deeply nested path exists.

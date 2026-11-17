@@ -99,6 +99,7 @@ function CollabGalleryContent({
     return songs.map((release) => ({
       id: `${tab}:${release.slug}`,
       from: tab,
+      audioUrl: release.audioUrl,
       release,
     }));
   }, [tab, projects, artistReleases, unreleasedSongs]);
@@ -118,7 +119,7 @@ function CollabGalleryContent({
   const openItem = (item: SelectedItem) => {
     audio.pause();
     setSelected(item);
-    const src = item.audioUrl ?? (item.from === "collabs" ? "" : releaseAudioSrc(item.release.slug));
+    const src = item.audioUrl ?? (item.from === "collabs" || (item.from === "unreleased" && item.release.audioAvailable === false) ? "" : releaseAudioSrc(item.release.slug));
     if (src) audio.play(item.id, src, releaseNowPlaying(item.release));
   };
 
@@ -219,7 +220,7 @@ function CollabGalleryContent({
           <ArtistReleaseDetail
             key={selected.id}
             release={selected.release}
-            audioSrcOverride={selected.from === "collabs" ? selected.audioUrl ?? "" : undefined}
+            audioSrcOverride={selected.from === "collabs" ? selected.audioUrl ?? "" : selected.release.audioAvailable === false ? "" : selected.audioUrl}
             audioIdOverride={selected.id}
             lyricsUrlOverride={selected.from === "collabs" ? selected.lyricsUrl : undefined}
           />
