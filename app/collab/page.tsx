@@ -63,7 +63,7 @@ async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleas
             slug,
             title,
             artist: "CHXNDLER",
-            coverArt: cardName ? getCardImageUrl(cardName) : songCoverPath(slug, title),
+            coverArt: songCoverPath(slug, title),
             spotifyUrl: released ? links.spotifyUrl : rawLink(row.spotify_url),
             appleMusicUrl: released ? links.appleMusicUrl : rawLink(row.apple_music_url),
             youtubeUrl: released ? links.youtubeUrl : rawLink(row.youtube_music_video_url),
@@ -146,14 +146,18 @@ export default async function CollabPage() {
     };
     await walk();
 
-    const publicUrl = (path: string) => storage.getPublicUrl(path).data.publicUrl;
+    const signedUrl = async (path: string) => {
+      const { data, error } = await storage.createSignedUrl(path, 60 * 60 * 24);
+      if (error || !data?.signedUrl) throw error ?? new Error(`Could not sign Collabs asset: ${path}`);
+      return data.signedUrl;
+    };
     const byType = objects.map((file) => ({ ...file, ...fileParts(file.name) }));
     const projectFolders = [...new Set(byType
       .filter((file) => file.path.includes("/"))
       .map((file) => file.path.split("/")[0]))];
     const isBackground = (stem: string) => /(?:[-_ .])(background|backdrop|bg)$/i.test(stem);
 
-    projects = projectFolders.map((folder) => {
+    projects = await Promise.all(projectFolders.map(async (folder) => {
       const folderFiles = byType.filter((file) => file.path.startsWith(`${folder}/`) && file.name !== ".emptyFolderPlaceholder");
       const folderKey = keyFor(folder);
       const covers = folderFiles.filter((file) => IMAGE_EXTENSIONS.has(file.extension) && !isBackground(file.stem));
@@ -170,13 +174,13 @@ export default async function CollabPage() {
       return {
         id: folder,
         title: titleFor(folder),
-        coverUrl: cover ? publicUrl(cover.path) : null,
-        audioUrl: audio ? publicUrl(audio.path) : null,
-        lyricsUrl: lyrics ? publicUrl(lyrics.path) : null,
-        backgroundUrl: background ? publicUrl(background.path) : null,
+        coverUrl: cover ? await signedUrl(cover.path) : null,
+        audioUrl: audio ? await signedUrl(audio.path) : null,
+        lyricsUrl: lyrics ? await signedUrl(lyrics.path) : null,
+        backgroundUrl: background ? await signedUrl(background.path) : null,
         backgroundIsVideo: !!background && VIDEO_EXTENSIONS.has(background.extension),
       };
-    });
+    }));
   } catch (error) {
     console.error("[collab] Could not load Collabs bucket:", error);
   }

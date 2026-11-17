@@ -186,7 +186,14 @@ function CollabGalleryContent({
                 </span>
               ) : (
                 <>
-                  <img src={item.release.coverArt} alt={`${item.release.title} cover art`} />
+                  <img
+                    src={item.release.coverArt}
+                    alt={`${item.release.title} cover art`}
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = placeholderCover(item.release.title);
+                    }}
+                  />
                   {item.audioUrl && <span className="collab-cover-mark" aria-hidden="true">▶</span>}
                 </>
               )}
@@ -223,6 +230,7 @@ function CollabGalleryContent({
             audioSrcOverride={selected.from === "collabs" ? selected.audioUrl ?? "" : selected.release.audioAvailable === false ? "" : selected.audioUrl}
             audioIdOverride={selected.id}
             lyricsUrlOverride={selected.from === "collabs" ? selected.lyricsUrl : undefined}
+            showCollabRequest={selected.from === "collabs"}
           />
         </MediaViewerModal>
       )}

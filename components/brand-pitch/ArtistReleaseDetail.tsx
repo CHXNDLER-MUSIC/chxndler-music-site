@@ -41,11 +41,13 @@ export default function ArtistReleaseDetail({
   audioSrcOverride,
   audioIdOverride,
   lyricsUrlOverride,
+  showCollabRequest = false,
 }: {
   release: ArtistRelease;
   audioSrcOverride?: string;
   audioIdOverride?: string;
   lyricsUrlOverride?: string | null;
+  showCollabRequest?: boolean;
 }) {
   const { activeId, playing, loading, error, currentTime, duration, toggle, seek } = useBrandAudio();
   const { playHover, playClick } = useInteractionSound();
@@ -248,6 +250,17 @@ export default function ArtistReleaseDetail({
               </a>
             ))}
           </div>
+          {showCollabRequest && (
+            <a
+              href={`mailto:info@chxndler-music.com?subject=${encodeURIComponent(`Collab request: ${release.title}`)}`}
+              onClick={playClick}
+              onMouseEnter={playHover}
+              className="mt-[1rem] inline-flex min-h-[2.75rem] items-center justify-center rounded-full px-[1.25rem] py-[0.75rem] text-[0.75rem] font-extrabold uppercase tracking-[0.12em] text-black transition-transform duration-200 hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
+              style={{ background: PINK, outlineColor: PINK }}
+            >
+              Request to collab <span aria-hidden="true" className="ml-[0.5rem]">↗</span>
+            </a>
+          )}
         </div>
       </div>
 
