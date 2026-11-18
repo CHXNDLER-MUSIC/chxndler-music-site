@@ -13,6 +13,7 @@ export const dynamic = "force-dynamic";
 const BUCKET = "Collabs";
 const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "avif", "gif"]);
 const AUDIO_EXTENSIONS = new Set(["mp3", "wav", "m4a", "aac", "ogg", "flac"]);
+const TEXT_EXTENSIONS = new Set(["txt", "md"]);
 const VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov"]);
 
 function fileParts(name: string) {
@@ -164,11 +165,13 @@ export default async function CollabPage() {
       const folderKey = keyFor(folder);
       const covers = folderFiles.filter((file) => IMAGE_EXTENSIONS.has(file.extension) && !isBackground(file.stem));
       const cover = covers.find((file) => keyFor(file.stem) === folderKey) ?? covers[0];
-      const audio = folderFiles.find((file) => AUDIO_EXTENSIONS.has(file.extension) && keyFor(file.stem) === folderKey)
-        ?? folderFiles.find((file) => AUDIO_EXTENSIONS.has(file.extension));
+      const audio = folderFiles.find((file) => AUDIO_EXTENSIONS.has(file.extension) && keyFor(file.stem) === folderKey && !/(?:[-_ .])\(?instrumental\)?$/i.test(file.stem))
+        ?? folderFiles.find((file) => AUDIO_EXTENSIONS.has(file.extension) && !/(?:[-_ .])\(?instrumental\)?$/i.test(file.stem));
+      const instrumental = folderFiles.find((file) => AUDIO_EXTENSIONS.has(file.extension) && /(?:[-_ .])\(?instrumental\)?$/i.test(file.stem));
       const audioKey = audio ? keyFor(audio.stem.replace(/(?:[-_ .])\((?:demo|acoustic|instrumental)\)$/i, "")) : folderKey;
-      const lyrics = folderFiles.find((file) => ["lrc", "txt"].includes(file.extension) && keyFor(file.stem) === audioKey)
-        ?? folderFiles.find((file) => ["lrc", "txt"].includes(file.extension));
+      const meaning = folderFiles.find((file) => TEXT_EXTENSIONS.has(file.extension) && /(?:[-_ .])(song[-_ .]?)?meaning$/i.test(file.stem));
+      const lyrics = folderFiles.find((file) => ["lrc", "txt"].includes(file.extension) && keyFor(file.stem) === audioKey && file !== meaning)
+        ?? folderFiles.find((file) => ["lrc", "txt"].includes(file.extension) && file !== meaning);
       const background = folderFiles.find((file) => VIDEO_EXTENSIONS.has(file.extension) && isBackground(file.stem) && keyFor(file.stem) === audioKey)
         ?? folderFiles.find((file) => IMAGE_EXTENSIONS.has(file.extension) && isBackground(file.stem) && keyFor(file.stem) === audioKey)
         ?? folderFiles.find((file) => (VIDEO_EXTENSIONS.has(file.extension) || IMAGE_EXTENSIONS.has(file.extension)) && isBackground(file.stem));
@@ -178,7 +181,9 @@ export default async function CollabPage() {
         title: titleFor(folder),
         coverUrl: cover ? await signedUrl(cover.path) : null,
         audioUrl: audio ? await signedUrl(audio.path) : null,
+        instrumentalUrl: instrumental ? await signedUrl(instrumental.path) : null,
         lyricsUrl: lyrics ? await signedUrl(lyrics.path) : null,
+        meaningUrl: meaning ? await signedUrl(meaning.path) : null,
         backgroundUrl: background ? await signedUrl(background.path) : null,
         backgroundIsVideo: !!background && VIDEO_EXTENSIONS.has(background.extension),
       };
@@ -188,5 +193,11 @@ export default async function CollabPage() {
   }
 
   const { released, unreleased } = await fetchArtistSongs();
-  return <CollabGallery projects={projects} artistReleases={released} unreleasedSongs={unreleased} />;
+  let musicVideos: Array<{ id: string; song_id: string; public_concept: string; public_status: string; songs?: { title: string; slug: string } }> = [];
+  try {
+    const { data } = await getSupabaseAdmin().from("music_video_projects")
+      .select("id,song_id,public_concept,public_status,songs(title,slug)").eq("visibility", "public").order("updated_at", { ascending: false });
+    musicVideos = (data || []) as typeof musicVideos;
+  } catch (error) { console.error("[collab] Could not load public music video projects:", error); }
+  return <CollabGallery projects={projects} artistReleases={released} unreleasedSongs={unreleased} musicVideos={musicVideos} />;
 }

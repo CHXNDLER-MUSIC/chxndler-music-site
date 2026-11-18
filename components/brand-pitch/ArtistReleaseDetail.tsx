@@ -40,21 +40,28 @@ type LyricsState = { status: "loading" } | { status: "ready"; text: string } | {
 export default function ArtistReleaseDetail({
   release,
   audioSrcOverride,
+  instrumentalSrcOverride = null,
   audioIdOverride,
   lyricsUrlOverride,
+  meaningUrlOverride,
   showCollabRequest = false,
 }: {
   release: ArtistRelease;
   audioSrcOverride?: string;
+  instrumentalSrcOverride?: string | null;
   audioIdOverride?: string;
   lyricsUrlOverride?: string | null;
+  meaningUrlOverride?: string | null;
   showCollabRequest?: boolean;
 }) {
-  const { activeId, playing, loading, error, currentTime, duration, toggle, seek } = useBrandAudio();
+  const { activeId, playing, loading, error, currentTime, duration, toggle, play, seek } = useBrandAudio();
   const { playHover, playClick } = useInteractionSound();
   const [lyrics, setLyrics] = useState<LyricsState>({ status: "loading" });
+  const [meaning, setMeaning] = useState<string | null>(null);
+  const [meaningOpen, setMeaningOpen] = useState(false);
   const [lyricsOpen, setLyricsOpen] = useState(true);
   const [collabOpen, setCollabOpen] = useState(false);
+  const [isInstrumental, setIsInstrumental] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   // Latest toggle for the Space shortcut below (its listener is bound once).
   const togglePlaybackRef = useRef(() => {});
@@ -88,7 +95,8 @@ export default function ArtistReleaseDetail({
   }, []);
 
   const id = audioIdOverride || releaseAudioId(release.slug);
-  const audioSrc = audioSrcOverride !== undefined ? audioSrcOverride : releaseAudioSrc(release.slug);
+  const mainAudioSrc = audioSrcOverride !== undefined ? audioSrcOverride : releaseAudioSrc(release.slug);
+  const audioSrc = isInstrumental && instrumentalSrcOverride ? instrumentalSrcOverride : mainAudioSrc;
   const isActive = activeId === id;
   const isPlaying = isActive && playing;
   const isLoading = isActive && loading;
@@ -121,6 +129,17 @@ export default function ArtistReleaseDetail({
     };
   }, [release.slug, lyricsUrlOverride]);
 
+  useEffect(() => {
+    let cancelled = false;
+    setMeaning(null);
+    if (!meaningUrlOverride) return () => { cancelled = true; };
+    fetch(meaningUrlOverride)
+      .then((response) => response.ok ? response.text() : "")
+      .then((text) => { if (!cancelled) setMeaning(text.trim() || null); })
+      .catch(() => { if (!cancelled) setMeaning(null); });
+    return () => { cancelled = true; };
+  }, [meaningUrlOverride]);
+
   const streamingLinks = [
     { label: "Spotify", href: release.spotifyUrl, color: "#1ed760" },
     { label: "Apple Music", href: release.appleMusicUrl, color: "#fa2d48" },
@@ -130,7 +149,7 @@ export default function ArtistReleaseDetail({
   return (
     <div ref={rootRef}>
       {/* Cover + title / player / streaming links */}
-      <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-[1.25rem] sm:gap-[2rem] items-center">
+      <div className="grid grid-cols-1 gap-[1.25rem] sm:gap-[2rem] items-center">
         {/* The cover doubles as a play/pause button. */}
         <button
           type="button"
@@ -142,7 +161,7 @@ export default function ArtistReleaseDetail({
           }}
           onMouseEnter={playHover}
           aria-label={audioSrc ? `${isPlaying ? "Pause" : "Play"} ${release.title}` : `${release.title} cover art`}
-          className={`group grid w-full max-w-[22rem] mx-auto sm:max-w-none overflow-hidden rounded-[0.75rem] border border-white/10 bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem] ${audioSrc ? "cursor-pointer" : "cursor-default"}`}
+          className={`group grid w-full max-w-[22rem] mx-auto overflow-hidden rounded-[0.75rem] border border-white/10 bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem] ${audioSrc ? "cursor-pointer" : "cursor-default"}`}
           style={{ aspectRatio: "1 / 1", boxShadow: `0 0 2.5rem -1rem ${PINK}88`, outlineColor: PINK }}
         >
           <img
@@ -173,7 +192,7 @@ export default function ArtistReleaseDetail({
           </span>}
         </button>
 
-        <div className="min-w-0">
+        <div className="min-w-0 w-full max-w-[42rem] mx-auto">
           <p className="text-[0.6875rem] font-bold tracking-[0.35em] uppercase" style={{ color: PINK }}>
             CHXNDLER
           </p>
@@ -232,6 +251,22 @@ export default function ArtistReleaseDetail({
           </div>
           {!audioSrc && <p className="mt-[0.5rem] text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-white/40">Audio file coming soon</p>}
           {audioSrc && isActive && error && <p className="mt-[0.5rem] text-[0.75rem] text-white/50">{error}</p>}
+          {instrumentalSrcOverride && (
+            <button
+              type="button"
+              aria-pressed={isInstrumental}
+              onClick={() => {
+                const nextIsInstrumental = !isInstrumental;
+                setIsInstrumental(nextIsInstrumental);
+                play(id, nextIsInstrumental ? instrumentalSrcOverride : mainAudioSrc, releaseNowPlaying(release));
+              }}
+              onMouseEnter={playHover}
+              className={`mt-[0.75rem] inline-flex min-h-[2.5rem] items-center justify-center rounded-full border px-[1rem] py-[0.55rem] text-[0.6875rem] font-extrabold uppercase tracking-[0.14em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem] ${isInstrumental ? "border-[#ff3ea5] bg-[#ff3ea5] text-black" : "border-white/20 bg-white/[0.04] text-white/80 hover:border-white/45 hover:text-white"}`}
+              style={{ outlineColor: PINK }}
+            >
+              {isInstrumental ? "Play Full Song" : "Instrumental"}
+            </button>
+          )}
 
           {/* Streaming links */}
           <div className="mt-[1.25rem] flex flex-wrap gap-[0.5rem]">
@@ -271,7 +306,7 @@ export default function ArtistReleaseDetail({
       {collabOpen && release.databaseId && <CollabRequestForm songId={release.databaseId} title={release.title} artwork={release.coverArt} close={() => setCollabOpen(false)} />}
 
       {/* Lyrics + collectible card */}
-      {(lyrics.status !== "missing" || release.cardArt) && (
+      {(lyrics.status !== "missing" || release.cardArt || meaning) && (
         <div
           className={`mt-[2rem] grid grid-cols-1 gap-[1.5rem] ${
             lyrics.status !== "missing" && release.cardArt ? "md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start" : ""
@@ -353,6 +388,23 @@ export default function ArtistReleaseDetail({
                   </div>
                 </div>
               </div>
+            </section>
+          )}
+
+          {meaning && (
+            <section aria-label="Song meaning" className="min-w-0">
+              <button
+                type="button"
+                onClick={() => setMeaningOpen((open) => !open)}
+                onMouseEnter={playHover}
+                aria-expanded={meaningOpen}
+                className="group inline-flex items-center gap-[0.5rem] rounded-full py-[0.125rem] text-white/50 transition-colors duration-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
+                style={{ outlineColor: PINK }}
+              >
+                <span className="text-[0.6875rem] font-bold tracking-[0.3em] uppercase">Meaning</span>
+                <span className="text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-white/30 group-hover:text-white/60">{meaningOpen ? "Hide" : "Show"}</span>
+              </button>
+              {meaningOpen && <p className="mt-[0.75rem] max-w-prose whitespace-pre-line text-[0.9375rem] leading-relaxed text-white/80">{meaning}</p>}
             </section>
           )}
 

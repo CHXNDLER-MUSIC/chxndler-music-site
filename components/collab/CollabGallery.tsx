@@ -12,7 +12,9 @@ export type CollabProject = {
   title: string;
   coverUrl: string | null;
   audioUrl: string | null;
+  instrumentalUrl: string | null;
   lyricsUrl: string | null;
+  meaningUrl: string | null;
   backgroundUrl: string | null;
   backgroundIsVideo: boolean;
 };
@@ -23,7 +25,9 @@ type SelectedItem = {
   release: ArtistRelease;
   coverUrl?: string | null;
   audioUrl?: string;
+  instrumentalUrl?: string | null;
   lyricsUrl?: string | null;
+  meaningUrl?: string | null;
   backgroundUrl?: string | null;
   backgroundIsVideo?: boolean;
   from: Tab;
@@ -45,14 +49,16 @@ export default function CollabGallery({
   projects,
   artistReleases,
   unreleasedSongs,
+  musicVideos,
 }: {
   projects: CollabProject[];
   artistReleases: ArtistRelease[];
   unreleasedSongs: ArtistRelease[];
+  musicVideos: Array<{ id: string; song_id: string; public_concept: string; public_status: string; songs?: { title: string; slug: string } }>;
 }) {
   return (
     <BrandAudioProvider>
-      <CollabGalleryContent projects={projects} artistReleases={artistReleases} unreleasedSongs={unreleasedSongs} />
+      <CollabGalleryContent projects={projects} artistReleases={artistReleases} unreleasedSongs={unreleasedSongs} musicVideos={musicVideos} />
     </BrandAudioProvider>
   );
 }
@@ -61,10 +67,12 @@ function CollabGalleryContent({
   projects,
   artistReleases,
   unreleasedSongs,
+  musicVideos,
 }: {
   projects: CollabProject[];
   artistReleases: ArtistRelease[];
   unreleasedSongs: ArtistRelease[];
+  musicVideos: Array<{ id: string; song_id: string; public_concept: string; public_status: string; songs?: { title: string; slug: string } }>;
 }) {
   const [tab, setTab] = useState<Tab>("collabs");
   const [selected, setSelected] = useState<SelectedItem | null>(null);
@@ -77,7 +85,9 @@ function CollabGalleryContent({
         from: tab,
         coverUrl: project.coverUrl,
         audioUrl: project.audioUrl || undefined,
+        instrumentalUrl: project.instrumentalUrl,
         lyricsUrl: project.lyricsUrl,
+        meaningUrl: project.meaningUrl,
         backgroundUrl: project.backgroundUrl,
         backgroundIsVideo: project.backgroundIsVideo,
         release: {
@@ -137,6 +147,11 @@ function CollabGalleryContent({
       )}
       <div className="collab-modal-scrim" />
     </div>
+  ) : selected?.from === "collabs" ? (
+    <div className="collab-modal-background">
+      <img src={selected.release.coverArt} alt="" />
+      <div className="collab-modal-scrim" />
+    </div>
   ) : selected?.release.skyVideoUrl ? (
     <SkyVideoBackground url={selected.release.skyVideoUrl} />
   ) : selected ? (
@@ -174,6 +189,20 @@ function CollabGalleryContent({
           </button>
         ))}
       </div>
+
+      {musicVideos.length > 0 && <section className="collab-video-opportunities" aria-label="Music video opportunities">
+        <div><p className="collab-video-kicker">MUSIC VIDEOS</p><h2>Bring a song to life.</h2></div>
+        <div className="collab-video-grid">{musicVideos.map(project => {
+          const song = [...artistReleases, ...unreleasedSongs].find(item => item.slug === project.songs?.slug);
+          return <article className="collab-video-card" key={project.id}>
+            <img src={song?.coverArt || placeholderCover(project.songs?.title || "Music video")} alt={`${project.songs?.title || "Song"} artwork`} />
+            <div><span className="collab-video-status">{project.public_status}</span><h3>{project.songs?.title || "CHXNDLER song"}</h3><p>{project.public_concept}</p>
+              {song?.audioUrl && <audio controls preload="none" src={song.audioUrl} aria-label={`Preview ${song.title}`} />}
+              <a href={`mailto:info@chxndler-music.com?subject=${encodeURIComponent(`Music video collaboration: ${project.songs?.title || "CHXNDLER"}`)}&body=${encodeURIComponent("I'm interested in this music video opportunity.\n\nPortfolio: \nIntroduction: ")}`}>Request to collaborate ↗</a>
+            </div>
+          </article>;
+        })}</div>
+      </section>}
 
       {items.length ? (
         <section className="collab-grid" aria-label={TAB_LABELS[tab]}>
@@ -233,8 +262,10 @@ function CollabGalleryContent({
             key={selected.id}
             release={selected.release}
             audioSrcOverride={selected.from === "collabs" ? selected.audioUrl ?? "" : selected.release.audioAvailable === false ? "" : selected.audioUrl}
+            instrumentalSrcOverride={selected.from === "collabs" ? selected.instrumentalUrl ?? null : null}
             audioIdOverride={selected.id}
             lyricsUrlOverride={selected.from === "collabs" ? selected.lyricsUrl : undefined}
+            meaningUrlOverride={selected.from === "collabs" ? selected.meaningUrl : null}
             showCollabRequest={selected.release.collaborationEnabled === true}
           />
         </MediaViewerModal>
@@ -251,6 +282,9 @@ function CollabGalleryContent({
         .collab-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:760px;margin:0 auto 1.5rem;padding:.25rem;border-radius:999px;background:rgba(255,255,255,.055)}
         .collab-tabs button{border:0;border-radius:999px;background:transparent;color:rgba(255,255,255,.48);padding:.75rem .5rem;font-size:.7rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s}
         .collab-tabs button[aria-selected="true"]{background:rgba(255,255,255,.14);color:#fff}
+        .collab-video-opportunities{max-width:1600px;margin:0 auto 2rem;padding:1.2rem;border:1px solid rgba(255,62,165,.22);background:linear-gradient(120deg,rgba(255,62,165,.08),rgba(255,255,255,.02))}
+        .collab-video-kicker{margin:0;color:#ff3ea5;font-size:.62rem;font-weight:900;letter-spacing:.22em}.collab-video-opportunities h2{margin:.35rem 0 1rem;font-size:1.35rem;font-weight:900}
+        .collab-video-grid{display:grid;gap:.8rem}.collab-video-card{display:grid;grid-template-columns:6rem 1fr;gap:1rem;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.25);padding:.75rem}.collab-video-card>img{width:6rem;aspect-ratio:1;object-fit:cover}.collab-video-card h3{margin:.35rem 0;font-size:1rem;font-weight:800}.collab-video-card p{margin:.4rem 0;color:rgba(255,255,255,.65);font-size:.85rem;white-space:pre-wrap}.collab-video-status{color:#ff77bb;font-size:.58rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.collab-video-card audio{display:block;width:min(100%,22rem);height:2rem;margin:.7rem 0}.collab-video-card a{display:inline-block;color:#ff3ea5;font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
         .collab-tabs button:focus-visible,.collab-back:focus-visible{outline:2px solid #ff3ea5;outline-offset:2px}
         .collab-grid{max-width:1600px;margin:0 auto;columns:2;column-gap:clamp(.55rem,1vw,1rem)}
         .collab-cover{position:relative;display:block;width:100%;break-inside:avoid;margin:0 0 clamp(.55rem,1vw,1rem);padding:0;border:1px solid rgba(255,255,255,.12);border-radius:3px;overflow:hidden;background:#121216;cursor:pointer;text-align:left}
@@ -275,6 +309,7 @@ function CollabGalleryContent({
         .collab-modal-background img[src]{filter:blur(5px);}
         .collab-modal-scrim{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(16,16,20,.46),rgba(16,16,20,.78) 45%,rgba(16,16,20,.9))}
         @media(min-width:700px){.collab-grid{columns:3}.collab-tabs button{font-size:.8rem}}
+        @media(min-width:760px){.collab-video-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
         @media(min-width:1100px){.collab-grid{columns:4}}
         @media(max-width:520px){.collab-tabs button{font-size:.57rem;letter-spacing:.08em;padding:.7rem .25rem}.collab-heading-actions{gap:.5rem;flex-direction:column;align-items:flex-end}.collab-heading-actions>a{font-size:.5rem;padding:.5rem .65rem;letter-spacing:.06em}.collab-heading{font-size:.58rem}}
         @media(prefers-reduced-motion:reduce){.collab-cover img,.collab-tabs button{transition:none}}
