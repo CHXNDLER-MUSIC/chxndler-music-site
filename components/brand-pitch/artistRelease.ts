@@ -7,6 +7,8 @@ import type { NowPlaying } from "@/lib/mediaSession";
  * view — see fetchArtistReleases in app/brands/[slug]/page.tsx. Links are
  * already resolved server-side (artist-page fallbacks included). */
 export type ArtistRelease = {
+  databaseId?: string;
+  collaborationEnabled?: boolean;
   slug: string;
   title: string;
   /** True when the corresponding audio object exists in the Supabase tracks bucket. */

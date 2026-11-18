@@ -20,6 +20,7 @@
     "start:clean": "rm -rf .next && next build && next start -p 3000",
     "prestart:clean": "node scripts/writeBuildInfo.mjs && lsof -ti :3000 | xargs kill -9 || true",
     "lint": "next lint",
+    "test:collaborations": "node --test tests/collaboration.test.mjs",
     "test:openai": "node test.mjs",
     "gen:hud": "node scripts/generateHudImage.mjs \"${HUD_SONG_TITLE:-OCEAN GIRL}\" \"${HUD_ONE_LINER:-Love flows back like the tide.}\" ${HUD_SIZE:-1920x1080} ${HUD_COVER:-} ${HUD_SLUG:-}",
     "gen:hud:cover": "node scripts/generateHudImage.mjs \"${HUD_SONG_TITLE:-OCEAN GIRL}\" \"${HUD_ONE_LINER:-Love flows back like the tide.}\" ${HUD_SIZE:-1920x1080} ${HUD_COVER:-public/cover/ocean-girl.png} ${HUD_SLUG:-ocean-girl}",

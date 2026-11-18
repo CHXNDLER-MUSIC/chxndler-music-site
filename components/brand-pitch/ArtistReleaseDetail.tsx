@@ -5,6 +5,7 @@ import { useBrandAudio } from "./BrandAudioContext";
 import { useInteractionSound } from "./useInteractionSound";
 import { releaseAudioId, releaseAudioSrc, releaseNowPlaying, type ArtistRelease } from "./artistRelease";
 import CollectibleViewer from "./CollectibleViewer";
+import CollabRequestForm from "@/components/collab/CollabRequestForm";
 import { Space_Grotesk } from "next/font/google";
 
 // Lyrics typeface — self-hosted by next/font, loaded only with this view.
@@ -53,6 +54,7 @@ export default function ArtistReleaseDetail({
   const { playHover, playClick } = useInteractionSound();
   const [lyrics, setLyrics] = useState<LyricsState>({ status: "loading" });
   const [lyricsOpen, setLyricsOpen] = useState(true);
+  const [collabOpen, setCollabOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   // Latest toggle for the Space shortcut below (its listener is bound once).
   const togglePlaybackRef = useRef(() => {});
@@ -251,18 +253,22 @@ export default function ArtistReleaseDetail({
             ))}
           </div>
           {showCollabRequest && (
-            <a
-              href={`mailto:info@chxndler-music.com?subject=${encodeURIComponent(`Collab request: ${release.title}`)}`}
-              onClick={playClick}
-              onMouseEnter={playHover}
-              className="mt-[1rem] inline-flex min-h-[2.75rem] items-center justify-center rounded-full px-[1.25rem] py-[0.75rem] text-[0.75rem] font-extrabold uppercase tracking-[0.12em] text-black transition-transform duration-200 hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
-              style={{ background: PINK, outlineColor: PINK }}
-            >
-              Request to collab <span aria-hidden="true" className="ml-[0.5rem]">↗</span>
-            </a>
+            <div className="mt-[1rem] flex flex-wrap gap-[0.625rem]">
+              <button
+                type="button"
+                onClick={() => setCollabOpen(true)}
+                onMouseEnter={playHover}
+                className="inline-flex min-h-[2.75rem] items-center justify-center rounded-full px-[1.25rem] py-[0.75rem] text-[0.75rem] font-extrabold uppercase tracking-[0.12em] text-black transition-transform duration-200 hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
+                style={{ background: PINK, outlineColor: PINK }}
+              >
+                Request to Collab
+              </button>
+            </div>
           )}
         </div>
       </div>
+
+      {collabOpen && release.databaseId && <CollabRequestForm songId={release.databaseId} title={release.title} artwork={release.coverArt} close={() => setCollabOpen(false)} />}
 
       {/* Lyrics + collectible card */}
       {(lyrics.status !== "missing" || release.cardArt) && (

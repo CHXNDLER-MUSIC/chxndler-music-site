@@ -150,7 +150,12 @@ function CollabGalleryContent({
     <main className="collab-page">
       <header className="collab-heading">
         <a className="collab-wordmark" href="/">CHXNDLER</a>
-        <span>COLLABORATIONS</span>
+        <div className="collab-heading-actions">
+          <span>COLLABORATIONS</span>
+          <a href={`mailto:info@chxndler-music.com?subject=${encodeURIComponent("Have something else in mind?")}`}>
+            Have something else in mind? <span aria-hidden="true">↗</span>
+          </a>
+        </div>
       </header>
 
       <div className="collab-tabs" role="tablist" aria-label="Music and collaboration categories">
@@ -230,7 +235,7 @@ function CollabGalleryContent({
             audioSrcOverride={selected.from === "collabs" ? selected.audioUrl ?? "" : selected.release.audioAvailable === false ? "" : selected.audioUrl}
             audioIdOverride={selected.id}
             lyricsUrlOverride={selected.from === "collabs" ? selected.lyricsUrl : undefined}
-            showCollabRequest={selected.from === "collabs"}
+            showCollabRequest={selected.release.collaborationEnabled === true}
           />
         </MediaViewerModal>
       )}
@@ -238,6 +243,10 @@ function CollabGalleryContent({
       <style jsx>{`
         .collab-page{min-height:100vh;background:#08080b;color:#fff;padding:clamp(1rem,3vw,3rem);}
         .collab-heading{display:flex;justify-content:space-between;align-items:center;margin:0 auto 1.1rem;max-width:1600px;color:#ff3ea5;font-size:.7rem;font-weight:800;letter-spacing:.28em}
+        .collab-heading-actions{display:flex;align-items:center;gap:1rem}
+        .collab-heading-actions>a{display:inline-flex;align-items:center;gap:.4rem;border:1px solid rgba(255,62,165,.55);border-radius:999px;padding:.6rem .9rem;color:#fff;text-decoration:none;font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;transition:background .2s,border-color .2s}
+        .collab-heading-actions>a:hover{background:rgba(255,62,165,.12);border-color:#ff3ea5}
+        .collab-heading-actions>a:focus-visible{outline:2px solid #ff3ea5;outline-offset:3px}
         .collab-wordmark{color:#fff;text-decoration:none;font-size:.8rem;letter-spacing:.18em}
         .collab-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:760px;margin:0 auto 1.5rem;padding:.25rem;border-radius:999px;background:rgba(255,255,255,.055)}
         .collab-tabs button{border:0;border-radius:999px;background:transparent;color:rgba(255,255,255,.48);padding:.75rem .5rem;font-size:.7rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s}
@@ -267,7 +276,7 @@ function CollabGalleryContent({
         .collab-modal-scrim{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(16,16,20,.46),rgba(16,16,20,.78) 45%,rgba(16,16,20,.9))}
         @media(min-width:700px){.collab-grid{columns:3}.collab-tabs button{font-size:.8rem}}
         @media(min-width:1100px){.collab-grid{columns:4}}
-        @media(max-width:520px){.collab-tabs button{font-size:.57rem;letter-spacing:.08em;padding:.7rem .25rem}}
+        @media(max-width:520px){.collab-tabs button{font-size:.57rem;letter-spacing:.08em;padding:.7rem .25rem}.collab-heading-actions{gap:.5rem;flex-direction:column;align-items:flex-end}.collab-heading-actions>a{font-size:.5rem;padding:.5rem .65rem;letter-spacing:.06em}.collab-heading{font-size:.58rem}}
         @media(prefers-reduced-motion:reduce){.collab-cover img,.collab-tabs button{transition:none}}
       `}</style>
     </main>

@@ -80,7 +80,7 @@ async function fetchArtistReleases(): Promise<ArtistRelease[]> {
     const [songsRes, cardsRes] = await Promise.all([
       supabase
         .from("songs")
-        .select("slug, title, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url")
+        .select("id, slug, title, collaboration_enabled, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url")
         .eq("is_released", true),
       supabase.from("cards").select("card_name"),
     ]);
@@ -101,6 +101,8 @@ async function fetchArtistReleases(): Promise<ArtistRelease[]> {
         return {
           slug,
           title,
+          databaseId: String(row.id),
+          collaborationEnabled: row.collaboration_enabled === true,
           coverArt: songCoverPath(slug, title),
           spotifyUrl: links.spotifyUrl,
           appleMusicUrl: links.appleMusicUrl,

@@ -38,7 +38,7 @@ async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleas
   try {
     const supabase = getSupabaseAdmin();
     const [songsRes, cardsRes] = await Promise.all([
-      supabase.from("songs").select("slug, title, is_released, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url"),
+      supabase.from("songs").select("id, slug, title, is_released, collaboration_enabled, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url"),
       supabase.from("cards").select("card_name"),
     ]);
     if (songsRes.error || !songsRes.data) return { released: [], unreleased: [] };
@@ -61,6 +61,8 @@ async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleas
           released,
           release: {
             slug,
+            databaseId: String(row.id),
+            collaborationEnabled: row.collaboration_enabled === true,
             title,
             artist: "CHXNDLER",
             coverArt: songCoverPath(slug, title),
