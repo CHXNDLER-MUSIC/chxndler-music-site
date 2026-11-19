@@ -20,6 +20,10 @@ function applyFilters(query: any, params: URLSearchParams) {
   const songId = params.get("songId");
   const category = params.get("category");
   const mediaType = params.get("type");
+  const title = params.get("title");
+  const songName = params.get("songName");
+  const subCategory = params.get("subCategory");
+  const plannedDate = params.get("plannedDate");
   const workflow = params.get("workflow");
   const recorded = params.get("recorded");
   const edited = params.get("edited");
@@ -28,6 +32,10 @@ function applyFilters(query: any, params: URLSearchParams) {
   if (songId && validId(songId)) query = query.eq("song_id", songId);
   if (category) query = query.eq("category", category.slice(0, 80));
   if (mediaType) query = query.eq("media_type", mediaType.slice(0, 80));
+  if (title) query = query.eq("title", title.slice(0, 200));
+  if (songName) query = query.ilike("song_name", songName.slice(0, 120));
+  if (subCategory) query = query.eq("sub_category", subCategory.slice(0, 100));
+  if (plannedDate) query = query.eq("planned_date", plannedDate.slice(0, 20));
   if (["Idea", "To Record", "To Edit", "Ready", "Scheduled", "Posted"].includes(workflow || "")) query = query.eq("workflow_status", workflow);
   if (recorded === "true" || recorded === "false") query = query.eq("recorded", recorded === "true");
   if (edited === "true" || edited === "false") query = query.eq("edited", edited === "true");
@@ -56,7 +64,7 @@ export async function GET(request: Request) {
   const [{ data, error, count }, { data: songs, error: songsError }, { data: facets, error: facetsError }] = await Promise.all([
     pageQuery,
     db.from("songs").select("id,title,slug").order("title", { ascending: true }),
-    db.from("content_items").select("category,media_type").order("source_row", { ascending: true }).range(0, 999),
+    db.from("content_items").select("title,song_name,category,sub_category,media_type,planned_date").order("source_row", { ascending: true }).range(0, 999),
   ]);
   if (error) return NextResponse.json({ error: `Unable to load content. Apply the unified content library migration first. ${error.message}` }, { status: 503 });
   if (songsError) return NextResponse.json({ error: `Unable to load canonical songs: ${songsError.message}` }, { status: 500 });
@@ -101,7 +109,15 @@ export async function GET(request: Request) {
     items: data || [], total: count || 0, page, pageSize,
     metrics: { total, toRecord, toEdit, ready, scheduled, posted },
     songs: songs || [], categories: [...new Set((facets || []).map(row => row.category).filter((value): value is string => !!value))].sort(),
-    types: [...new Set((facets || []).map(row => row.media_type).filter((value): value is string => !!value))].sort(), songSummary,
+    types: [...new Set((facets || []).map(row => row.media_type).filter((value): value is string => !!value))].sort(),
+    suggestions: {
+      titles: [...new Set((facets || []).map(row => row.title).filter((value): value is string => !!value))].sort(),
+      songs: [...new Set((facets || []).map(row => row.song_name).filter((value): value is string => !!value))].sort(),
+      categories: [...new Set((facets || []).map(row => row.category).filter((value): value is string => !!value))].sort(),
+      subCategories: [...new Set((facets || []).map(row => row.sub_category).filter((value): value is string => !!value))].sort(),
+      types: [...new Set((facets || []).map(row => row.media_type).filter((value): value is string => !!value))].sort(),
+      dates: [...new Set((facets || []).map(row => row.planned_date).filter((value): value is string => !!value))].sort(),
+    }, songSummary,
   });
 }
 

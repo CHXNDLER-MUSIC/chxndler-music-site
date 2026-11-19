@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import ContentDetailPanel, { type CatalogSong, type ContentItem } from "@/components/admin/ContentDetailPanel";
 
 type Metrics = { total: number | null; toRecord: number | null; toEdit: number | null; ready: number | null; scheduled: number | null; posted: number | null };
-type ResponseData = { items: ContentItem[]; total: number; page: number; pageSize: number; metrics: Metrics; songs: CatalogSong[]; categories: string[]; types: string[] };
+type ResponseData = { items: ContentItem[]; total: number; page: number; pageSize: number; metrics: Metrics; songs: CatalogSong[]; categories: string[]; types: string[]; suggestions?: { titles: string[]; songs: string[]; categories: string[]; subCategories: string[]; types: string[]; dates: string[] } };
 const workflows = ["All", "To Record", "To Edit", "Ready", "Scheduled", "Posted", "Idea"];
 const blankMetrics: Metrics = { total: 0, toRecord: 0, toEdit: 0, ready: 0, scheduled: 0, posted: 0 };
 
@@ -27,19 +27,23 @@ export default function ContentLibrary({ songId: scopedSongId }: { songId?: stri
   const [songs, setSongs] = useState<CatalogSong[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [types, setTypes] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<NonNullable<ResponseData["suggestions"]>>({ titles: [], songs: [], categories: [], subCategories: [], types: [], dates: [] });
   const [metrics, setMetrics] = useState<Metrics>(blankMetrics);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(50);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [songFilter, setSongFilter] = useState(scopedSongId || "");
+  const [songNameFilter, setSongNameFilter] = useState("");
+  const [titleFilter, setTitleFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [subCategoryFilter, setSubCategoryFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [workflow, setWorkflow] = useState("All");
+  const [dateFilter, setDateFilter] = useState("");
   const [recordFilter, setRecordFilter] = useState("");
   const [editFilter, setEditFilter] = useState("");
   const [postFilter, setPostFilter] = useState("");
+  const [openFilter, setOpenFilter] = useState<string | null>(null);
   const [sort, setSort] = useState("planned_date");
   const [direction, setDirection] = useState("asc");
   const [loading, setLoading] = useState(true);
@@ -53,17 +57,19 @@ export default function ContentLibrary({ songId: scopedSongId }: { songId?: stri
     const requestedSong = params.get("songId") || params.get("song");
     if (requestedSong) setSongFilter(requestedSong);
   }, [scopedSongId]);
-  useEffect(() => { const timer = window.setTimeout(() => setDebouncedSearch(search), 220); return () => window.clearTimeout(timer); }, [search]);
-  useEffect(() => { setPage(1); }, [debouncedSearch, songFilter, categoryFilter, typeFilter, workflow, recordFilter, editFilter, postFilter, sort, direction]);
+  useEffect(() => { setPage(1); }, [songFilter, songNameFilter, titleFilter, categoryFilter, subCategoryFilter, typeFilter, workflow, dateFilter, recordFilter, editFilter, postFilter, sort, direction]);
 
   const load = useCallback(async (requestedPage = page) => {
     setLoading(true); setError("");
     const params = new URLSearchParams({ page: String(requestedPage), pageSize: String(pageSize), sort, direction });
-    const query = debouncedSearch.trim(); if (query) params.set("q", query);
     if (songFilter) params.set("songId", songFilter);
+    if (songNameFilter) params.set("songName", songNameFilter);
+    if (titleFilter) params.set("title", titleFilter);
     if (categoryFilter) params.set("category", categoryFilter);
+    if (subCategoryFilter) params.set("subCategory", subCategoryFilter);
     if (typeFilter) params.set("type", typeFilter);
     if (workflow !== "All") params.set("workflow", workflow);
+    if (dateFilter) params.set("plannedDate", dateFilter);
     if (recordFilter) params.set("recorded", recordFilter);
     if (editFilter) params.set("edited", editFilter);
     if (postFilter) params.set("post_ready", postFilter);
@@ -72,8 +78,8 @@ export default function ContentLibrary({ songId: scopedSongId }: { songId?: stri
     if (!response.ok) { setError(body.error || "Unable to load content."); setLoading(false); return; }
     const result = body as ResponseData;
     setItems(result.items || []); setTotal(result.total || 0); setMetrics(result.metrics || blankMetrics);
-    setSongs(result.songs || []); setCategories(result.categories || []); setTypes(result.types || []); setLoading(false);
-  }, [page, pageSize, sort, direction, debouncedSearch, songFilter, categoryFilter, typeFilter, workflow, recordFilter, editFilter, postFilter]);
+    setSongs(result.songs || []); setCategories(result.categories || []); setTypes(result.types || []); setSuggestions(result.suggestions || { titles: [], songs: [], categories: [], subCategories: [], types: [], dates: [] }); setLoading(false);
+  }, [page, pageSize, sort, direction, songFilter, songNameFilter, titleFilter, categoryFilter, subCategoryFilter, typeFilter, workflow, dateFilter, recordFilter, editFilter, postFilter]);
 
   useEffect(() => { void load(page); }, [load]);
 
@@ -90,10 +96,23 @@ export default function ContentLibrary({ songId: scopedSongId }: { songId?: stri
     if (summary.metrics) setMetrics(summary.metrics);
   }
 
-  const clearFilters = () => { setSearch(""); setDebouncedSearch(""); if (!scopedSongId) setSongFilter(""); setCategoryFilter(""); setTypeFilter(""); setWorkflow("All"); setRecordFilter(""); setEditFilter(""); setPostFilter(""); setSort("planned_date"); setDirection("asc"); setPage(1); };
-  const flagFilter = (label: string, selected: string, onSelect: (value: string) => void) => <div role="group" aria-label={`Filter by ${label}`} className="flex items-center gap-1 rounded-lg border border-white/[.07] bg-[#111116] p-1"><span className="px-1 text-[.62rem] font-semibold text-white/45">{label}</span>
-    {[{value:"", text:"All", idle:"text-white/55", active:"border-[#FD52AF]/35 bg-[#FD52AF]/10 text-[#ff9dcd]"},{value:"true",text:"✓",idle:"text-emerald-300/70",active:"border-emerald-300/35 bg-emerald-300/10 text-emerald-200"},{value:"false",text:"✕",idle:"text-rose-300/70",active:"border-rose-300/35 bg-rose-300/10 text-rose-200"}].map(option=><button key={option.value||"all"} type="button" aria-label={`${label}: ${option.value===""?"all":option.value==="true"?"yes":"no"}`} aria-pressed={selected===option.value} onClick={()=>onSelect(option.value)} className={`min-h-7 min-w-9 rounded-md border px-2 text-xs font-semibold transition ${selected===option.value?option.active:`border-transparent ${option.idle} hover:bg-white/[.05]`}`}>{option.text}</button>)}
-  </div>;
+  const clearFilters = () => { if (!scopedSongId) setSongFilter(""); setSongNameFilter(""); setTitleFilter(""); setCategoryFilter(""); setSubCategoryFilter(""); setTypeFilter(""); setWorkflow("All"); setDateFilter(""); setRecordFilter(""); setEditFilter(""); setPostFilter(""); setSort("planned_date"); setDirection("asc"); setOpenFilter(null); setPage(1); };
+  const headerInput = "mt-2 w-full rounded-md border border-white/10 bg-[#101014] px-2 py-1.5 text-[.7rem] font-normal normal-case tracking-normal text-white outline-none placeholder:text-white/30 focus:border-violet-300/40";
+  const headerFilter = (key: string) => {
+    if (openFilter !== key) return null;
+    const textInput = (value: string, onChange: (value: string) => void, listId: string, options: string[], placeholder = "Filter") => <><input autoFocus value={value} onChange={event => onChange(event.target.value)} list={listId} placeholder={placeholder} aria-label={`Filter ${key}`} className={headerInput}/><datalist id={listId}>{options.map(option => <option key={option} value={option}/>)}</datalist></>;
+    const boolInput = (label: string, value: string, onChange: (value: string) => void) => <div className="mt-2 flex gap-1 normal-case tracking-normal">{[{value:"",text:"All"},{value:"true",text:"✓ Yes"},{value:"false",text:"✕ No"}].map(option=><button key={option.value||"all"} type="button" aria-pressed={value===option.value} onClick={()=>onChange(option.value)} className={`rounded-md border px-2 py-1 text-[.65rem] ${value===option.value?"border-[#FD52AF]/40 bg-[#FD52AF]/10 text-[#ff9dcd]":"border-white/10 text-white/55 hover:text-white"}`} aria-label={`${label}: ${option.value===""?"all":option.value==="true"?"yes":"no"}`}>{option.text}</button>)}</div>;
+    if (key === "title") return textInput(titleFilter, setTitleFilter, "content-title-suggestions", suggestions.titles);
+    if (key === "song_name") return textInput(songNameFilter, setSongNameFilter, "content-song-suggestions", suggestions.songs, "Filter song");
+    if (key === "category") return <div className="space-y-1">{textInput(categoryFilter, setCategoryFilter, "content-category-suggestions", suggestions.categories, "Category")}{textInput(subCategoryFilter, setSubCategoryFilter, "content-subcategory-suggestions", suggestions.subCategories, "Sub-category")}</div>;
+    if (key === "media_type") return textInput(typeFilter, setTypeFilter, "content-type-suggestions", suggestions.types);
+    if (key === "workflow_status") return <select value={workflow} onChange={event=>setWorkflow(event.target.value)} aria-label="Filter workflow status" className={headerInput}><option value="All">All statuses</option>{workflows.filter(value=>value!=="All").map(value=><option key={value}>{value}</option>)}</select>;
+    if (key === "recorded") return boolInput("Recorded", recordFilter, setRecordFilter);
+    if (key === "edited") return boolInput("Edited", editFilter, setEditFilter);
+    if (key === "post_ready") return boolInput("Posted", postFilter, setPostFilter);
+    if (key === "planned_date") return <input type="date" value={dateFilter} onChange={event=>setDateFilter(event.target.value)} aria-label="Filter planned date" className={headerInput}/>;
+    return null;
+  };
   const paginationCount = Math.max(1, Math.ceil(total / pageSize));
   const metricCards: Array<[string, number | null, string]> = [["Total Content", metrics.total, "text-white"], ["To Record", metrics.toRecord, "text-[#ff9dcd]"], ["To Edit", metrics.toEdit, "text-amber-200"], ["Published", metrics.posted, "text-emerald-200"]];
   const workflowCount: Record<string, number | null> = { "To Record": metrics.toRecord, "To Edit": metrics.toEdit, Ready: metrics.ready, Scheduled: metrics.scheduled, Posted: metrics.posted };
@@ -106,15 +125,7 @@ export default function ContentLibrary({ songId: scopedSongId }: { songId?: stri
 
     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/[.08] bg-[#111116] p-2">
       {workflows.map(value => <button key={value} type="button" onClick={() => setWorkflow(value)} aria-pressed={workflow === value} className={`rounded-full px-3 py-1.5 text-[.68rem] font-semibold transition ${workflow === value ? "bg-violet-300/15 text-violet-100" : "text-white/45 hover:bg-white/[.05] hover:text-white/75"}`}>{value}{value !== "All" && workflowCount[value] !== null ? <span className="ml-1.5 opacity-55">{workflowCount[value]}</span> : null}</button>)}
-    </div>
-
-    <div className="flex flex-wrap items-center gap-2">
-      <input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search content, song, caption…" aria-label="Search content" className="min-w-52 flex-1 rounded-lg border border-white/10 bg-[#111116] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-violet-300/40"/>
-      {!scopedSongId && <select value={songFilter} onChange={event => setSongFilter(event.target.value)} aria-label="Filter by song" className="min-w-36 rounded-lg border border-white/10 bg-[#111116] px-3 py-2.5 text-sm text-white"><option value="">All songs</option>{songs.map(song => <option key={song.id} value={song.id}>{song.title}</option>)}</select>}
-      <select value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)} aria-label="Filter by category" className="min-w-32 rounded-lg border border-white/10 bg-[#111116] px-3 py-2.5 text-sm text-white"><option value="">All categories</option>{categories.map(option => <option key={option} value={option}>{option}</option>)}</select>
-      <select value={typeFilter} onChange={event => setTypeFilter(event.target.value)} aria-label="Filter by type" className="min-w-28 rounded-lg border border-white/10 bg-[#111116] px-3 py-2.5 text-sm text-white"><option value="">All types</option>{types.map(option => <option key={option} value={option}>{option}</option>)}</select>
-      {flagFilter("recorded",recordFilter,setRecordFilter)}{flagFilter("edited",editFilter,setEditFilter)}{flagFilter("post ready",postFilter,setPostFilter)}
-      <button type="button" onClick={clearFilters} className="rounded-lg border border-white/10 px-3 py-2.5 text-sm text-white/55 hover:text-white">Reset</button>
+      <button type="button" onClick={clearFilters} className="ml-auto rounded-lg border border-white/10 px-3 py-1.5 text-xs text-white/55 hover:text-white">Reset filters</button>
     </div>
     {error && <p role="alert" className="rounded-lg border border-red-300/20 bg-red-300/[.06] p-3 text-sm text-red-200">{error}</p>}
 
