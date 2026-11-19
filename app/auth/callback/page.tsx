@@ -15,7 +15,8 @@ function parseHashParams(hash: string) {
   const out = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
   const access_token = out.get("access_token");
   const refresh_token = out.get("refresh_token");
-  return { access_token, refresh_token };
+  const type = out.get("type");
+  return { access_token, refresh_token, type };
 }
 
 async function resolveDestination(session: any, defaultPath: string): Promise<string> {
@@ -53,7 +54,8 @@ export default function AuthCallbackPage() {
         setStatus({ state: "processing", message: "Finalizing sign-in..." });
 
         // 1) If the URL contains hash tokens (implicit), consume them purely on client
-        const { access_token, refresh_token } = parseHashParams(window.location.hash || "");
+        const { access_token, refresh_token, type: hashType } = parseHashParams(window.location.hash || "");
+        const isPasswordRecovery = hashType === "recovery" || searchParams.get("type") === "recovery" || window.localStorage.getItem("chx_auth_intent") === "password_recovery" || searchParams.get("next") === "/auth/reset-password";
         if (access_token && refresh_token) {
           const { data, error } = await supabaseBrowser.auth.setSession({
             access_token,
@@ -67,6 +69,10 @@ export default function AuthCallbackPage() {
           }
           if (!cancelled) setStatus({ state: "success" });
           if (!cancelled) {
+            if (isPasswordRecovery) {
+              router.replace("/auth/reset-password?recovery=1");
+              return;
+            }
             try { sessionStorage.setItem('chx_login_warp', '1'); } catch {}
             const dest = await resolveDestination(data.session, nextPath || "/");
             if (!cancelled) router.replace(dest);
@@ -82,6 +88,10 @@ export default function AuthCallbackPage() {
           if (!data?.session) throw new Error("No session returned after code exchange");
           if (!cancelled) setStatus({ state: "success" });
           if (!cancelled) {
+            if (isPasswordRecovery) {
+              router.replace("/auth/reset-password?recovery=1");
+              return;
+            }
             try { sessionStorage.setItem('chx_login_warp', '1'); } catch {}
             const dest = await resolveDestination(data.session, nextPath || "/");
             if (!cancelled) router.replace(dest);
