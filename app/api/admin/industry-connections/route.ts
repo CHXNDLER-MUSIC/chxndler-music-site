@@ -18,11 +18,18 @@ export async function GET(request: Request) {
   const access = await authorize();
   if (access.response) return access.response;
   const query = (new URL(request.url).searchParams.get("q") || "").trim().replace(/[%,()]/g, "");
-  let builder = getSupabaseAdmin().from("marketing_contacts").select("id,first_name,last_name,email,phone,venue,note,industry_category,relationship,referred_by,connection_status,last_contacted_at,follow_up_at,created_at,updated_at").order("first_name", { ascending: true });
-  if (query) builder = builder.or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%,venue.ilike.%${query}%,industry_category.ilike.%${query}%,relationship.ilike.%${query}%,referred_by.ilike.%${query}%`);
-  const { data, error } = await builder;
-  if (error) return NextResponse.json({ error: "Unable to load industry connections. Apply the contacts migrations first." }, { status: 500 });
-  return NextResponse.json({ contacts: data || [] });
+  const db = getSupabaseAdmin();
+  const pageSize = 1000;
+  const contacts: Record<string, unknown>[] = [];
+  for (let from = 0; ; from += pageSize) {
+    let builder = db.from("marketing_contacts").select("id,first_name,last_name,email,phone,venue,note,industry_category,relationship,referred_by,connection_status,last_contacted_at,follow_up_at,created_at,updated_at").order("first_name", { ascending: true }).order("id", { ascending: true }).range(from, from + pageSize - 1);
+    if (query) builder = builder.or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%,venue.ilike.%${query}%,industry_category.ilike.%${query}%,relationship.ilike.%${query}%,referred_by.ilike.%${query}%`);
+    const { data, error } = await builder;
+    if (error) return NextResponse.json({ error: "Unable to load industry connections. Apply the contacts migrations first." }, { status: 500 });
+    contacts.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+  }
+  return NextResponse.json({ contacts });
 }
 
 export async function POST(request: Request) {
