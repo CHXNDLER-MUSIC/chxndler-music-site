@@ -30,7 +30,7 @@ export default function BrandNavigation() {
   }, []);
 
   return <div className="relative" ref={root}>
-    <button type="button" aria-label="Open CHXNDLER navigation" title="CHXNDLER navigation" aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen(value => !value)} className="flex h-12 w-14 items-center justify-center rounded-xl border border-white/10 transition hover:border-[#fd52af]/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#fd52af]">
+    <button type="button" aria-label="Open CHXNDLER navigation" title="CHXNDLER navigation" aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen(value => !value)} className="flex h-12 w-14 items-center justify-center rounded-xl transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#fd52af]">
       <Image src="/icons/chxndler-192.webp" alt="" width={40} height={40} className="object-contain" priority />
     </button>
     {open && <div role="menu" aria-label="CHXNDLER destinations" className="absolute left-1/2 top-full z-40 mt-2 w-64 -translate-x-1/2 rounded-2xl border border-white/10 bg-[#141419] p-2 shadow-2xl shadow-black/50">

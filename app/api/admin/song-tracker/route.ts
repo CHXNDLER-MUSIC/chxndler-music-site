@@ -24,7 +24,7 @@ export async function GET() {
   if (!isAdminUser(auth.user)) return forbidden();
   const db = getSupabaseAdmin();
   const [songWithReleaseDate, requests, videos, tasks, outreach, sync, brandArts] = await Promise.all([
-    db.from("songs").select("id,title,slug,is_released,release_date,updated_at,audio_status,collaboration_opportunities,video_concept,collaboration_enabled,production_stages,production_tracking_started,ready_for_collab,collab_interests,collaboration_description,workflow_stage,next_action,next_action_manual,created_at,sky_video_url,youtube_music_video_url,spotify_url,karaoke_url,practice_notes").order("title", { ascending: true }),
+    db.from("songs").select("id,title,slug,is_released,release_date,updated_at,audio_status,collaboration_opportunities,video_concept,collaboration_enabled,production_stages,production_tracking_started,production_progress_verified,ready_for_collab,collab_interests,collaboration_description,workflow_stage,next_action,next_action_manual,created_at,sky_video_url,youtube_music_video_url,spotify_url,karaoke_url,practice_notes").order("title", { ascending: true }),
     db.from("collaboration_requests").select("id,song_id,status,submitted_at,contribution_type"),
     db.from("music_video_projects").select("id,song_id,status,visibility,next_action,assigned_videographer,public_concept,public_status,project_type,collaboration_stage"),
     db.from("admin_tasks").select("id,song_id,title,status,priority,due_at,created_at").neq("status", "done").not("song_id", "is", null).order("due_at", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false }),
@@ -35,15 +35,17 @@ export async function GET() {
   let songs: any = songWithReleaseDate;
   let releaseDateAvailable = true;
   let updatedAtAvailable = true;
+  let productionProgressVerifiedAvailable = true;
   // Older deployments may not have the optional date columns. Retry without
   // only the missing field so saved production data remains available.
   const coreSongFields = "id,title,slug,is_released,audio_status,collaboration_opportunities,video_concept,collaboration_enabled,production_stages,production_tracking_started,ready_for_collab,collab_interests,collaboration_description,workflow_stage,next_action,next_action_manual,created_at,sky_video_url,youtube_music_video_url,spotify_url,karaoke_url,practice_notes";
-  for (let attempt = 0; songs.error && attempt < 2; attempt += 1) {
+  for (let attempt = 0; songs.error && attempt < 3; attempt += 1) {
     const message = songs.error.message;
     if (/release_date/i.test(message) && releaseDateAvailable) releaseDateAvailable = false;
     else if (/updated_at/i.test(message) && updatedAtAvailable) updatedAtAvailable = false;
+    else if (/production_progress_verified/i.test(message) && productionProgressVerifiedAvailable) productionProgressVerifiedAvailable = false;
     else break;
-    const optionalFields = [releaseDateAvailable ? "release_date" : "", updatedAtAvailable ? "updated_at" : ""].filter(Boolean).join(",");
+    const optionalFields = [releaseDateAvailable ? "release_date" : "", updatedAtAvailable ? "updated_at" : "", productionProgressVerifiedAvailable ? "production_progress_verified" : ""].filter(Boolean).join(",");
     songs = await db.from("songs").select(`${coreSongFields}${optionalFields ? `,${optionalFields}` : ""}`).order("title", { ascending: true });
   }
   if (songs.error) return NextResponse.json({ error: `Unable to load the song catalog: ${songs.error.message}` }, { status: 500 });
@@ -72,6 +74,7 @@ export async function GET() {
     release_date: song.release_date ?? null,
     production_stages: song.production_stages || {},
     production_tracking_started: song.production_tracking_started === true,
+    production_progress_verified: productionProgressVerifiedAvailable && song.production_progress_verified === true,
     ready_for_collab: song.ready_for_collab === true,
     collab_interests: Array.isArray(song.collab_interests) ? song.collab_interests : [],
     collaboration_description: song.collaboration_description || "",
