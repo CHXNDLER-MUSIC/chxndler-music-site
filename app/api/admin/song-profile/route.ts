@@ -30,19 +30,36 @@ export async function PATCH(request: Request) {
   const denied = await gate();
   if (denied) return denied;
   const body = await request.json();
-  if (typeof body.songId !== "string" || !/^[0-9a-f-]{36}$/i.test(body.songId) || typeof body.meaning !== "string") return NextResponse.json({ error: "A song and meaning are required." }, { status: 400 });
+  if (typeof body.songId !== "string" || !/^[0-9a-f-]{36}$/i.test(body.songId) || (body.meaning !== undefined && typeof body.meaning !== "string") || (body.links !== undefined && (!body.links || typeof body.links !== "object"))) return NextResponse.json({ error: "A song profile update is required." }, { status: 400 });
   const db = getSupabaseAdmin();
   const { data: song } = await db.from("songs").select("id,title").eq("id", body.songId).single();
   if (!song) return NextResponse.json({ error: "Song not found." }, { status: 404 });
-  const { data: records, error: findError } = await db.from("song_outreach_status").select("id").ilike("song", song.title);
-  if (findError) return NextResponse.json({ error: "Apply the song outreach migration before saving song meaning." }, { status: 503 });
-  const meaning = body.meaning.trim().slice(0, 12000);
-  if (records?.length) {
-    const { error } = await db.from("song_outreach_status").update({ meaning_of_song: meaning, updated_at: new Date().toISOString() }).ilike("song", song.title);
-    if (error) return NextResponse.json({ error: "Unable to save song meaning." }, { status: 500 });
-  } else {
-    const { error } = await db.from("song_outreach_status").insert({ song: song.title.toUpperCase(), category: "BLOGS & PRESS", meaning_of_song: meaning });
-    if (error) return NextResponse.json({ error: "Unable to save song meaning." }, { status: 500 });
+  if (typeof body.meaning === "string") {
+    const { data: records, error: findError } = await db.from("song_outreach_status").select("id").ilike("song", song.title);
+    if (findError) return NextResponse.json({ error: "Apply the song outreach migration before saving song meaning." }, { status: 503 });
+    const meaning = body.meaning.trim().slice(0, 12000);
+    if (records?.length) {
+      const { error } = await db.from("song_outreach_status").update({ meaning_of_song: meaning, updated_at: new Date().toISOString() }).ilike("song", song.title);
+      if (error) return NextResponse.json({ error: "Unable to save song meaning." }, { status: 500 });
+    } else {
+      const { error } = await db.from("song_outreach_status").insert({ song: song.title.toUpperCase(), category: "BLOGS & PRESS", meaning_of_song: meaning });
+      if (error) return NextResponse.json({ error: "Unable to save song meaning." }, { status: 500 });
+    }
   }
-  return NextResponse.json({ ok: true, meaning });
+  if (body.links) {
+    const allowed = ["spotify_url", "apple_music_url", "youtube_music_video_url", "karaoke_url", "sky_video_url"] as const;
+    const links: Record<string, string | null> = {};
+    for (const key of allowed) {
+      if (!(key in body.links)) continue;
+      const value = body.links[key];
+      if (typeof value !== "string") return NextResponse.json({ error: "Song links must be text URLs." }, { status: 400 });
+      const trimmed = value.trim();
+      if (trimmed && !/^https:\/\//i.test(trimmed)) return NextResponse.json({ error: "Use a complete https:// link for each service." }, { status: 400 });
+      links[key] = trimmed || null;
+    }
+    if (!Object.keys(links).length) return NextResponse.json({ error: "No song links were provided." }, { status: 400 });
+    const { error } = await db.from("songs").update(links).eq("id", song.id);
+    if (error) return NextResponse.json({ error: "Unable to save song links." }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true });
 }

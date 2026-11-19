@@ -28,7 +28,7 @@ const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(
 const storageKey = "chxndler-admin-practice-v1";
 function slugify(title: string) { return title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
 
-export default function PracticeTab() {
+export default function PracticeTab({ campaignSong = "" }: { campaignSong?: string }) {
   const [date, setDate] = useState(today), [entries, setEntries] = useState<PracticeEntry[]>([]), [selected, setSelected] = useState("");
   const [backgroundVideos, setBackgroundVideos] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
@@ -41,6 +41,11 @@ export default function PracticeTab() {
     catch { setEntries([]); }
     setSaved(false);
   }, [date]);
+  useEffect(() => {
+    if (campaignSong && catalogInfo.some(song => song.title === campaignSong)) {
+      setSelected(entries.some(entry => entry.title === campaignSong) ? "" : campaignSong);
+    }
+  }, [campaignSong, entries]);
   const choices = useMemo(() => catalogInfo.filter(info => !entries.some(entry => entry.title === info.title)), [entries]);
   function persist(next: PracticeEntry[]) {
     setEntries(next); setSaved(false);
@@ -59,7 +64,7 @@ export default function PracticeTab() {
     </div>
     <div className="mb-5 flex flex-wrap gap-2">
       <select value={selected} onChange={event => setSelected(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#111116] p-3 text-sm text-white"><option value="">Choose a song to practice…</option>{choices.map(song => <option key={song.title} value={song.title}>{song.title}</option>)}</select>
-      <button type="button" onClick={addSong} disabled={!selected} aria-label="Add song to practice" className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#ff3ea5] text-2xl font-light text-black disabled:opacity-40">+</button>
+      <button type="button" onClick={addSong} disabled={!selected} aria-label="Add song to practice" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[#ff3ea5] text-4xl font-semibold text-black shadow-[0_0_22px_rgba(255,62,165,0.35)] transition hover:bg-[#ff66b4] hover:shadow-[0_0_30px_rgba(255,62,165,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff9dce] disabled:opacity-40">+</button>
       <span className="self-center text-xs text-white/40">{saved ? "Saved on this device" : "Autosaves as you edit"}</span>
     </div>
     {!entries.length ? <div className="rounded-xl border border-dashed border-white/15 p-10 text-center text-sm text-white/45">No songs added for this date yet. Choose one above and press +.</div> : <div className="space-y-4">{entries.map(entry => {

@@ -144,7 +144,7 @@ async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleas
 
     return {
       released: await Promise.all(songs.filter((song) => song.released).map((song) => withAudio(song.release, true))),
-      unreleased: await Promise.all(songs.filter((song) => !song.released && song.release.collaborationEnabled).map((song) => withAudio(song.release, false))),
+      unreleased: await Promise.all(songs.filter((song) => !song.released).map((song) => withAudio(song.release, false))),
     };
   } catch (error) {
     console.error("[collab] Could not load artist songs:", error);
@@ -231,9 +231,15 @@ export default async function CollabPage() {
     ...song,
     collaborationEnabled: inviteSession.song_id ? song.databaseId === inviteSession.song_id && song.collaborationEnabled : song.collaborationEnabled,
   }));
+  // A song-specific invite grants access to that exact track even if the
+  // public collaboration toggle was later switched off. The artist's
+  // authorized account can review the full unreleased catalog; generic
+  // invite sessions remain limited to tracks explicitly opened for outreach.
   const unreleased = inviteSession.song_id
     ? catalog.unreleased.filter((song) => song.databaseId === inviteSession.song_id)
-    : catalog.unreleased;
+    : inviteSession.source === "authorized_person"
+      ? catalog.unreleased
+      : catalog.unreleased.filter((song) => song.collaborationEnabled);
   const invitedProjects = invitedSong
     ? projects.filter((project) => normalizeTitle(project.title) === normalizeTitle(invitedSong.title))
     : inviteSession.song_id ? [] : projects;
