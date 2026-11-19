@@ -5,6 +5,7 @@ export function trackKeyFromSlug(slug?: string): string | null {
   if (!slug) return null;
   const s = String(slug).toLowerCase();
   const map: Record<string, string> = {
+    "almost-human": "ALMOST_HUMAN",
     "alone": "ALONE",
     "always-on-my-mind": "ALWAYS_ON_MY_MIND",
     "always-on-my-mind-acoustic": "ALWAYS_ON_MY_MIND_ACOUSTIC",

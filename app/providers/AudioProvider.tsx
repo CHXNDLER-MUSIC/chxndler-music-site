@@ -135,6 +135,8 @@ export type TrackInfo = {
 // Audio source files — full-length songs served from Supabase Storage (public bucket).
 // Small UI sounds, welcome clips, and space ambience remain in /public.
 export const TRACKS = {
+  // Storage uses the display title, including uppercase and spaces.
+  ALMOST_HUMAN: { mp3: S("ALMOST HUMAN.mp3") },
   // Use MP3 only for ALONE to avoid loading a missing Opus source
   ALONE: { mp3: S("alone.mp3") },
   // Use MP3 only for ALWAYS ON MY MIND — no Opus source uploaded
