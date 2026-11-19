@@ -5,6 +5,7 @@ import Link from "next/link";
 import { songCoverPath } from "@/lib/songCover";
 import { getBrandArtUrl } from "@/lib/brandPitchStorage";
 import { songPipelineKey, type SongPipelineKey } from "@/lib/songWorkflow";
+import SongWorkspace from "@/components/admin/SongWorkspace";
 
 type PipelineKey = SongPipelineKey;
 type FilterKey = "all" | "released" | "unreleased" | "in_progress" | "ready_for_collab" | "video_needed" | "active_outreach" | "needs_attention" | `stage:${PipelineKey}`;
@@ -71,7 +72,7 @@ export default function SongTracker() {
   const [editingActionId, setEditingActionId] = useState<string | null>(null);
   const [actionDraft, setActionDraft] = useState("");
   const [savingCollabId, setSavingCollabId] = useState<string | null>(null);
-  const [songInfo, setSongInfo] = useState<any | null>(null);
+  const [songInfo, setSongInfo] = useState<SongRow | null>(null);
 
   async function load() {
     setLoading(true);
@@ -85,7 +86,7 @@ export default function SongTracker() {
   }
 
   async function openSongInfo(song: SongRow) {
-    setSongInfo({ song: { id: song.id, title: song.title } });
+    setSongInfo(song);
   }
 
   useEffect(() => { void load(); }, []);
@@ -261,7 +262,7 @@ export default function SongTracker() {
       })}
     </div>}
 
-    {songInfo && <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 p-2 sm:p-5" onClick={() => setSongInfo(null)}><section role="dialog" aria-modal="true" aria-label={`${songInfo.song.title} full song workspace`} onClick={event => event.stopPropagation()} className="flex h-[96vh] w-full max-w-[1500px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#09090c] shadow-2xl"><header className="flex shrink-0 items-center gap-3 border-b border-white/10 bg-[#111116] px-4 py-2"><h2 className="min-w-0 flex-1 truncate text-sm font-bold text-white">{songInfo.song.title} · Song Workspace</h2><button type="button" onClick={() => setSongInfo(null)} className="rounded-lg px-3 py-2 text-sm text-white/60 hover:bg-white/10">Close</button></header><iframe title={`${songInfo.song.title} full song workspace`} src={`/admin/songs/${songInfo.song.id}?embed=1`} className="min-h-0 w-full flex-1 border-0 bg-[#09090c]"/></section></div>}
+    {songInfo && <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 p-2 sm:p-5" onClick={() => setSongInfo(null)}><section role="dialog" aria-modal="true" aria-label={`${songInfo.title} full song workspace`} onClick={event => event.stopPropagation()} className="flex h-[96vh] w-full max-w-[1500px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#09090c] text-white shadow-2xl"><header className="flex shrink-0 items-center gap-3 border-b border-white/10 bg-[#111116] px-4 py-2"><h2 className="min-w-0 flex-1 truncate text-sm font-bold">{songInfo.title} · Song Workspace</h2><button type="button" onClick={() => setSongInfo(null)} className="rounded-lg px-3 py-2 text-sm text-white/60 hover:bg-white/10">Close</button></header><div className="min-h-0 flex-1 overflow-auto"><SongWorkspace id={songInfo.id} embedded /></div></section></div>}
 
     <style jsx>{`
       .song-portfolio button,.song-portfolio a,.song-portfolio select,.song-portfolio input{ -webkit-tap-highlight-color:transparent }
