@@ -136,7 +136,41 @@ export async function PATCH(request: Request) {
     update.collab_interests = [...new Set(body.collab_interests.filter((value: string) => allowed.has(value)))];
   }
   if (typeof body.collaboration_description === "string") update.collaboration_description = body.collaboration_description.trim().slice(0, 500);
-  if (["Idea", "Writing", "Recording", "Mixing", "Mastering", "Ready"].includes(body.workflow_stage)) { update.workflow_stage = body.workflow_stage; update.production_tracking_started = true; }
+  const hasProductionMilestones = body.production_milestones !== undefined;
+  if (Object.prototype.hasOwnProperty.call(body, "workflow_stage")) {
+    if (body.workflow_stage !== null && !["Idea", "Writing", "Recording", "Mixing", "Mastering", "Ready"].includes(body.workflow_stage)) return NextResponse.json({ error: "Choose a supported production stage." }, { status: 400 });
+    update.workflow_stage = body.workflow_stage;
+    update.production_tracking_started = true;
+  }
+  if (body.production_progress_verified !== undefined) {
+    if (typeof body.production_progress_verified !== "boolean") return NextResponse.json({ error: "Production review state must be true or false." }, { status: 400 });
+    update.production_progress_verified = body.production_progress_verified;
+  }
+  if (hasProductionMilestones) {
+    const allowed = ["concept", "lyrics", "recorded", "mixed", "mastered"];
+    const entries = body.production_milestones && typeof body.production_milestones === "object" && !Array.isArray(body.production_milestones) ? Object.entries(body.production_milestones) : [];
+    if (entries.length !== allowed.length || entries.some(([key, value]) => !allowed.includes(key) || typeof value !== "boolean")) return NextResponse.json({ error: "Provide all five production milestone values." }, { status: 400 });
+    const { data: current, error: readError } = await db.from("songs").select("production_stages").eq("id", body.songId).single();
+    if (readError || !current) return NextResponse.json({ error: "Production milestones are unavailable. Apply the production progress migration." }, { status: 503 });
+    const merged = { ...(current.production_stages || {}) } as Record<string, boolean>;
+    for (const [key, value] of entries as Array<[string, boolean]>) {
+      merged[key] = value;
+      if (key === "lyrics") merged.write = value;
+      if (key === "recorded") merged.record = value;
+      if (key === "mixed") merged.mix = value;
+    }
+    if (typeof body.workflow_stage === "string" && ["Idea", "Writing", "Recording", "Mixing", "Mastering"].includes(body.workflow_stage)) {
+      const requirements: Record<string, string[]> = { Idea: [], Writing: ["concept"], Recording: ["concept", "lyrics"], Mixing: ["concept", "lyrics", "recorded"], Mastering: ["concept", "lyrics", "recorded", "mixed"] };
+      const missing = requirements[body.workflow_stage].filter(key => merged[key] !== true && !(key === "lyrics" && merged.write === true) && !(key === "recorded" && merged.record === true));
+      const order = ["concept", "lyrics", "recorded", "mixed", "mastered"];
+      const stageIndex = ["Idea", "Writing", "Recording", "Mixing", "Mastering"].indexOf(body.workflow_stage);
+      const later = order.slice(stageIndex + (body.workflow_stage === "Mastering" ? 1 : 0)).filter(key => merged[key] === true);
+      if (missing.length || later.length) return NextResponse.json({ error: missing.length ? `Confirm completed prerequisites before setting ${body.workflow_stage}: ${missing.join(", ")}.` : `The selected stage conflicts with completed milestones: ${later.join(", ")}.` }, { status: 400 });
+    }
+    update.production_stages = merged;
+    update.production_progress_verified = true;
+    update.production_tracking_started = true;
+  }
   if (typeof body.next_action === "string") { update.next_action = body.next_action.trim().slice(0, 240); update.next_action_manual = Boolean(update.next_action); }
   if (body.release_date === null || (typeof body.release_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.release_date))) update.release_date = body.release_date;
   const stageKeys = ["write", "record", "mix", "cover_art", "spotify_canvas", "sky", "chxndler_card", "karaoke", "music_video", "concept", "lyrics", "recorded", "mastered", "ready", "playlist_pitch", "sync_placement"] as const;
@@ -149,6 +183,13 @@ export async function PATCH(request: Request) {
   }
   if (!Object.keys(update).length) return NextResponse.json({ error: "No supported changes provided." }, { status: 400 });
   const { error } = await db.from("songs").update(update).eq("id", body.songId);
-  if (error) return NextResponse.json({ error: /ready_for_collab|workflow_stage|column/i.test(error.message) ? "Apply the music workspace migration before saving these fields." : "Unable to update this song." }, { status: /ready_for_collab|workflow_stage|column/i.test(error.message) ? 503 : 500 });
-  return NextResponse.json({ ok: true });
+  if (error) {
+    const schemaError = /ready_for_collab|workflow_stage|production_progress_verified|column/i.test(error.message);
+    const message = schemaError
+      ? process.env.NODE_ENV === "development" ? `Song database schema error: ${error.message}` : "The song database is missing a required production progress field."
+      : "Unable to update this song.";
+    return NextResponse.json({ error: message }, { status: schemaError ? 503 : 500 });
+  }
+  const { data: saved } = await db.from("songs").select("workflow_stage,production_stages,production_tracking_started,production_progress_verified,next_action,next_action_manual").eq("id", body.songId).maybeSingle();
+  return NextResponse.json({ ok: true, song: saved });
 }

@@ -8,7 +8,7 @@ import { songProductionLabel, trackedProductionMilestones } from "@/lib/songWork
 type Song = {
   id: string; title: string; slug: string; is_released: boolean; workflow_stage?: string | null;
   audio_status?: string | null; production_tracking_started?: boolean;
-  production_stages?: Record<string, boolean>; next_action?: string; next_action_manual?: boolean;
+  production_stages?: Record<string, boolean> | null; production_progress_verified?: boolean; next_action?: string | null; next_action_manual?: boolean;
   linkedTask?: Task | null;
 };
 type Task = { id: string; title: string; status: string; priority: string; due_at: string | null; business_area?: string; song_id?: string | null; song?: { id: string; title: string } | null; content?: { id: string; song_id: string } | null };
@@ -65,6 +65,16 @@ export default function OverviewTab() {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    const handleProgressUpdate = (event: Event) => {
+      const updated = (event as CustomEvent<Partial<Song> & { id?: string }>).detail;
+      if (!updated?.id) return;
+      setSongs(rows => rows.map(song => song.id === updated.id ? { ...song, ...updated } : song));
+    };
+    window.addEventListener("song-production-updated", handleProgressUpdate);
+    return () => window.removeEventListener("song-production-updated", handleProgressUpdate);
+  }, []);
+
   const today = localToday();
   const actionableTasks = useMemo(() => tasks
     .filter(task => task.status !== "done" && !generatedProfileTask(task.title))
@@ -113,7 +123,7 @@ export default function OverviewTab() {
           <span className="relative block h-full w-full overflow-hidden rounded-2xl border border-white/[.11] bg-gradient-to-br from-[#291321] to-[#101014] shadow-[0_16px_45px_rgba(0,0,0,.4)]"><span className="absolute inset-0 grid place-items-center text-[.62rem] font-black tracking-[.16em] text-[#FD52AF]/60">CHXNDLER</span><img src={songCoverPath(featuredSong.slug, featuredSong.title)} alt={`${featuredSong.title} cover art`} onError={event => { event.currentTarget.style.display = "none"; }} className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.035]" /></span>
         </Link>
         <div className="min-w-0 text-center sm:text-left"><div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start"><span className="rounded-full border border-white/[.08] bg-white/[.035] px-2.5 py-1 text-[.62rem] font-semibold text-white/65">{featuredSong.is_released ? "Released" : "Unreleased"}</span><span className="text-[.68rem] text-white/40">{songProductionLabel(featuredSong)}</span></div><h3 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">{featuredSong.title}</h3>
-          {milestoneCount !== null && <div className="mx-auto mt-3 max-w-sm sm:mx-0"><div className="flex items-center justify-between text-[.65rem] text-white/40"><span>Production milestones</span><span>{milestoneCount}/6</span></div><div className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/[.08]"><div className="h-full rounded-full bg-gradient-to-r from-[#FD52AF] to-[#f8a2ce] transition-[width] duration-500" style={{ width: `${milestoneCount / 6 * 100}%` }} /></div></div>}
+          {milestoneCount !== null && <div className="mx-auto mt-3 max-w-sm sm:mx-0"><div className="flex items-center justify-between text-[.65rem] text-white/40"><span>Reviewed production progress</span><span>{milestoneCount}/5</span></div><div className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/[.08]"><div className="h-full rounded-full bg-gradient-to-r from-[#FD52AF] to-[#f8a2ce] transition-[width] duration-500" style={{ width: `${milestoneCount / 5 * 100}%` }} /></div></div>}
           <div className="mt-4"><p className="text-[.62rem] font-bold uppercase tracking-[.15em] text-white/35">Next step</p>{nextStep ? <p className="mt-1 text-sm font-medium text-white/80">{nextStep}</p> : <p className="mt-1 text-sm text-white/40">No next step saved yet.</p>}</div>
         </div>
         <div className="flex flex-col items-center gap-2 sm:col-span-2 sm:flex-row sm:justify-center lg:col-span-1 lg:flex-col lg:items-stretch"><Link href={`/admin/songs/${featuredSong.id}`} className="inline-flex min-w-48 items-center justify-center rounded-xl bg-[#FD52AF] px-5 py-3 text-sm font-extrabold text-[#170d14] shadow-[0_8px_28px_rgba(253,82,175,.16)] transition hover:-translate-y-px hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Continue Working <span className="ml-2" aria-hidden="true">→</span></Link>{chooser}</div>

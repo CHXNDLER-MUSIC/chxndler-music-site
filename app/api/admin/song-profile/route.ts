@@ -16,12 +16,18 @@ export async function GET(request: Request) {
   const id = new URL(request.url).searchParams.get("id") || "";
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid song." }, { status: 400 });
   const db = getSupabaseAdmin();
-  const songFields = "id,title,slug,is_released,created_at,spotify_url,apple_music_url,youtube_music_video_url,karaoke_url,sky_video_url,production_stages,production_tracking_started,audio_status,workflow_stage,ready_for_collab,collab_interests,collaboration_description,practice_notes,next_action,meaning,category,submit_hub,genre,sub_genre,sub_genre_2,lyrics,bpm,musical_key,capo_fret,chord_shape";
+  const songFields = "id,title,slug,is_released,created_at,spotify_url,apple_music_url,youtube_music_video_url,karaoke_url,sky_video_url,production_stages,production_tracking_started,production_progress_verified,audio_status,workflow_stage,ready_for_collab,collab_interests,collaboration_description,practice_notes,next_action,meaning,category,submit_hub,genre,sub_genre,sub_genre_2,lyrics,bpm,musical_key,capo_fret,chord_shape";
   const practiceBaseFields = songFields.replace(",capo_fret,chord_shape", "");
-  const coreSongFields = "id,title,slug,is_released,created_at,spotify_url,apple_music_url,youtube_music_video_url,karaoke_url,sky_video_url,production_stages,production_tracking_started,audio_status,workflow_stage,ready_for_collab,collab_interests,collaboration_description,practice_notes,next_action";
+  const coreSongFields = "id,title,slug,is_released,created_at,spotify_url,apple_music_url,youtube_music_video_url,karaoke_url,sky_video_url,production_stages,production_tracking_started,production_progress_verified,audio_status,workflow_stage,ready_for_collab,collab_interests,collaboration_description,practice_notes,next_action";
   let releaseDateAvailable = true;
   let selectedFields = songFields;
+  let productionProgressVerifiedAvailable = true;
   let songResult = await db.from("songs").select(`${songFields},release_date`).eq("id", id).maybeSingle();
+  if (songResult.error && /production_progress_verified/i.test(songResult.error.message)) {
+    productionProgressVerifiedAvailable = false;
+    selectedFields = songFields.replace(",production_progress_verified", "");
+    songResult = await db.from("songs").select(`${selectedFields},release_date`).eq("id", id).maybeSingle();
+  }
   if (songResult.error && /release_date/i.test(songResult.error.message)) {
     releaseDateAvailable = false;
     songResult = await db.from("songs").select(songFields).eq("id", id).maybeSingle();
@@ -35,7 +41,7 @@ export async function GET(request: Request) {
     }
   }
   if (songResult.error && /meaning|category|submit_hub|sub_genre|\bgenre\b|\blyrics\b|\bbpm\b|musical_key|capo_fret|chord_shape/i.test(songResult.error.message)) {
-    selectedFields = coreSongFields;
+    selectedFields = productionProgressVerifiedAvailable ? coreSongFields : coreSongFields.replace(",production_progress_verified", "");
     songResult = await db.from("songs").select(`${selectedFields}${releaseDateAvailable ? ",release_date" : ""}`).eq("id", id).maybeSingle();
     if (songResult.error && /release_date/i.test(songResult.error.message)) {
       releaseDateAvailable = false;
@@ -51,7 +57,7 @@ export async function GET(request: Request) {
     db.from("collaboration_requests").select("id,status,submitted_at,contribution_type,artist_name,message").eq("song_id", song.id).order("submitted_at", { ascending: false }),
   ]);
   const meaning = song.meaning || (meanings || []).find(item => item.meaning_of_song?.trim())?.meaning_of_song || "";
-  return NextResponse.json({ song: { ...song, release_date: song.release_date ?? null, meaning: song.meaning ?? "", category: song.category ?? "", submit_hub: song.submit_hub ?? "", genre: song.genre ?? "", sub_genre: song.sub_genre ?? "", sub_genre_2: song.sub_genre_2 ?? "", lyrics: song.lyrics ?? "", bpm: song.bpm ?? null, musical_key: song.musical_key ?? "", capo_fret: song.capo_fret ?? null, chord_shape: song.chord_shape ?? "" }, releaseDateAvailable, meaning, musicVideo: video || null, requests: requests || [], coverUrl: songCoverPath(song.slug, song.title), lyricUrl: `/api/lyrics/${encodeURIComponent(song.slug)}` });
+  return NextResponse.json({ song: { ...song, production_progress_verified: productionProgressVerifiedAvailable && song.production_progress_verified === true, release_date: song.release_date ?? null, meaning: song.meaning ?? "", category: song.category ?? "", submit_hub: song.submit_hub ?? "", genre: song.genre ?? "", sub_genre: song.sub_genre ?? "", sub_genre_2: song.sub_genre_2 ?? "", lyrics: song.lyrics ?? "", bpm: song.bpm ?? null, musical_key: song.musical_key ?? "", capo_fret: song.capo_fret ?? null, chord_shape: song.chord_shape ?? "" }, releaseDateAvailable, meaning, musicVideo: video || null, requests: requests || [], coverUrl: songCoverPath(song.slug, song.title), lyricUrl: `/api/lyrics/${encodeURIComponent(song.slug)}` });
 }
 
 export async function PATCH(request: Request) {
