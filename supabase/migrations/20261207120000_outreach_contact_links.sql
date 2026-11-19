@@ -18,7 +18,8 @@ alter table public.sync_opportunities
   add column if not exists opportunity_url text not null default '';
 
 alter table public.collaboration_invites
-  add column if not exists personal_message text not null default '';
+  add column if not exists personal_message text not null default '',
+  add column if not exists contribution_type text not null default 'Other';
 
 alter table public.gig_outreach
   add column if not exists contact_id uuid references public.marketing_contacts(id) on delete set null,

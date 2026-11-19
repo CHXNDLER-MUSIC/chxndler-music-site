@@ -33,7 +33,7 @@ export default function CollaborationOutreachTab({ songId = "" }: { songId?: str
 
   async function createInvite(event: React.FormEvent) {
     event.preventDefault(); setNotice(""); setInviteLink("");
-    const response = await fetch("/api/admin/collaboration-invites", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ displayName: invite.name, inviteeEmail: invite.email, personalMessage: invite.message, scope: "song", songId: invite.songId }) });
+    const response = await fetch("/api/admin/collaboration-invites", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ displayName: invite.name, inviteeEmail: invite.email, personalMessage: invite.message, contributionType: invite.type, scope: "song", songId: invite.songId }) });
     const result = await response.json();
     if (!response.ok) { setNotice(result.error || "Unable to create invitation."); return; }
     setInviteLink(result.link || ""); setNotice("Private song invitation created.");

@@ -33,6 +33,7 @@ export async function POST(request: Request) {
   const scope = ["catalog", "video", "song"].includes(body.scope) ? body.scope as "catalog" | "video" | "song" : songId ? "song" : "catalog";
   const inviteeEmail = typeof body.inviteeEmail === "string" ? body.inviteeEmail.trim().slice(0, 320).toLowerCase() : "";
   const personalMessage = typeof body.personalMessage === "string" ? body.personalMessage.trim().slice(0, 1200) : "";
+  const contributionType = ["Feature / Vocals", "Remix", "Other"].includes(body.contributionType) ? body.contributionType : "Other";
   const expiryDays = body.expiryDays === "never" ? null : Number(body.expiryDays ?? 30);
   if (!displayName) return NextResponse.json({ error: "Enter a display name for this invitation." }, { status: 400 });
   if (scope === "song" && !/^[0-9a-f-]{36}$/i.test(songId)) return NextResponse.json({ error: "Select the song this invitation is for." }, { status: 400 });
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
   const normalizedName = normalize(displayName);
   const expiresAt = expiryDays === null ? null : new Date(Date.now() + expiryDays * 86400000).toISOString();
   const { data, error } = await db.from("collaboration_invites")
-    .insert({ display_name: displayName, normalized_display_name: normalizedName, invite_scope: scope, invitee_email: inviteeEmail || null, personal_message: personalMessage, song_id: scope === "song" ? songId : null,
+    .insert({ display_name: displayName, normalized_display_name: normalizedName, invite_scope: scope, invitee_email: inviteeEmail || null, personal_message: personalMessage, contribution_type: contributionType, song_id: scope === "song" ? songId : null,
       token_hash: tokenHash, expires_at: expiresAt, revoked_at: null, last_accessed_at: null })
     .select("id,display_name,expires_at,created_at").single();
   if (error || !data) {
