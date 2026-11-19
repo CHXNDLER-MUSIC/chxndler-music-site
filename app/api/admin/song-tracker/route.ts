@@ -8,7 +8,7 @@ export async function GET() {
   if (!isAdminUser(auth.user)) return forbidden();
   const db = getSupabaseAdmin();
   const [songs, requests, videos] = await Promise.all([
-    db.from("songs").select("id,title,slug,is_released,collaboration_enabled,created_at").order("title", { ascending: true }),
+    db.from("songs").select("id,title,slug,is_released,collaboration_enabled,created_at,sky_video_url,youtube_music_video_url").order("title", { ascending: true }),
     db.from("collaboration_requests").select("id,song_id,status,submitted_at,contribution_type"),
     db.from("music_video_projects").select("id,song_id,status,visibility,next_action"),
   ]);

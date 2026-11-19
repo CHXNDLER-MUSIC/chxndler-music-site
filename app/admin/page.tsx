@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getApiUser, isAdminUser } from "@/lib/apiAuth";
-import SongTracker from "@/components/admin/SongTracker";
+import AdminTabs from "@/components/admin/AdminTabs";
 
 export default async function AdminHome() {
   const auth = await getApiUser();
@@ -15,7 +16,7 @@ export default async function AdminHome() {
         <h1 className="mt-2 text-4xl font-black">Studio backend</h1>
         <p className="mt-3 max-w-2xl text-sm text-white/55">Track song release status and manage outreach from the song catalog.</p>
       </header>
-      <SongTracker />
+      <AdminTabs />
     </div>
   </main>;
 }

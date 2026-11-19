@@ -44,6 +44,9 @@ export default function ArtistReleaseDetail({
   audioIdOverride,
   lyricsUrlOverride,
   meaningUrlOverride,
+  showLyricsSection = false,
+  showInstrumentalControl = false,
+  collabContactHref,
   showCollabRequest = false,
 }: {
   release: ArtistRelease;
@@ -52,6 +55,9 @@ export default function ArtistReleaseDetail({
   audioIdOverride?: string;
   lyricsUrlOverride?: string | null;
   meaningUrlOverride?: string | null;
+  showLyricsSection?: boolean;
+  showInstrumentalControl?: boolean;
+  collabContactHref?: string;
   showCollabRequest?: boolean;
 }) {
   const { activeId, playing, loading, error, currentTime, duration, toggle, play, seek } = useBrandAudio();
@@ -111,9 +117,17 @@ export default function ArtistReleaseDetail({
       return () => { cancelled = true; };
     }
     setLyrics({ status: "loading" });
-    const request = typeof lyricsUrlOverride === "string"
-      ? fetch(lyricsUrlOverride).then((res) => (res.ok ? res.text() : ""))
-      : fetch(`/api/lyrics/${encodeURIComponent(release.slug)}`).then((res) => (res.ok ? res.json() : null));
+    const request = (async () => {
+      if (typeof lyricsUrlOverride === "string") {
+        const asset = await fetch(lyricsUrlOverride);
+        if (asset.ok) {
+          const content = await asset.text();
+          if (content.trim()) return content;
+        }
+      }
+      const fallback = await fetch(`/api/lyrics/${encodeURIComponent(release.slug)}`);
+      return fallback.ok ? fallback.json() : null;
+    })();
     request
       .then((data) => {
         if (cancelled) return;
@@ -251,17 +265,28 @@ export default function ArtistReleaseDetail({
           </div>
           {!audioSrc && <p className="mt-[0.5rem] text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-white/40">Audio file coming soon</p>}
           {audioSrc && isActive && error && <p className="mt-[0.5rem] text-[0.75rem] text-white/50">{error}</p>}
-          {instrumentalSrcOverride && (
+          {showLyricsSection && (
             <button
               type="button"
+              onClick={() => rootRef.current?.querySelector('[aria-label="Lyrics"]')?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              onMouseEnter={playHover}
+              className="mt-[0.75rem] mr-[0.5rem] inline-flex min-h-[2.5rem] items-center justify-center rounded-full border border-white/20 bg-white/[0.04] px-[1rem] py-[0.55rem] text-[0.6875rem] font-extrabold uppercase tracking-[0.14em] text-white/80 transition-colors hover:border-white/45 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem]"
+              style={{ outlineColor: PINK }}
+            >Lyrics</button>
+          )}
+          {(instrumentalSrcOverride || showInstrumentalControl) && (
+            <button
+              type="button"
+              disabled={!instrumentalSrcOverride}
+              title={!instrumentalSrcOverride ? "No instrumental audio file was found for this track." : undefined}
               aria-pressed={isInstrumental}
               onClick={() => {
                 const nextIsInstrumental = !isInstrumental;
                 setIsInstrumental(nextIsInstrumental);
-                play(id, nextIsInstrumental ? instrumentalSrcOverride : mainAudioSrc, releaseNowPlaying(release));
+                play(id, nextIsInstrumental ? instrumentalSrcOverride || mainAudioSrc : mainAudioSrc, releaseNowPlaying(release));
               }}
               onMouseEnter={playHover}
-              className={`mt-[0.75rem] inline-flex min-h-[2.5rem] items-center justify-center rounded-full border px-[1rem] py-[0.55rem] text-[0.6875rem] font-extrabold uppercase tracking-[0.14em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem] ${isInstrumental ? "border-[#ff3ea5] bg-[#ff3ea5] text-black" : "border-white/20 bg-white/[0.04] text-white/80 hover:border-white/45 hover:text-white"}`}
+              className={`mt-[0.75rem] inline-flex min-h-[2.5rem] items-center justify-center rounded-full border px-[1rem] py-[0.55rem] text-[0.6875rem] font-extrabold uppercase tracking-[0.14em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem] disabled:cursor-not-allowed disabled:opacity-40 ${isInstrumental ? "border-[#ff3ea5] bg-[#ff3ea5] text-black" : "border-white/20 bg-white/[0.04] text-white/80 hover:border-white/45 hover:text-white"}`}
               style={{ outlineColor: PINK }}
             >
               {isInstrumental ? "Play Full Song" : "Instrumental"}
@@ -289,7 +314,12 @@ export default function ArtistReleaseDetail({
           </div>
           {showCollabRequest && (
             <div className="mt-[1rem] flex flex-wrap gap-[0.625rem]">
-              <button
+              {collabContactHref ? <a
+                href={collabContactHref}
+                onMouseEnter={playHover}
+                className="inline-flex min-h-[2.75rem] items-center justify-center rounded-full px-[1.25rem] py-[0.75rem] text-[0.75rem] font-extrabold uppercase tracking-[0.12em] text-black transition-transform duration-200 hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
+                style={{ background: PINK, outlineColor: PINK }}
+              >Request to Collaborate</a> : <button
                 type="button"
                 onClick={() => setCollabOpen(true)}
                 onMouseEnter={playHover}
@@ -297,7 +327,7 @@ export default function ArtistReleaseDetail({
                 style={{ background: PINK, outlineColor: PINK }}
               >
                 Request to Collab
-              </button>
+              </button>}
             </div>
           )}
         </div>
@@ -306,13 +336,13 @@ export default function ArtistReleaseDetail({
       {collabOpen && release.databaseId && <CollabRequestForm songId={release.databaseId} title={release.title} artwork={release.coverArt} close={() => setCollabOpen(false)} />}
 
       {/* Lyrics + collectible card */}
-      {(lyrics.status !== "missing" || release.cardArt || meaning) && (
+      {(showLyricsSection || lyrics.status !== "missing" || release.cardArt || meaning) && (
         <div
           className={`mt-[2rem] grid grid-cols-1 gap-[1.5rem] ${
             lyrics.status !== "missing" && release.cardArt ? "md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start" : ""
           }`}
         >
-          {lyrics.status !== "missing" && (
+          {(showLyricsSection || lyrics.status !== "missing") && (
             <section aria-label="Lyrics" className="min-w-0">
               <button
                 type="button"
@@ -373,6 +403,8 @@ export default function ArtistReleaseDetail({
                     >
                       {lyrics.status === "loading" ? (
                         <p className="text-[0.9375rem] text-white/40">Loading lyrics…</p>
+                      ) : lyrics.status === "missing" ? (
+                        <p className="text-[0.9375rem] text-white/50">Lyrics are not available yet.</p>
                       ) : (
                         splitVerses(lyrics.text).map((verse, i) => (
                           <p

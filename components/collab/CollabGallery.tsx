@@ -6,6 +6,8 @@ import { BrandAudioProvider, useBrandAudio } from "@/components/brand-pitch/Bran
 import MediaViewerModal from "@/components/brand-pitch/MediaViewerModal";
 import SkyVideoBackground from "@/components/brand-pitch/SkyVideoBackground";
 import { releaseAudioId, releaseAudioSrc, releaseNowPlaying, type ArtistRelease } from "@/components/brand-pitch/artistRelease";
+import { slugify } from "@/lib/slug";
+import { playCollabClickSound } from "@/components/collab/playCollabClickSound";
 
 export type CollabProject = {
   id: string;
@@ -91,7 +93,7 @@ function CollabGalleryContent({
         backgroundUrl: project.backgroundUrl,
         backgroundIsVideo: project.backgroundIsVideo,
         release: {
-          slug: `collab-${project.id.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+          slug: slugify(project.title),
           title: project.title,
           artist: "CHXNDLER × COLLABORATOR",
           coverArt: project.coverUrl || placeholderCover(project.title),
@@ -147,12 +149,7 @@ function CollabGalleryContent({
       )}
       <div className="collab-modal-scrim" />
     </div>
-  ) : selected?.from === "collabs" ? (
-    <div className="collab-modal-background">
-      <img src={selected.release.coverArt} alt="" />
-      <div className="collab-modal-scrim" />
-    </div>
-  ) : selected?.release.skyVideoUrl ? (
+  ) : selected?.from === "collabs" ? undefined : selected?.release.skyVideoUrl ? (
     <SkyVideoBackground url={selected.release.skyVideoUrl} />
   ) : selected ? (
     <div className="collab-modal-background">
@@ -181,6 +178,7 @@ function CollabGalleryContent({
             role="tab"
             aria-selected={tab === value}
             onClick={() => {
+              playCollabClickSound();
               closeDetail();
               setTab(value);
             }}
@@ -264,9 +262,12 @@ function CollabGalleryContent({
             audioSrcOverride={selected.from === "collabs" ? selected.audioUrl ?? "" : selected.release.audioAvailable === false ? "" : selected.audioUrl}
             instrumentalSrcOverride={selected.from === "collabs" ? selected.instrumentalUrl ?? null : null}
             audioIdOverride={selected.id}
-            lyricsUrlOverride={selected.from === "collabs" ? selected.lyricsUrl : undefined}
+            lyricsUrlOverride={selected.from === "collabs" ? selected.lyricsUrl || undefined : undefined}
+            showLyricsSection={selected.from === "collabs"}
+            showInstrumentalControl={selected.from === "collabs"}
             meaningUrlOverride={selected.from === "collabs" ? selected.meaningUrl : null}
-            showCollabRequest={selected.release.collaborationEnabled === true}
+            showCollabRequest={selected.from === "collabs" || selected.release.collaborationEnabled === true}
+            collabContactHref={selected.from === "collabs" ? `mailto:info@chxndler-music.com?subject=${encodeURIComponent(`Collaboration request: ${selected.release.title}`)}` : undefined}
           />
         </MediaViewerModal>
       )}

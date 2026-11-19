@@ -38,18 +38,29 @@ const normalizeTitle = (title: string) => title.trim().replace(/[‘’ʼ`]/g, "
 async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleased: ArtistRelease[] }> {
   try {
     const supabase = getSupabaseAdmin();
-    const [songsRes, cardsRes] = await Promise.all([
+    const [initialSongsRes, cardsRes] = await Promise.all([
       supabase.from("songs").select("id, slug, title, is_released, collaboration_enabled, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url"),
       supabase.from("cards").select("card_name"),
     ]);
-    if (songsRes.error || !songsRes.data) return { released: [], unreleased: [] };
+    // This column is introduced by the collaboration migration and may not
+    // exist yet in a local/older Supabase schema. A missing opt-in flag must
+    // not hide the entire artist catalog.
+    let songRows: Array<Record<string, any>> | null = initialSongsRes.data as Array<Record<string, any>> | null;
+    if (initialSongsRes.error?.message.includes("collaboration_enabled")) {
+      const fallback = await supabase.from("songs").select("id, slug, title, is_released, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url");
+      songRows = fallback.data?.map((row) => ({ ...row, collaboration_enabled: false })) || null;
+      if (fallback.error) console.error("[collab] Could not load song catalog:", fallback.error);
+    } else if (initialSongsRes.error) {
+      console.error("[collab] Could not load song catalog:", initialSongsRes.error);
+    }
+    if (!songRows) return { released: [], unreleased: [] };
 
     const cardNames = new Map<string, string>();
     for (const card of cardsRes.data ?? []) {
       if (card.card_name) cardNames.set(normalizeTitle(String(card.card_name)), String(card.card_name));
     }
 
-    const songs = songsRes.data
+    const songs = songRows
       .filter((row) => !!row.slug && !!row.title && !NON_RELEASE_TITLES.includes(String(row.title).toLowerCase()))
       .map((row) => {
         const slug = String(row.slug);
@@ -165,13 +176,14 @@ export default async function CollabPage() {
       const folderKey = keyFor(folder);
       const covers = folderFiles.filter((file) => IMAGE_EXTENSIONS.has(file.extension) && !isBackground(file.stem));
       const cover = covers.find((file) => keyFor(file.stem) === folderKey) ?? covers[0];
-      const audio = folderFiles.find((file) => AUDIO_EXTENSIONS.has(file.extension) && keyFor(file.stem) === folderKey && !/(?:[-_ .])\(?instrumental\)?$/i.test(file.stem))
-        ?? folderFiles.find((file) => AUDIO_EXTENSIONS.has(file.extension) && !/(?:[-_ .])\(?instrumental\)?$/i.test(file.stem));
-      const instrumental = folderFiles.find((file) => AUDIO_EXTENSIONS.has(file.extension) && /(?:[-_ .])\(?instrumental\)?$/i.test(file.stem));
+      const audio = folderFiles.find((file) => AUDIO_EXTENSIONS.has(file.extension) && keyFor(file.stem) === folderKey && !/instrumental/i.test(file.stem))
+        ?? folderFiles.find((file) => AUDIO_EXTENSIONS.has(file.extension) && !/instrumental/i.test(file.stem));
+      const instrumental = folderFiles.find((file) => AUDIO_EXTENSIONS.has(file.extension) && /instrumental/i.test(file.stem));
       const audioKey = audio ? keyFor(audio.stem.replace(/(?:[-_ .])\((?:demo|acoustic|instrumental)\)$/i, "")) : folderKey;
       const meaning = folderFiles.find((file) => TEXT_EXTENSIONS.has(file.extension) && /(?:[-_ .])(song[-_ .]?)?meaning$/i.test(file.stem));
-      const lyrics = folderFiles.find((file) => ["lrc", "txt"].includes(file.extension) && keyFor(file.stem) === audioKey && file !== meaning)
-        ?? folderFiles.find((file) => ["lrc", "txt"].includes(file.extension) && file !== meaning);
+      const lyrics = folderFiles.find((file) => ["lrc", "txt", "md"].includes(file.extension) && keyFor(file.stem) === audioKey && file !== meaning)
+        ?? folderFiles.find((file) => ["lrc", "txt", "md"].includes(file.extension) && !/lyrics?/i.test(file.stem) && file !== meaning)
+        ?? folderFiles.find((file) => ["lrc", "txt", "md"].includes(file.extension) && file !== meaning);
       const background = folderFiles.find((file) => VIDEO_EXTENSIONS.has(file.extension) && isBackground(file.stem) && keyFor(file.stem) === audioKey)
         ?? folderFiles.find((file) => IMAGE_EXTENSIONS.has(file.extension) && isBackground(file.stem) && keyFor(file.stem) === audioKey)
         ?? folderFiles.find((file) => (VIDEO_EXTENSIONS.has(file.extension) || IMAGE_EXTENSIONS.has(file.extension)) && isBackground(file.stem));
