@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   const id = new URL(request.url).searchParams.get("id") || "";
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid song." }, { status: 400 });
   const db = getSupabaseAdmin();
-  const songFields = "id,title,slug,is_released,created_at,spotify_url,apple_music_url,youtube_music_video_url,karaoke_url,sky_video_url,production_stages,production_tracking_started,audio_status,workflow_stage,ready_for_collab,collab_interests,collaboration_description,practice_notes,next_action,meaning,category,submit_hub,genre,sub_genre,sub_genre_2,lyrics,bpm,musical_key";
+  const songFields = "id,title,slug,is_released,created_at,spotify_url,apple_music_url,youtube_music_video_url,karaoke_url,sky_video_url,production_stages,production_tracking_started,audio_status,workflow_stage,ready_for_collab,collab_interests,collaboration_description,practice_notes,next_action,meaning,category,submit_hub,genre,sub_genre,sub_genre_2,lyrics,bpm,musical_key,capo_fret,chord_shape";
   let releaseDateAvailable = true;
   let songResult = await db.from("songs").select(`${songFields},release_date`).eq("id", id).maybeSingle();
   if (songResult.error && /release_date/i.test(songResult.error.message)) {
@@ -53,6 +53,14 @@ export async function PATCH(request: Request) {
   if (body.bpm !== undefined) {
     if (body.bpm !== null && (!Number.isInteger(body.bpm) || body.bpm < 1 || body.bpm > 400)) return NextResponse.json({ error: "BPM must be between 1 and 400." }, { status: 400 });
     metadata.bpm = body.bpm;
+  }
+  if (body.capo_fret !== undefined) {
+    if (body.capo_fret !== null && (!Number.isInteger(body.capo_fret) || body.capo_fret < 0 || body.capo_fret > 24)) return NextResponse.json({ error: "Capo fret must be between 0 and 24." }, { status: 400 });
+    metadata.capo_fret = body.capo_fret;
+  }
+  if (body.chord_shape !== undefined) {
+    if (typeof body.chord_shape !== "string") return NextResponse.json({ error: "Chord shape must be text." }, { status: 400 });
+    metadata.chord_shape = body.chord_shape.trim().slice(0, 40);
   }
   if (Object.keys(metadata).length) {
     const { error } = await db.from("songs").update(metadata).eq("id", song.id);

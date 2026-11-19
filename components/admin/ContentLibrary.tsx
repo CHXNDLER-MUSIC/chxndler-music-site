@@ -25,8 +25,6 @@ function dateLabel(item: ContentItem) {
 export default function ContentLibrary({ songId: scopedSongId }: { songId?: string }) {
   const [items, setItems] = useState<ContentItem[]>([]);
   const [songs, setSongs] = useState<CatalogSong[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [types, setTypes] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<NonNullable<ResponseData["suggestions"]>>({ titles: [], songs: [], categories: [], subCategories: [], types: [], dates: [] });
   const [metrics, setMetrics] = useState<Metrics>(blankMetrics);
   const [total, setTotal] = useState(0);
@@ -78,7 +76,7 @@ export default function ContentLibrary({ songId: scopedSongId }: { songId?: stri
     if (!response.ok) { setError(body.error || "Unable to load content."); setLoading(false); return; }
     const result = body as ResponseData;
     setItems(result.items || []); setTotal(result.total || 0); setMetrics(result.metrics || blankMetrics);
-    setSongs(result.songs || []); setCategories(result.categories || []); setTypes(result.types || []); setSuggestions(result.suggestions || { titles: [], songs: [], categories: [], subCategories: [], types: [], dates: [] }); setLoading(false);
+    setSongs(result.songs || []); setSuggestions(result.suggestions || { titles: [], songs: [], categories: [], subCategories: [], types: [], dates: [] }); setLoading(false);
   }, [page, pageSize, sort, direction, songFilter, songNameFilter, titleFilter, categoryFilter, subCategoryFilter, typeFilter, workflow, dateFilter, recordFilter, editFilter, postFilter]);
 
   useEffect(() => { void load(page); }, [load]);
@@ -132,7 +130,7 @@ export default function ContentLibrary({ songId: scopedSongId }: { songId?: stri
     <div className="hidden overflow-hidden rounded-xl border border-white/10 bg-[#111116] md:block">
       <table className="w-full table-fixed border-collapse text-left text-sm">
         <thead className="bg-[#17171c] text-[.6rem] uppercase tracking-wider text-white/40"><tr>
-          {[["title", "Content title", "24%"], ["song_name", "Song", "16%"], ["category", "Category / sub-category", "16%"], ["media_type", "Type", "9%"], ["workflow_status", "Status", "10%"], ["recorded", "Rec", "4%"], ["edited", "Edit", "4%"], ["post_ready", "Post", "4%"], ["planned_date", "Planned date", "13%"]].map(([key, label, width]) => <th key={key} style={{ width }} className="px-2 py-3 font-bold sm:px-3"><button type="button" onClick={() => toggleSort(key)} className="text-left hover:text-white">{label}{sort === key ? <span className="ml-1">{direction === "asc" ? "↑" : "↓"}</span> : null}</button></th>)}
+          {[["title", "Content title", "24%"], ["song_name", "Song", "16%"], ["category", "Category / sub-category", "16%"], ["media_type", "Type", "9%"], ["workflow_status", "Status", "10%"], ["recorded", "Recorded", "4%"], ["edited", "Edited", "4%"], ["post_ready", "Post", "4%"], ["planned_date", "Planned date", "13%"]].map(([key, label, width]) => <th key={key} style={{ width }} className="px-2 py-2 align-top font-bold sm:px-3"><button type="button" aria-expanded={openFilter===key} onClick={() => setOpenFilter(current => current===key ? null : key)} className="text-left hover:text-white">{label}<span className="ml-1 text-[.55rem]">{openFilter===key?"⌃":"⌄"}</span></button><button type="button" aria-label={"Sort by " + label} onClick={() => toggleSort(key)} className="ml-1 text-white/40 hover:text-white">↕</button>{sort === key ? <span className="ml-1 text-violet-200">{direction === "asc" ? "↑" : "↓"}</span> : null}{headerFilter(key)}</th>)}
         </tr></thead>
         <tbody className="divide-y divide-white/[.055]">
           {items.map(item => <tr key={item.id} onClick={() => setPanelItem(item)} onKeyDown={event => { if (event.key === "Enter" && event.target === event.currentTarget) setPanelItem(item); }} tabIndex={0} className="cursor-pointer align-middle transition hover:bg-white/[.025] focus:bg-white/[.04]">
