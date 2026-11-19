@@ -140,11 +140,6 @@ function CollabGalleryContent({
     </div>
   ) : selected?.release.skyVideoUrl ? (
     <SkyVideoBackground url={selected.release.skyVideoUrl} />
-  ) : selected ? (
-    <div className="collab-modal-background">
-      <img src={selected.release.coverArt} alt="" />
-      <div className="collab-modal-scrim" />
-    </div>
   ) : undefined;
 
   return (
@@ -220,7 +215,7 @@ function CollabGalleryContent({
                 </>
               )}
               {item.release.releaseDate && <span className="collab-release-date">Release date · {new Date(`${item.release.releaseDate}T00:00:00`).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>}
-              {!!item.release.collaborationOpportunities?.length && <span className="collab-opportunity-badges">{item.release.collaborationOpportunities.map(value => <span key={value} data-opportunity={value}>{value === "feature" ? "Open for Feature" : value === "video" ? "Video Needed" : "Open for Remix"}</span>)}</span>}
+              {(item.release.readyForCollab || !!item.release.collaborationOpportunities?.length) && <span className="collab-opportunity-badges">{item.release.readyForCollab && <span data-opportunity="collab">Open for Collab</span>}{item.release.collaborationOpportunities?.map(value => <span key={value} data-opportunity={value}>{value === "feature" ? "Open for Feature" : value === "video" ? "Video Needed" : "Open for Remix"}</span>)}</span>}
             </button>
           ))}
         </section>

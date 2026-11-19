@@ -21,7 +21,7 @@ const COVER_OVERRIDES: Record<string, string> = {
   "my-mom-thinks-im-famous": "/covers/MY MOM THINKS I'M FAMOUS.png",
   // Artwork for these tracks has not been uploaded yet. Keep a valid CHXNDLER
   // card visible until their individual covers are added.
-  copycat: "/covers/CHXNDLER.webp",
+  copycat: "/covers/COPYCAT.png",
   "three-cheers-for-five-years": "/covers/CHXNDLER.webp",
 };
 

@@ -99,7 +99,9 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
         const musicVideoUrl = rawString(row.youtube_music_video_url) || projectVideos.get(String(row.id)) || catalogVideos.get(normalizeTitle(title)) || "";
         const hasVideo = !!musicVideoUrl;
         const savedOpportunities = Array.isArray(row.collaboration_opportunities) ? row.collaboration_opportunities : (Array.isArray(row.collab_interests) ? row.collab_interests.map((value: string) => /video/i.test(value) ? "video" : /remix/i.test(value) ? "remix" : /feature|vocal/i.test(value) ? "feature" : "").filter(Boolean) : []);
-        const opportunities: NonNullable<ArtistRelease["collaborationOpportunities"]> = ["remix"];
+        const readyForCollab = row.ready_for_collab === true || row.collaboration_enabled === true;
+        const opportunities: NonNullable<ArtistRelease["collaborationOpportunities"]> = [];
+        if (readyForCollab) opportunities.push("remix");
         if (!hasVideo) opportunities.push("video");
         if (!released) opportunities.push(...savedOpportunities.filter((value: string): value is "feature" => value === "feature"));
         const links = resolveSongLinks(row);
@@ -111,7 +113,7 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
             slug,
             databaseId: String(row.id),
             collaborationEnabled: true,
-            readyForCollab: row.ready_for_collab === true || row.collaboration_enabled === true,
+            readyForCollab,
             collaborationInterests: Array.isArray(row.collab_interests) ? row.collab_interests : [],
             audioStatus: row.audio_status || (released ? "Released" : "Demo"),
             isReleased: released,
