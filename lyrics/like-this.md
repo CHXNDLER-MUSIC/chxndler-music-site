@@ -35,19 +35,6 @@ For a minute or so
 *(Like this... like this...)*
 *(A little... a little...)*
 
-There's a girl in the bathroom
-Talking into a fan
-Someone's taking photographs
-Of a guy with no hands
-You were laughing in the hallway
-With your shoes in your hand
-Said, "We should probably leave"
-Then you asked me to dance
-The lights came on
-Nobody moved
-You looked at the ceiling
-Like you had something to prove
-
 And I don't know
 What happens next
 But you look at me

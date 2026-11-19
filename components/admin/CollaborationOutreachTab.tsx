@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-type RequestRow = { id: string; song_id: string | null; artist_name: string; contribution_type: string; status: string; submitted_at: string; message: string | null; songs?: { title?: string } | null };
+type RequestRow = { id: string; song_id: string | null; artist_name: string; contribution_type: string; status: string; submitted_at: string; message: string | null; agreement_status?: string; project_status?: string; songs?: { title?: string } | null };
 type Song = { id: string; title: string };
 type Contact = { id:string; first_name:string|null; last_name:string|null; email:string|null; phone?:string|null; venue:string|null };
 
@@ -68,6 +68,6 @@ export default function CollaborationOutreachTab({ songId = "" }: { songId?: str
       {!loading && visible.length === 0 && <p className="py-8 text-center text-sm text-white/45">No collaboration requests for this view yet.</p>}
       {loading && <p className="py-6 text-center text-sm text-white/45">Loading collaboration requests…</p>}
     </div>
-    <Link href="/admin/collaborations" className="inline-block text-sm font-semibold text-[#FD52AF]">Open requests, agreements, and active projects →</Link>
+    <details className="rounded-xl border border-white/10 bg-white/[.025]"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-[#FD52AF]">Requests, agreements, and active projects <span className="ml-2 text-xs font-normal text-white/45">{visible.length}</span></summary><div className="divide-y divide-white/[.07] border-t border-white/10 px-4">{visible.map(row => <Link key={row.id} href={`/admin/collaborations?request=${encodeURIComponent(row.id)}`} className="block py-3 hover:bg-white/[.02]"><span className="block text-sm font-semibold text-white">{row.artist_name} <span className="font-normal text-white/50">· {row.contribution_type}</span></span><span className="mt-1 block text-xs text-white/50">{row.songs?.title || "Original song idea"} · Request: {row.status.replaceAll("_", " ")} · Agreement: {(row.agreement_status || "not_started").replaceAll("_", " ")} · Project: {(row.project_status || "requested").replaceAll("_", " ")}</span>{row.message && <span className="mt-1 block text-xs leading-5 text-white/55">{row.message}</span>}</Link>)}{!visible.length && <p className="py-4 text-sm text-white/45">No requests, agreements, or projects for this view yet.</p>}</div></details>
   </section>;
 }
