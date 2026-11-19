@@ -17,7 +17,23 @@ export async function POST(request: Request) {
     if (error) return NextResponse.json({ error: "Could not create private invite. Confirm the videographer invite migration is applied." }, { status: 500 });
     invites.push({ id: String(data?.id || ""), email, link: `${base}/video-invite/${token}` });
   }
-  return NextResponse.json({ invites });
+  let emailStatus: "sent" | "not_configured" | "failed" = "not_configured";
+  const { data: project } = await db.from("music_video_projects").select("songs(title)").eq("id", projectId).maybeSingle();
+  const host = process.env.SMTP_HOST, from = process.env.SMTP_FROM, user = process.env.SMTP_USER, pass = process.env.SMTP_PASS;
+  if (host && from && user && pass) {
+    try {
+      const nodemailer = await import("nodemailer"), port = Number(process.env.SMTP_PORT || 587);
+      const transport = nodemailer.default.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+      await Promise.all(invites.map(invite => transport.sendMail({
+        from, to: invite.email, replyTo: process.env.COLLAB_REPLY_TO || from,
+        subject: `Music video collaboration · ${project?.songs?.title || "CHXNDLER"}`,
+        text: `You have been invited to collaborate on the ${project?.songs?.title || "CHXNDLER"} music video. Open your private project workspace: ${invite.link}\n\nThis link expires in 30 days and can be revoked by the project owner.`,
+        html: `<p>You have been invited to collaborate on the <strong>${String(project?.songs?.title || "CHXNDLER").replace(/[&<>"']/g, "")}</strong> music video.</p><p><a href="${invite.link}">Open your private project workspace</a></p><p>This link expires in 30 days and can be revoked by the project owner.</p>`,
+      })));
+      emailStatus = "sent";
+    } catch (error) { console.error("[music-video] invite email failed", error); emailStatus = "failed"; }
+  }
+  return NextResponse.json({ invites, emailStatus });
 }
 
 export async function DELETE(request: Request) {

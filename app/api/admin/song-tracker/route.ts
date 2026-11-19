@@ -9,9 +9,9 @@ export async function GET() {
   if (!isAdminUser(auth.user)) return forbidden();
   const db = getSupabaseAdmin();
   const [songResult, requests, videos, tasks] = await Promise.all([
-    db.from("songs").select("id,title,slug,is_released,release_date,audio_status,collaboration_opportunities,video_concept,collaboration_enabled,production_stages,production_tracking_started,ready_for_collab,collab_interests,collaboration_description,workflow_stage,next_action,next_action_manual,created_at,sky_video_url,youtube_music_video_url").order("title", { ascending: true }),
+    db.from("songs").select("id,title,slug,is_released,release_date,audio_status,collaboration_opportunities,video_concept,collaboration_enabled,production_stages,production_tracking_started,ready_for_collab,collab_interests,collaboration_description,workflow_stage,next_action,next_action_manual,created_at,sky_video_url,youtube_music_video_url,spotify_url,karaoke_url,practice_notes").order("title", { ascending: true }),
     db.from("collaboration_requests").select("id,song_id,status,submitted_at,contribution_type"),
-    db.from("music_video_projects").select("id,song_id,status,visibility,next_action"),
+    db.from("music_video_projects").select("id,song_id,status,visibility,next_action,assigned_videographer,public_concept"),
     db.from("admin_tasks").select("song_id,title,status,priority,due_at,created_at").neq("status", "done").not("song_id", "is", null).order("due_at", { ascending: true, nullsFirst: false }),
   ]);
   let songs: any = songResult;
@@ -31,7 +31,7 @@ export async function GET() {
     const musicVideo = videoRows.find(row => row.song_id === song.id) || null;
     const hasMusicVideo = !!musicVideo || !!song.youtube_music_video_url || !!song.sky_video_url;
     const isReleased = song.is_released || song.audio_status === "Released";
-    const productionStages = { ...(song.production_stages || {}), ...(isReleased ? { concept: true, lyrics: true, recorded: true, mix: true, mastered: true } : {}), ...(hasMusicVideo ? { music_video: true } : {}) };
+    const productionStages = { ...(song.production_stages || {}), ...(hasMusicVideo ? { music_video: true } : {}) };
     const opportunities = isReleased ? ["remix"] : [...new Set(["remix", ...(song.collaboration_opportunities || []).filter((value: string) => value === "feature"), ...(!hasMusicVideo ? ["video"] : [])])];
     return ({
     ...song,

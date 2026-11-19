@@ -27,6 +27,7 @@ function TabIcon({ name }: { name: IconName }) {
 export default function AdminTabs() {
   const [tab, setTab] = useState<Tab>("overview");
   const [outreachSection, setOutreachSection] = useState<"pitches" | "gigs" | "sync" | "contacts">("pitches");
+  const [outreachSongId, setOutreachSongId] = useState("");
   const [moreOpen, setMoreOpen] = useState(false);
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("view")?.toLowerCase();
@@ -35,6 +36,7 @@ export default function AdminTabs() {
     else if (["gigs", "connections", "contacts", "sync"].includes(requested || "")) setTab("outreach");
     const legacySubtab = requested === "sync" ? "sync" : requested === "gigs" ? "gigs" : requested === "connections" ? "contacts" : null;
     const requestedSubtab = new URLSearchParams(window.location.search).get("section")?.toLowerCase();
+    setOutreachSongId(new URLSearchParams(window.location.search).get("song") || "");
     if (legacySubtab || ["pitches", "gigs", "sync", "contacts"].includes(requestedSubtab || "")) {
       setOutreachSection((legacySubtab || requestedSubtab) as "pitches" | "gigs" | "sync" | "contacts");
     }
@@ -53,7 +55,7 @@ export default function AdminTabs() {
         {moreOpen && <div role="menu" className="absolute right-0 top-full z-30 mt-2 min-w-52 rounded-xl border border-white/10 bg-[#15151b] p-1.5 shadow-2xl">{more.map(([id, label, icon]) => <button key={id} type="button" role="menuitem" data-tab={id} onClick={() => choose(id)} className={`admin-menu-item ${tab === id ? "is-active" : ""}`}><TabIcon name={icon}/><span>{label}</span></button>)}</div>}
       </div>
     </nav>
-    {tab === "overview" ? <OverviewTab /> : tab === "songs" ? <SongTracker /> : tab === "tasks" ? <TasksTab /> : tab === "outreach" ? <OutreachWorkspace initialSection={outreachSection} onSectionChange={setOutreachSection} /> : <FinanceTab />}
+    {tab === "overview" ? <OverviewTab /> : tab === "songs" ? <SongTracker /> : tab === "tasks" ? <TasksTab /> : tab === "outreach" ? <OutreachWorkspace initialSection={outreachSection} onSectionChange={setOutreachSection} initialSongId={outreachSongId} /> : <FinanceTab />}
     <style jsx>{`
       .admin-tab-icon{width:1rem;height:1rem;flex:none}
       .admin-tab{display:flex;align-items:center;justify-content:center;gap:.45rem;color:rgba(255,255,255,.56);white-space:nowrap}

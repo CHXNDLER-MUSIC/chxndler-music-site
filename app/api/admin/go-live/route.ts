@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { getApiUser, isAdminUser, unauthorized, forbidden } from '@/lib/apiAuth';
 
 function parseLiveValue(value: any): boolean {
   if (
@@ -80,14 +81,10 @@ export async function GET() {
 }
 
 /** POST { "live": true/false } — toggle the flag (admin only) */
-export async function POST(req: NextRequest) {
-  const auth = req.headers.get('authorization') ?? '';
-  const token = auth.replace(/^Bearer\s+/i, '');
-  const secret = process.env.ADMIN_SECRET;
-
-  if (!secret || token !== secret) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export async function POST(_req: Request) {
+  const auth = await getApiUser();
+  if (!auth) return unauthorized();
+  if (!isAdminUser(auth.user)) return forbidden();
 
   try {
     const body = await req.json();
@@ -95,6 +92,7 @@ export async function POST(req: NextRequest) {
 
     // next_drop management
     if (body.key === 'next_drop') {
+      if (!body.value || typeof body.value !== 'object' || Array.isArray(body.value)) return NextResponse.json({ error: 'Invalid next drop settings.' }, { status: 400 });
       const { error } = await sb
         .from('app_settings')
         .upsert(
@@ -110,7 +108,8 @@ export async function POST(req: NextRequest) {
     }
 
     // go_live_override management
-    const live = Boolean(body.live);
+    if (typeof body.live !== 'boolean') return NextResponse.json({ error: 'Live status must be true or false.' }, { status: 400 });
+    const live = body.live;
 
     const { error } = await sb
       .from('app_settings')

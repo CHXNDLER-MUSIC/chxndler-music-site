@@ -85,7 +85,7 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
             collaborationInterests: Array.isArray(row.collab_interests) ? row.collab_interests : [],
             audioStatus: row.audio_status || (released ? "Released" : "Demo"),
             isReleased: released,
-            collaborationOpportunities: released ? ["remix"] : [...new Set(["remix", ...savedOpportunities.filter((value: string) => value === "feature"), ...(!hasVideo ? ["video"] : [])])],
+            collaborationOpportunities: released ? [...new Set(["remix", ...(!hasVideo ? ["video"] : [])])] : [...new Set(["remix", ...savedOpportunities.filter((value: string) => value === "feature"), ...(!hasVideo ? ["video"] : [])])],
             collaborationDescription: typeof row.collaboration_description === "string" ? row.collaboration_description : "",
             videoConcept: typeof row.video_concept === "string" ? row.video_concept : "",
             releaseDate: typeof row.release_date === "string" ? row.release_date : null,
@@ -125,7 +125,7 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
       console.error("[collab] Could not check Supabase track audio:", error);
     }
 
-    const withAudio = async (release: ArtistRelease, isReleased: boolean): Promise<ArtistRelease> => {
+    const withAudio = async (release: ArtistRelease): Promise<ArtistRelease> => {
       if (!trackPaths) return release;
       const expectedUrl = new URL(releaseAudioSrc(release.slug), "https://local.invalid");
       const expected = (expectedUrl.searchParams.get("path") || decodeURIComponent(expectedUrl.pathname.split("/tracks/").pop() || "")).toLowerCase();
@@ -135,13 +135,7 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
         ?? trackPaths.find((path) => keyFor(fileParts(path.split("/").pop() || path).stem) === expectedKey)
         ?? trackPaths.find((path) => keyFor(fileParts(path.split("/").pop() || path).stem) === titleKey);
       let audioUrl: string | undefined;
-      if (actualPath) {
-        if (isReleased) audioUrl = `/api/audio?path=${encodeURIComponent(actualPath)}`;
-        else {
-          const { data, error } = await supabase.storage.from("tracks").createSignedUrl(actualPath, 60 * 10);
-          if (!error) audioUrl = data?.signedUrl;
-        }
-      }
+      if (actualPath) audioUrl = `/api/audio?path=${encodeURIComponent(actualPath)}`;
       return {
         ...release,
         audioAvailable: !!actualPath,
@@ -150,8 +144,8 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
     };
 
     return {
-      released: await Promise.all(songs.filter((song) => song.released).map((song) => withAudio(song.release, true))),
-      unreleased: await Promise.all(songs.filter((song) => !song.released).map((song) => withAudio(song.release, false))),
+      released: await Promise.all(songs.filter((song) => song.released).map((song) => withAudio(song.release))),
+      unreleased: await Promise.all(songs.filter((song) => !song.released).map((song) => withAudio(song.release))),
     };
   } catch (error) {
     console.error("[collab] Could not load artist songs:", error);

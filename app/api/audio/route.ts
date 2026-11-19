@@ -23,7 +23,7 @@ export async function GET(request: Request) {
   const auth = await getApiUser();
   const invite = await getCollabInviteSession();
   const admin = !!(auth && isAdminUser(auth.user));
-  const invitedSongAccess = !!(invite && invite.scope !== "video" && (invite.source === "authorized_person" || invite.scope === "catalog" || (invite.scope === "song" && invite.song_id === song.id)));
+  const invitedSongAccess = !!(invite && invite.scope !== "video" && (invite.source === "authorized_person" || (invite.scope === "catalog" && song.ready_for_collab === true) || (invite.scope === "song" && invite.song_id === song.id)));
   if (!song.is_released && !admin && !invitedSongAccess) {
     return NextResponse.json({ error: "This unreleased track requires an active collaboration invitation." }, { status: 403, headers: { "Cache-Control": "no-store" } });
   }
