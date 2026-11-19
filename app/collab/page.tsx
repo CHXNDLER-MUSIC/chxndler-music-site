@@ -46,11 +46,13 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
       if (!optionalFallback.error) {
         songRows = (optionalFallback.data || []).map((row) => ({ ...row, audio_status: row.is_released ? "Released" : "Demo", collaboration_opportunities: row.collab_interests || [], video_concept: "", ready_for_collab: row.ready_for_collab ?? row.collaboration_enabled === true }));
       } else {
-        const coreFallback = await supabase.from("songs").select("id, slug, title, is_released, collaboration_enabled, release_date, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url");
+        // Keep the last resort query limited to columns that predate the
+        // optional collaboration and release metadata migrations.
+        const coreFallback = await supabase.from("songs").select("id, slug, title, is_released");
         if (!coreFallback.error) {
-          // Before the Ready for Collab columns exist, preserve only songs
-          // whose prior explicit collaboration setting was enabled.
-          songRows = (coreFallback.data || []).map((row) => ({ ...row, ready_for_collab: row.collaboration_enabled === true, audio_status: row.is_released ? "Released" : "Demo", collaboration_opportunities: [] }));
+          // With only the core song fields available, do not expose tracks
+          // that cannot be confirmed as explicitly open for collaboration.
+          songRows = (coreFallback.data || []).map((row) => ({ ...row, collaboration_enabled: false, ready_for_collab: false, audio_status: row.is_released ? "Released" : "Demo", collaboration_opportunities: [] }));
         } else {
           songRows = null;
           console.error("[collab] Could not load song catalog:", initialSongsRes.error, optionalFallback.error, coreFallback.error);
