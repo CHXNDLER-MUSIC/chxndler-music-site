@@ -5,7 +5,6 @@ import Link from "next/link";
 import SongPractice from "@/components/admin/SongPractice";
 import SongContent from "@/components/admin/SongContent";
 import OutreachWorkspace from "@/components/admin/OutreachWorkspace";
-import CollaborationOutreachTab from "@/components/admin/CollaborationOutreachTab";
 import SongProductionProgress from "@/components/admin/SongProductionProgress";
 import PostReleaseIconRow, { type PostReleaseKey, type PostReleaseState } from "@/components/admin/PostReleaseIconRow";
 import { songProductionLabel } from "@/lib/songWorkflow";
@@ -30,13 +29,13 @@ type Profile = {
   requests: Array<{ id: string; status: string; submitted_at: string; contribution_type: string; artist_name: string; message: string | null }>;
 };
 type ContentSummary = { total: number; recorded: number; edited: number; posted: number };
-type Tab = "Overview" | "Practice" | "Content" | "Outreach" | "Collabs" | "Music Video";
+type Tab = "Overview" | "Practice" | "Content" | "Outreach" | "Music Video";
 
 const links: Array<[string, keyof SongProfile]> = [
   ["Spotify", "spotify_url"], ["Apple Music", "apple_music_url"],
   ["Music video", "youtube_music_video_url"], ["Sky video", "sky_video_url"], ["Karaoke", "karaoke_url"],
 ];
-const baseTabs: Tab[] = ["Overview", "Practice", "Content", "Outreach", "Collabs"];
+const baseTabs: Tab[] = ["Overview", "Practice", "Content", "Outreach"];
 const postReleaseStage: Record<PostReleaseKey, string> = {
   spotifyCanvas: "spotify_canvas", sky: "sky", chxndlerCard: "chxndler_card", musicVideo: "music_video_released",
   contentReleased: "content_released", playlistPitched: "playlist_pitch", syncPlacement: "sync_placement",
@@ -51,22 +50,6 @@ function projectStage(project: MusicVideoProject) {
 function projectVideographer(project: MusicVideoProject) {
   return String(project.assigned_videographer?.name || project.assigned_videographer?.email || "Not assigned");
 }
-function backgroundVideoSource(value: string | null) {
-  if (!value) return null;
-  try {
-    const url = new URL(value, window.location.origin), host = url.hostname.replace(/^www\./, "");
-    if (host === "youtu.be" || host.endsWith("youtube.com")) {
-      const id = host === "youtu.be" ? url.pathname.slice(1) : url.searchParams.get("v") || url.pathname.match(/\/(?:embed|shorts)\/([^/?]+)/)?.[1];
-      return id ? { kind: "embed" as const, src: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&playsinline=1` } : null;
-    }
-    if (host === "vimeo.com" || host === "player.vimeo.com") {
-      const id = url.pathname.match(/\/(?:video\/)?(\d+)/)?.[1];
-      return id ? { kind: "embed" as const, src: `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&loop=1&background=1` } : null;
-    }
-    return /\.(mp4|webm|ogg|m3u8)$/i.test(url.pathname) ? { kind: "video" as const, src: value } : null;
-  } catch { return null; }
-}
-
 export default function SongWorkspace({ id, embedded = false, onBack }: { id: string; embedded?: boolean; onBack?: () => void }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [lyrics, setLyrics] = useState("");
@@ -88,15 +71,20 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
     setProfile(data);
     setMeaning(data.meaning || "");
     setLinkValues(Object.fromEntries(links.map(([label, key]) => [key, data.song[key] || ""])));
-    const [lyricsResponse, contentResponse] = await Promise.all([
-      fetch(data.lyricUrl, { cache: "no-store" }),
-      fetch(`/api/admin/content-items?songId=${id}&pageSize=100`, { cache: "no-store" }),
-    ]);
-    const [lyricsData, contentData] = await Promise.all([lyricsResponse.json(), contentResponse.json()]);
-    setLyrics(data.song.lyrics || (lyricsResponse.ok ? lyricsData.content || "" : ""));
-    if (contentResponse.ok && contentData.songSummary) setContentSummary(contentData.songSummary);
-    else setContentSummary(null);
     setLoading(false);
+    try {
+      const [lyricsResponse, contentResponse] = await Promise.all([
+        fetch(data.lyricUrl, { cache: "no-store" }),
+        fetch(`/api/admin/content-items?songId=${id}&pageSize=100`, { cache: "no-store" }),
+      ]);
+      const [lyricsData, contentData] = await Promise.all([lyricsResponse.json(), contentResponse.json()]);
+      setLyrics(data.song.lyrics || (lyricsResponse.ok ? lyricsData.content || "" : ""));
+      if (contentResponse.ok && contentData.songSummary) setContentSummary(contentData.songSummary);
+      else setContentSummary(null);
+    } catch {
+      setLyrics(data.song.lyrics || "");
+      setContentSummary(null);
+    }
     return data as Profile;
   }
 
@@ -196,17 +184,15 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
     await load(); selectTab("Music Video");
   }
 
-  if (loading) return <main className={`${embedded ? "min-h-full" : "min-h-screen"} bg-[#0b0b0f] p-6 text-sm text-white/50`}>Loading song workspace…</main>;
+  if (loading) return <main className={`flex ${embedded ? "min-h-full" : "min-h-screen"} items-center justify-center bg-[#0b0b0f] p-6 text-sm text-white/55`}><span className="inline-flex items-center gap-3"><span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-white/15 border-t-[#42B8E8]"/>Loading song workspace…</span></main>;
   if (!profile) return <main className={`${embedded ? "min-h-full" : "min-h-screen"} bg-[#0b0b0f] p-6 text-sm text-rose-200`}>{error || "Song unavailable."}</main>;
 
   const song = profile.song;
-  const background = backgroundVideoSource(song.sky_video_url);
   const tabs: Tab[] = profile.musicVideo ? [...baseTabs, "Music Video"] : baseTabs;
   const needsAttention = contentSummary ? Math.max(0, contentSummary.total - contentSummary.posted) : 0;
   const contentPercent = contentSummary?.total ? Math.round(contentSummary.posted / contentSummary.total * 100) : 0;
 
   return <main className={`admin-dashboard relative isolate ${embedded ? "min-h-full" : "min-h-screen"} bg-[#0b0b0f] p-4 text-white sm:p-6`}>
-    {background && <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">{background.kind === "video" ? <video src={background.src} autoPlay muted loop playsInline className="h-full w-full object-cover opacity-15" /> : <iframe src={background.src} title={`${song.title} background`} allow="autoplay; fullscreen; picture-in-picture" className="h-full w-full scale-150 opacity-15" />}<div className="absolute inset-0 bg-[#0b0b0f]/90" /></div>}
     <div className="relative z-10 mx-auto max-w-6xl">
       {embedded && onBack ? <button type="button" onClick={onBack} className="mb-4 inline-flex min-h-10 items-center rounded-lg border border-white/10 px-3.5 text-sm font-semibold text-white/65 transition hover:border-[#EF43A3]/40 hover:text-white">← Back to Songs</button> : !embedded && <Link href="/admin?view=songs" className="mb-4 inline-flex min-h-10 items-center rounded-lg border border-white/10 px-3.5 text-sm font-semibold text-white/65 transition hover:border-[#EF43A3]/40 hover:text-white">← Back to Songs</Link>}
 
@@ -221,6 +207,11 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
 
       {tab === "Overview" && <div className="space-y-4">
         <SongProductionProgress song={song} onSaved={updated => setProfile(current => current ? { ...current, song: { ...current.song, ...updated } } : current)} />
+
+        <section className="rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5" aria-labelledby="song-post-release-progress">
+          <div className="mb-2"><p className="text-[.62rem] font-bold uppercase tracking-[.16em] text-white/38">Release &amp; promotion</p><h2 id="song-post-release-progress" className="mt-1 text-sm font-bold">Post release</h2></div>
+          <PostReleaseIconRow compact state={profile.postRelease} onToggle={(key, value) => void patchSong({ stage: postReleaseStage[key], complete: value })} />
+        </section>
 
         <section className="rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5" aria-labelledby="song-content-progress">
           <div className="flex flex-wrap items-center gap-3"><div className="mr-auto"><p className="text-[.62rem] font-bold uppercase tracking-[.16em] text-white/38">Publishing</p><h2 id="song-content-progress" className="mt-1 text-sm font-bold">Content <span className="ml-1 font-semibold text-white/55">— {contentSummary ? `${contentSummary.posted} of ${contentSummary.total} posted` : "Loading totals…"}</span></h2></div><button type="button" onClick={() => selectTab("Content")} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition hover:border-[#EF43A3]/40 hover:text-white">View Content</button></div>
@@ -252,8 +243,7 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
       {tab === "Practice" && <SongPractice songId={song.id} title={song.title} slug={song.slug} musicalKey={song.musical_key || ""} capoFret={song.capo_fret} chordShape={song.chord_shape || ""} initialLyrics={song.lyrics || lyrics} initialNotes={song.practice_notes || ""} onSaveSetup={savePracticeSetup} onSaveLyrics={savePracticeLyrics} onSaveNotes={savePracticeNotes} />}
       {tab === "Content" && <SongContent songId={song.id} songTitle={song.title} />}
       {tab === "Music Video" && profile.musicVideo && <MusicVideoSummary songTitle={song.title} project={profile.musicVideo} />}
-      {tab === "Collabs" && <><section className="mb-4 rounded-xl border border-white/[.07] bg-[#111116] p-4"><div className="flex flex-wrap items-center gap-3"><h2 className="mr-auto text-sm font-bold">Song collaboration settings</h2><button type="button" disabled={busy} onClick={() => void patchSong({ ready_for_collab: !song.ready_for_collab })} className={`rounded-full px-3 py-2 text-xs font-bold ${song.ready_for_collab ? "bg-[#EF43A3]/15 text-[#ff9acb]" : "border border-white/15 text-white/55"}`}>{song.ready_for_collab ? "Requests enabled" : "Enable requests"}</button></div><fieldset className="mt-4"><legend className="mb-2 text-xs text-white/50">Interests</legend><div className="flex flex-wrap gap-4">{["Feature / Vocals", "Remix", "Music Video", "Other"].map(value => <label key={value} className="flex items-center gap-2 text-sm text-white/70"><input type="checkbox" checked={song.collab_interests?.includes(value) || false} onChange={event => { const values = song.collab_interests || []; void patchSong({ collab_interests: event.target.checked ? [...values, value] : values.filter(item => item !== value) }); }} className="accent-[#EF43A3]" />{value}</label>)}</div></fieldset><label className="mt-3 block text-xs text-white/50">What are you looking for?<textarea value={song.collaboration_description || ""} onChange={event => setProfile(current => current ? { ...current, song: { ...current.song, collaboration_description: event.target.value } } : current)} onBlur={event => void patchSong({ collaboration_description: event.target.value })} maxLength={500} rows={2} className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/20 p-3 text-sm text-white" /></label></section><CollaborationOutreachTab songId={song.id} /> </>}
-      {tab === "Outreach" && <><div className="mb-4 flex flex-wrap items-center gap-3"><h2 className="mr-auto text-base font-bold">Song outreach</h2><Link href={`/admin?view=outreach&section=pitches&song=${encodeURIComponent(song.id)}`} className="text-sm font-semibold text-[#EF43A3]">Full Outreach view ↗</Link></div><OutreachWorkspace initialSection="pitches" initialSongId={song.id} /></>}
+      {tab === "Outreach" && <><div className="mb-4 flex flex-wrap items-center gap-3"><h2 className="mr-auto text-base font-bold">Song outreach</h2><Link href={`/admin?view=outreach&section=pitches&song=${encodeURIComponent(song.id)}`} className="text-sm font-semibold text-[#EF43A3]">Full Outreach view ↗</Link></div><OutreachWorkspace initialSection="pitches" initialSongId={song.id} songCollaborationSettings={<section className="mb-4 rounded-xl border border-white/[.07] bg-[#111116] p-4"><div className="flex flex-wrap items-center gap-3"><h2 className="mr-auto text-sm font-bold">Song collaboration settings</h2><button type="button" disabled={busy} onClick={() => void patchSong({ ready_for_collab: !song.ready_for_collab })} className={`rounded-full px-3 py-2 text-xs font-bold ${song.ready_for_collab ? "bg-[#EF43A3]/15 text-[#ff9acb]" : "border border-white/15 text-white/55"}`}>{song.ready_for_collab ? "Requests enabled" : "Enable requests"}</button></div><fieldset className="mt-4"><legend className="mb-2 text-xs text-white/50">Interests</legend><div className="flex flex-wrap gap-4">{["Feature / Vocals", "Remix", "Music Video", "Other"].map(value => <label key={value} className="flex items-center gap-2 text-sm text-white/70"><input type="checkbox" checked={song.collab_interests?.includes(value) || false} onChange={event => { const values = song.collab_interests || []; void patchSong({ collab_interests: event.target.checked ? [...values, value] : values.filter(item => item !== value) }); }} className="accent-[#EF43A3]" />{value}</label>)}</div></fieldset><label className="mt-3 block text-xs text-white/50">What are you looking for?<textarea value={song.collaboration_description || ""} onChange={event => setProfile(current => current ? { ...current, song: { ...current.song, collaboration_description: event.target.value } } : current)} onBlur={event => void patchSong({ collaboration_description: event.target.value })} maxLength={500} rows={2} className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/20 p-3 text-sm text-white" /></label></section>} /></>}
       {busy && <p role="status" className="mt-3 text-xs text-white/40">Saving…</p>}
     </div>
   </main>;

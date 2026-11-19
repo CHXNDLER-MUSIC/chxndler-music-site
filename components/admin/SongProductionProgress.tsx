@@ -21,7 +21,7 @@ export function ProductionStageIcon({ stage, complete = true, className }: { sta
 }
 
 function milestonesForSong(song: SongProgress) {
-  return Object.fromEntries(PRODUCTION_MILESTONES.map(key => [key, song.is_released === true || milestoneValue(song, key)])) as Record<ProductionMilestone, boolean>;
+  return Object.fromEntries(PRODUCTION_MILESTONES.map(key => [key, milestoneValue(song, key)])) as Record<ProductionMilestone, boolean>;
 }
 const DISPLAY_MILESTONES: ProductionMilestone[] = ["lyrics", "recorded", "mixed"];
 const milestoneStage: Record<ProductionMilestone, ProductionStage> = { concept: "Idea", lyrics: "Writing", recorded: "Recording", mixed: "Mixing", mastered: "Mastering" };
@@ -31,6 +31,7 @@ export default function SongProductionProgress({ song, onSaved, compact = false 
   const [milestones, setMilestones] = useState<Record<ProductionMilestone, boolean>>(() => milestonesForSong(song));
   const [nextAction, setNextAction] = useState(song.next_action || "");
   const [saving, setSaving] = useState(false);
+  const [savingMilestone, setSavingMilestone] = useState<ProductionMilestone | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -58,8 +59,29 @@ export default function SongProductionProgress({ song, onSaved, compact = false 
     setOpen(false);
   }
 
-  if (compact) return <div className="flex items-center gap-2.5" aria-label={`Music production: ${completed} of 3 milestones complete`}>
-    {DISPLAY_MILESTONES.map(key => <span key={key} title={`${PRODUCTION_MILESTONE_LABELS[key]} · ${visibleMilestones[key] ? "Complete" : "Incomplete"}`}><ProductionStageIcon stage={milestoneStage[key]} complete={visibleMilestones[key]} className="h-7 w-7" /></span>)}
+  async function toggleMilestone(key: ProductionMilestone) {
+    if (savingMilestone) return;
+    const updatedMilestones = { ...visibleMilestones, [key]: !visibleMilestones[key] };
+    setSavingMilestone(key);
+    setError("");
+    const response = await fetch("/api/admin/song-tracker", {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ songId: song.id, production_milestones: updatedMilestones, production_progress_verified: true }),
+    });
+    const body = await response.json();
+    setSavingMilestone(null);
+    if (!response.ok) { setError(body.error || "Unable to update this milestone."); return; }
+    const savedSong = { ...song, ...body.song, production_stages: body.song?.production_stages || updatedMilestones, production_progress_verified: true };
+    setMilestones(updatedMilestones);
+    onSaved?.(savedSong);
+    window.dispatchEvent(new CustomEvent("song-production-updated", { detail: savedSong }));
+  }
+
+  if (compact) return <div>
+    <div className="flex items-center gap-2.5" aria-label={`Music production: ${completed} of 3 milestones complete`}>
+      {DISPLAY_MILESTONES.map(key => <button key={key} type="button" disabled={savingMilestone !== null} aria-pressed={visibleMilestones[key]} aria-label={`${PRODUCTION_MILESTONE_LABELS[key]} ${visibleMilestones[key] ? "complete" : "incomplete"} for ${song.title}. Click to toggle.`} title={`${PRODUCTION_MILESTONE_LABELS[key]} · ${visibleMilestones[key] ? "Complete" : "Incomplete"} · Click to toggle`} onClick={() => void toggleMilestone(key)} className="rounded-md transition hover:bg-white/[.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white disabled:opacity-50"><ProductionStageIcon stage={milestoneStage[key]} complete={visibleMilestones[key]} className="h-7 w-7" /></button>)}
+    </div>
+    {error && <p role="alert" className="mt-1 max-w-52 text-[.62rem] leading-tight text-rose-200">{error}</p>}
   </div>;
 
   return <section className="relative rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5" aria-labelledby="music-production-heading">
@@ -67,7 +89,7 @@ export default function SongProductionProgress({ song, onSaved, compact = false 
       {!song.is_released && <button type="button" aria-expanded={open} onClick={() => { setError(""); setOpen(value => !value); }} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 transition hover:border-[#EF43A3]/40 hover:text-white">{open ? "Close editor" : "Edit milestones"}</button>}
     </div>
     <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/[.08]"><div className="h-full rounded-full bg-[#EF43A3] transition-[width]" style={{ width: `${percent}%` }} /></div>
-    <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">{DISPLAY_MILESTONES.map(key => <div key={key} className="inline-flex items-center gap-2 text-xs"><span aria-hidden="true" className={`grid h-4 w-4 place-items-center rounded-full border ${visibleMilestones[key] ? "border-emerald-300/50 bg-emerald-300/10 text-emerald-200" : "border-white/15 text-transparent"}`}>{visibleMilestones[key] ? "✓" : "·"}</span><span className={visibleMilestones[key] ? "text-white/75" : "text-white/40"}>{PRODUCTION_MILESTONE_LABELS[key]}</span></div>)}</div>
+    <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">{DISPLAY_MILESTONES.map(key => <button key={key} type="button" disabled={savingMilestone !== null} aria-pressed={visibleMilestones[key]} aria-label={`${PRODUCTION_MILESTONE_LABELS[key]} ${visibleMilestones[key] ? "complete" : "incomplete"} for ${song.title}. Click to toggle.`} title={`${PRODUCTION_MILESTONE_LABELS[key]} · ${visibleMilestones[key] ? "Complete" : "Incomplete"} · Click to toggle`} onClick={() => void toggleMilestone(key)} className="inline-flex items-center gap-2 rounded-md px-1 py-1 text-xs transition hover:bg-white/[.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white disabled:opacity-50"><ProductionStageIcon stage={milestoneStage[key]} complete={visibleMilestones[key]} className="h-5 w-5"/><span aria-hidden="true" className={`grid h-4 w-4 place-items-center rounded-full border ${visibleMilestones[key] ? "border-emerald-300/50 bg-emerald-300/10 text-emerald-200" : "border-white/15 text-transparent"}`}>{visibleMilestones[key] ? "✓" : "·"}</span><span className={visibleMilestones[key] ? "text-white/75" : "text-white/40"}>{PRODUCTION_MILESTONE_LABELS[key]}</span></button>)}</div>
     {song.next_action && <p className="mt-3 text-xs text-white/45"><span className="font-semibold text-white/60">Next production action:</span> {song.next_action}</p>}
     {open && <div role="dialog" aria-label={`Edit production progress for ${song.title}`} className="absolute right-3 top-14 z-[80] w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-white/10 bg-[#17171c] p-4 text-left shadow-2xl sm:right-4">
       <div className="mb-3"><p className="text-[.58rem] font-bold uppercase tracking-[.16em] text-[#EF43A3]">Music Production</p><h3 className="mt-0.5 text-sm font-bold text-white">Milestones &amp; next step</h3></div>

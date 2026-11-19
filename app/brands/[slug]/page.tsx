@@ -10,6 +10,7 @@ import { resolveSongLinks } from "@/lib/chxndlerLinks";
 import { toYouTubeEmbed } from "@/lib/youtube";
 import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 import { youtubeSkyFor } from "@/lib/sky-youtube";
+import { getSongBySlug } from "@/lib/songs-consolidated";
 
 // Private/direct-link creative presentations — always fresh, never indexed.
 export const dynamic = "force-dynamic";
@@ -77,18 +78,39 @@ const normalizeTitle = (title: string) =>
 async function fetchArtistReleases(): Promise<ArtistRelease[]> {
   try {
     const supabase = getSupabaseAdmin();
-    const [songsRes, cardsRes] = await Promise.all([
+    const [songsRes, cardsRes, videoProjectsRes, youtubeContentRes] = await Promise.all([
       supabase
         .from("songs")
         .select("id, slug, title, collaboration_enabled, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url")
         .eq("is_released", true),
       supabase.from("cards").select("card_name"),
+      supabase.from("music_video_projects").select("song_id, workspace"),
+      supabase.from("youtube_content").select("song_title, video_link"),
     ]);
     if (songsRes.error || !songsRes.data) return [];
 
     const cardNames = new Map<string, string>();
     for (const card of cardsRes.data ?? []) {
       if (card.card_name) cardNames.set(normalizeTitle(String(card.card_name)), String(card.card_name));
+    }
+
+    // The YouTube content catalog already stores published music-video links
+    // for releases whose songs row has not been updated with the URL yet.
+    const catalogVideos = new Map<string, string>();
+    for (const item of youtubeContentRes.data ?? []) {
+      if (item.song_title && item.video_link?.trim()) {
+        catalogVideos.set(normalizeTitle(String(item.song_title)), item.video_link.trim());
+      }
+    }
+
+    // A published video can be saved in the music video workspace before its
+    // URL is copied into songs.youtube_music_video_url.
+    const projectVideos = new Map<string, string>();
+    for (const project of videoProjectsRes.data ?? []) {
+      const url = project.workspace?.release?.videoUrl;
+      if (project.song_id && typeof url === "string" && url.trim()) {
+        projectVideos.set(String(project.song_id), url.trim());
+      }
     }
 
     return songsRes.data
@@ -101,6 +123,10 @@ async function fetchArtistReleases(): Promise<ArtistRelease[]> {
         return {
           slug,
           title,
+          oneLiner: (() => {
+            const subtitle = getSongBySlug(slug)?.subtitle;
+            return subtitle && !subtitle.startsWith("Channel ") ? subtitle : `${title} is ready for its next visual chapter.`;
+          })(),
           databaseId: String(row.id),
           collaborationEnabled: row.collaboration_enabled === true,
           coverArt: songCoverPath(slug, title),
@@ -108,7 +134,9 @@ async function fetchArtistReleases(): Promise<ArtistRelease[]> {
           appleMusicUrl: links.appleMusicUrl,
           youtubeUrl: links.youtubeUrl,
           // Only the song's own video is embedded — never the channel fallback.
-          videoEmbedUrl: links.isYouTubeFallback ? null : toYouTubeEmbed(links.youtubeUrl),
+          videoEmbedUrl: toYouTubeEmbed(
+            (row.youtube_music_video_url as string | null) || projectVideos.get(String(row.id)) || catalogVideos.get(normalizeTitle(title)) || "",
+          ),
           cardArt: cardName ? getCardImageUrl(cardName) : null,
           // Same rule as the cockpit sky: the songs row wins, the static map backs it up.
           skyVideoUrl: (row.sky_video_url as string | null) || youtubeSkyFor(slug) || null,

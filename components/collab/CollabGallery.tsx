@@ -86,7 +86,9 @@ function CollabGalleryContent({
   const items = useMemo<SelectedItem[]>(() => {
     if (!canViewFeatures || category !== "features") return [];
     const catalog = [...artistReleases, ...unreleasedSongs].filter((song, index, rows) => rows.findIndex(other => other.databaseId === song.databaseId) === index);
-    const songs = filterCollabCatalog(catalog, tab);
+    const songs = filterCollabCatalog(catalog, tab).sort((a, b) =>
+      a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true }) || a.slug.localeCompare(b.slug),
+    );
     return songs.map((release) => ({
       id: `${tab}:${release.slug}`,
       from: tab,
@@ -204,8 +206,14 @@ function CollabGalleryContent({
                     src={item.release.coverArt}
                     alt={`${item.release.title} cover art`}
                     onError={(event) => {
-                      event.currentTarget.onerror = null;
-                      event.currentTarget.src = placeholderCover(item.release.title);
+                      const image = event.currentTarget;
+                      if (item.release.cardArt && image.dataset.cardFallback !== "true") {
+                        image.dataset.cardFallback = "true";
+                        image.src = item.release.cardArt;
+                        return;
+                      }
+                      image.onerror = null;
+                      image.src = placeholderCover(item.release.title);
                     }}
                   />
                   {item.audioUrl && <span className="collab-cover-mark" aria-hidden="true">▶</span>}
@@ -293,9 +301,6 @@ function CollabGalleryContent({
         .collab-release-date{position:absolute;right:.65rem;top:.65rem;padding:.45rem .6rem;border:1px solid rgba(255,62,165,.35);border-radius:999px;background:rgba(8,8,11,.82);color:#ff9bcc;font-size:.62rem;font-weight:800;letter-spacing:.04em;backdrop-filter:blur(8px)}
         .collab-opportunity-badges{position:absolute;left:.6rem;right:.6rem;bottom:.6rem;display:flex;flex-wrap:wrap;gap:.3rem;pointer-events:none}.collab-opportunity-badges span{border-radius:999px;padding:.3rem .5rem;background:rgba(8,8,11,.78);font-size:.56rem;font-weight:800;letter-spacing:.025em;backdrop-filter:blur(6px)}.collab-opportunity-badges [data-opportunity="feature"]{color:#ff78bd}.collab-opportunity-badges [data-opportunity="video"]{color:#69e0c0}.collab-opportunity-badges [data-opportunity="remix"]{color:#83c9ff}
         .collab-cover img{display:block;width:100%;height:auto;transition:transform .5s cubic-bezier(.2,.7,.2,1),filter .3s}
-        .collab-cover-unavailable img{filter:grayscale(1);opacity:.48}
-        .collab-cover-unavailable .collab-cover-placeholder{filter:grayscale(1);opacity:.58}
-        .collab-cover-unavailable:hover img,.collab-cover-unavailable:focus-visible img{filter:grayscale(1) brightness(.8)}
         .collab-cover-placeholder{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.25rem;padding:1.5rem;background:radial-gradient(circle at 50% 42%,rgba(255,62,165,.13),transparent 52%),linear-gradient(145deg,#20111d,#09090c);color:#fff;text-align:center}
         .collab-cover-placeholder strong{max-width:90%;font-size:clamp(1rem,2vw,1.75rem);line-height:1.08;text-transform:uppercase;letter-spacing:.08em}
         .collab-cover-placeholder small{color:rgba(255,255,255,.45);font-size:.62rem;font-weight:700;letter-spacing:.19em;text-transform:uppercase}

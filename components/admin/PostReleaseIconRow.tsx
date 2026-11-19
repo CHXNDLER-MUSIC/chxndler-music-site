@@ -2,8 +2,8 @@ export type PostReleaseKey = "playlistPitched" | "syncPlacement" | "spotifyCanva
 export type PostReleaseState = Record<PostReleaseKey, boolean>;
 type IconKind = "video" | "playlist" | "sync" | "content" | "spotify" | "sky" | "card";
 
-function Icon({ kind }: { kind: IconKind }) {
-  return <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0">
+function Icon({ kind, className = "h-4 w-4" }: { kind: IconKind; className?: string }) {
+  return <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={`${className} shrink-0`}>
     {kind === "video" ? <><rect x="2" y="4" width="11" height="12" rx="2"/><path d="m13 8 5-3v10l-5-3"/></>
       : kind === "playlist" ? <><path d="M11 3v10.5a2.5 2.5 0 1 1-1.5-2.3V5l7-1.5v8a2.5 2.5 0 1 1-1.5-2.3V2.7L11 3Z"/><path d="M3 5h4M3 8h3"/></>
       : kind === "sync" ? <><path d="M4 7.5 7 5l3 2.5-3 2.5-3-2.5ZM10 7.5 13 5l3 2.5-3 2.5-3-2.5Z"/><path d="m7 10 2 2 2-2M9 12v3M5 15h8"/></>
@@ -24,7 +24,13 @@ const items: Array<{ kind: IconKind; key: PostReleaseKey; label: string; color: 
   { kind: "sync", key: "syncPlacement", label: "Sync placement", color: "#F2B84B" },
 ];
 
-export default function PostReleaseIconRow({ state, onToggle }: { state?: Partial<PostReleaseState> | null; onToggle: (key: PostReleaseKey, value: boolean) => void }) {
+export default function PostReleaseIconRow({ state, onToggle, compact = false }: { state?: Partial<PostReleaseState> | null; onToggle: (key: PostReleaseKey, value: boolean) => void; compact?: boolean }) {
+  if (compact) return <div className="flex flex-wrap items-center gap-3" aria-label={`Release and promotion progress: ${items.map(item => `${item.label} ${state?.[item.key] ? "complete" : "not set"}`).join(", ")}`}>
+    {items.map(item => {
+      const done = state?.[item.key] === true;
+      return <button key={item.key} type="button" title={`${item.label} · ${done ? "Done" : "Not yet"}`} aria-label={`${item.label}: ${done ? "complete" : "incomplete"}. Click to toggle.`} aria-pressed={done} onClick={() => onToggle(item.key, !done)} className="grid h-10 w-10 place-items-center rounded-lg transition hover:bg-white/[.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white" style={{ color: item.color, opacity: done ? 1 : .42 }}><Icon kind={item.kind} className="h-7 w-7"/></button>;
+    })}
+  </div>;
   return <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" aria-label={`Release and promotion progress: ${items.map(item => `${item.label} ${state?.[item.key] ? "complete" : "not set"}`).join(", ")}`}>
     {items.map(item => {
       const done = state?.[item.key] === true;

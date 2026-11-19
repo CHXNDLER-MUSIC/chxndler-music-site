@@ -215,6 +215,11 @@ export default function ArtistReleaseDetail({
           className="mx-auto -mt-[0.5rem] flex min-h-12 w-full max-w-[22rem] items-center justify-center rounded-full bg-[#ff3ea5] px-6 py-3 text-xs font-black uppercase tracking-[0.12em] text-black shadow-[0_0_24px_#ff3ea555] transition hover:bg-[#ff66b4] hover:shadow-[0_0_30px_#ff3ea577] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >View Collaboration Options <span aria-hidden="true" className="ml-2">→</span></button>}
 
+        {showStreamingLinks && <div className="mx-auto -mt-1 flex w-full max-w-[22rem] justify-center gap-2" aria-label="Listen on streaming services">
+          <a aria-label="Listen on Spotify" title="Spotify" href={release.spotifyUrl || CHXNDLER_SPOTIFY_ARTIST_URL} target="_blank" rel="noreferrer" className="streaming-link streaming-link-spotify"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M6.2 9.2c4.3-1.2 8.6-.8 12 1.2M7.2 12.1c3.5-.9 6.8-.5 9.6 1M8.1 14.8c2.5-.6 4.9-.3 7 .7" fill="none" stroke="#09090c" strokeWidth="1.5" strokeLinecap="round"/></svg><span className="sr-only">Spotify</span></a>
+          <a aria-label="Listen on Apple Music" title="Apple Music" href={release.appleMusicUrl || CHXNDLER_APPLE_MUSIC_ARTIST_URL} target="_blank" rel="noreferrer" className="streaming-link streaming-link-apple"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor"><path d="M16.8 12.8c0-2.1 1.7-3.1 1.8-3.2a3.9 3.9 0 0 0-3.1-1.7c-1.3-.1-2.5.8-3.2.8s-1.7-.8-2.8-.8a4.1 4.1 0 0 0-3.5 2.1c-1.5 2.6-.4 6.5 1.1 8.7.7 1.1 1.5 2.2 2.6 2.1 1 0 1.4-.7 2.7-.7s1.7.7 2.8.7c1.2 0 1.9-1.1 2.6-2.2.8-1.2 1.1-2.4 1.1-2.5-.1 0-2.1-.8-2.1-3.3ZM14.7 6.5c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.5.6-1 1.6-.9 2.5 1 0 1.9-.4 2.5-1.1Z"/></svg><span className="sr-only">Apple Music</span></a>
+        </div>}
+
         {(instrumentalSrcOverride || showInstrumentalControl) && (
           <div className="mx-auto -mt-[0.5rem] w-full max-w-[22rem]">
             <button
@@ -243,6 +248,7 @@ export default function ArtistReleaseDetail({
           <h3 className={`${spaceGrotesk.className} mt-[0.25rem] text-[1.5rem] sm:text-[2.25rem] font-bold uppercase leading-tight tracking-[0.015em] text-white break-words`} style={{ textShadow: "0 0 22px rgba(255,62,165,.22)" }}>
             {release.title}
           </h3>
+          <p className="mt-2 max-w-prose text-sm leading-6 text-white/75">{release.oneLiner || `${release.title} is ready for its next visual chapter.`}</p>
 
           {/* Player */}
           <div className="mt-[1.25rem] flex items-center gap-[0.875rem]">
@@ -295,10 +301,6 @@ export default function ArtistReleaseDetail({
           </div>
           {!audioSrc && <p className="mt-[0.5rem] text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-white/40">Audio file coming soon</p>}
           {audioSrc && isActive && error && <p className="mt-[0.5rem] text-[0.75rem] text-white/50">{error}</p>}
-          {showStreamingLinks && <div className="mt-4 flex flex-wrap gap-2" aria-label="Listen on streaming services">
-            <a aria-label="Listen on Spotify" title="Spotify" href={release.spotifyUrl || CHXNDLER_SPOTIFY_ARTIST_URL} target="_blank" rel="noreferrer" className="streaming-link"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M6.2 9.2c4.3-1.2 8.6-.8 12 1.2M7.2 12.1c3.5-.9 6.8-.5 9.6 1M8.1 14.8c2.5-.6 4.9-.3 7 .7" fill="none" stroke="#09090c" strokeWidth="1.5" strokeLinecap="round"/></svg><span className="sr-only">Spotify</span></a>
-            <a aria-label="Listen on Apple Music" title="Apple Music" href={release.appleMusicUrl || CHXNDLER_APPLE_MUSIC_ARTIST_URL} target="_blank" rel="noreferrer" className="streaming-link"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><path d="M16.8 12.8c0-2.1 1.7-3.1 1.8-3.2a3.9 3.9 0 0 0-3.1-1.7c-1.3-.1-2.5.8-3.2.8s-1.7-.8-2.8-.8a4.1 4.1 0 0 0-3.5 2.1c-1.5 2.6-.4 6.5 1.1 8.7.7 1.1 1.5 2.2 2.6 2.1 1 0 1.4-.7 2.7-.7s1.7.7 2.8.7c1.2 0 1.9-1.1 2.6-2.2.8-1.2 1.1-2.4 1.1-2.5-.1 0-2.1-.8-2.1-3.3ZM14.7 6.5c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.5.6-1 1.6-.9 2.5 1 0 1.9-.4 2.5-1.1Z"/></svg><span className="sr-only">Apple Music</span></a>
-          </div>}
           <nav role="tablist" aria-label="Song details" className="mt-5 grid grid-cols-3 gap-2 rounded-full border border-white/10 bg-black/35 p-1">
             {([ ["lyrics", "Lyrics"], ["collectible", "Collectible"], ["video", "Music Video"] ] as const).map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={detailTab === key} onClick={() => setDetailTab(key)} onMouseEnter={playHover} className="rounded-full px-2 py-3 text-[0.62rem] font-black uppercase tracking-[0.12em] transition-all sm:text-xs" style={detailTab === key ? { color: PINK, background: "rgba(255,62,165,.14)", boxShadow: `inset 0 0 0 1px ${PINK}88, 0 0 18px ${PINK}33`, textShadow: `0 0 10px ${PINK}88` } : { color: "rgba(255,255,255,.62)" }}>{label}</button>)}
           </nav>
@@ -319,13 +321,11 @@ export default function ArtistReleaseDetail({
                 className="mt-2"
               >
                 <div className="min-h-0 overflow-hidden">
-                  {/* No box — just a soft dark wash fading out to the right so
-                      the lyrics sit on the sky, with the scroll edges faded too. */}
                   <div
-                    className={`${spaceGrotesk.className} mt-[0.5rem] rounded-[1.25rem]`}
+                    className={`${spaceGrotesk.className} mt-[0.5rem] rounded-[1.25rem] border border-white/10`}
                     style={{
-                      background:
-                        "linear-gradient(to right, rgba(8,8,12,0.55) 0%, rgba(8,8,12,0.3) 55%, rgba(8,8,12,0) 100%)",
+                      background: "rgba(7,7,10,.58)",
+                      backdropFilter: "blur(8px)",
                     }}
                   >
                     <div
@@ -344,8 +344,8 @@ export default function ArtistReleaseDetail({
                         splitVerses(lyrics.text).map((verse, i) => (
                           <p
                             key={i}
-                            className="whitespace-pre-line text-[0.9375rem] sm:text-[1.0625rem] text-white/85 [&:not(:last-child)]:mb-[1.75em]"
-                            style={{ lineHeight: 1.85, letterSpacing: "0.005em", textShadow: "0 0.0625rem 0.75rem rgba(0,0,0,0.55)" }}
+                            className="whitespace-pre-line text-[0.9375rem] sm:text-[1.0625rem] text-white/95 [&:not(:last-child)]:mb-[1.75em]"
+                            style={{ lineHeight: 1.85, letterSpacing: "0.005em" }}
                           >
                             {verse.split(/(\[YOUR VERSE\])/gi).map((part, partIndex) => part.toUpperCase() === "[YOUR VERSE]" ? <span key={partIndex} className="font-black tracking-[0.12em] text-[#ff3ea5]" style={{ textShadow: "0 0 7px #ff3ea5, 0 0 18px #ff3ea588" }}>{part}</span> : part)}
                           </p>
@@ -398,8 +398,10 @@ export default function ArtistReleaseDetail({
           scrollbar-width: thin;
           scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
         }
-        .streaming-link { display:inline-flex; align-items:center; gap:.45rem; border:1px solid rgba(255,255,255,.18); border-radius:999px; padding:.55rem .85rem; color:rgba(255,255,255,.82); font-size:.62rem; font-weight:900; letter-spacing:.1em; text-transform:uppercase; text-decoration:none; transition:all .2s; }
-        .streaming-link:hover { border-color:${PINK}; color:#fff; box-shadow:0 0 14px ${PINK}44; }
+        .streaming-link { display:inline-flex; align-items:center; justify-content:center; width:2.75rem; height:2.75rem; border:1px solid rgba(255,255,255,.18); border-radius:999px; color:#fff; text-decoration:none; transition:all .2s; }
+        .streaming-link-spotify { color:#1ed760; border-color:rgba(30,215,96,.55); background:rgba(30,215,96,.12); }
+        .streaming-link-apple { color:#ff5a75; border-color:rgba(255,90,117,.55); background:linear-gradient(135deg,rgba(255,90,117,.16),rgba(196,90,255,.14)); }
+        .streaming-link:hover { transform:translateY(-1px) scale(1.05); box-shadow:0 0 16px currentColor; }
         .release-seek {
           -webkit-appearance: none;
           appearance: none;

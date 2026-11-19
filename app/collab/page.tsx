@@ -7,6 +7,7 @@ import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 import { youtubeSkyFor } from "@/lib/sky-youtube";
 import { releaseAudioSrc } from "@/components/brand-pitch/artistRelease";
 import type { ArtistRelease } from "@/components/brand-pitch/artistRelease";
+import { getSongBySlug } from "@/lib/songs-consolidated";
 import { getCollabInviteSession } from "@/lib/collabAccess";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,10 @@ function keyFor(stem: string) {
   return stem.toLowerCase().replace(/(?:[-_ .])(background|backdrop|bg)$/i, "").replace(/[^a-z0-9]/g, "");
 }
 
+function rawString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 const NON_RELEASE_TITLES = ["welcome to the heartverse", "you are home", "space music", "welcome back"];
 const normalizeTitle = (title: string) => title.trim().replace(/[‘’ʼ`]/g, "'").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
 
@@ -32,10 +37,11 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
     const supabase = getSupabaseAdmin();
     let songQuery = supabase.from("songs").select("id, slug, title, is_released, audio_status, collaboration_enabled, ready_for_collab, collab_interests, collaboration_opportunities, video_concept, collaboration_description, release_date, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url");
     if (onlySongIds) songQuery = songQuery.in("id", onlySongIds);
-    const [initialSongsRes, cardsRes, videoProjectsRes] = await Promise.all([
+    const [initialSongsRes, cardsRes, videoProjectsRes, youtubeContentRes] = await Promise.all([
       songQuery,
       supabase.from("cards").select("card_name"),
-      supabase.from("music_video_projects").select("song_id"),
+      supabase.from("music_video_projects").select("song_id,workspace"),
+      supabase.from("youtube_content").select("song_title,video_link"),
     ]);
     // Keep the collaborator catalog available if optional metadata columns
     // have not been deployed to this environment yet. Access is still
@@ -46,16 +52,22 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
       if (!optionalFallback.error) {
         songRows = (optionalFallback.data || []).map((row) => ({ ...row, audio_status: row.is_released ? "Released" : "Demo", collaboration_opportunities: row.collab_interests || [], video_concept: "", ready_for_collab: row.ready_for_collab ?? row.collaboration_enabled === true }));
       } else {
-        // Keep the last resort query limited to columns that predate the
-        // optional collaboration and release metadata migrations.
-        const coreFallback = await supabase.from("songs").select("id, slug, title, is_released");
-        if (!coreFallback.error) {
-          // With only the core song fields available, do not expose tracks
-          // that cannot be confirmed as explicitly open for collaboration.
-          songRows = (coreFallback.data || []).map((row) => ({ ...row, collaboration_enabled: false, ready_for_collab: false, audio_status: row.is_released ? "Released" : "Demo", collaboration_opportunities: [] }));
+        // `ready_for_collab` arrived after the original collaboration flag.
+        // Keep existing invites usable on databases that have not applied the
+        // newer music workspace migration yet.
+        const legacyCollabFallback = await supabase.from("songs").select("id, slug, title, is_released, collaboration_enabled");
+        if (!legacyCollabFallback.error) {
+          songRows = (legacyCollabFallback.data || []).map((row) => ({ ...row, audio_status: row.is_released ? "Released" : "Demo", collab_interests: [], collaboration_description: "", collaboration_opportunities: [], video_concept: "", ready_for_collab: row.collaboration_enabled === true }));
         } else {
-          songRows = null;
-          console.error("[collab] Could not load song catalog:", initialSongsRes.error, optionalFallback.error, coreFallback.error);
+          // Keep the final fallback limited to fields present on the oldest
+          // song schema; it cannot safely claim that a song is collaboration-ready.
+          const coreFallback = await supabase.from("songs").select("id, slug, title, is_released");
+          if (!coreFallback.error) {
+            songRows = (coreFallback.data || []).map((row) => ({ ...row, collaboration_enabled: false, ready_for_collab: false, audio_status: row.is_released ? "Released" : "Demo", collaboration_opportunities: [] }));
+          } else {
+            songRows = null;
+            console.error("[collab] Could not load song catalog:", initialSongsRes.error, optionalFallback.error, legacyCollabFallback.error, coreFallback.error);
+          }
         }
       }
     }
@@ -66,19 +78,32 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
       if (card.card_name) cardNames.set(normalizeTitle(String(card.card_name)), String(card.card_name));
     }
 
+    const catalogVideos = new Map<string, string>();
+    for (const item of youtubeContentRes.data ?? []) {
+      if (item.song_title && typeof item.video_link === "string" && item.video_link.trim()) {
+        catalogVideos.set(normalizeTitle(String(item.song_title)), item.video_link.trim());
+      }
+    }
+    const projectVideos = new Map<string, string>();
+    for (const project of videoProjectsRes.data ?? []) {
+      const url = project.workspace?.release?.videoUrl;
+      if (project.song_id && typeof url === "string" && url.trim()) projectVideos.set(String(project.song_id), url.trim());
+    }
+
     const songs = songRows
       .filter((row) => !!row.slug && !!row.title && !NON_RELEASE_TITLES.includes(String(row.title).toLowerCase()))
       .map((row) => {
         const slug = String(row.slug);
         const title = String(row.title);
         const released = row.is_released === true || row.audio_status === "Released";
-        const hasVideo = !!row.youtube_music_video_url || !!row.sky_video_url || (videoProjectsRes.data || []).some(project => project.song_id === row.id);
+        const musicVideoUrl = rawString(row.youtube_music_video_url) || projectVideos.get(String(row.id)) || catalogVideos.get(normalizeTitle(title)) || "";
+        const hasVideo = !!musicVideoUrl;
         const savedOpportunities = Array.isArray(row.collaboration_opportunities) ? row.collaboration_opportunities : (Array.isArray(row.collab_interests) ? row.collab_interests.map((value: string) => /video/i.test(value) ? "video" : /remix/i.test(value) ? "remix" : /feature|vocal/i.test(value) ? "feature" : "").filter(Boolean) : []);
         const opportunities: NonNullable<ArtistRelease["collaborationOpportunities"]> = ["remix"];
         if (!hasVideo) opportunities.push("video");
         if (!released) opportunities.push(...savedOpportunities.filter((value: string): value is "feature" => value === "feature"));
         const links = resolveSongLinks(row);
-        const rawLink = (value: unknown) => typeof value === "string" ? value : "";
+        const rawLink = rawString;
         const cardName = cardNames.get(normalizeTitle(title));
         return {
           released,
@@ -86,7 +111,7 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
             slug,
             databaseId: String(row.id),
             collaborationEnabled: true,
-            readyForCollab: true,
+            readyForCollab: row.ready_for_collab === true || row.collaboration_enabled === true,
             collaborationInterests: Array.isArray(row.collab_interests) ? row.collab_interests : [],
             audioStatus: row.audio_status || (released ? "Released" : "Demo"),
             isReleased: released,
@@ -95,12 +120,16 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
             videoConcept: typeof row.video_concept === "string" ? row.video_concept : "",
             releaseDate: typeof row.release_date === "string" ? row.release_date : null,
             title,
+            oneLiner: (() => {
+              const subtitle = getSongBySlug(slug)?.subtitle;
+              return subtitle && !subtitle.startsWith("Channel ") ? subtitle : `${title} is ready for its next visual chapter.`;
+            })(),
             artist: "CHXNDLER",
             coverArt: songCoverPath(slug, title),
             spotifyUrl: released ? links.spotifyUrl : rawLink(row.spotify_url),
             appleMusicUrl: released ? links.appleMusicUrl : rawLink(row.apple_music_url),
             youtubeUrl: released ? links.youtubeUrl : rawLink(row.youtube_music_video_url),
-            videoEmbedUrl: released && !links.isYouTubeFallback ? toYouTubeEmbed(links.youtubeUrl) : null,
+            videoEmbedUrl: toYouTubeEmbed(musicVideoUrl),
             cardArt: cardName ? getCardImageUrl(cardName) : null,
             skyVideoUrl: (row.sky_video_url as string | null) || youtubeSkyFor(slug) || null,
           },

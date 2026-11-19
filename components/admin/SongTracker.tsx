@@ -113,6 +113,7 @@ export default function SongTracker() {
   const [statusFilter, setStatusFilter] = useState<FilterKey>("all");
   const [columnFilter, setColumnFilter] = useState<{ key: string; value: string } | null>(null);
   const [columnMenu, setColumnMenu] = useState<string | null>(null);
+  const [postReleaseMenuOpen, setPostReleaseMenuOpen] = useState(false);
   const [songFilterText, setSongFilterText] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -120,6 +121,17 @@ export default function SongTracker() {
   const [newTitle, setNewTitle] = useState("");
   const [creating, setCreating] = useState(false);
   const [songInfo, setSongInfo] = useState<SongRow | null>(null);
+
+  useEffect(() => {
+    if (!columnMenu && !postReleaseMenuOpen) return;
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (event.target instanceof Element && event.target.closest("[data-song-filter-menu]")) return;
+      setColumnMenu(null);
+      setPostReleaseMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
+  }, [columnMenu, postReleaseMenuOpen]);
 
   async function load() {
     setLoading(true);
@@ -165,7 +177,11 @@ export default function SongTracker() {
       if (columnFilter.key === "song" && !song.title.toLowerCase().includes(columnFilter.value.toLowerCase())) return false;
       if (columnFilter.key === "status" && columnFilter.value !== "all" && String(song.is_released) !== columnFilter.value) return false;
       if (columnFilter.key === "production" && columnFilter.value !== "all" && !matchesProductionFilter(song, columnFilter.value)) return false;
-      if (columnFilter.key === "postRelease" && columnFilter.value !== "all" && song.postRelease?.[columnFilter.value as keyof NonNullable<SongRow["postRelease"]>] !== true) return false;
+      if (columnFilter.key === "postRelease" && columnFilter.value !== "all") {
+        const missing = columnFilter.value.startsWith("missing:");
+        const key = (missing ? columnFilter.value.slice("missing:".length) : columnFilter.value) as keyof NonNullable<SongRow["postRelease"]>;
+        if (missing ? song.postRelease?.[key] === true : song.postRelease?.[key] !== true) return false;
+      }
       if (columnFilter.key === "progress" && columnFilter.value === "started" && (!verified || done === 0 || done === 3)) return false;
       if (columnFilter.key === "progress" && columnFilter.value === "complete" && (!verified || done < 3)) return false;
       if (columnFilter.key === "progress" && columnFilter.value === "not_started" && (!verified || done > 0)) return false;
@@ -175,9 +191,12 @@ export default function SongTracker() {
     return true;
   }), [songs, statusFilter, today, columnFilter]);
 
-  const sorted = useMemo(() => [...visible].sort((a, b) => {
-    return (b.updated_at || b.created_at || "").localeCompare(a.updated_at || a.created_at || "");
-  }), [visible]);
+  const sorted = useMemo(() => [...visible].sort((a, b) =>
+    a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true }) || a.slug.localeCompare(b.slug),
+  ), [visible]);
+  const activePostReleaseFilter = columnFilter?.key === "postRelease"
+    ? `${columnFilter.value.startsWith("missing:") ? "Missing" : "On"} · ${postReleaseKpis.find(item => item.key === (columnFilter.value.startsWith("missing:") ? columnFilter.value.slice("missing:".length) : columnFilter.value))?.label || "Post Release"}`
+    : null;
 
   function saveProductionProgress(song: SongRow, updated: Partial<SongRow>) {
     setSongs(rows => rows.map(row => row.id === song.id ? { ...row, ...updated } : row));
@@ -221,7 +240,7 @@ export default function SongTracker() {
   function filterHeader(key: string, label: string, choices: Array<{ value: string; label: string; color?: string; icon?: ReactNode }>) {
     const active = columnFilter?.key === key;
     const currentValue = columnFilter?.key === key ? columnFilter.value : "";
-    return <div className="relative"><button type="button" aria-expanded={columnMenu === key} onClick={() => setColumnMenu(current => current === key ? null : key)} className="text-left hover:text-white">{label}{active ? ` · ${key === "song" ? currentValue : choices.find(choice => choice.value === currentValue)?.label || currentValue}` : ""}⌄</button>{columnMenu === key && <div className="absolute left-0 top-full z-30 mt-2 max-h-64 min-w-52 overflow-auto rounded-lg border border-white/10 bg-[#17171c] p-1 normal-case tracking-normal shadow-xl">{key === "song" ? <><button type="button" onClick={() => { setSongFilterText(""); setColumnFilter(null); setColumnMenu(null); }} className="block w-full rounded px-3 py-2 text-left text-xs text-white/60 hover:bg-white/10">Clear</button><input autoFocus type="search" value={songFilterText} onChange={event => { setSongFilterText(event.target.value); setColumnFilter(event.target.value ? {key, value:event.target.value} : null); }} placeholder="Type a song title…" className="w-full appearance-none rounded border border-white/10 bg-[#0b0b0f] px-3 py-2 text-xs text-white outline-none placeholder:text-white/40 [color-scheme:dark] focus:border-[#FD52AF]/50"/></> : <button type="button" onClick={() => { setColumnFilter(null); setColumnMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs font-semibold text-white/65 hover:bg-white/10"><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5 shrink-0"><circle cx="10" cy="10" r="7.5"/><path d="M6.5 10h7"/></svg><span>All</span></button>}{key !== "song" && choices.map(choice=><button key={choice.value} type="button" onClick={() => { setColumnFilter({key,value:choice.value}); setColumnMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs font-semibold hover:bg-white/10" style={{color:choice.color||"#d4d4d8"}}>{choice.icon&&<span className="grid h-5 w-5 shrink-0 place-items-center">{choice.icon}</span>}<span>{choice.label}</span></button>)}</div>}</div>;
+    return <div className="relative" data-song-filter-menu><button type="button" aria-expanded={columnMenu === key} onClick={() => setColumnMenu(current => current === key ? null : key)} className="text-left hover:text-white">{label}{active ? ` · ${key === "song" ? currentValue : choices.find(choice => choice.value === currentValue)?.label || currentValue}` : ""}⌄</button>{columnMenu === key && <div className="absolute left-0 top-full z-30 mt-2 max-h-64 min-w-52 overflow-auto rounded-lg border border-white/10 bg-[#17171c] p-1 normal-case tracking-normal shadow-xl">{key === "song" ? <><button type="button" onClick={() => { setSongFilterText(""); setColumnFilter(null); setColumnMenu(null); }} className="block w-full rounded px-3 py-2 text-left text-xs text-white/60 hover:bg-white/10">Clear</button><input autoFocus type="search" value={songFilterText} onChange={event => { setSongFilterText(event.target.value); setColumnFilter(event.target.value ? {key, value:event.target.value} : null); }} placeholder="Type a song title…" className="w-full appearance-none rounded border border-white/10 bg-[#0b0b0f] px-3 py-2 text-xs text-white outline-none placeholder:text-white/40 [color-scheme:dark] focus:border-[#FD52AF]/50"/></> : <button type="button" onClick={() => { setColumnFilter(null); setColumnMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs font-semibold text-white/65 hover:bg-white/10"><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5 shrink-0"><circle cx="10" cy="10" r="7.5"/><path d="M6.5 10h7"/></svg><span>All</span></button>}{key !== "song" && choices.map(choice=><button key={choice.value} type="button" onClick={() => { setColumnFilter({key,value:choice.value}); setColumnMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs font-semibold hover:bg-white/10" style={{color:choice.color||"#d4d4d8"}}>{choice.icon&&<span className="grid h-5 w-5 shrink-0 place-items-center">{choice.icon}</span>}<span>{choice.label}</span></button>)}</div>}</div>;
   }
 
   return <section className="song-portfolio">
@@ -262,7 +281,7 @@ export default function SongTracker() {
 
     {error && <p role="alert" className="mb-4 rounded-xl border border-red-400/20 bg-red-400/[.05] p-3 text-sm text-red-200">{error}</p>}
     {loading ? <div className="rounded-2xl border border-white/[.08] bg-[#101014] p-8 text-center text-sm text-white/45">Loading your songs…</div> : !sorted.length ? <div className="rounded-2xl border border-dashed border-white/[.14] bg-[#101014]/60 p-10 text-center"><p className="font-semibold text-white/75">{songs.length ? "No songs match these filters." : "Your music universe is ready."}</p><p className="mt-1 text-sm text-white/40">{songs.length ? "Try a different search or clear the filters." : "Add your first song to create a workspace."}</p>{songs.length > 0 && <button type="button" onClick={clearFilters} className="mt-4 text-sm font-semibold text-[#FD52AF]">Clear filters</button>}</div> : <div className="overflow-visible rounded-2xl border border-white/[.08] bg-[#101014]">
-      <div className="hidden border-b border-white/[.07] px-5 py-3 text-[.65rem] font-bold uppercase tracking-[.13em] text-white/35 lg:grid lg:grid-cols-[minmax(15rem,1.2fr)_minmax(9rem,.7fr)_minmax(18rem,1.3fr)] lg:gap-5">{filterHeader("song", "Song", [])}{filterHeader("production", "Production", [{value:"wrote",label:"Wrote",color:"#A78BFA",icon:<ProductionStageIcon stage="Writing" className="h-5 w-5"/>},{value:"recorded",label:"Recorded",color:"#42B8E8",icon:<ProductionStageIcon stage="Recording" className="h-5 w-5"/>},{value:"mixed",label:"Mixed",color:"#F2B84B",icon:<ProductionStageIcon stage="Mixing" className="h-5 w-5"/>},{value:"unset",label:"Not Set",color:"#777783",icon:<ProductionStageIcon stage={null} className="h-5 w-5"/>}])}{filterHeader("postRelease", "Post Release", postReleaseKpis.map(item => ({value:item.key,label:item.label,color:item.color,icon:<OpportunityIcon kind={item.kind} className="h-5 w-5"/>})))}</div>
+      <div className="hidden border-b border-white/[.07] px-5 py-3 text-xs font-bold uppercase tracking-[.13em] text-white/65 lg:grid lg:grid-cols-[minmax(15rem,1.2fr)_minmax(9rem,.7fr)_minmax(18rem,1.3fr)] lg:gap-5">{filterHeader("song", "Song", [])}{filterHeader("production", "Production", [{value:"wrote",label:"Wrote",color:"#A78BFA",icon:<ProductionStageIcon stage="Writing" className="h-5 w-5"/>},{value:"recorded",label:"Recorded",color:"#42B8E8",icon:<ProductionStageIcon stage="Recording" className="h-5 w-5"/>},{value:"mixed",label:"Mixed",color:"#F2B84B",icon:<ProductionStageIcon stage="Mixing" className="h-5 w-5"/>},{value:"unset",label:"Not Set",color:"#777783",icon:<ProductionStageIcon stage={null} className="h-5 w-5"/>}])}<div className="relative flex items-center justify-between" data-song-filter-menu><button type="button" aria-expanded={postReleaseMenuOpen} onClick={() => setPostReleaseMenuOpen(open => !open)} className="text-left hover:text-white">Post Release⌄</button><button type="button" aria-expanded={postReleaseMenuOpen} onClick={() => setPostReleaseMenuOpen(open => !open)} className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-[.62rem] font-semibold normal-case tracking-normal transition ${columnFilter?.key === "postRelease" ? "border-[#FD52AF]/45 bg-[#FD52AF]/[.08] text-white" : "border-white/10 text-white/55 hover:border-white/20 hover:text-white"}`}><span aria-hidden="true">☷</span>{activePostReleaseFilter || "Filter missing"}<span aria-hidden="true">⌄</span></button>{postReleaseMenuOpen && <div className="absolute right-0 top-full z-40 mt-2 max-h-[min(70vh,28rem)] w-72 overflow-y-auto rounded-xl border border-white/10 bg-[#17171c] p-2 normal-case tracking-normal shadow-2xl"><p className="px-2 pb-2 pt-1 text-[.62rem] font-bold uppercase tracking-[.14em] text-white/35">Show songs missing</p>{postReleaseKpis.map(item => <button key={item.key} type="button" onClick={() => { setStatusFilter("all"); setColumnFilter({ key: "postRelease", value: `missing:${item.key}` }); setSongFilterText(""); setPostReleaseMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left text-xs font-semibold text-white/75 hover:bg-white/[.07]"><OpportunityIcon kind={item.kind} className="h-5 w-5"/><span className="flex-1">{item.label}</span><span className="text-[.62rem] font-medium text-white/35">Missing</span></button>)}{columnFilter?.key === "postRelease" && <button type="button" onClick={() => { setColumnFilter(null); setPostReleaseMenuOpen(false); }} className="mt-1 w-full rounded-lg border-t border-white/[.08] px-2 py-2.5 text-left text-xs font-semibold text-[#ff8bc4]">Clear post release filter</button>}</div>}</div></div>
       {sorted.map(song => {
         const collabReady = song.ready_for_collab === true;
         return <article key={song.id} className="grid gap-3 border-b border-white/[.06] p-3 transition-colors last:border-0 hover:bg-white/[.015] sm:p-4 lg:grid-cols-[minmax(15rem,1.2fr)_minmax(9rem,.7fr)_minmax(18rem,1.3fr)] lg:items-center lg:gap-5 lg:px-5">
@@ -276,7 +295,7 @@ export default function SongTracker() {
       })}
     </div>}
 
-    {songInfo && <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 p-2 sm:p-5" onClick={() => setSongInfo(null)}><section role="dialog" aria-modal="true" aria-label={`${songInfo.title} full song workspace`} onClick={event => event.stopPropagation()} className="flex h-[96vh] w-full max-w-[1500px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#09090c] text-white shadow-2xl"><header className="flex shrink-0 items-center gap-3 border-b border-white/10 bg-[#111116] px-4 py-2"><h2 className="min-w-0 flex-1 truncate text-sm font-bold">{songInfo.title} · Song Workspace</h2><button type="button" onClick={() => setSongInfo(null)} className="rounded-lg border border-white/10 px-3 py-2 text-sm font-semibold text-white/65 hover:bg-white/10 hover:text-white">Close</button></header><div className="min-h-0 flex-1 overflow-auto"><SongWorkspace id={songInfo.id} embedded onBack={() => setSongInfo(null)} /></div></section></div>}
+    {songInfo && <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 p-2 sm:p-5" onClick={() => setSongInfo(null)}><section role="dialog" aria-modal="true" aria-label={`${songInfo.title} full song workspace`} onClick={event => event.stopPropagation()} className="flex h-[96vh] w-full max-w-[1500px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#09090c] text-white shadow-2xl"><header className="flex shrink-0 items-center border-b border-white/10 bg-[#111116] px-4 py-2"><h2 className="min-w-0 flex-1 truncate text-sm font-bold">{songInfo.title} · Song Workspace</h2></header><div className="min-h-0 flex-1 overflow-auto"><SongWorkspace id={songInfo.id} embedded onBack={() => setSongInfo(null)} /></div></section></div>}
 
     <style jsx>{`
       .song-portfolio button,.song-portfolio a,.song-portfolio select,.song-portfolio input{ -webkit-tap-highlight-color:transparent }

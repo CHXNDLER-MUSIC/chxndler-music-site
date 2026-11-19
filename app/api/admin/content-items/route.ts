@@ -59,7 +59,7 @@ export async function GET(request: Request) {
   const pageSize = Math.min(100, Math.max(10, Number.parseInt(params.get("pageSize") || "50", 10) || 50));
   const from = (page - 1) * pageSize;
   const sort = params.get("sort") || "planned_date";
-  const sortColumn = ["title", "song_name", "category", "media_type", "planned_date", "workflow_status", "workflow_priority", "recorded", "edited", "post_ready"].includes(sort) ? sort : "workflow_priority";
+  const sortColumn = ["title", "song_name", "canonical_song_title", "category", "media_type", "planned_date", "workflow_status", "workflow_priority", "recorded", "edited", "post_ready"].includes(sort) ? sort : "workflow_priority";
   const ascending = params.get("direction") === "asc";
 
   let pageQuery = applyFilters(db.from("content_items_library").select(fields, { count: "exact" }), params)

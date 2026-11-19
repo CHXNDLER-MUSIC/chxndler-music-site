@@ -19,6 +19,7 @@ export type ArtistRelease = {
   releaseDate?: string | null;
   slug: string;
   title: string;
+  oneLiner?: string;
   /** True when the corresponding audio object exists in the Supabase tracks bucket. */
   audioAvailable?: boolean;
   /** Public URL resolved from the actual uploaded storage object, preserving its filename casing. */
