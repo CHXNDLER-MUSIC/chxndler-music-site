@@ -12,19 +12,20 @@ async function gate() {
 export async function GET() {
   const denied = await gate(); if (denied) return denied;
   const db = getSupabaseAdmin();
-  const [songs, ideas, opportunities, placements] = await Promise.all([
+  const [songs, ideas, opportunities, placements, contacts] = await Promise.all([
     db.from("songs").select("id,title,slug").order("title"),
     db.from("sync_ideas").select("*").order("song_title"),
     db.from("sync_opportunities").select("*").order("updated_at", { ascending: false }),
     db.from("sync_placements").select("*").order("placement_date", { ascending: false, nullsFirst: false }),
+    db.from("marketing_contacts").select("id,first_name,last_name,email,venue,industry_category,connection_status").order("first_name"),
   ]);
   if (ideas.error || opportunities.error || placements.error) return NextResponse.json({ error: "Apply the sync ideas and workspace migrations before loading sync records." }, { status: 503 });
   const names = new Map((songs.data || []).map(song => [song.id, song.title]));
-  return NextResponse.json({ songs: songs.data || [], ideas: (ideas.data || []).map(row => ({ ...row, song_title: names.get(row.song_id) || row.song_title })), opportunities: (opportunities.data || []).map(row => ({ ...row, song_title: names.get(row.song_id) || "" })), placements: (placements.data || []).map(row => ({ ...row, song_title: names.get(row.song_id) || "" })) });
+  return NextResponse.json({ songs: songs.data || [], contacts: contacts.data || [], ideas: (ideas.data || []).map(row => ({ ...row, song_title: names.get(row.song_id) || row.song_title })), opportunities: (opportunities.data || []).map(row => ({ ...row, song_title: names.get(row.song_id) || "" })), placements: (placements.data || []).map(row => ({ ...row, song_title: names.get(row.song_id) || "" })) });
 }
 
 const tables = { opportunity: "sync_opportunities", placement: "sync_placements" } as const;
-const nullable = new Set(["deadline", "submitted_at", "follow_up_at", "placement_date", "song_id", "potential_fee", "fee"]);
+const nullable = new Set(["deadline", "submitted_at", "follow_up_at", "placement_date", "song_id", "contact_id", "opportunity_url", "potential_fee", "fee"]);
 
 export async function POST(request: Request) {
   const denied = await gate(); if (denied) return denied;
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
   if (typeof body.kind !== "string" || !Object.hasOwn(tables, body.kind)) return NextResponse.json({ error: "Choose an opportunity or placement." }, { status: 400 });
   const kind = body.kind as keyof typeof tables;
   const allowed = kind === "opportunity"
-    ? ["song_id", "project_name", "contact_name", "organization", "contact_email", "media_type", "deadline", "submitted_at", "status", "potential_fee", "follow_up_at", "notes"]
+    ? ["song_id", "contact_id", "opportunity_url", "project_name", "contact_name", "organization", "contact_email", "media_type", "deadline", "submitted_at", "status", "potential_fee", "follow_up_at", "notes"]
     : ["song_id", "project_name", "media_type", "usage_details", "territory", "term", "agreement_reference", "fee", "payment_status", "placement_date"];
   const row: Record<string, unknown> = {};
   for (const field of allowed) if (field in body) row[field] = body[field] === "" && nullable.has(field) ? null : body[field];
@@ -60,7 +61,7 @@ export async function PATCH(request: Request) {
   if (typeof body.kind !== "string" || !Object.hasOwn(tables, body.kind) || typeof body.id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.id)) return NextResponse.json({ error: "Choose a valid sync record." }, { status: 400 });
   const kind = body.kind as keyof typeof tables;
   const allowed = kind === "opportunity"
-    ? ["song_id", "project_name", "contact_name", "organization", "contact_email", "media_type", "deadline", "submitted_at", "status", "potential_fee", "follow_up_at", "notes"]
+    ? ["song_id", "contact_id", "opportunity_url", "project_name", "contact_name", "organization", "contact_email", "media_type", "deadline", "submitted_at", "status", "potential_fee", "follow_up_at", "notes"]
     : ["song_id", "project_name", "media_type", "usage_details", "territory", "term", "agreement_reference", "fee", "payment_status", "placement_date"];
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
   for (const field of allowed) if (field in body) update[field] = body[field] === "" && nullable.has(field) ? null : body[field];

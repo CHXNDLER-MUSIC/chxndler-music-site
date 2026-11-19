@@ -8,7 +8,7 @@ export default async function AdminHome() {
   if (!auth || !isAdminUser(auth.user)) return <AdminLoginForm signedInEmail={auth?.user.email || ""} />;
 
   return <main className="admin-dashboard min-h-screen px-5 py-8 text-white sm:px-10 sm:py-12" style={{ background: "#09090c" }}>
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-7xl">
       <header className="mb-6 flex justify-center">
         <BrandNavigation />
       </header>

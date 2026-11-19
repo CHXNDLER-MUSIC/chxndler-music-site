@@ -26,7 +26,7 @@ function TabIcon({ name }: { name: IconName }) {
 
 export default function AdminTabs() {
   const [tab, setTab] = useState<Tab>("overview");
-  const [outreachSection, setOutreachSection] = useState<"pitches" | "gigs" | "sync" | "contacts">("pitches");
+  const [outreachSection, setOutreachSection] = useState<"pitches" | "sync" | "collabs" | "gigs" | "contacts">("pitches");
   const [outreachSongId, setOutreachSongId] = useState("");
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRoot = useRef<HTMLDivElement>(null);
@@ -38,7 +38,7 @@ export default function AdminTabs() {
       if (match) setTab(match[0]); else if (legacySubtab) setTab("outreach");
       const requestedSubtab = params.get("section")?.toLowerCase();
       const section = legacySubtab || requestedSubtab;
-      if (["pitches", "gigs", "sync", "contacts"].includes(section || "")) setOutreachSection(section as "pitches" | "gigs" | "sync" | "contacts");
+      if (["pitches", "gigs", "sync", "collabs", "contacts"].includes(section || "")) setOutreachSection(section as "pitches" | "sync" | "collabs" | "gigs" | "contacts");
       setOutreachSongId(params.get("song") || "");
       if (legacySubtab) { params.set("view", "outreach"); params.set("section", legacySubtab); window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`); }
     };

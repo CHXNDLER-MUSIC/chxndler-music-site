@@ -24,20 +24,26 @@ export async function GET() {
   if (!isAdminUser(auth.user)) return forbidden();
   const db = getSupabaseAdmin();
   const [songWithReleaseDate, requests, videos, tasks, outreach, sync] = await Promise.all([
-    db.from("songs").select("id,title,slug,is_released,release_date,audio_status,collaboration_opportunities,video_concept,collaboration_enabled,production_stages,production_tracking_started,ready_for_collab,collab_interests,collaboration_description,workflow_stage,next_action,next_action_manual,created_at,sky_video_url,youtube_music_video_url,spotify_url,karaoke_url,practice_notes").order("title", { ascending: true }),
+    db.from("songs").select("id,title,slug,is_released,release_date,updated_at,audio_status,collaboration_opportunities,video_concept,collaboration_enabled,production_stages,production_tracking_started,ready_for_collab,collab_interests,collaboration_description,workflow_stage,next_action,next_action_manual,created_at,sky_video_url,youtube_music_video_url,spotify_url,karaoke_url,practice_notes").order("title", { ascending: true }),
     db.from("collaboration_requests").select("id,song_id,status,submitted_at,contribution_type"),
-    db.from("music_video_projects").select("id,song_id,status,visibility,next_action,assigned_videographer,public_concept,public_status,project_type"),
+    db.from("music_video_projects").select("id,song_id,status,visibility,next_action,assigned_videographer,public_concept,public_status,project_type,collaboration_stage"),
     db.from("admin_tasks").select("id,song_id,title,status,priority,due_at,created_at").neq("status", "done").not("song_id", "is", null).order("due_at", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false }),
     db.from("outreach_records").select("id,song_id,status,category").not("song_id", "is", null),
     db.from("sync_opportunities").select("id,song_id,status").not("song_id", "is", null),
   ]);
   let songs: any = songWithReleaseDate;
   let releaseDateAvailable = true;
-  // Older deployments may not have release_date. Fall back without dropping
-  // the production and collaboration fields that the portfolio depends on.
-  if (songs.error && /release_date|column/i.test(songs.error.message)) {
-    releaseDateAvailable = false;
-    songs = await db.from("songs").select("id,title,slug,is_released,audio_status,collaboration_opportunities,video_concept,collaboration_enabled,production_stages,production_tracking_started,ready_for_collab,collab_interests,collaboration_description,workflow_stage,next_action,next_action_manual,created_at,sky_video_url,youtube_music_video_url,spotify_url,karaoke_url,practice_notes").order("title", { ascending: true });
+  let updatedAtAvailable = true;
+  // Older deployments may not have the optional date columns. Retry without
+  // only the missing field so saved production data remains available.
+  const coreSongFields = "id,title,slug,is_released,audio_status,collaboration_opportunities,video_concept,collaboration_enabled,production_stages,production_tracking_started,ready_for_collab,collab_interests,collaboration_description,workflow_stage,next_action,next_action_manual,created_at,sky_video_url,youtube_music_video_url,spotify_url,karaoke_url,practice_notes";
+  for (let attempt = 0; songs.error && attempt < 2; attempt += 1) {
+    const message = songs.error.message;
+    if (/release_date/i.test(message) && releaseDateAvailable) releaseDateAvailable = false;
+    else if (/updated_at/i.test(message) && updatedAtAvailable) updatedAtAvailable = false;
+    else break;
+    const optionalFields = [releaseDateAvailable ? "release_date" : "", updatedAtAvailable ? "updated_at" : ""].filter(Boolean).join(",");
+    songs = await db.from("songs").select(`${coreSongFields}${optionalFields ? `,${optionalFields}` : ""}`).order("title", { ascending: true });
   }
   if (songs.error) return NextResponse.json({ error: `Unable to load the song catalog: ${songs.error.message}` }, { status: 500 });
   // Projects are an additive feature and may not be migrated in this environment yet.
@@ -46,11 +52,13 @@ export async function GET() {
   const taskRows = tasks.error ? [] : tasks.data || [];
   const outreachRows = outreach.error ? [] : outreach.data || [];
   const syncRows = sync.error ? [] : sync.data || [];
-  return NextResponse.json({ releaseDateAvailable, songs: (songs.data || []).filter(song => !HIDDEN_ADMIN_SONG_TITLES.has(normalizeSongTitle(song.title))).map(song => {
+  const activePitchStatuses = new Set(["Planned", "Sent", "Follow-up"]);
+  const terminalSyncStatuses = new Set(["Licensed", "Passed", "Declined", "Closed"]);
+  return NextResponse.json({ releaseDateAvailable, updatedAtAvailable, songs: (songs.data || []).filter(song => !HIDDEN_ADMIN_SONG_TITLES.has(normalizeSongTitle(song.title))).map(song => {
     const musicVideo = videoRows.find(row => row.song_id === song.id && (!row.project_type || row.project_type === "primary")) || null;
     const linkedTask = song.next_action_manual ? null : taskRows.find(task => task.song_id === song.id) || null;
-    const activeOutreachCount = outreachRows.filter(row => row.song_id === song.id && !["Accepted", "Declined", "Closed"].includes(row.status || "")).length
-      + syncRows.filter(row => row.song_id === song.id && !["Licensed", "Passed"].includes(row.status || "")).length;
+    const activeOutreachCount = outreachRows.filter(row => row.song_id === song.id && activePitchStatuses.has(row.status || "")).length
+      + syncRows.filter(row => row.song_id === song.id && !!row.status && !terminalSyncStatuses.has(row.status)).length;
     return ({
     ...song,
     release_date: song.release_date ?? null,
@@ -88,8 +96,6 @@ export async function POST(request: Request) {
   }
   const { data: song, error } = await db.from("songs").insert({ title, slug, is_released: false, collaboration_enabled: false }).select("id,title,slug,is_released,collaboration_enabled,created_at,sky_video_url,youtube_music_video_url").single();
   if (error || !song) return NextResponse.json({ error: `Unable to add this song: ${error?.message || "No song was returned."}` }, { status: 500 });
-  // Link the new song into the existing task workflow when that optional table is installed.
-  await db.from("admin_tasks").upsert({ business_area: "unreleased_song", song_id: song.id, title: "Complete song profile", description: "Develop this song’s profile, meaning, lyrics, collaboration, and music video." }, { onConflict: "song_id,title", ignoreDuplicates: true });
   return NextResponse.json({ song }, { status: 201 });
 }
 
