@@ -5,7 +5,7 @@ import Link from "next/link";
 
 type RequestRow = { id: string; song_id: string | null; artist_name: string; contribution_type: string; status: string; submitted_at: string; message: string | null; songs?: { title?: string } | null };
 type Song = { id: string; title: string };
-type Contact = { id:string; first_name:string|null; last_name:string|null; email:string|null; venue:string|null };
+type Contact = { id:string; first_name:string|null; last_name:string|null; email:string|null; phone?:string|null; venue:string|null };
 
 export default function CollaborationOutreachTab({ songId = "" }: { songId?: string }) {
   const [rows, setRows] = useState<RequestRow[]>([]);
@@ -14,7 +14,7 @@ export default function CollaborationOutreachTab({ songId = "" }: { songId?: str
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [invite, setInvite] = useState({ name: "", email: "", contactId: "", songId, type: "Feature / Vocals", message: "" });
+  const [invite, setInvite] = useState({ firstName: "", lastName: "", artistName: "", email: "", phone: "", contactId: "", songId, type: "Feature / Vocals", message: "" });
   const [inviteLink, setInviteLink] = useState("");
 
   async function load() {
@@ -36,7 +36,7 @@ export default function CollaborationOutreachTab({ songId = "" }: { songId?: str
 
   async function createInvite(event: React.FormEvent) {
     event.preventDefault(); setNotice(""); setInviteLink("");
-    const response = await fetch("/api/admin/collaboration-invites", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ displayName: invite.name, inviteeEmail: invite.email, contactId: invite.contactId, personalMessage: invite.message, contributionType: invite.type, scope: "song", songId: invite.songId }) });
+    const response = await fetch("/api/admin/collaboration-invites", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ firstName: invite.firstName, lastName: invite.lastName, artistName: invite.artistName, displayName: `${invite.firstName} ${invite.lastName}`.trim(), inviteeEmail: invite.email, phone: invite.phone, contactId: invite.contactId, personalMessage: invite.message, contributionType: invite.type, scope: "song", songId: invite.songId }) });
     const result = await response.json();
     if (!response.ok) { setNotice(result.error || "Unable to create invitation."); return; }
     setInviteLink(result.link || ""); setNotice("Private song invitation created.");
@@ -46,9 +46,12 @@ export default function CollaborationOutreachTab({ songId = "" }: { songId?: str
   return <section className="space-y-4">
     <header className="flex flex-wrap items-center gap-3"><div className="mr-auto"><h2 className="text-base font-bold">Creative collaborations</h2><p className="mt-1 text-sm text-white/45">Requests and private song invitations use the existing collaboration portal.</p></div><button type="button" onClick={() => { setInviteOpen(value => !value); setInviteLink(""); }} className="rounded-lg bg-[#FD52AF] px-4 py-2.5 text-sm font-bold text-black">Invite Creative</button></header>
     {inviteOpen && <form onSubmit={event => void createInvite(event)} className="grid gap-3 rounded-xl bg-white/[.035] p-4 sm:grid-cols-2">
-      <label className="text-xs text-white/55">Existing contact (optional)<select value={invite.contactId} onChange={event => { const contact=contacts.find(item=>item.id===event.target.value); setInvite({ ...invite, contactId:event.target.value, name:contact?[contact.first_name,contact.last_name].filter(Boolean).join(" "):invite.name, email:contact?.email||invite.email }); }} className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white"><option value="">New invitee</option>{contacts.map(contact=><option key={contact.id} value={contact.id}>{[contact.first_name,contact.last_name].filter(Boolean).join(" ")}{contact.venue?` · ${contact.venue}`:""}</option>)}</select></label>
-      <label className="text-xs text-white/55">Creative name<input required value={invite.name} onChange={event => setInvite({ ...invite, name: event.target.value })} className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white" /></label>
-      <label className="text-xs text-white/55">Email (optional)<input type="email" value={invite.email} onChange={event => setInvite({ ...invite, email: event.target.value })} className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white" /></label>
+      <label className="text-xs text-white/55 sm:col-span-2">Existing contact (optional)<select value={invite.contactId} onChange={event => { const contact=contacts.find(item=>item.id===event.target.value); setInvite({ ...invite, contactId:event.target.value, firstName:contact?.first_name||"", lastName:contact?.last_name||"", email:contact?.email||"", phone:contact?.phone||"" }); }} className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white"><option value="">New invitee</option>{contacts.map(contact=><option key={contact.id} value={contact.id}>{[contact.first_name,contact.last_name].filter(Boolean).join(" ")}{contact.venue?` · ${contact.venue}`:""}</option>)}</select></label>
+      <label className="text-xs text-white/55">First name<input required autoComplete="given-name" value={invite.firstName} onChange={event => setInvite({ ...invite, firstName: event.target.value })} className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white" /></label>
+      <label className="text-xs text-white/55">Last name<input required autoComplete="family-name" value={invite.lastName} onChange={event => setInvite({ ...invite, lastName: event.target.value })} className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white" /></label>
+      <label className="text-xs text-white/55">Artist name<input required autoComplete="nickname" value={invite.artistName} onChange={event => setInvite({ ...invite, artistName: event.target.value })} className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white" /></label>
+      <label className="text-xs text-white/55">Email<input required type="email" autoComplete="email" value={invite.email} onChange={event => setInvite({ ...invite, email: event.target.value })} className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white" /></label>
+      <label className="text-xs text-white/55">Phone (optional)<input type="tel" autoComplete="tel" value={invite.phone} onChange={event => setInvite({ ...invite, phone: event.target.value })} className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white" /></label>
       <label className="text-xs text-white/55">Song<select required value={invite.songId} onChange={event => setInvite({ ...invite, songId: event.target.value })} disabled={!!songId} className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white">{!songId && <option value="">Choose a song</option>}{songs.map(song => <option key={song.id} value={song.id}>{song.title}</option>)}</select></label>
       <label className="text-xs text-white/55">Interest<select value={invite.type} onChange={event => setInvite({ ...invite, type: event.target.value })} className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white">{["Feature / Vocals", "Remix", "Other"].map(type => <option key={type}>{type}</option>)}</select></label>
       <label className="text-xs text-white/55 sm:col-span-2">Personal message<textarea value={invite.message} onChange={event => setInvite({ ...invite, message: event.target.value })} rows={2} placeholder="Add a note to include with the invitation" className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white" /></label>
