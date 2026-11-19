@@ -68,6 +68,7 @@ export default function ArtistReleaseDetail({
   const [meaning, setMeaning] = useState<string | null>(null);
   const [meaningOpen, setMeaningOpen] = useState(false);
   const [lyricsOpen, setLyricsOpen] = useState(true);
+  const [detailTab, setDetailTab] = useState<"lyrics" | "collectible" | "video">("lyrics");
   const [collabOpen, setCollabOpen] = useState(false);
   const [isInstrumental, setIsInstrumental] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -261,15 +262,13 @@ export default function ArtistReleaseDetail({
           </div>
           {!audioSrc && <p className="mt-[0.5rem] text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-white/40">Audio file coming soon</p>}
           {audioSrc && isActive && error && <p className="mt-[0.5rem] text-[0.75rem] text-white/50">{error}</p>}
-          {showLyricsSection && (
-            <button
-              type="button"
-              onClick={() => rootRef.current?.querySelector('[aria-label="Lyrics"]')?.scrollIntoView({ behavior: "smooth", block: "start" })}
-              onMouseEnter={playHover}
-              className="mt-[0.75rem] mr-[0.5rem] inline-flex min-h-[2.5rem] items-center justify-center rounded-full border border-white/20 bg-white/[0.04] px-[1rem] py-[0.55rem] text-[0.6875rem] font-extrabold uppercase tracking-[0.14em] text-white/80 transition-colors hover:border-white/45 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem]"
-              style={{ outlineColor: PINK }}
-            >Lyrics</button>
-          )}
+          {(release.spotifyUrl || release.appleMusicUrl) && <div className="mt-4 flex flex-wrap gap-2" aria-label="Listen on streaming services">
+            {release.spotifyUrl && <a href={release.spotifyUrl} target="_blank" rel="noreferrer" className="streaming-link"><span aria-hidden="true">◉</span> Spotify</a>}
+            {release.appleMusicUrl && <a href={release.appleMusicUrl} target="_blank" rel="noreferrer" className="streaming-link"><span aria-hidden="true">♫</span> Apple Music</a>}
+          </div>}
+          <nav aria-label="Song details" className="mt-5 grid grid-cols-3 gap-2 rounded-full border border-white/10 bg-black/35 p-1">
+            {([ ["lyrics", "Lyrics"], ["collectible", "Collectible"], ["video", "Music Video"] ] as const).map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={detailTab === key} onClick={() => setDetailTab(key)} onMouseEnter={playHover} className="rounded-full px-2 py-3 text-[0.62rem] font-black uppercase tracking-[0.12em] transition-all sm:text-xs" style={detailTab === key ? { color: PINK, background: "rgba(255,62,165,.14)", boxShadow: `inset 0 0 0 1px ${PINK}88, 0 0 18px ${PINK}33`, textShadow: `0 0 10px ${PINK}88` } : { color: "rgba(255,255,255,.62)" }}>{label}</button>)}
+          </nav>
           {(instrumentalSrcOverride || showInstrumentalControl) && (
             <button
               type="button"
