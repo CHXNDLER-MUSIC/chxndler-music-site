@@ -7,9 +7,10 @@ import { releaseAudioId, releaseAudioSrc, releaseNowPlaying, type ArtistRelease 
 import CollectibleViewer from "./CollectibleViewer";
 import CollabRequestForm from "@/components/collab/CollabRequestForm";
 import { Space_Grotesk } from "next/font/google";
+import { CHXNDLER_APPLE_MUSIC_ARTIST_URL, CHXNDLER_SPOTIFY_ARTIST_URL } from "@/lib/chxndlerLinks";
 
 // Lyrics typeface — self-hosted by next/font, loaded only with this view.
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "500"], display: "swap" });
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "500", "700"], display: "swap" });
 
 // Same fixed CHXNDLER pink the rest of the studio launcher uses.
 const PINK = "#ff3ea5";
@@ -203,11 +204,32 @@ export default function ArtistReleaseDetail({
           </span>}
         </button>
 
+        {(instrumentalSrcOverride || showInstrumentalControl) && (
+          <div className="mx-auto -mt-[0.5rem] w-full max-w-[22rem]">
+            <button
+              type="button"
+              disabled={!instrumentalSrcOverride}
+              title={!instrumentalSrcOverride ? "No instrumental audio file was found for this track." : undefined}
+              aria-pressed={isInstrumental}
+              onClick={() => {
+                const nextIsInstrumental = !isInstrumental;
+                setIsInstrumental(nextIsInstrumental);
+                play(id, nextIsInstrumental ? instrumentalSrcOverride || mainAudioSrc : mainAudioSrc, releaseNowPlaying(release));
+              }}
+              onMouseEnter={playHover}
+              className={`inline-flex min-h-[2.5rem] items-center justify-center rounded-full border px-[1rem] py-[0.55rem] text-[0.6875rem] font-extrabold uppercase tracking-[0.14em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem] disabled:cursor-not-allowed disabled:opacity-40 ${isInstrumental ? "border-[#ff3ea5] bg-[#ff3ea5] text-black" : "border-white/20 bg-white/[0.04] text-white/80 hover:border-white/45 hover:text-white"}`}
+              style={{ outlineColor: PINK }}
+            >
+              {isInstrumental ? "Play Full Song" : "Instrumental"}
+            </button>
+          </div>
+        )}
+
         <div className="min-w-0 w-full max-w-[42rem] mx-auto">
           <p className="text-[0.6875rem] font-bold tracking-[0.35em] uppercase" style={{ color: PINK }}>
             CHXNDLER
           </p>
-          <h3 className="mt-[0.25rem] text-[1.5rem] sm:text-[2.25rem] font-bold uppercase leading-tight tracking-tight text-white break-words">
+          <h3 className={`${spaceGrotesk.className} mt-[0.25rem] text-[1.5rem] sm:text-[2.25rem] font-bold uppercase leading-tight tracking-[0.015em] text-white break-words`} style={{ textShadow: "0 0 22px rgba(255,62,165,.22)" }}>
             {release.title}
           </h3>
 
@@ -262,39 +284,19 @@ export default function ArtistReleaseDetail({
           </div>
           {!audioSrc && <p className="mt-[0.5rem] text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-white/40">Audio file coming soon</p>}
           {audioSrc && isActive && error && <p className="mt-[0.5rem] text-[0.75rem] text-white/50">{error}</p>}
-          {(release.spotifyUrl || release.appleMusicUrl) && <div className="mt-4 flex flex-wrap gap-2" aria-label="Listen on streaming services">
-            {release.spotifyUrl && <a href={release.spotifyUrl} target="_blank" rel="noreferrer" className="streaming-link"><span aria-hidden="true">◉</span> Spotify</a>}
-            {release.appleMusicUrl && <a href={release.appleMusicUrl} target="_blank" rel="noreferrer" className="streaming-link"><span aria-hidden="true">♫</span> Apple Music</a>}
-          </div>}
-          <nav aria-label="Song details" className="mt-5 grid grid-cols-3 gap-2 rounded-full border border-white/10 bg-black/35 p-1">
+          <div className="mt-4 flex flex-wrap gap-2" aria-label="Listen on streaming services">
+            <a href={release.spotifyUrl || CHXNDLER_SPOTIFY_ARTIST_URL} target="_blank" rel="noreferrer" className="streaming-link"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M6.2 9.2c4.3-1.2 8.6-.8 12 1.2M7.2 12.1c3.5-.9 6.8-.5 9.6 1M8.1 14.8c2.5-.6 4.9-.3 7 .7" fill="none" stroke="#09090c" strokeWidth="1.5" strokeLinecap="round"/></svg> Spotify</a>
+            <a href={release.appleMusicUrl || CHXNDLER_APPLE_MUSIC_ARTIST_URL} target="_blank" rel="noreferrer" className="streaming-link"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><path d="M16.8 12.8c0-2.1 1.7-3.1 1.8-3.2a3.9 3.9 0 0 0-3.1-1.7c-1.3-.1-2.5.8-3.2.8s-1.7-.8-2.8-.8a4.1 4.1 0 0 0-3.5 2.1c-1.5 2.6-.4 6.5 1.1 8.7.7 1.1 1.5 2.2 2.6 2.1 1 0 1.4-.7 2.7-.7s1.7.7 2.8.7c1.2 0 1.9-1.1 2.6-2.2.8-1.2 1.1-2.4 1.1-2.5-.1 0-2.1-.8-2.1-3.3ZM14.7 6.5c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.5.6-1 1.6-.9 2.5 1 0 1.9-.4 2.5-1.1Z"/></svg> Apple Music</a>
+          </div>
+          <nav role="tablist" aria-label="Song details" className="mt-5 grid grid-cols-3 gap-2 rounded-full border border-white/10 bg-black/35 p-1">
             {([ ["lyrics", "Lyrics"], ["collectible", "Collectible"], ["video", "Music Video"] ] as const).map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={detailTab === key} onClick={() => setDetailTab(key)} onMouseEnter={playHover} className="rounded-full px-2 py-3 text-[0.62rem] font-black uppercase tracking-[0.12em] transition-all sm:text-xs" style={detailTab === key ? { color: PINK, background: "rgba(255,62,165,.14)", boxShadow: `inset 0 0 0 1px ${PINK}88, 0 0 18px ${PINK}33`, textShadow: `0 0 10px ${PINK}88` } : { color: "rgba(255,255,255,.62)" }}>{label}</button>)}
           </nav>
-          {(instrumentalSrcOverride || showInstrumentalControl) && (
-            <button
-              type="button"
-              disabled={!instrumentalSrcOverride}
-              title={!instrumentalSrcOverride ? "No instrumental audio file was found for this track." : undefined}
-              aria-pressed={isInstrumental}
-              onClick={() => {
-                const nextIsInstrumental = !isInstrumental;
-                setIsInstrumental(nextIsInstrumental);
-                play(id, nextIsInstrumental ? instrumentalSrcOverride || mainAudioSrc : mainAudioSrc, releaseNowPlaying(release));
-              }}
-              onMouseEnter={playHover}
-              className={`mt-[0.75rem] inline-flex min-h-[2.5rem] items-center justify-center rounded-full border px-[1rem] py-[0.55rem] text-[0.6875rem] font-extrabold uppercase tracking-[0.14em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem] disabled:cursor-not-allowed disabled:opacity-40 ${isInstrumental ? "border-[#ff3ea5] bg-[#ff3ea5] text-black" : "border-white/20 bg-white/[0.04] text-white/80 hover:border-white/45 hover:text-white"}`}
-              style={{ outlineColor: PINK }}
-            >
-              {isInstrumental ? "Play Full Song" : "Instrumental"}
-            </button>
-          )}
-
         </div>
       </div>
 
       {collabOpen && release.databaseId && <CollabRequestForm songId={release.databaseId} title={release.title} artwork={release.coverArt} invitedName={invitedName} close={() => setCollabOpen(false)} />}
 
-      {(showLyricsSection || lyrics.status !== "missing" || release.cardArt || meaning || release.videoEmbedUrl || !release.videoEmbedUrl) && (
-        <div className="mt-4 min-h-[9rem] rounded-2xl border border-white/10 bg-black/25 p-4 sm:p-6">
+      <div role="tabpanel" className="mt-4 min-h-[9rem] rounded-2xl border border-white/10 bg-black/25 p-4 sm:p-6">
           {detailTab === "lyrics" && (showLyricsSection || lyrics.status !== "missing") && (
             <section aria-label="Lyrics" className="min-w-0">
               <button
@@ -375,6 +377,7 @@ export default function ArtistReleaseDetail({
               </div>
             </section>
           )}
+          {detailTab === "lyrics" && !showLyricsSection && lyrics.status === "missing" && <p className="py-8 text-center text-sm font-bold uppercase tracking-[0.14em] text-white/55">Lyrics coming soon</p>}
 
           {detailTab === "lyrics" && meaning && (
             <section aria-label="Song meaning" className="min-w-0">
@@ -407,8 +410,7 @@ export default function ArtistReleaseDetail({
           {detailTab === "video" && (release.videoEmbedUrl ? (
             <section aria-label="Music video"><SectionLabel>Music Video</SectionLabel><div className="mt-3 w-full overflow-hidden rounded-xl border border-white/10 bg-black" style={{ aspectRatio: "16 / 9" }}><iframe src={`${release.videoEmbedUrl}?rel=0`} title={`${release.title} music video`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen loading="lazy" className="h-full w-full" /></div></section>
           ) : <div className="flex min-h-[8rem] flex-col items-center justify-center gap-4 text-center"><p className="text-sm font-bold uppercase tracking-[0.14em] text-white/60">No music video yet</p>{showCollabRequest && release.databaseId ? <button type="button" onClick={() => setCollabOpen(true)} className="rounded-full bg-[#ff3ea5] px-6 py-3 text-xs font-black uppercase tracking-[0.12em] text-black shadow-[0_0_24px_#ff3ea555]">Request to Collaborate</button> : <a href={collabContactHref || `mailto:info@chxndler-music.com?subject=${encodeURIComponent(`Request to Collaborate: ${release.title}`)}`} className="rounded-full bg-[#ff3ea5] px-6 py-3 text-xs font-black uppercase tracking-[0.12em] text-black shadow-[0_0_24px_#ff3ea555]">Request to Collaborate</a>}</div>)}
-        </div>
-      )}
+      </div>
 
 
       <style jsx>{`
