@@ -47,8 +47,8 @@ export default function ArtistReleaseDetail({
   meaningUrlOverride,
   showLyricsSection = false,
   showInstrumentalControl = false,
-  collabContactHref,
   showCollabRequest = false,
+  showStreamingLinks = true,
   invitedName = "",
 }: {
   release: ArtistRelease;
@@ -59,8 +59,8 @@ export default function ArtistReleaseDetail({
   meaningUrlOverride?: string | null;
   showLyricsSection?: boolean;
   showInstrumentalControl?: boolean;
-  collabContactHref?: string;
   showCollabRequest?: boolean;
+  showStreamingLinks?: boolean;
   invitedName?: string;
 }) {
   const { activeId, playing, loading, error, currentTime, duration, toggle, play, seek } = useBrandAudio();
@@ -68,9 +68,11 @@ export default function ArtistReleaseDetail({
   const [lyrics, setLyrics] = useState<LyricsState>({ status: "loading" });
   const [meaning, setMeaning] = useState<string | null>(null);
   const [meaningOpen, setMeaningOpen] = useState(false);
-  const [lyricsOpen, setLyricsOpen] = useState(true);
   const [detailTab, setDetailTab] = useState<"lyrics" | "collectible" | "video">("lyrics");
   const [collabOpen, setCollabOpen] = useState(false);
+  const [collabChoicesOpen, setCollabChoicesOpen] = useState(false);
+  const [contributionType, setContributionType] = useState("");
+  const [collabChoiceNotice, setCollabChoiceNotice] = useState("");
   const [isInstrumental, setIsInstrumental] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   // Latest toggle for the Space shortcut below (its listener is bound once).
@@ -284,59 +286,28 @@ export default function ArtistReleaseDetail({
           </div>
           {!audioSrc && <p className="mt-[0.5rem] text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-white/40">Audio file coming soon</p>}
           {audioSrc && isActive && error && <p className="mt-[0.5rem] text-[0.75rem] text-white/50">{error}</p>}
-          <div className="mt-4 flex flex-wrap gap-2" aria-label="Listen on streaming services">
-            <a href={release.spotifyUrl || CHXNDLER_SPOTIFY_ARTIST_URL} target="_blank" rel="noreferrer" className="streaming-link"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M6.2 9.2c4.3-1.2 8.6-.8 12 1.2M7.2 12.1c3.5-.9 6.8-.5 9.6 1M8.1 14.8c2.5-.6 4.9-.3 7 .7" fill="none" stroke="#09090c" strokeWidth="1.5" strokeLinecap="round"/></svg> Spotify</a>
-            <a href={release.appleMusicUrl || CHXNDLER_APPLE_MUSIC_ARTIST_URL} target="_blank" rel="noreferrer" className="streaming-link"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><path d="M16.8 12.8c0-2.1 1.7-3.1 1.8-3.2a3.9 3.9 0 0 0-3.1-1.7c-1.3-.1-2.5.8-3.2.8s-1.7-.8-2.8-.8a4.1 4.1 0 0 0-3.5 2.1c-1.5 2.6-.4 6.5 1.1 8.7.7 1.1 1.5 2.2 2.6 2.1 1 0 1.4-.7 2.7-.7s1.7.7 2.8.7c1.2 0 1.9-1.1 2.6-2.2.8-1.2 1.1-2.4 1.1-2.5-.1 0-2.1-.8-2.1-3.3ZM14.7 6.5c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.5.6-1 1.6-.9 2.5 1 0 1.9-.4 2.5-1.1Z"/></svg> Apple Music</a>
-          </div>
+          {showStreamingLinks && <div className="mt-4 flex flex-wrap gap-2" aria-label="Listen on streaming services">
+            <a aria-label="Listen on Spotify" title="Spotify" href={release.spotifyUrl || CHXNDLER_SPOTIFY_ARTIST_URL} target="_blank" rel="noreferrer" className="streaming-link"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M6.2 9.2c4.3-1.2 8.6-.8 12 1.2M7.2 12.1c3.5-.9 6.8-.5 9.6 1M8.1 14.8c2.5-.6 4.9-.3 7 .7" fill="none" stroke="#09090c" strokeWidth="1.5" strokeLinecap="round"/></svg><span className="sr-only">Spotify</span></a>
+            <a aria-label="Listen on Apple Music" title="Apple Music" href={release.appleMusicUrl || CHXNDLER_APPLE_MUSIC_ARTIST_URL} target="_blank" rel="noreferrer" className="streaming-link"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><path d="M16.8 12.8c0-2.1 1.7-3.1 1.8-3.2a3.9 3.9 0 0 0-3.1-1.7c-1.3-.1-2.5.8-3.2.8s-1.7-.8-2.8-.8a4.1 4.1 0 0 0-3.5 2.1c-1.5 2.6-.4 6.5 1.1 8.7.7 1.1 1.5 2.2 2.6 2.1 1 0 1.4-.7 2.7-.7s1.7.7 2.8.7c1.2 0 1.9-1.1 2.6-2.2.8-1.2 1.1-2.4 1.1-2.5-.1 0-2.1-.8-2.1-3.3ZM14.7 6.5c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.5.6-1 1.6-.9 2.5 1 0 1.9-.4 2.5-1.1Z"/></svg><span className="sr-only">Apple Music</span></a>
+          </div>}
           <nav role="tablist" aria-label="Song details" className="mt-5 grid grid-cols-3 gap-2 rounded-full border border-white/10 bg-black/35 p-1">
             {([ ["lyrics", "Lyrics"], ["collectible", "Collectible"], ["video", "Music Video"] ] as const).map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={detailTab === key} onClick={() => setDetailTab(key)} onMouseEnter={playHover} className="rounded-full px-2 py-3 text-[0.62rem] font-black uppercase tracking-[0.12em] transition-all sm:text-xs" style={detailTab === key ? { color: PINK, background: "rgba(255,62,165,.14)", boxShadow: `inset 0 0 0 1px ${PINK}88, 0 0 18px ${PINK}33`, textShadow: `0 0 10px ${PINK}88` } : { color: "rgba(255,255,255,.62)" }}>{label}</button>)}
           </nav>
         </div>
       </div>
 
-      {collabOpen && release.databaseId && <CollabRequestForm songId={release.databaseId} title={release.title} artwork={release.coverArt} invitedName={invitedName} close={() => setCollabOpen(false)} />}
+      {collabChoicesOpen && <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/80 p-3 backdrop-blur-sm sm:items-center sm:p-5" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setCollabChoicesOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="collab-options-title" className="w-full max-w-2xl rounded-t-3xl border border-white/10 bg-[#101014] p-5 text-white shadow-2xl sm:rounded-2xl sm:p-7"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[.2em] text-[#ff3ea5]">{release.title}</p><h2 id="collab-options-title" className="mt-2 text-2xl font-black">How would you like to collaborate?</h2><p className="mt-2 text-sm text-white/65">Choose the lane that best fits your idea. Nothing is sent until you review and submit the request form.</p></div><button type="button" onClick={() => setCollabChoicesOpen(false)} aria-label="Close collaboration choices" className="rounded-full px-3 py-2 text-white/60 hover:text-white">✕</button></div><div className="mt-5 grid gap-2 sm:grid-cols-2">{[["Vocals / Feature", "Bring a voice, feature, or performance to the track."], ["Production / Remix", "Shape the production, arrangement, or a remix."], ["Songwriting", "Contribute lyrics, melody, or songwriting."], ["Other", "Pitch a different creative direction."]].map(([label, description]) => <button key={label} type="button" onClick={() => { setContributionType(label); setCollabChoiceNotice(""); }} aria-pressed={contributionType === label} className={`rounded-xl border p-4 text-left transition ${contributionType === label ? "border-[#ff3ea5] bg-[#ff3ea5]/10" : "border-white/10 bg-white/[.03] hover:border-white/25"}`}><span className="block font-bold text-white">{label}</span><span className="mt-1 block text-xs leading-5 text-white/60">{description}</span></button>)}</div>{collabChoiceNotice && <p role="status" className="mt-4 rounded-lg border border-[#38B6FF]/25 bg-[#38B6FF]/[.08] p-3 text-sm text-white/80">{collabChoiceNotice}</p>}<div className="mt-5 flex flex-wrap justify-end gap-3"><button type="button" onClick={() => setCollabChoicesOpen(false)} className="rounded-full border border-white/15 px-5 py-3 text-sm font-bold text-white/75">Cancel</button><button type="button" disabled={!contributionType} onClick={() => { if (!release.databaseId) { setCollabChoiceNotice("This opportunity is not connected to a song request workspace yet. Your choice has not been sent."); return; } setCollabChoicesOpen(false); setCollabOpen(true); }} className="rounded-full bg-[#ff3ea5] px-5 py-3 text-sm font-extrabold text-black disabled:cursor-not-allowed disabled:opacity-40">Continue →</button></div></section></div>}
+      {collabOpen && release.databaseId && <CollabRequestForm songId={release.databaseId} title={release.title} artwork={release.coverArt} invitedName={invitedName} initialContributionType={contributionType} close={() => setCollabOpen(false)} />}
 
       <div role="tabpanel" className="mt-4 min-h-[9rem] rounded-2xl border border-white/10 bg-black/25 p-4 sm:p-6">
           {detailTab === "lyrics" && (showLyricsSection || lyrics.status !== "missing") && (
             <section aria-label="Lyrics" className="min-w-0">
-              <button
-                type="button"
-                onClick={() => {
-                  playClick();
-                  setLyricsOpen((v) => !v);
-                }}
-                onMouseEnter={playHover}
-                aria-expanded={lyricsOpen}
-                aria-controls={`lyrics-${release.slug}`}
-                className="group inline-flex items-center gap-[0.5rem] rounded-full py-[0.125rem] text-white/50 transition-colors duration-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
-                style={{ outlineColor: PINK }}
-              >
+              <div className="inline-flex items-center rounded-full py-[0.125rem]">
                 <span className="text-[0.6875rem] font-bold tracking-[0.3em] uppercase" style={{ color: PINK, textShadow: `0 0 10px ${PINK}99` }}>Lyrics</span>
-                <svg
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                  className="w-[0.875rem] h-[0.875rem] transition-transform duration-200 ease-out"
-                  style={{ transform: lyricsOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-                <span className="text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-white/30 group-hover:text-white/60">
-                  {lyricsOpen ? "Hide" : "Show"}
-                </span>
-              </button>
-              {/* 0fr <-> 1fr row trick: animates to the content's real height. */}
+              </div>
               <div
                 id={`lyrics-${release.slug}`}
-                className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
-                style={{ gridTemplateRows: lyricsOpen ? "1fr" : "0fr" }}
-                // React 18 renders inert={false} as inert="false" (still inert),
-                // so the attribute is only added while collapsed.
-                {...(lyricsOpen ? {} : ({ inert: "" } as Record<string, string>))}
+                className="mt-2"
               >
                 <div className="min-h-0 overflow-hidden">
                   {/* No box — just a soft dark wash fading out to the right so
@@ -409,7 +380,7 @@ export default function ArtistReleaseDetail({
           {detailTab === "collectible" && !release.cardArt && <p className="py-8 text-center text-sm font-bold uppercase tracking-[0.16em] text-white/55">Collectible coming soon</p>}
           {detailTab === "video" && (release.videoEmbedUrl ? (
             <section aria-label="Music video"><SectionLabel>Music Video</SectionLabel><div className="mt-3 w-full overflow-hidden rounded-xl border border-white/10 bg-black" style={{ aspectRatio: "16 / 9" }}><iframe src={`${release.videoEmbedUrl}?rel=0`} title={`${release.title} music video`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen loading="lazy" className="h-full w-full" /></div></section>
-          ) : <div className="flex min-h-[8rem] flex-col items-center justify-center gap-4 text-center"><p className="text-sm font-bold uppercase tracking-[0.14em] text-white/60">No music video yet</p>{showCollabRequest && release.databaseId ? <button type="button" onClick={() => setCollabOpen(true)} className="rounded-full bg-[#ff3ea5] px-6 py-3 text-xs font-black uppercase tracking-[0.12em] text-black shadow-[0_0_24px_#ff3ea555]">Request to Collaborate</button> : <a href={collabContactHref || `mailto:info@chxndler-music.com?subject=${encodeURIComponent(`Request to Collaborate: ${release.title}`)}`} className="rounded-full bg-[#ff3ea5] px-6 py-3 text-xs font-black uppercase tracking-[0.12em] text-black shadow-[0_0_24px_#ff3ea555]">Request to Collaborate</a>}</div>)}
+          ) : <div className="flex min-h-[8rem] flex-col items-center justify-center gap-4 text-center"><p className="text-sm font-bold uppercase tracking-[0.14em] text-white/60">No music video yet</p>{showCollabRequest && <button type="button" onClick={() => { setCollabChoiceNotice(""); setCollabChoicesOpen(true); }} className="rounded-full bg-[#ff3ea5] px-6 py-3 text-xs font-black uppercase tracking-[0.12em] text-black shadow-[0_0_24px_#ff3ea555]">Request to Collaborate</button>}</div>)}
       </div>
 
 

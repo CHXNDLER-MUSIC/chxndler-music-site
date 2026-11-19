@@ -44,21 +44,23 @@ async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleas
       supabase.from("songs").select("id, slug, title, is_released, collaboration_enabled, release_date, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url"),
       supabase.from("cards").select("card_name"),
     ]);
-    // Optional catalog fields may not exist yet in an older local schema.
+    // Keep the collaborator catalog available if optional metadata columns
+    // have not been deployed to this environment yet. Access is still
+    // restricted below using the validated invite session.
     let songRows: Array<Record<string, any>> | null = initialSongsRes.data as Array<Record<string, any>> | null;
-    if (initialSongsRes.error?.message.includes("release_date")) {
-      const fallback = await supabase.from("songs").select("id, slug, title, is_released, collaboration_enabled, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url");
-      songRows = fallback.data?.map((row) => ({ ...row, release_date: null })) || null;
-      if (fallback.error?.message.includes("collaboration_enabled")) {
-        const olderFallback = await supabase.from("songs").select("id, slug, title, is_released, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url");
-        songRows = olderFallback.data?.map((row) => ({ ...row, collaboration_enabled: false, release_date: null })) || null;
+    if (initialSongsRes.error) {
+      const optionalFallback = await supabase.from("songs").select("id, slug, title, is_released, collaboration_enabled, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url");
+      if (!optionalFallback.error) {
+        songRows = (optionalFallback.data || []).map((row) => ({ ...row, release_date: null }));
+      } else {
+        const coreFallback = await supabase.from("songs").select("id, slug, title, is_released");
+        if (!coreFallback.error) {
+          songRows = (coreFallback.data || []).map((row) => ({ ...row, collaboration_enabled: false, release_date: null, spotify_url: null, apple_music_url: null, youtube_music_video_url: null, sky_video_url: null }));
+        } else {
+          songRows = null;
+          console.error("[collab] Could not load song catalog:", initialSongsRes.error, optionalFallback.error, coreFallback.error);
+        }
       }
-    } else if (initialSongsRes.error?.message.includes("collaboration_enabled")) {
-      const fallback = await supabase.from("songs").select("id, slug, title, is_released, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url");
-      songRows = fallback.data?.map((row) => ({ ...row, collaboration_enabled: false, release_date: null })) || null;
-      if (fallback.error) console.error("[collab] Could not load song catalog:", fallback.error);
-    } else if (initialSongsRes.error) {
-      console.error("[collab] Could not load song catalog:", initialSongsRes.error);
     }
     if (!songRows) return { released: [], unreleased: [] };
 
@@ -227,7 +229,7 @@ export default async function CollabPage() {
   const invitedSong = inviteSession.song_id
     ? [...catalog.released, ...catalog.unreleased].find((song) => song.databaseId === inviteSession.song_id)
     : null;
-  const released = catalog.released.map((song) => ({
+  const released = catalog.released.filter((song) => !inviteSession.song_id || song.databaseId !== inviteSession.song_id).map((song) => ({
     ...song,
     collaborationEnabled: inviteSession.song_id ? song.databaseId === inviteSession.song_id && song.collaborationEnabled : song.collaborationEnabled,
   }));
@@ -236,7 +238,10 @@ export default async function CollabPage() {
   // authorized account can review the full unreleased catalog; generic
   // invite sessions remain limited to tracks explicitly opened for outreach.
   const unreleased = inviteSession.song_id
-    ? catalog.unreleased.filter((song) => song.databaseId === inviteSession.song_id)
+    // A song-specific invitation is the authority for that collaborator's
+    // access. Keep its track visible in the invitation view even if its
+    // release flag changed after the invite was created.
+    ? invitedSong ? [invitedSong] : []
     : inviteSession.source === "authorized_person"
       ? catalog.unreleased
       : catalog.unreleased.filter((song) => song.collaborationEnabled);

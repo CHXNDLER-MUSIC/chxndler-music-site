@@ -286,10 +286,8 @@ function CollabGalleryContent({
             showLyricsSection={selected.from === "collabs"}
             showInstrumentalControl={selected.from === "collabs"}
             meaningUrlOverride={selected.from === "collabs" ? selected.meaningUrl : null}
-            showCollabRequest={selected.from === "collabs" || (selected.release.collaborationEnabled === true && !!selected.release.databaseId)}
-            collabContactHref={selected.from === "collabs" && !(selected.release.collaborationEnabled === true && selected.release.databaseId)
-              ? `mailto:info@chxndler-music.com?subject=${encodeURIComponent(`Collaboration request: ${selected.release.title}`)}&body=${encodeURIComponent(`Hi CHXNDLER,\n\nI’m interested in collaborating on ${selected.release.title}.\n\nHere’s what I have in mind:\n`)}`
-              : undefined}
+            showCollabRequest={selected.from === "collabs" || selected.release.collaborationEnabled === true}
+            showStreamingLinks={selected.from === "released"}
             invitedName={invitedDisplayName}
           />
         </MediaViewerModal>
