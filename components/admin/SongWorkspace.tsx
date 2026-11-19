@@ -192,7 +192,7 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
   const needsAttention = contentSummary ? Math.max(0, contentSummary.total - contentSummary.posted) : 0;
   const contentPercent = contentSummary?.total ? Math.round(contentSummary.posted / contentSummary.total * 100) : 0;
 
-  return <main className={`admin-dashboard relative isolate ${embedded ? "min-h-full" : "min-h-screen"} bg-[#0b0b0f] p-4 text-white sm:p-6`}>
+  return <main style={{ background: "#0b0b0f" }} className={`admin-dashboard relative isolate ${embedded ? "min-h-full" : "min-h-screen"} !bg-[#0b0b0f] p-4 text-white sm:p-6`}>
     <div className="relative z-10 mx-auto max-w-6xl">
       {embedded && onBack ? <button type="button" onClick={onBack} className="mb-4 inline-flex min-h-10 items-center rounded-lg border border-white/10 px-3.5 text-sm font-semibold text-white/65 transition hover:border-[#EF43A3]/40 hover:text-white">← Back to Songs</button> : !embedded && <Link href="/admin?view=songs" className="mb-4 inline-flex min-h-10 items-center rounded-lg border border-white/10 px-3.5 text-sm font-semibold text-white/65 transition hover:border-[#EF43A3]/40 hover:text-white">← Back to Songs</Link>}
 

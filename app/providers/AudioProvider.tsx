@@ -143,6 +143,8 @@ export const TRACKS = {
   BABY: { mp3: S("baby.mp3"), opus: S("baby.opus") },
   BE_MY_BEE: { mp3: S("be-my-bee.mp3"), opus: S("be-my-bee.opus") },
   BRAIN_FREEZE: { mp3: S("brain-freeze.mp3"), opus: S("brain-freeze.opus") },
+  // Uploaded filename matches the display title exactly.
+  HAPPY_MEAL_ACOUSTIC: { mp3: S("HAPPY MEAL (ACOUSTIC).mp3") },
   // Uploaded filename matches display title exactly — no Opus source
   FEELING_THIS: { mp3: S("FEELING THIS.mp3") },
   // Actual uploaded filename is uppercase — no lowercase/Opus source exists
@@ -163,6 +165,7 @@ export const TRACKS = {
   PARIS: { mp3: S("paris.mp3"), opus: S("paris.opus") },
   // Uploaded filename is uppercase in storage.
   PLAYDOUGH: { mp3: S("PLAYDOUGH.mp3") },
+  TIDE_IN: { mp3: S("TIDE IN.mp3") },
   POKEMON: { mp3: S("pokemon.mp3"), opus: S("pokemon.opus") },
   WJF: { mp3: S("we're-just-friends.mp3"), opus: S("we're-just-friends.opus") },
   WJF_DMVRCO: { mp3: S("we're-just-friends-dmvrco-remix.mp3"), opus: S("we're-just-friends-dmvrco-remix.opus") },

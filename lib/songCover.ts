@@ -15,6 +15,14 @@ const COVER_OVERRIDES: Record<string, string> = {
   "were-just-friends": "/covers/WE'RE JUST FRIENDS.webp",
   "were-just-friends-dmvrco-remix": "/covers/WE'RE JUST FRIENDS (DMVRCO Remix).webp",
   "were-just-friends-mickey-jas-remix": "/covers/WE'RE JUST FRIENDS (Mickey Jas Remix).webp",
+  // Artwork for these tracks has not been uploaded yet. Keep a valid CHXNDLER
+  // card visible until their individual covers are added, instead of showing
+  // a broken image in the song list and practice workspace.
+  "bad-idea": "/covers/CHXNDLER.webp",
+  copycat: "/covers/CHXNDLER.webp",
+  "like-this": "/covers/CHXNDLER.webp",
+  "my-mom-thinks-im-famous": "/covers/CHXNDLER.webp",
+  "three-cheers-for-five-years": "/covers/CHXNDLER.webp",
 };
 
 /** A song's cover art path: overrides, then the static song data, then

@@ -231,7 +231,7 @@ export default function SongTracker() {
     setSongFilterText("");
   }
 
-  function filterByPostRelease(key: keyof NonNullable<SongRow["postRelease"]> | "all") {
+  function filterByPostRelease(key: keyof NonNullable<SongRow["postRelease"]> | `missing:${keyof NonNullable<SongRow["postRelease"]>}` | "all") {
     setStatusFilter("all");
     setColumnFilter(key === "all" ? null : { key: "postRelease", value: key });
     setSongFilterText("");
@@ -245,7 +245,7 @@ export default function SongTracker() {
 
   return <section className="song-portfolio">
     <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
-      <div><h1 className="text-2xl font-black tracking-tight sm:text-3xl">Songs</h1><p className="mt-1 text-sm text-white/45">Your music universe · {loading ? "—" : songs.length} songs</p></div>
+      <div><h1 className="text-2xl font-black tracking-tight sm:text-3xl">Songs</h1></div>
       <button type="button" onClick={() => setAdding(value => !value)} className="rounded-xl bg-[#FD52AF] px-4 py-3 text-sm font-extrabold text-[#170d14] shadow-[0_8px_28px_rgba(253,82,175,.16)] transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">{adding ? "Cancel" : "+ Add Song"}</button>
     </header>
 
@@ -267,9 +267,9 @@ export default function SongTracker() {
 
     <section aria-label="Songs by post release activity" className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
       {postReleaseKpis.map(item => {
-        const active = columnFilter?.key === "postRelease" && columnFilter.value === item.key;
+        const active = columnFilter?.key === "postRelease" && columnFilter.value === `missing:${item.key}`;
         const total = songs.filter(song => song.postRelease?.[item.key] === true).length;
-        return <button key={item.key} type="button" aria-pressed={active} onClick={() => filterByPostRelease(active ? "all" : item.key)} className={`group relative min-w-0 overflow-hidden rounded-xl border px-3 py-3 text-left transition hover:-translate-y-px hover:bg-white/[.045] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${active ? "border-white/20 bg-white/[.055]" : "border-white/[.08] bg-[#101014]"}`}>
+        return <button key={item.key} type="button" aria-pressed={active} onClick={() => filterByPostRelease(active ? "all" : `missing:${item.key}`)} className={`group relative min-w-0 overflow-hidden rounded-xl border px-3 py-3 text-left transition hover:-translate-y-px hover:bg-white/[.045] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${active ? "border-white/20 bg-white/[.055]" : "border-white/[.08] bg-[#101014]"}`}>
           <span className="absolute inset-x-0 top-0 h-0.5 opacity-80" style={{ backgroundColor: item.color }}/>
           <span className="flex flex-col items-start gap-1.5"><OpportunityIcon kind={item.kind} className="h-6 w-6" color={item.color}/><span className="truncate text-[.68rem] font-semibold" style={{ color: item.color }}>{item.label}</span></span>
           <span className="mt-1 block text-xl font-black tabular-nums" style={{ color: item.color }}>{loading ? "—" : total}</span>
