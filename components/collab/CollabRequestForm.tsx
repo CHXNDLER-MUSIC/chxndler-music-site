@@ -131,11 +131,12 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
         <p className="mt-3 max-w-md text-sm leading-6 text-white/60">Thanks for reaching out! I&apos;ll review your idea and get back to you soon.</p>
         <button type="button" onClick={close} className="mt-8 min-h-12 rounded-full bg-[#FD52AF] px-7 text-sm font-extrabold text-[#170d14] transition hover:shadow-[0_0_24px_rgba(253,82,175,.28)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Back to Music</button>
       </div> : <>
-        <header className="mb-6 pr-10 sm:mb-7 sm:pr-12">
+        <header className="mb-4 pr-10 text-center sm:mb-5 sm:pr-12">
+          <img src="/elements/logo.webp" alt="CHXNDLER" className="mx-auto mb-4 h-16 w-56 object-contain" />
           <h2 id="collab-form-title" className="text-2xl font-black leading-tight tracking-tight sm:text-3xl">COLLABORATE ON {title}</h2>
         </header>
 
-        <form onSubmit={submit} className="space-y-5">
+        <form onSubmit={submit} className="space-y-4">
           <input name="website" tabIndex={-1} autoComplete="off" className="absolute -left-[10000px] h-px w-px opacity-0" aria-hidden="true" />
           <div className="grid gap-5 sm:grid-cols-2">
             <label htmlFor="collab-email" className="block text-xs font-semibold text-white/75">Email address <span className="text-[#FD52AF]">*</span>
@@ -171,17 +172,10 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
 
           <section aria-labelledby="collab-note-heading" className="space-y-2 py-1">
             <h3 id="collab-note-heading" className="text-sm font-semibold text-[#FD52AF]">A little note before we create</h3>
-            <p className="max-w-2xl text-xs leading-5 text-white/55">Please keep unreleased music between us. If we decide to collaborate, we&apos;ll work out credits, splits, and compensation together before getting started.</p>
-            <details className="pt-0.5">
-              <summary className="w-fit cursor-pointer list-none text-xs text-white/40 underline decoration-white/20 underline-offset-4 transition hover:text-[#FD52AF] hover:decoration-[#FD52AF]/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FD52AF]">View collaboration guidelines</summary>
-              <div className="mt-3 space-y-3 pl-3 text-xs leading-5 text-white/55">
-                <p className="text-[.65rem] font-semibold uppercase tracking-[.12em] text-white/35">Approved guidelines · {termsVersion}</p>
-                <p><span className="font-semibold text-white/70">Ownership.</span> {termsText.ownership}</p>
-                <p><span className="font-semibold text-white/70">Royalties.</span> {termsText.royalties}</p>
-                <p><span className="font-semibold text-white/70">Credits.</span> {termsText.credits}</p>
-                <p><span className="font-semibold text-white/70">Release rights.</span> {termsText.release_rights}</p>
-              </div>
-            </details>
+            <ul className="max-w-2xl space-y-1 text-sm leading-6 text-white/65">
+              <li className="flex gap-2"><span aria-hidden="true" className="text-[#FD52AF]">★</span><span>Please keep unreleased music <strong className="font-bold text-white/85">between us</strong>.</span></li>
+              <li className="flex gap-2"><span aria-hidden="true" className="text-[#FD52AF]">★</span><span>If we decide to collaborate, we&apos;ll work out <strong className="font-bold text-white/85">credits, splits, and compensation</strong> together before getting started.</span></li>
+            </ul>
           </section>
 
           {error && <p role="alert" className="rounded-xl border border-rose-300/20 bg-rose-300/[.06] px-4 py-3 text-sm leading-5 text-rose-100">{error}</p>}
