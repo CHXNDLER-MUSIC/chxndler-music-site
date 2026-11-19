@@ -28,6 +28,7 @@ export default function ContentDetailPanel({ item, songs, onClose, onSaved, init
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
   const [songQuery, setSongQuery] = useState("");
+  const [workflow, setWorkflow] = useState("Idea");
   const selectedSong = useMemo(() => songs.find(song => song.id === draft.song_id) || null, [songs, draft.song_id]);
 
   useEffect(() => {
@@ -41,6 +42,7 @@ export default function ContentDetailPanel({ item, songs, onClose, onSaved, init
       published: item.published, legacy_posted_raw: item.legacy_posted_raw, is_placeholder_date: item.is_placeholder_date,
       recorded_at: item.recorded_at || null, edited_at: item.edited_at || null, published_at: item.published_at || null, platform: item.platform || "",
     } : { ...blank, song_id: initialSongId || null, song_name: songs.find(song => song.id === initialSongId)?.title || "" });
+    setWorkflow(item?.workflow_status === "Scheduled" ? "Scheduled" : item?.workflow_status === "Ready" ? "Ready" : item?.workflow_status || "Idea");
     setError("");
   }, [item, initialSongId, songs]);
 
@@ -52,7 +54,8 @@ export default function ContentDetailPanel({ item, songs, onClose, onSaved, init
   };
   async function save(event: React.FormEvent) {
     event.preventDefault(); setSaving(true); setError("");
-    const response = await fetch("/api/admin/content-items", { method: item ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(item ? { id: item.id, ...draft } : draft) });
+    const stage = workflow === "Idea" || workflow === "To Record" ? { recorded: false, edited: false, post_ready: false, published: false } : workflow === "To Edit" ? { recorded: true, edited: false, post_ready: false, published: false } : workflow === "Ready" ? { recorded: true, edited: true, post_ready: true, published: false } : workflow === "Scheduled" ? { recorded: true, edited: true, post_ready: true, published: false, is_placeholder_date: false } : { recorded: true, edited: true, post_ready: true, published: true };
+    const response = await fetch("/api/admin/content-items", { method: item ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(item ? { id: item.id, ...draft, ...stage } : { ...draft, ...stage }) });
     const body = await response.json(); setSaving(false);
     if (!response.ok) { setError(body.error || "Unable to save this content item."); return; }
     onSaved(body.item);
@@ -72,29 +75,30 @@ export default function ContentDetailPanel({ item, songs, onClose, onSaved, init
         {error && <p role="alert" className="rounded-lg border border-red-300/20 bg-red-300/[.06] p-3 text-sm text-red-200">{error}</p>}
         <section className="rounded-xl border border-white/[.08] bg-white/[.02] p-3 sm:p-4"><h3 className="text-xs font-bold uppercase tracking-[.14em] text-violet-200">Content details</h3><div className="mt-3 grid gap-3 sm:grid-cols-2">
           <label className="text-[.7rem] text-white/55 sm:col-span-2">Content title<input required value={draft.title} onChange={event => set("title", event.target.value)} className={input} maxLength={500}/></label>
-          <label className="text-[.7rem] text-white/55">Song in source data<input value={nullable(draft.song_name)} onChange={event => set("song_name", event.target.value)} className={input} placeholder="Song name as imported"/><span className="mt-1 block text-[.62rem] text-white/35">Canonical link: {selectedSong?.title || (item?.song_link_status === "ambiguous" ? "ambiguous match" : item?.song_link_status === "unmatched" ? "no exact catalog match" : "not linked")}</span></label>
-          <label className="text-[.7rem] text-white/55">Canonical song<select value={draft.song_id || ""} onChange={event => set("song_id", event.target.value || null)} onFocus={() => setSongQuery("")} className={input}><option value="">No canonical song link</option>{filteredSongs.map(song => <option key={song.id} value={song.id}>{song.title}</option>)}</select></label>
+          <label className="text-[.7rem] text-white/55">Song<select value={draft.song_id || ""} onChange={event => { const selected = songs.find(song => song.id === event.target.value); setDraft(current => ({ ...current, song_id: selected?.id || null, song_name: selected?.title || current.song_name || "" })); }} onFocus={() => setSongQuery("")} className={input}><option value="">No song association</option>{filteredSongs.map(song => <option key={song.id} value={song.id}>{song.title}</option>)}</select><span className="mt-1 block text-[.62rem] text-white/35">{item?.song_link_status === "ambiguous" ? "Legacy song name is ambiguous" : item?.song_link_status === "unmatched" ? "Legacy song name has no exact match" : selectedSong ? `Linked to ${selectedSong.title}` : "Unlinked content stays in the library."}</span></label>
           <label className="text-[.7rem] text-white/55">Find a catalog song<input value={songQuery} onChange={event => setSongQuery(event.target.value)} className={input} placeholder="Type to narrow song options"/></label>
-          <label className="text-[.7rem] text-white/55">Category<input value={nullable(draft.category)} onChange={event => set("category", event.target.value)} className={input}/></label>
-          <label className="text-[.7rem] text-white/55">Sub-category<input value={nullable(draft.sub_category)} onChange={event => set("sub_category", event.target.value)} className={input}/></label>
           <label className="text-[.7rem] text-white/55">Type<input value={nullable(draft.media_type)} onChange={event => set("media_type", event.target.value)} className={input}/></label>
-          <label className="text-[.7rem] text-white/55">Platform (optional)<input value={nullable(draft.platform)} onChange={event => set("platform", event.target.value)} className={input} placeholder="Platform"/></label>
           <label className="text-[.7rem] text-white/55">Purpose<input value={nullable(draft.purpose)} onChange={event => set("purpose", event.target.value)} className={input}/></label>
+          <label className="text-[.7rem] text-white/55">Status<select value={workflow} onChange={event => setWorkflow(event.target.value)} className={input}>{["Idea","To Record","To Edit","Ready","Scheduled","Posted"].map(value=><option key={value} value={value}>{value === "Ready" ? "Ready to Post" : value}</option>)}</select></label>
+          <label className="text-[.7rem] text-white/55">Target date<input type="date" value={draft.planned_date || ""} onChange={event => { set("planned_date", event.target.value || null); if (event.target.value) setDraft(current => ({...current,is_placeholder_date:false})); }} className={input}/></label>
         </div></section>
 
-        <section className="rounded-xl border border-white/[.08] bg-white/[.02] p-3 sm:p-4"><h3 className="text-xs font-bold uppercase tracking-[.14em] text-violet-200">Production</h3><div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <details open={!!item} className="rounded-xl border border-white/[.08] bg-white/[.02] p-3 sm:p-4"><summary className="cursor-pointer text-xs font-bold uppercase tracking-[.14em] text-violet-200">Production details</summary><div className="mt-3 grid gap-3 sm:grid-cols-2">
           <label className="flex items-center gap-2 rounded-lg border border-white/[.06] p-2.5 text-sm text-white/75"><input type="checkbox" checked={draft.recorded === true} onChange={event => set("recorded", event.target.checked)} className="accent-[#FD52AF]"/>Record complete</label>
           <label className="flex items-center gap-2 rounded-lg border border-white/[.06] p-2.5 text-sm text-white/75"><input type="checkbox" checked={draft.edited === true} onChange={event => set("edited", event.target.checked)} className="accent-[#FD52AF]"/>Edit complete</label>
           <label className="flex items-center gap-2 rounded-lg border border-white/[.06] p-2.5 text-sm text-white/75"><input type="checkbox" checked={draft.post_ready === true} onChange={event => set("post_ready", event.target.checked)} className="accent-[#FD52AF]"/>Post / scheduled</label>
+          <label className="text-[.7rem] text-white/55">Category<input value={nullable(draft.category)} onChange={event => set("category", event.target.value)} className={input}/></label>
+          <label className="text-[.7rem] text-white/55">Sub-category<input value={nullable(draft.sub_category)} onChange={event => set("sub_category", event.target.value)} className={input}/></label>
+          <label className="text-[.7rem] text-white/55">Platform<input value={nullable(draft.platform)} onChange={event => set("platform", event.target.value)} className={input}/></label>
           <label className="text-[.7rem] text-white/55">Recorded date<input type="datetime-local" value={draft.recorded_at ? draft.recorded_at.slice(0, 16) : ""} onChange={event => set("recorded_at", event.target.value ? new Date(event.target.value).toISOString() : null)} className={input}/></label>
           <label className="text-[.7rem] text-white/55">Edited date<input type="datetime-local" value={draft.edited_at ? draft.edited_at.slice(0, 16) : ""} onChange={event => set("edited_at", event.target.value ? new Date(event.target.value).toISOString() : null)} className={input}/></label>
           <label className="text-[.7rem] text-white/55 sm:col-span-2">Script<textarea rows={3} value={nullable(draft.script)} onChange={event => set("script", event.target.value)} className={input}/></label>
           <label className="text-[.7rem] text-white/55 sm:col-span-2">Media attachment or link<input type="url" value={nullable(draft.media_url)} onChange={event => set("media_url", event.target.value)} className={input} placeholder="https://…"/>
             {draft.media_url && <div className="mt-2 overflow-hidden rounded-lg border border-white/10 bg-black/25">{isImage ? <img src={draft.media_url} alt="Content media preview" className="max-h-64 w-full object-contain"/> : isVideo ? <video src={draft.media_url} controls preload="metadata" className="max-h-64 w-full"/> : <a href={draft.media_url} target="_blank" rel="noreferrer" className="block break-all p-3 text-xs text-violet-200 underline">Open media ↗</a>}</div>}
           </label>
-        </div></section>
+        </div></details>
 
-        <section className="rounded-xl border border-white/[.08] bg-white/[.02] p-3 sm:p-4"><h3 className="text-xs font-bold uppercase tracking-[.14em] text-violet-200">Publishing</h3><div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <details open={!!item} className="rounded-xl border border-white/[.08] bg-white/[.02] p-3 sm:p-4"><summary className="cursor-pointer text-xs font-bold uppercase tracking-[.14em] text-violet-200">Publishing details</summary><div className="mt-3 grid gap-3 sm:grid-cols-2">
           <label className="flex items-center gap-2 rounded-lg border border-white/[.06] p-2.5 text-sm text-white/75"><input type="checkbox" checked={draft.published === true} onChange={event => set("published", event.target.checked)} className="accent-[#FD52AF]"/>Posted</label>
           <label className="text-[.7rem] text-white/55">Posted date<input type="datetime-local" value={draft.published_at ? draft.published_at.slice(0, 16) : ""} onChange={event => set("published_at", event.target.value ? new Date(event.target.value).toISOString() : null)} className={input}/></label>
           <label className="flex items-center gap-2 rounded-lg border border-white/[.06] p-2.5 text-sm text-white/75"><input type="checkbox" checked={draft.is_placeholder_date} onChange={event => setDraft(current => ({ ...current, is_placeholder_date: event.target.checked }))} className="accent-amber-300"/>Date is a placeholder</label>
@@ -103,9 +107,10 @@ export default function ContentDetailPanel({ item, songs, onClose, onSaved, init
           <label className="text-[.7rem] text-white/55 sm:col-span-2">URL<input type="url" value={nullable(draft.source_url)} onChange={event => set("source_url", event.target.value)} className={input} placeholder="Published post or source URL"/></label>
           <label className="text-[.7rem] text-white/55 sm:col-span-2"><span className="flex items-center">Caption<span className="ml-auto">{copyButton("Caption", draft.caption)}</span></span><textarea rows={3} value={nullable(draft.caption)} onChange={event => set("caption", event.target.value)} className={input}/></label>
           <label className="text-[.7rem] text-white/55 sm:col-span-2"><span className="flex items-center">Hashtags<span className="ml-auto">{copyButton("Hashtags", draft.hashtags)}</span></span><textarea rows={2} value={nullable(draft.hashtags)} onChange={event => set("hashtags", event.target.value)} className={input}/></label>
-        </div></section>
+        </div></details>
 
         <details className="rounded-xl border border-white/[.08] bg-white/[.02] p-3 sm:p-4"><summary className="cursor-pointer text-xs font-bold uppercase tracking-[.14em] text-white/55">Other imported fields</summary><div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label className="text-[.7rem] text-white/55">Song name (imported)<input value={nullable(draft.song_name)} onChange={event => set("song_name", event.target.value)} className={input} placeholder="Legacy song name"/></label>
           <label className="text-[.7rem] text-white/55">Text on screen<textarea rows={2} value={nullable(draft.text_on_screen)} onChange={event => set("text_on_screen", event.target.value)} className={input}/></label>
           <label className="flex items-center gap-2 text-sm text-white/55"><input type="checkbox" checked={draft.hidden === true} onChange={event => set("hidden", event.target.checked)} className="accent-[#FD52AF]"/>Hidden</label>
           <p className="text-[.68rem] text-white/40 sm:col-span-2">Source row {item?.source_row ?? "new"} · Original posted value {item?.legacy_posted_raw || "—"} · Legacy date/time {item?.legacy_date_time || "—"} · Editor {item?.editor || "—"} · Minutes {item?.legacy_minutes || "—"} · X5 {item?.legacy_x5 == null ? "—" : String(item.legacy_x5)}</p>

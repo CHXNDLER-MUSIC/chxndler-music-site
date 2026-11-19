@@ -33,8 +33,8 @@ export async function POST(request: Request) {
   if (!songId) return NextResponse.json({ error: "Select a song." }, { status: 400 });
   const { data, error } = await db.from("music_video_projects").upsert({ song_id: songId, project_type: "primary" }, { onConflict: "song_id,project_type", ignoreDuplicates: true }).select("id").maybeSingle();
   if (error) return NextResponse.json({ error: "Could not create project. Confirm the migration is applied and the song exists." }, { status: 500 });
-  const existing = data ? null : await db.from("music_video_projects").select("id,song_id,songs(title)").eq("song_id", songId).eq("project_type", "primary").single();
-  const project = data ? { id: data.id, song_id: songId } : existing.data;
+  const existing = data ? null : await db.from("music_video_projects").select("id,song_id").eq("song_id", songId).eq("project_type", "primary").single();
+  const project = data ? { id: data.id, song_id: songId } : existing?.data;
   if (!project?.id) return NextResponse.json({ error: "Project could not be loaded." }, { status: 500 });
   const { data: linked, error: linkReadError } = await db.from("content_items").select("id").eq("music_video_project_id", project.id).maybeSingle();
   if (linkReadError) return NextResponse.json({ error: "Project created, but the linked Content entry could not be checked. Apply the content workspace migration." }, { status: 503 });
