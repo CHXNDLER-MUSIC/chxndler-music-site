@@ -288,37 +288,14 @@ export default function ArtistReleaseDetail({
             </button>
           )}
 
-          {showCollabRequest && (
-            <div className="mt-[1rem] flex flex-wrap gap-[0.625rem]">
-              {collabContactHref ? <a
-                href={collabContactHref}
-                onMouseEnter={playHover}
-                className="inline-flex min-h-[2.75rem] items-center justify-center rounded-full px-[1.25rem] py-[0.75rem] text-[0.75rem] font-extrabold uppercase tracking-[0.12em] text-black transition-transform duration-200 hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
-                style={{ background: PINK, outlineColor: PINK }}
-              >Request to Collaborate</a> : <button
-                type="button"
-                onClick={() => setCollabOpen(true)}
-                onMouseEnter={playHover}
-                className="inline-flex min-h-[2.75rem] items-center justify-center rounded-full px-[1.25rem] py-[0.75rem] text-[0.75rem] font-extrabold uppercase tracking-[0.12em] text-black transition-transform duration-200 hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
-                style={{ background: PINK, outlineColor: PINK }}
-              >
-                Request to Collab
-              </button>}
-            </div>
-          )}
         </div>
       </div>
 
       {collabOpen && release.databaseId && <CollabRequestForm songId={release.databaseId} title={release.title} artwork={release.coverArt} invitedName={invitedName} close={() => setCollabOpen(false)} />}
 
-      {/* Lyrics + collectible card */}
-      {(showLyricsSection || lyrics.status !== "missing" || release.cardArt || meaning) && (
-        <div
-          className={`mt-[2rem] grid grid-cols-1 gap-[1.5rem] ${
-            lyrics.status !== "missing" && release.cardArt ? "md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start" : ""
-          }`}
-        >
-          {(showLyricsSection || lyrics.status !== "missing") && (
+      {(showLyricsSection || lyrics.status !== "missing" || release.cardArt || meaning || release.videoEmbedUrl || !release.videoEmbedUrl) && (
+        <div className="mt-4 min-h-[9rem] rounded-2xl border border-white/10 bg-black/25 p-4 sm:p-6">
+          {detailTab === "lyrics" && (showLyricsSection || lyrics.status !== "missing") && (
             <section aria-label="Lyrics" className="min-w-0">
               <button
                 type="button"
@@ -332,7 +309,7 @@ export default function ArtistReleaseDetail({
                 className="group inline-flex items-center gap-[0.5rem] rounded-full py-[0.125rem] text-white/50 transition-colors duration-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.2rem]"
                 style={{ outlineColor: PINK }}
               >
-                <span className="text-[0.6875rem] font-bold tracking-[0.3em] uppercase">Lyrics</span>
+                <span className="text-[0.6875rem] font-bold tracking-[0.3em] uppercase" style={{ color: PINK, textShadow: `0 0 10px ${PINK}99` }}>Lyrics</span>
                 <svg
                   viewBox="0 0 24 24"
                   aria-hidden="true"
@@ -388,7 +365,7 @@ export default function ArtistReleaseDetail({
                             className="whitespace-pre-line text-[0.9375rem] sm:text-[1.0625rem] text-white/85 [&:not(:last-child)]:mb-[1.75em]"
                             style={{ lineHeight: 1.85, letterSpacing: "0.005em", textShadow: "0 0.0625rem 0.75rem rgba(0,0,0,0.55)" }}
                           >
-                            {verse}
+                            {verse.split(/(\[YOUR VERSE\])/gi).map((part, partIndex) => part.toUpperCase() === "[YOUR VERSE]" ? <span key={partIndex} className="font-black tracking-[0.12em] text-[#ff3ea5]" style={{ textShadow: "0 0 7px #ff3ea5, 0 0 18px #ff3ea588" }}>{part}</span> : part)}
                           </p>
                         ))
                       )}
@@ -399,7 +376,7 @@ export default function ArtistReleaseDetail({
             </section>
           )}
 
-          {meaning && (
+          {detailTab === "lyrics" && meaning && (
             <section aria-label="Song meaning" className="min-w-0">
               <button
                 type="button"
@@ -416,7 +393,7 @@ export default function ArtistReleaseDetail({
             </section>
           )}
 
-          {release.cardArt && (
+          {detailTab === "collectible" && release.cardArt && (
             <section aria-label="Collectible card" className="min-w-0">
               <SectionLabel>Collectible Card</SectionLabel>
               {/* Same tap-to-inspect popout as the pitch's own Collectible
@@ -426,31 +403,21 @@ export default function ArtistReleaseDetail({
               </div>
             </section>
           )}
+          {detailTab === "collectible" && !release.cardArt && <p className="py-8 text-center text-sm font-bold uppercase tracking-[0.16em] text-white/55">Collectible coming soon</p>}
+          {detailTab === "video" && (release.videoEmbedUrl ? (
+            <section aria-label="Music video"><SectionLabel>Music Video</SectionLabel><div className="mt-3 w-full overflow-hidden rounded-xl border border-white/10 bg-black" style={{ aspectRatio: "16 / 9" }}><iframe src={`${release.videoEmbedUrl}?rel=0`} title={`${release.title} music video`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen loading="lazy" className="h-full w-full" /></div></section>
+          ) : <div className="flex min-h-[8rem] flex-col items-center justify-center gap-4 text-center"><p className="text-sm font-bold uppercase tracking-[0.14em] text-white/60">No music video yet</p>{showCollabRequest && release.databaseId ? <button type="button" onClick={() => setCollabOpen(true)} className="rounded-full bg-[#ff3ea5] px-6 py-3 text-xs font-black uppercase tracking-[0.12em] text-black shadow-[0_0_24px_#ff3ea555]">Request to Collaborate</button> : <a href={collabContactHref || `mailto:info@chxndler-music.com?subject=${encodeURIComponent(`Request to Collaborate: ${release.title}`)}`} className="rounded-full bg-[#ff3ea5] px-6 py-3 text-xs font-black uppercase tracking-[0.12em] text-black shadow-[0_0_24px_#ff3ea555]">Request to Collaborate</a>}</div>)}
         </div>
       )}
 
-      {/* Music video */}
-      {release.videoEmbedUrl && (
-        <section aria-label="Music video" className="mt-[2rem]">
-          <SectionLabel>Music Video</SectionLabel>
-          <div className="mt-[0.75rem] w-full overflow-hidden rounded-[0.75rem] border border-white/10 bg-black" style={{ aspectRatio: "16 / 9" }}>
-            <iframe
-              src={`${release.videoEmbedUrl}?rel=0`}
-              title={`${release.title} music video`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              loading="lazy"
-              className="w-full h-full"
-            />
-          </div>
-        </section>
-      )}
 
       <style jsx>{`
         .lyrics-scroll {
           scrollbar-width: thin;
           scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
         }
+        .streaming-link { display:inline-flex; align-items:center; gap:.45rem; border:1px solid rgba(255,255,255,.18); border-radius:999px; padding:.55rem .85rem; color:rgba(255,255,255,.82); font-size:.62rem; font-weight:900; letter-spacing:.1em; text-transform:uppercase; text-decoration:none; transition:all .2s; }
+        .streaming-link:hover { border-color:${PINK}; color:#fff; box-shadow:0 0 14px ${PINK}44; }
         .release-seek {
           -webkit-appearance: none;
           appearance: none;
