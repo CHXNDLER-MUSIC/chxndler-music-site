@@ -255,7 +255,7 @@ function CollabGalleryContent({
             showLyricsSection={false}
             showInstrumentalControl={false}
             meaningUrlOverride={null}
-            showCollabRequest={selected.release.readyForCollab === true}
+            showCollabRequest
             showStreamingLinks={selected.release.isReleased === true}
             invitedName={invitedDisplayName}
             invitedEmail={invitedEmail}
@@ -291,8 +291,8 @@ function CollabGalleryContent({
         .collab-video-kicker{margin:0;color:#ff3ea5;font-size:.62rem;font-weight:900;letter-spacing:.22em}.collab-video-opportunities h2{margin:.35rem 0 1rem;font-size:1.35rem;font-weight:900}
         .collab-video-grid{display:grid;gap:.8rem}.collab-video-card{display:grid;grid-template-columns:6rem 1fr;gap:1rem;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.25);padding:.75rem}.collab-video-card>img{width:6rem;aspect-ratio:1;object-fit:cover}.collab-video-card h3{margin:.35rem 0;font-size:1rem;font-weight:800}.collab-video-card p{margin:.4rem 0;color:rgba(255,255,255,.65);font-size:.85rem;white-space:pre-wrap}.collab-video-status{color:#ff77bb;font-size:.58rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.collab-video-card audio{display:block;width:min(100%,22rem);height:2rem;margin:.7rem 0}.collab-video-card button{display:inline-block;border:1px solid rgba(255,62,165,.55);border-radius:999px;background:transparent;padding:.55rem .8rem;color:#ff3ea5;font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
         .collab-tabs button:focus-visible,.collab-back:focus-visible{outline:2px solid #ff3ea5;outline-offset:2px}
-        .collab-grid{max-width:1600px;margin:0 auto;columns:2;column-gap:clamp(.55rem,1vw,1rem)}
-        .collab-cover{position:relative;display:block;width:100%;break-inside:avoid;margin:0 0 clamp(.55rem,1vw,1rem);padding:0;border:1px solid rgba(255,255,255,.12);border-radius:3px;overflow:hidden;background:#121216;cursor:pointer;text-align:left}
+        .collab-grid{max-width:1600px;margin:0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(.55rem,1vw,1rem)}
+        .collab-cover{position:relative;display:block;width:100%;margin:0;padding:0;border:1px solid rgba(255,255,255,.12);border-radius:3px;overflow:hidden;background:#121216;cursor:pointer;text-align:left}
         .collab-release-date{position:absolute;right:.65rem;top:.65rem;padding:.45rem .6rem;border:1px solid rgba(255,62,165,.35);border-radius:999px;background:rgba(8,8,11,.82);color:#ff9bcc;font-size:.62rem;font-weight:800;letter-spacing:.04em;backdrop-filter:blur(8px)}
         .collab-opportunity-badges{position:absolute;left:.6rem;right:.6rem;bottom:.6rem;display:flex;flex-wrap:wrap;gap:.3rem;pointer-events:none}.collab-opportunity-badges span{border-radius:999px;padding:.3rem .5rem;background:rgba(8,8,11,.78);font-size:.56rem;font-weight:800;letter-spacing:.025em;backdrop-filter:blur(6px)}.collab-opportunity-badges [data-opportunity="feature"]{color:#ff78bd}.collab-opportunity-badges [data-opportunity="video"]{color:#69e0c0}.collab-opportunity-badges [data-opportunity="remix"]{color:#83c9ff}
         .collab-cover img{display:block;width:100%;height:auto;transition:transform .5s cubic-bezier(.2,.7,.2,1),filter .3s}
@@ -312,9 +312,9 @@ function CollabGalleryContent({
         .collab-modal-background img,.collab-modal-background video{width:100%;height:100%;object-fit:cover;filter:blur(4px);transform:scale(1.04);opacity:.68}
         .collab-modal-background img[src]{filter:blur(5px);}
         .collab-modal-scrim{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(16,16,20,.46),rgba(16,16,20,.78) 45%,rgba(16,16,20,.9))}
-        @media(min-width:700px){.collab-grid{columns:3}.collab-tabs button{font-size:.8rem}}
+        @media(min-width:700px){.collab-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.collab-tabs button{font-size:.8rem}}
         @media(min-width:760px){.collab-video-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-        @media(min-width:1100px){.collab-grid{columns:4}}
+        @media(min-width:1100px){.collab-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
         @media(max-width:520px){.collab-tabs button{font-size:.57rem;letter-spacing:.08em;padding:.7rem .25rem}.collab-heading{font-size:.58rem}}
         @media(prefers-reduced-motion:reduce){.collab-cover img,.collab-tabs button{transition:none}}
       `}</style>

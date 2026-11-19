@@ -13,6 +13,12 @@ export type ArtistRelease = {
   collaborationInterests?: string[];
   collaborationDescription?: string;
   videoConcept?: string;
+  videoPlan?: {
+    concept?: string;
+    performers?: string;
+    locations?: string;
+    shotList?: Array<{ scene?: string; description?: string; location?: string; lyricSection?: string; status?: string }>;
+  };
   audioStatus?: "Demo" | "In Progress" | "Final" | "Released";
   isReleased?: boolean;
   collaborationOpportunities?: Array<"feature" | "video" | "remix">;

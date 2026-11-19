@@ -41,7 +41,7 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
     const [initialSongsRes, cardsRes, videoProjectsRes, youtubeContentRes] = await Promise.all([
       songQuery,
       supabase.from("cards").select("card_name"),
-      supabase.from("music_video_projects").select("song_id,workspace"),
+      supabase.from("music_video_projects").select("song_id,public_concept,workspace"),
       supabase.from("youtube_content").select("song_title,video_link"),
     ]);
     // Keep the collaborator catalog available if optional metadata columns
@@ -86,9 +86,28 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
       }
     }
     const projectVideos = new Map<string, string>();
+    const recordedVideoProjects = new Set<string>();
+    const projectPlans = new Map<string, NonNullable<ArtistRelease["videoPlan"]>>();
     for (const project of videoProjectsRes.data ?? []) {
       const url = project.workspace?.release?.videoUrl;
       if (project.song_id && typeof url === "string" && url.trim()) projectVideos.set(String(project.song_id), url.trim());
+      const productionStage = String(project.workspace?.production?.stage || "").toLowerCase();
+      if (project.song_id && ["editing", "review", "delivered", "released"].includes(productionStage)) recordedVideoProjects.add(String(project.song_id));
+      const creative = project.workspace?.creative || {};
+      const production = project.workspace?.production || {};
+      const shotList = Array.isArray(creative.shotList) ? creative.shotList.filter((shot: unknown): shot is Record<string, unknown> => !!shot && typeof shot === "object" && !Array.isArray(shot)) : [];
+      if (project.song_id) projectPlans.set(String(project.song_id), {
+        concept: typeof project.public_concept === "string" && project.public_concept.trim() ? project.public_concept.trim() : typeof creative.overallConcept === "string" ? creative.overallConcept.trim() : "",
+        performers: typeof creative.charactersPerformers === "string" ? creative.charactersPerformers.trim() : "",
+        locations: typeof production.locations === "string" ? production.locations.trim() : "",
+        shotList: shotList.map(shot => ({
+          scene: typeof shot.scene === "string" ? shot.scene : "",
+          description: typeof shot.description === "string" ? shot.description : "",
+          location: typeof shot.location === "string" ? shot.location : "",
+          lyricSection: typeof shot.lyricSection === "string" ? shot.lyricSection : "",
+          status: typeof shot.status === "string" ? shot.status : "",
+        })),
+      });
     }
 
     const songs = songRows
@@ -103,7 +122,10 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
         const readyForCollab = row.ready_for_collab === true || row.collaboration_enabled === true;
         const opportunities: NonNullable<ArtistRelease["collaborationOpportunities"]> = [];
         if (readyForCollab) opportunities.push("remix");
-        if (!hasVideo) opportunities.push("video");
+        // Some videos are already recorded but are not published yet. Those
+        // songs should not be presented as seeking a video collaborator.
+        const videoRecorded = recordedVideoProjects.has(String(row.id)) || ["ALONE", "BE MY BEE", "MAKE BELIEVE"].includes(normalizeTitle(title));
+        if (!hasVideo && !videoRecorded) opportunities.push("video");
         if (!released) opportunities.push(...savedOpportunities.filter((value: string): value is "feature" => value === "feature"));
         const links = resolveSongLinks(row);
         const rawLink = rawString;
@@ -121,6 +143,7 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
             collaborationOpportunities: [...new Set(opportunities)],
             collaborationDescription: typeof row.collaboration_description === "string" ? row.collaboration_description : "",
             videoConcept: typeof row.video_concept === "string" ? row.video_concept : "",
+            videoPlan: projectPlans.get(String(row.id)),
             releaseDate: typeof row.release_date === "string" ? row.release_date : null,
             title,
             oneLiner: (() => {

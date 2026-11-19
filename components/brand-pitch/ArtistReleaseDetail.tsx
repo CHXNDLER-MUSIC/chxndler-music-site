@@ -314,7 +314,7 @@ export default function ArtistReleaseDetail({
           {detailTab === "lyrics" && (showLyricsSection || lyrics.status !== "missing") && (
             <section aria-label="Lyrics" className="min-w-0">
               <div className="inline-flex items-center rounded-full py-[0.125rem]">
-                <span className="text-[0.6875rem] font-bold tracking-[0.3em] uppercase" style={{ color: PINK, textShadow: `0 0 10px ${PINK}99` }}>Lyrics</span>
+                <span className="text-[0.7rem] font-bold tracking-[0.28em] uppercase" style={{ color: PINK, textShadow: `0 0 10px ${PINK}88` }}>Lyrics</span>
               </div>
               <div
                 id={`lyrics-${release.slug}`}
@@ -322,14 +322,14 @@ export default function ArtistReleaseDetail({
               >
                 <div className="min-h-0 overflow-hidden">
                   <div
-                    className={`${spaceGrotesk.className} mt-[0.5rem] rounded-[1.25rem] border border-white/10`}
+                    className={`${spaceGrotesk.className} mt-[0.625rem] rounded-[1.25rem] border border-white/[0.12] shadow-[inset_0_1px_0_rgba(255,255,255,0.035),0_12px_36px_rgba(0,0,0,0.18)]`}
                     style={{
-                      background: "rgba(7,7,10,.58)",
-                      backdropFilter: "blur(8px)",
+                      background: "rgba(5,5,9,.78)",
+                      backdropFilter: "blur(12px)",
                     }}
                   >
                     <div
-                      className="lyrics-scroll max-h-[28rem] overflow-y-auto overscroll-contain px-[1rem] sm:px-[1.25rem] py-[1.75rem]"
+                      className="lyrics-scroll max-h-[28rem] overflow-y-auto overscroll-contain px-[1.25rem] py-[1.75rem] sm:px-[2rem] sm:py-[2.125rem]"
                       style={{
                         maskImage: "linear-gradient(to bottom, transparent 0, #000 1.5rem, #000 calc(100% - 2.5rem), transparent 100%)",
                         WebkitMaskImage:
@@ -344,8 +344,8 @@ export default function ArtistReleaseDetail({
                         splitVerses(lyrics.text).map((verse, i) => (
                           <p
                             key={i}
-                            className="whitespace-pre-line text-[0.9375rem] sm:text-[1.0625rem] text-white/95 [&:not(:last-child)]:mb-[1.75em]"
-                            style={{ lineHeight: 1.85, letterSpacing: "0.005em" }}
+                            className="mx-auto max-w-[42rem] whitespace-pre-line text-[1rem] text-white/90 sm:text-[1.0625rem] [&:not(:last-child)]:mb-[2.125em]"
+                            style={{ lineHeight: 1.9, letterSpacing: "0.012em" }}
                           >
                             {verse.split(/(\[YOUR VERSE\])/gi).map((part, partIndex) => part.toUpperCase() === "[YOUR VERSE]" ? <span key={partIndex} className="font-black tracking-[0.12em] text-[#ff3ea5]" style={{ textShadow: "0 0 7px #ff3ea5, 0 0 18px #ff3ea588" }}>{part}</span> : part)}
                           </p>
@@ -387,9 +387,12 @@ export default function ArtistReleaseDetail({
             </section>
           )}
           {detailTab === "collectible" && !release.cardArt && <p className="py-8 text-center text-sm font-bold uppercase tracking-[0.16em] text-white/55">Collectible coming soon</p>}
-          {detailTab === "video" && (release.videoEmbedUrl ? (
-            <section aria-label="Music video"><SectionLabel>Music Video</SectionLabel><div className="mt-3 w-full overflow-hidden rounded-xl border border-white/10 bg-black" style={{ aspectRatio: "16 / 9" }}><iframe src={`${release.videoEmbedUrl}?rel=0`} title={`${release.title} music video`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen loading="lazy" className="h-full w-full" /></div></section>
-          ) : <div className="flex min-h-[8rem] flex-col items-center justify-center gap-4 text-center"><p className="text-sm font-bold uppercase tracking-[0.14em] text-white/60">No music video yet</p>{showCollabRequest && <button type="button" onClick={() => { setCollabChoiceNotice(""); setCollabChoicesOpen(true); }} className="rounded-full bg-[#ff3ea5] px-6 py-3 text-xs font-black uppercase tracking-[0.12em] text-black shadow-[0_0_24px_#ff3ea555]">Request to Collaborate</button>}</div>)}
+          {detailTab === "video" && <div className="space-y-5">
+            {(release.videoConcept || release.videoPlan?.concept) && <section className="rounded-xl border border-white/10 bg-white/[.03] p-4"><SectionLabel>Concept</SectionLabel><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-white/75">{release.videoConcept || release.videoPlan?.concept}</p></section>}
+            {release.videoPlan?.shotList?.length ? <section className="rounded-xl border border-white/10 bg-white/[.03] p-4"><SectionLabel>Shot List</SectionLabel><div className="mt-3 space-y-3">{release.videoPlan.shotList.map((shot, index) => <article key={`${shot.scene || "scene"}-${index}`} className="rounded-lg bg-black/25 p-3"><p className="text-sm font-bold text-white">{shot.scene || `Scene ${index + 1}`}</p>{shot.description && <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-white/70">{shot.description}</p>}<p className="mt-2 text-xs text-white/45">{[shot.location, shot.lyricSection, shot.status].filter(Boolean).join(" · ")}</p></article>)}</div></section> : null}
+            {(release.videoPlan?.locations || release.videoPlan?.performers) && <section className="grid gap-3 sm:grid-cols-2">{release.videoPlan.locations && <div className="rounded-xl border border-white/10 bg-white/[.03] p-4"><SectionLabel>Locations</SectionLabel><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-white/75">{release.videoPlan.locations}</p></div>}{release.videoPlan.performers && <div className="rounded-xl border border-white/10 bg-white/[.03] p-4"><SectionLabel>Actors & Performers</SectionLabel><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-white/75">{release.videoPlan.performers}</p></div>}</section>}
+            {release.videoEmbedUrl ? <section aria-label="Music video"><SectionLabel>Music Video</SectionLabel><div className="mt-3 w-full overflow-hidden rounded-xl border border-white/10 bg-black" style={{ aspectRatio: "16 / 9" }}><iframe src={`${release.videoEmbedUrl}?rel=0`} title={`${release.title} music video`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen loading="lazy" className="h-full w-full" /></div></section> : <div className="flex min-h-[8rem] flex-col items-center justify-center gap-4 text-center"><p className="text-sm font-bold uppercase tracking-[0.14em] text-white/60">No music video yet</p>{showCollabRequest && <button type="button" onClick={() => { setContributionType("Music Video"); setCollabChoiceNotice(""); setCollabOpen(true); }} className="rounded-full bg-[#ff3ea5] px-6 py-3 text-xs font-black uppercase tracking-[0.12em] text-black shadow-[0_0_24px_#ff3ea555]">Request to Collaborate</button>}</div>}
+          </div>}
       </div>
 
 
