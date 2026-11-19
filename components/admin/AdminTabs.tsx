@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import SongTracker from "@/components/admin/SongTracker";
 import FinanceTab from "@/components/admin/FinanceTab";
 import TasksTab from "@/components/admin/TasksTab";
@@ -29,6 +29,7 @@ export default function AdminTabs() {
   const [outreachSection, setOutreachSection] = useState<"pitches" | "gigs" | "sync" | "contacts">("pitches");
   const [outreachSongId, setOutreachSongId] = useState("");
   const [moreOpen, setMoreOpen] = useState(false);
+  const moreRoot = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const readLocation = () => {
       const params = new URLSearchParams(window.location.search), requested = params.get("view")?.toLowerCase();
@@ -44,21 +45,28 @@ export default function AdminTabs() {
     readLocation(); window.addEventListener("popstate", readLocation);
     return () => window.removeEventListener("popstate", readLocation);
   }, []);
+  useEffect(() => {
+    if (!moreOpen) return;
+    const closeOutside = (event: PointerEvent) => { if (!moreRoot.current?.contains(event.target as Node)) setMoreOpen(false); };
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setMoreOpen(false); };
+    document.addEventListener("pointerdown", closeOutside); document.addEventListener("keydown", closeOnEscape);
+    return () => { document.removeEventListener("pointerdown", closeOutside); document.removeEventListener("keydown", closeOnEscape); };
+  }, [moreOpen]);
   const choose = (value: Tab) => {
     setTab(value); setMoreOpen(false);
     const params = new URLSearchParams(window.location.search); params.set("view", value);
     if (value === "outreach") params.set("section", outreachSection); else params.delete("section");
-    window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+    window.history.pushState(null, "", `${window.location.pathname}?${params.toString()}`);
   };
   return <>
     <nav aria-label="Music admin" className="admin-tabs mb-6 flex items-center gap-1 rounded-xl border border-white/10 bg-[#111116] p-1.5">
       {primary.map(([id, label, icon]) => <button key={id} type="button" data-tab={id} aria-current={tab === id ? "page" : undefined} onClick={() => choose(id)} className="admin-tab min-w-0 flex-1 rounded-lg px-2 py-2.5 text-xs font-semibold transition sm:px-4"><TabIcon name={icon}/><span>{label}</span></button>)}
-      <div className="relative shrink-0">
+      <div className="relative shrink-0" ref={moreRoot}>
         <button type="button" data-tab={more.some(([id]) => id === tab) ? tab : "more"} aria-expanded={moreOpen} aria-haspopup="menu" onClick={() => setMoreOpen(value => !value)} className="admin-tab admin-more rounded-lg px-3 py-2.5 text-xs font-semibold transition"><TabIcon name="more"/><span>More</span><span aria-hidden="true">⌄</span></button>
         {moreOpen && <div role="menu" className="absolute right-0 top-full z-30 mt-2 min-w-52 rounded-xl border border-white/10 bg-[#15151b] p-1.5 shadow-2xl">{more.map(([id, label, icon]) => <button key={id} type="button" role="menuitem" data-tab={id} onClick={() => choose(id)} className={`admin-menu-item ${tab === id ? "is-active" : ""}`}><TabIcon name={icon}/><span>{label}</span></button>)}</div>}
       </div>
     </nav>
-    {tab === "overview" ? <OverviewTab /> : tab === "songs" ? <SongTracker /> : tab === "tasks" ? <TasksTab /> : tab === "outreach" ? <OutreachWorkspace initialSection={outreachSection} onSectionChange={section => { setOutreachSection(section); const params = new URLSearchParams(window.location.search); params.set("view", "outreach"); params.set("section", section); window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`); }} initialSongId={outreachSongId} /> : <FinanceTab />}
+    {tab === "overview" ? <OverviewTab /> : tab === "songs" ? <SongTracker /> : tab === "tasks" ? <TasksTab /> : tab === "outreach" ? <OutreachWorkspace initialSection={outreachSection} onSectionChange={section => { setOutreachSection(section); const params = new URLSearchParams(window.location.search); params.set("view", "outreach"); params.set("section", section); window.history.pushState(null, "", `${window.location.pathname}?${params.toString()}`); }} initialSongId={outreachSongId} /> : <FinanceTab />}
     <style jsx>{`
       .admin-tab-icon{width:1rem;height:1rem;flex:none}
       .admin-tab{display:flex;align-items:center;justify-content:center;gap:.45rem;color:rgba(255,255,255,.56);white-space:nowrap}
