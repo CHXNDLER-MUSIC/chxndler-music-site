@@ -22,6 +22,23 @@ function dateLabel(item: ContentItem) {
   return <span className={item.is_placeholder_date ? "text-amber-200/65" : "text-white/65"}>{item.planned_date}{item.is_placeholder_date && <small className="ml-1">placeholder</small>}</span>;
 }
 
+const categoryColors: Record<string, string> = {
+  OTHER: "#9CA3AF",
+  SCENES: "#C4A1FF",
+  STUDIO: "#FF83C2",
+  ACOUSTIC: "#70D8FF",
+  BRAND: "#FFD166",
+  SOCIAL: "#7DE2B8",
+};
+
+function labelColor(label: string, palette: Record<string, string> = {}) {
+  const normalized = label.trim().toUpperCase();
+  if (palette[normalized]) return palette[normalized];
+  let hash = 0;
+  for (const character of normalized) hash = (hash * 31 + character.charCodeAt(0)) | 0;
+  return `hsl(${Math.abs(hash) % 360} 78% 73%)`;
+}
+
 export default function ContentLibrary({ songId: scopedSongId }: { songId?: string }) {
   const [items, setItems] = useState<ContentItem[]>([]);
   const [songs, setSongs] = useState<CatalogSong[]>([]);
@@ -135,8 +152,8 @@ export default function ContentLibrary({ songId: scopedSongId }: { songId?: stri
         <tbody className="divide-y divide-white/[.055]">
           {items.map(item => <tr key={item.id} onClick={() => setPanelItem(item)} onKeyDown={event => { if (event.key === "Enter" && event.target === event.currentTarget) setPanelItem(item); }} tabIndex={0} className="cursor-pointer align-middle transition hover:bg-white/[.025] focus:bg-white/[.04]">
             <td className="px-2 py-3 sm:px-3"><button type="button" onClick={event => { event.stopPropagation(); setPanelItem(item); }} className="line-clamp-2 text-left text-xs font-semibold text-white hover:text-[#ff9dcd]">{item.title}{item.is_sample && <span className="ml-1 text-[.55rem] text-amber-200">sample</span>}</button></td>
-            <td className="px-2 py-3 sm:px-3"><span className="block truncate text-xs text-white/65">{item.canonical_song_title || item.song_name || "Unlinked"}</span>{item.song_link_status === "unmatched" || item.song_link_status === "ambiguous" ? <span className="text-[.56rem] text-amber-200/70">{item.song_link_status} song</span> : null}</td>
-            <td className="px-2 py-3 sm:px-3"><span className="block truncate text-xs text-white/65">{item.category || "—"}</span><span className="block truncate text-[.62rem] text-white/35">{item.sub_category || "—"}</span></td>
+            <td className="px-2 py-3 sm:px-3"><span className="block truncate text-xs font-semibold" style={{ color: labelColor(item.canonical_song_title || item.song_name || "") }}>{item.canonical_song_title || item.song_name || "Unlinked"}</span>{item.song_link_status === "unmatched" || item.song_link_status === "ambiguous" ? <span className="text-[.56rem] text-amber-200/70">{item.song_link_status} song</span> : null}</td>
+            <td className="px-2 py-3 sm:px-3"><span className="block truncate text-xs font-semibold" style={{ color: labelColor(item.category || "—", categoryColors) }}>{item.category || "—"}</span><span className="block truncate text-[.62rem] text-white/35">{item.sub_category || "—"}</span></td>
             <td className="px-2 py-3 text-xs text-white/55">{item.media_type || "—"}</td><td className="px-2 py-3"><Status status={item.workflow_status}/></td>
             <td className="px-2 py-3 text-center"><ProgressCheck label="Record" checked={item.recorded === true} disabled={busyId === item.id} onChange={value => void toggle(item, "recorded", value)}/></td>
             <td className="px-2 py-3 text-center"><ProgressCheck label="Edit" checked={item.edited === true} disabled={busyId === item.id} onChange={value => void toggle(item, "edited", value)}/></td>
@@ -149,7 +166,7 @@ export default function ContentLibrary({ songId: scopedSongId }: { songId?: stri
     </div>
 
     <div className="space-y-2 md:hidden">
-      {items.map(item => <article key={item.id} onClick={() => setPanelItem(item)} className="cursor-pointer rounded-xl border border-white/[.08] bg-[#111116] p-3 active:border-[#FD52AF]/30"><div className="flex items-start gap-2"><div className="min-w-0 flex-1"><h3 className="line-clamp-2 text-sm font-bold text-white">{item.title}</h3><p className="mt-1 truncate text-xs text-white/50">{item.canonical_song_title || item.song_name || "Unlinked"} · {item.category || "Uncategorized"}</p></div><Status status={item.workflow_status}/></div><div className="mt-3 flex items-center gap-3 border-t border-white/[.06] pt-2"><span className="mr-auto text-[.65rem] text-white/40">{item.media_type || item.sub_category || "Other"} · {dateLabel(item)}</span><span className="flex items-center gap-1 text-[.6rem] text-white/40">R<ProgressCheck label="Record" checked={item.recorded === true} disabled={busyId === item.id} onChange={value => void toggle(item, "recorded", value)}/></span><span className="flex items-center gap-1 text-[.6rem] text-white/40">E<ProgressCheck label="Edit" checked={item.edited === true} disabled={busyId === item.id} onChange={value => void toggle(item, "edited", value)}/></span><span className="flex items-center gap-1 text-[.6rem] text-white/40">P<ProgressCheck label="Post" checked={item.post_ready === true} disabled={busyId === item.id} onChange={value => void toggle(item, "post_ready", value)}/></span></div></article>)}
+      {items.map(item => <article key={item.id} onClick={() => setPanelItem(item)} className="cursor-pointer rounded-xl border border-white/[.08] bg-[#111116] p-3 active:border-[#FD52AF]/30"><div className="flex items-start gap-2"><div className="min-w-0 flex-1"><h3 className="line-clamp-2 text-sm font-bold text-white">{item.title}</h3><p className="mt-1 truncate text-xs"><span style={{ color: labelColor(item.canonical_song_title || item.song_name || "") }}>{item.canonical_song_title || item.song_name || "Unlinked"}</span><span className="text-white/35"> · </span><span style={{ color: labelColor(item.category || "Uncategorized", categoryColors) }}>{item.category || "Uncategorized"}</span></p></div><Status status={item.workflow_status}/></div><div className="mt-3 flex items-center gap-3 border-t border-white/[.06] pt-2"><span className="mr-auto text-[.65rem] text-white/40">{item.media_type || item.sub_category || "Other"} · {dateLabel(item)}</span><span className="flex items-center gap-1 text-[.6rem] text-white/40">R<ProgressCheck label="Record" checked={item.recorded === true} disabled={busyId === item.id} onChange={value => void toggle(item, "recorded", value)}/></span><span className="flex items-center gap-1 text-[.6rem] text-white/40">E<ProgressCheck label="Edit" checked={item.edited === true} disabled={busyId === item.id} onChange={value => void toggle(item, "edited", value)}/></span><span className="flex items-center gap-1 text-[.6rem] text-white/40">P<ProgressCheck label="Post" checked={item.post_ready === true} disabled={busyId === item.id} onChange={value => void toggle(item, "post_ready", value)}/></span></div></article>)}
       {!loading && !items.length && <p className="rounded-xl border border-white/10 bg-[#111116] px-4 py-12 text-center text-sm text-white/40">No content matches this view.</p>}
     </div>
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getApiUser, isAdminUser, unauthorized, forbidden } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { slugify } from "@/lib/slug";
+import { youtubeSkyFor } from "@/lib/sky-youtube";
 
 const HIDDEN_ADMIN_SONG_TITLES = new Set([
   "welcome back",
@@ -23,7 +24,7 @@ export async function GET() {
   if (!auth) return unauthorized();
   if (!isAdminUser(auth.user)) return forbidden();
   const db = getSupabaseAdmin();
-  const [songWithReleaseDate, requests, videos, tasks, outreach, sync, placements, contentItems, brandArts] = await Promise.all([
+  const [songWithReleaseDate, requests, videos, tasks, outreach, sync, placements, contentItems, brandArts, youtubeContent] = await Promise.all([
     db.from("songs").select("id,title,slug,is_released,release_date,updated_at,audio_status,collaboration_opportunities,video_concept,collaboration_enabled,production_stages,production_tracking_started,production_progress_verified,ready_for_collab,collab_interests,collaboration_description,workflow_stage,next_action,next_action_manual,created_at,sky_video_url,youtube_music_video_url,spotify_url,karaoke_url,practice_notes").order("title", { ascending: true }),
     db.from("collaboration_requests").select("id,song_id,status,submitted_at,contribution_type"),
     db.from("music_video_projects").select("id,song_id,status,visibility,next_action,assigned_videographer,public_concept,public_status,project_type,collaboration_stage"),
@@ -33,6 +34,7 @@ export async function GET() {
     db.from("sync_placements").select("id,song_id").not("song_id", "is", null),
     db.from("song_content_items").select("id,song_id,status").not("song_id", "is", null),
     db.from("brand_pitches").select("song_title,cover_art_path,hero_art_path").not("cover_art_path", "is", null),
+    db.from("youtube_content").select("song_title,video_link").not("video_link", "eq", ""),
   ]);
   let songs: any = songWithReleaseDate;
   let releaseDateAvailable = true;
@@ -59,6 +61,9 @@ export async function GET() {
   const syncRows = sync.error ? [] : sync.data || [];
   const placementRows = placements.error ? [] : placements.data || [];
   const contentRows = contentItems.error ? [] : contentItems.data || [];
+  const youtubeVideoTitles = new Set((youtubeContent.error ? [] : youtubeContent.data || [])
+    .filter(row => String(row.video_link || "").trim())
+    .map(row => normalizeSongTitle(row.song_title)));
   const brandArtByTitle = new Map<string, string>();
   for (const row of brandArts.data || []) {
     const key = normalizeSongTitle(row.song_title);
@@ -72,10 +77,13 @@ export async function GET() {
     const linkedTask = song.next_action_manual ? null : taskRows.find(task => task.song_id === song.id) || null;
     const activeOutreachCount = outreachRows.filter(row => row.song_id === song.id && activePitchStatuses.has(row.status || "")).length
       + syncRows.filter(row => row.song_id === song.id && !!row.status && !terminalSyncStatuses.has(row.status)).length;
-    const playlistPitched = song.production_stages?.playlist_pitch === true || outreachRows.some(row => row.song_id === song.id && /playlist/i.test(row.category || "") && ["Contacted", "Sent", "Follow-up", "Interested", "Won", "Accepted"].includes(row.status || ""));
-    const syncPlacement = song.production_stages?.sync_placement === true || placementRows.some(row => row.song_id === song.id);
-    const musicVideoReleased = !!song.youtube_music_video_url || !!musicVideo;
-    const contentReleased = contentRows.some(row => row.song_id === song.id && row.status === "Published");
+    const stages = song.production_stages || {};
+    const savedOrDerived = (key: string, derived: boolean) => typeof stages[key] === "boolean" ? stages[key] : derived;
+    const playlistPitched = savedOrDerived("playlist_pitch", outreachRows.some(row => row.song_id === song.id && /playlist/i.test(row.category || "") && ["Contacted", "Sent", "Follow-up", "Interested", "Won", "Accepted"].includes(row.status || "")));
+    const syncPlacement = savedOrDerived("sync_placement", placementRows.some(row => row.song_id === song.id));
+    const musicVideoReleased = !!song.youtube_music_video_url || youtubeVideoTitles.has(normalizeSongTitle(song.title)) || !!musicVideo || stages.music_video_released === true;
+    const skyAssociated = !!song.sky_video_url || !!youtubeSkyFor(song.slug) || stages.sky === true;
+    const contentReleased = savedOrDerived("content_released", contentRows.some(row => row.song_id === song.id && row.status === "Published"));
     return ({
     ...song,
     brand_cover_path: brandArtByTitle.get(normalizeSongTitle(song.title)) || null,
@@ -95,8 +103,8 @@ export async function GET() {
       playlistPitched,
       syncPlacement,
       spotifyCanvas: song.production_stages?.spotify_canvas === true,
-      sky: song.production_stages?.sky === true,
-      chxndlerCard: song.production_stages?.chxndler_card === true,
+      sky: skyAssociated,
+      chxndlerCard: savedOrDerived("chxndler_card", brandArtByTitle.has(normalizeSongTitle(song.title))),
       musicVideo: musicVideoReleased,
       contentReleased,
     },
@@ -190,7 +198,7 @@ export async function PATCH(request: Request) {
   }
   if (typeof body.next_action === "string") { update.next_action = body.next_action.trim().slice(0, 240); update.next_action_manual = Boolean(update.next_action); }
   if (body.release_date === null || (typeof body.release_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.release_date))) update.release_date = body.release_date;
-  const stageKeys = ["write", "record", "mix", "cover_art", "spotify_canvas", "sky", "chxndler_card", "karaoke", "music_video", "concept", "lyrics", "recorded", "mastered", "ready", "playlist_pitch", "sync_placement"] as const;
+  const stageKeys = ["write", "record", "mix", "cover_art", "spotify_canvas", "sky", "chxndler_card", "karaoke", "music_video", "music_video_released", "content_released", "concept", "lyrics", "recorded", "mastered", "ready", "playlist_pitch", "sync_placement"] as const;
   if (body.stage !== undefined) {
     if (!stageKeys.includes(body.stage) || typeof body.complete !== "boolean") return NextResponse.json({ error: "Invalid production stage." }, { status: 400 });
     const { data: song, error: readError } = await db.from("songs").select("production_stages").eq("id", body.songId).single();

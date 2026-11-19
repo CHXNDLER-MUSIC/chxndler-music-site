@@ -87,16 +87,16 @@ export default function SongProductionProgress({ song, onSaved, compact = false 
 
   return <div className="relative min-w-0">
     <div className={`w-full rounded-xl transition ${compact ? "p-1" : "border border-white/[.08] bg-[#111116] p-4 hover:border-[#FD52AF]/25"}`}>
-      <div className="flex items-center justify-end">
+      {!compact && <div className="flex items-center justify-end">
         <button type="button" aria-expanded={open} aria-label={`Edit production progress for ${song.title}`} title="Edit production progress" onClick={() => { setError(""); setOpen(value => !value); }} className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-[#FD52AF] transition hover:bg-[#FD52AF]/10">
           <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="m12.5 3.5 4 4M3 17l3.8-.8L17 6a2.1 2.1 0 0 0-3-3L3.8 14.2 3 17Z"/></svg>
         </button>
-      </div>
+      </div>}
       {!compact && <><span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-white/[.08]"><span className={`block h-full rounded-full bg-gradient-to-r from-violet-400 to-[#FD52AF] transition-[width] ${verified ? "" : "opacity-40"}`} style={{ width: verified ? `${completed / DISPLAY_MILESTONES.length * 100}%` : "0%" }}/></span>
       <span className="mt-1.5 block text-[.66rem] text-white/45">{verified ? `${completed}/${DISPLAY_MILESTONES.length} milestones complete` : "Production progress not reviewed"}</span></>}
       <div className="mt-2 flex items-center gap-3" aria-label={`Milestones: ${rowMilestones.map(key => `${PRODUCTION_MILESTONE_LABELS[key]} ${visibleMilestones[key] ? "complete" : "incomplete"}`).join(", ")}`}>
         {rowMilestones.map(key => <button key={key} type="button" title={`${PRODUCTION_MILESTONE_LABELS[key]} · ${visibleMilestones[key] ? "Complete" : "Incomplete"}${song.is_released ? " · Released songs stay complete" : " · Click to toggle"}`} aria-label={`${PRODUCTION_MILESTONE_LABELS[key]} ${visibleMilestones[key] ? "complete" : "incomplete"}. ${song.is_released ? "Released songs stay complete." : "Click to toggle."}`} aria-pressed={visibleMilestones[key]} disabled={song.is_released || savingMilestone !== null} onClick={() => void toggleMilestone(key)} className={`grid h-7 w-7 place-items-center rounded-md transition ${song.is_released ? "cursor-default" : "hover:bg-white/[.07] disabled:opacity-50"}`}>
-          <ProductionStageIcon stage={milestoneStage[key]} complete={visibleMilestones[key]} label={PRODUCTION_MILESTONE_LABELS[key]} className="h-5 w-5" />
+          <ProductionStageIcon stage={milestoneStage[key]} complete={visibleMilestones[key]} label={PRODUCTION_MILESTONE_LABELS[key]} className="h-7 w-7" />
         </button>)}
       </div>
     </div>

@@ -51,13 +51,28 @@ export async function GET(request: Request) {
   const { data: song, error } = songResult;
   if (error) return NextResponse.json({ error: "Unable to load this song workspace." }, { status: 503 });
   if (!song) return NextResponse.json({ error: "Song not found." }, { status: 404 });
-  const [{ data: meanings }, { data: video }, { data: requests }] = await Promise.all([
+  const [{ data: meanings }, { data: video }, { data: requests }, { data: outreach }, { data: placements }, { data: contentItems }, { data: brandCards }] = await Promise.all([
     db.from("song_outreach_status").select("meaning_of_song,category").ilike("song", song.title).not("meaning_of_song", "eq", "").limit(10),
     db.from("music_video_projects").select("id,status,visibility,public_concept,workspace,next_action,assigned_videographer").eq("song_id", song.id).eq("project_type", "primary").maybeSingle(),
     db.from("collaboration_requests").select("id,status,submitted_at,contribution_type,artist_name,message").eq("song_id", song.id).order("submitted_at", { ascending: false }),
+    db.from("outreach_records").select("song_id,status,category").eq("song_id", song.id),
+    db.from("sync_placements").select("song_id").eq("song_id", song.id),
+    db.from("song_content_items").select("song_id,status").eq("song_id", song.id),
+    db.from("brand_pitches").select("song_title"),
   ]);
   const meaning = song.meaning || (meanings || []).find(item => item.meaning_of_song?.trim())?.meaning_of_song || "";
-  return NextResponse.json({ song: { ...song, production_progress_verified: productionProgressVerifiedAvailable && song.production_progress_verified === true, release_date: song.release_date ?? null, meaning: song.meaning ?? "", category: song.category ?? "", submit_hub: song.submit_hub ?? "", genre: song.genre ?? "", sub_genre: song.sub_genre ?? "", sub_genre_2: song.sub_genre_2 ?? "", lyrics: song.lyrics ?? "", bpm: song.bpm ?? null, musical_key: song.musical_key ?? "", capo_fret: song.capo_fret ?? null, chord_shape: song.chord_shape ?? "" }, releaseDateAvailable, meaning, musicVideo: video || null, requests: requests || [], coverUrl: songCoverPath(song.slug, song.title), lyricUrl: `/api/lyrics/${encodeURIComponent(song.slug)}` });
+  const stages = song.production_stages || {};
+  const savedOrDerived = (key: string, derived: boolean) => typeof stages[key] === "boolean" ? stages[key] : derived;
+  const postRelease = {
+    spotifyCanvas: stages.spotify_canvas === true,
+    sky: stages.sky === true,
+    chxndlerCard: savedOrDerived("chxndler_card", (brandCards || []).some(item => String(item.song_title || "").trim().toLowerCase() === song.title.trim().toLowerCase())),
+    musicVideo: savedOrDerived("music_video_released", !!song.youtube_music_video_url || !!video),
+    contentReleased: savedOrDerived("content_released", (contentItems || []).some(item => item.status === "Published")),
+    playlistPitched: savedOrDerived("playlist_pitch", (outreach || []).some(item => /playlist/i.test(item.category || "") && ["Contacted", "Sent", "Follow-up", "Interested", "Won", "Accepted"].includes(item.status || ""))),
+    syncPlacement: savedOrDerived("sync_placement", (placements || []).length > 0),
+  };
+  return NextResponse.json({ song: { ...song, production_progress_verified: productionProgressVerifiedAvailable && song.production_progress_verified === true, release_date: song.release_date ?? null, meaning: song.meaning ?? "", category: song.category ?? "", submit_hub: song.submit_hub ?? "", genre: song.genre ?? "", sub_genre: song.sub_genre ?? "", sub_genre_2: song.sub_genre_2 ?? "", lyrics: song.lyrics ?? "", bpm: song.bpm ?? null, musical_key: song.musical_key ?? "", capo_fret: song.capo_fret ?? null, chord_shape: song.chord_shape ?? "" }, postRelease, releaseDateAvailable, meaning, musicVideo: video || null, requests: requests || [], coverUrl: songCoverPath(song.slug, song.title), lyricUrl: `/api/lyrics/${encodeURIComponent(song.slug)}` });
 }
 
 export async function PATCH(request: Request) {
