@@ -20,9 +20,17 @@ export async function sendCollaborationEmails(request: CollaborationEmailRequest
     for (const recipient of recipients) result[recipient] = { status: "failed", messageId: null, error };
     return result;
   }
-  const nodemailer = await import("nodemailer");
   const port = Number(process.env.SMTP_PORT || 587);
-  const transport = nodemailer.default.createTransport({ host, port, secure: port === 465, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
+  let transport: import("nodemailer").Transporter;
+  try {
+    const nodemailer = await import("nodemailer");
+    transport = nodemailer.default.createTransport({ host, port, secure: port === 465, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message.slice(0, 500) : "Email service could not be initialized.";
+    console.error("[collab] email transport initialization failed", error);
+    for (const recipient of recipients) result[recipient] = { status: "failed", messageId: null, error: detail };
+    return result;
+  }
   const from = `CHXNDLER <${fromAddress}>`, songTitle = request.songs?.title || "CHXNDLER track";
   const detailUrl = `${baseUrl}/admin/collaborations?request=${encodeURIComponent(request.id)}`;
   const cover = request.songs?.slug ? `${baseUrl}${songCoverPath(request.songs.slug, songTitle)}` : "";
@@ -51,6 +59,6 @@ export async function sendCollaborationEmails(request: CollaborationEmailRequest
       result[recipient] = { status: "failed", messageId: null, error: messageText.slice(0, 500) };
     }
   }
-  await transport.close();
+  try { transport.close(); } catch (error) { console.error("[collab] email transport close failed", error); }
   return result;
 }

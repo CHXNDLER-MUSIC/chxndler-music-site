@@ -16,6 +16,38 @@ create index if not exists collaboration_requests_ip_submitted_idx
   on public.collaboration_requests(submission_ip_hash, submitted_at desc)
   where submission_ip_hash is not null;
 
+-- Atomic per-hour rate limit. The upsert is one database statement so parallel
+-- requests from the same privacy-preserving IP hash cannot race past the cap.
+create table if not exists public.collaboration_rate_limits (
+  ip_hash text not null,
+  window_start timestamptz not null,
+  request_count integer not null default 0,
+  primary key (ip_hash, window_start)
+);
+alter table public.collaboration_rate_limits enable row level security;
+revoke all on public.collaboration_rate_limits from anon, authenticated;
+grant all on public.collaboration_rate_limits to service_role;
+
+create or replace function public.consume_collaboration_rate_limit(p_ip_hash text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare allowed boolean;
+begin
+  insert into public.collaboration_rate_limits(ip_hash, window_start, request_count)
+  values (p_ip_hash, date_trunc('hour', now()), 1)
+  on conflict (ip_hash, window_start) do update
+    set request_count = collaboration_rate_limits.request_count + 1
+    where collaboration_rate_limits.request_count < 4
+  returning true into allowed;
+  return coalesce(allowed, false);
+end;
+$$;
+revoke all on function public.consume_collaboration_rate_limit(text) from public, anon, authenticated;
+grant execute on function public.consume_collaboration_rate_limit(text) to service_role;
+
 -- Agreements are private documents. Access is mediated by authenticated server
 -- routes that use the service role and short-lived signed download URLs.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

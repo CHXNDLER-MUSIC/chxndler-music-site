@@ -53,16 +53,18 @@ export default function CollabGallery({
   unreleasedSongs,
   invitedSongSlug = null,
   musicVideos,
+  invitedDisplayName = "",
 }: {
   projects: CollabProject[];
   artistReleases: ArtistRelease[];
   unreleasedSongs: ArtistRelease[];
   invitedSongSlug?: string | null;
   musicVideos: Array<{ id: string; song_id: string; public_concept: string; public_status: string; songs?: { title: string; slug: string } }>;
+  invitedDisplayName?: string;
 }) {
   return (
     <BrandAudioProvider>
-      <CollabGalleryContent projects={projects} artistReleases={artistReleases} unreleasedSongs={unreleasedSongs} invitedSongSlug={invitedSongSlug} musicVideos={musicVideos} />
+      <CollabGalleryContent projects={projects} artistReleases={artistReleases} unreleasedSongs={unreleasedSongs} invitedSongSlug={invitedSongSlug} musicVideos={musicVideos} invitedDisplayName={invitedDisplayName} />
     </BrandAudioProvider>
   );
 }
@@ -73,20 +75,24 @@ function CollabGalleryContent({
   unreleasedSongs,
   invitedSongSlug,
   musicVideos,
+  invitedDisplayName,
 }: {
   projects: CollabProject[];
   artistReleases: ArtistRelease[];
   unreleasedSongs: ArtistRelease[];
   invitedSongSlug: string | null;
   musicVideos: Array<{ id: string; song_id: string; public_concept: string; public_status: string; songs?: { title: string; slug: string } }>;
+  invitedDisplayName: string;
 }) {
-  const [tab, setTab] = useState<Tab>(invitedSongSlug ? "unreleased" : "collabs");
+  const [tab, setTab] = useState<Tab>(unreleasedSongs.length ? "unreleased" : invitedSongSlug ? "released" : "collabs");
   const [selected, setSelected] = useState<SelectedItem | null>(null);
   const audio = useBrandAudio();
 
   const items = useMemo<SelectedItem[]>(() => {
     if (tab === "collabs") {
-      return projects.map((project) => ({
+      return projects.map((project) => {
+        const linkedSong = [...artistReleases, ...unreleasedSongs].find(song => slugify(song.title) === slugify(project.title));
+        return {
         id: `collab:${project.id}`,
         from: tab,
         coverUrl: project.coverUrl,
@@ -97,6 +103,9 @@ function CollabGalleryContent({
         backgroundUrl: project.backgroundUrl,
         backgroundIsVideo: project.backgroundIsVideo,
         release: {
+          databaseId: linkedSong?.databaseId,
+          collaborationEnabled: linkedSong?.collaborationEnabled,
+          audioAvailable: !!project.audioUrl,
           slug: slugify(project.title),
           title: project.title,
           artist: "CHXNDLER × COLLABORATOR",
@@ -108,7 +117,8 @@ function CollabGalleryContent({
           cardArt: null,
           skyVideoUrl: null,
         },
-      }));
+      };
+      });
     }
 
     const songs = tab === "released" ? artistReleases : unreleasedSongs;
@@ -271,8 +281,8 @@ function CollabGalleryContent({
             showLyricsSection={selected.from === "collabs"}
             showInstrumentalControl={selected.from === "collabs"}
             meaningUrlOverride={selected.from === "collabs" ? selected.meaningUrl : null}
-            showCollabRequest={selected.from === "collabs" || selected.release.collaborationEnabled === true}
-            collabContactHref={selected.from === "collabs" ? `mailto:info@chxndler-music.com?subject=${encodeURIComponent(`Collaboration request: ${selected.release.title}`)}` : undefined}
+            showCollabRequest={selected.release.collaborationEnabled === true && !!selected.release.databaseId}
+            invitedName={invitedDisplayName}
           />
         </MediaViewerModal>
       )}

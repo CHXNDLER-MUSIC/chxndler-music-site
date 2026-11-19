@@ -48,6 +48,7 @@ export default function ArtistReleaseDetail({
   showInstrumentalControl = false,
   collabContactHref,
   showCollabRequest = false,
+  invitedName = "",
 }: {
   release: ArtistRelease;
   audioSrcOverride?: string;
@@ -59,6 +60,7 @@ export default function ArtistReleaseDetail({
   showInstrumentalControl?: boolean;
   collabContactHref?: string;
   showCollabRequest?: boolean;
+  invitedName?: string;
 }) {
   const { activeId, playing, loading, error, currentTime, duration, toggle, play, seek } = useBrandAudio();
   const { playHover, playClick } = useInteractionSound();
@@ -153,12 +155,6 @@ export default function ArtistReleaseDetail({
       .catch(() => { if (!cancelled) setMeaning(null); });
     return () => { cancelled = true; };
   }, [meaningUrlOverride]);
-
-  const streamingLinks = [
-    { label: "Spotify", href: release.spotifyUrl, color: "#1ed760" },
-    { label: "Apple Music", href: release.appleMusicUrl, color: "#fa2d48" },
-    { label: "YouTube", href: release.youtubeUrl, color: "#ff0033" },
-  ];
 
   return (
     <div ref={rootRef}>
@@ -293,25 +289,6 @@ export default function ArtistReleaseDetail({
             </button>
           )}
 
-          {/* Streaming links */}
-          <div className="mt-[1.25rem] flex flex-wrap gap-[0.5rem]">
-            {streamingLinks.filter((link) => !!link.href).map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={playClick}
-                onMouseEnter={playHover}
-                className="inline-flex items-center gap-[0.5rem] rounded-full border border-white/15 bg-white/[0.04] px-[0.875rem] py-[0.5rem] text-[0.75rem] font-bold uppercase tracking-[0.1em] text-white/80 transition-colors duration-200 hover:border-white/40 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.15rem]"
-                style={{ outlineColor: PINK }}
-              >
-                <span aria-hidden="true" className="w-[0.5rem] h-[0.5rem] rounded-full" style={{ background: link.color }} />
-                {link.label}
-                <span aria-hidden="true" className="text-white/40">↗</span>
-              </a>
-            ))}
-          </div>
           {showCollabRequest && (
             <div className="mt-[1rem] flex flex-wrap gap-[0.625rem]">
               {collabContactHref ? <a
@@ -333,7 +310,7 @@ export default function ArtistReleaseDetail({
         </div>
       </div>
 
-      {collabOpen && release.databaseId && <CollabRequestForm songId={release.databaseId} title={release.title} artwork={release.coverArt} close={() => setCollabOpen(false)} />}
+      {collabOpen && release.databaseId && <CollabRequestForm songId={release.databaseId} title={release.title} artwork={release.coverArt} invitedName={invitedName} close={() => setCollabOpen(false)} />}
 
       {/* Lyrics + collectible card */}
       {(showLyricsSection || lyrics.status !== "missing" || release.cardArt || meaning) && (

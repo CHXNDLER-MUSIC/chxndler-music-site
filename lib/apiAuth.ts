@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
 import { isConfiguredAdmin } from '@/lib/collaborationRules.mjs';
+import { isAdminEmail } from '@/lib/adminAccess';
 
 // Shared server-side auth checks for API routes.
 // Uses the `sb-access-token` cookie that middleware keeps in sync with the
@@ -23,7 +24,7 @@ export async function getApiUser(): Promise<ApiUser | null> {
 }
 
 export function isAdminUser(user: User): boolean {
-  return isConfiguredAdmin(user.email, ADMIN_EMAIL);
+  return isAdminEmail(user.email) || isConfiguredAdmin(user.email, ADMIN_EMAIL);
 }
 
 export function unauthorized() {

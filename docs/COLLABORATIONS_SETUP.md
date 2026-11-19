@@ -1,15 +1,35 @@
-# Collaboration requests setup
+# Collaboration system setup
 
-1. Apply `supabase/migrations/20261118_collaboration_requests.sql` to the existing Supabase project.
-2. Set server environment variables `COLLAB_NOTIFICATION_EMAIL`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `ADMIN_EMAIL`, and `NEXT_PUBLIC_SITE_URL`. `SMTP_FROM` must be an address verified by the configured SMTP provider; it is also the reply-to address.
-3. Sign into the site as the configured admin and visit `/admin/collaborations`. Create an invitation using the UUID of a song row. The generated link is displayed once and includes an unguessable bearer token. Share it privately with the intended artist. Creating an invite enables collaboration requests for that song; disabling requests requires setting `collaboration_enabled` false and revokes its outstanding invites (the admin endpoint supports this toggle).
-4. Review incoming requests at `/admin/collaborations`; the notification email links to the authenticated detail view.
+## Database
 
-Requests and private notes are accessible only through server routes using the service role; the tables grant no direct anon or authenticated table access. Terms version `2026-11-18-v1` is seeded from the artist supplied text. Add a new terms row and deactivate the prior row to publish a future version; submissions retain the original version.
+Apply these migrations to the existing Supabase project, in filename order:
 
-## External setup and current limits
+1. `20261118_collaboration_requests.sql` — requests, terms, event history, and the song opt-in flag.
+2. `20261126_collaboration_system_completion.sql` — idempotency, atomic rate limits, agreement fields, and the private agreement bucket.
+3. `20261127_personalized_collaboration_invites.sql` — expiring named invitation sessions and request-to-invite association.
+4. `20261129_collaboration_invites_per_song.sql` — permits multiple distinct song invitations for one collaborator.
 
-- Email delivery requires the listed SMTP configuration and notification address. Failed sends remain stored with status/error details; automatic scheduled retries are not configured.
-- The agreement columns track draft metadata and signatures, but private Storage upload, signed document retrieval, and a terms editor are not implemented in this first slice. No electronic signature provider is connected. Do not mark a request signed until signatures are verified separately.
-- Rate limiting is an in-process per-IP throttle, so production deployments with multiple instances should use a shared limiter before high-volume use.
-- The existing `/collab` gallery and its demo media access are pre-existing behavior; invitations gate request submission. Existing demo playback has not been converted into invite-scoped storage authorization.
+Requests, terms history, invite tokens, rate-limit records, and event history are accessible through server routes using the Supabase service role. Anonymous visitors cannot read these tables. The invite link contains a random bearer token; Supabase stores only its SHA-256 hash. A signed, HTTP-only session cookie is rechecked against the invitation row, so expiration and revocation take effect on subsequent requests.
+
+## Email configuration
+
+Set these server-only deployment variables:
+
+- `COLLAB_NOTIFICATION_EMAIL` — destination for new request notifications; no address is hardcoded.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` — existing Nodemailer SMTP integration. `SMTP_FROM` must be authorized by the provider.
+- `COLLAB_REPLY_TO` — verified address for artist replies. If omitted, `SMTP_FROM` is used.
+- `NEXT_PUBLIC_SITE_URL` — canonical site origin used for email links and artwork.
+
+Emails are attempted after the request is saved. Admin and artist sends are independent. SMTP acceptance, provider message IDs, failures, and retry attempts are recorded on the request. Failed sends can be retried from its admin detail view. Configure SMTP and the notification address in every deployment environment before inviting artists.
+
+## Admin workflow
+
+Visit `/admin/collaborations` while signed in as an authorized admin. Create an invitation by entering a display name, choosing a song, and choosing an expiration. Copy and privately send the generated link; it is only shown once. The invite enables requests for that song. Revoke an invite from the list to end access. Invitees can access the private collaboration experience and submit for the associated song only.
+
+The public form stores the exact active terms version and acknowledgment timestamp. Admins can publish a new version from the terms editor; prior versions remain available for audit. Review and manage requests in the Requests, Active, and Completed tabs. Notification emails link to `/admin/collaborations?request=<request-id>` and require admin authentication.
+
+## Agreements and limitations
+
+Reviewed and executed PDFs are stored in the private `collaboration-agreements` bucket. Admin routes issue short-lived signed URLs after checking admin authentication. A request cannot be marked Signed until an executed PDF exists and an admin confirms the signatures were reviewed. No custom e-signature system or signing provider is connected; obtain signatures through a trusted provider or another appropriate process, then upload the executed PDF. Approval is not a signed agreement. The project status is tracked separately from the agreement status.
+
+Private demo playback uses the existing `tracks` bucket and current media setup. The invite page reveals only the invited song and signs unreleased audio URLs for invitees; however, any audio object already in a public bucket remains addressable through that bucket's public URL model. Migrating existing media to private storage would be a separate infrastructure change and is not performed here.

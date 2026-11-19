@@ -8,7 +8,7 @@ const AGREEMENT_BUCKET = "collaboration-agreements";
 export async function GET(request: Request) {
   const auth = await getApiUser(); if (!auth) return unauthorized(); if (!isAdminUser(auth.user)) return forbidden();
   const db = getSupabaseAdmin(), id = new URL(request.url).searchParams.get("id");
-  let query = db.from("collaboration_requests").select("*, songs(title,slug)").order("submitted_at", { ascending: false });
+  let query = db.from("collaboration_requests").select("*, songs(title,slug), collaboration_invites(display_name)").order("submitted_at", { ascending: false });
   if (id) query = query.eq("id", id);
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: "Unable to load requests." }, { status: 500 });
@@ -36,6 +36,11 @@ export async function PATCH(request: Request) {
     if (!canTransitionCollaborationStatus(current.status, body.status)) return NextResponse.json({ error: `Cannot move a request from ${current.status} to ${body.status}.` }, { status: 409 });
     update.status = body.status;
     if (["reviewing","approved","declined"].includes(body.status)) update.reviewed_at = new Date().toISOString();
+  }
+  if (body.status !== undefined && (typeof body.status !== "string" || !allowed.includes(body.status))) return NextResponse.json({ error: "Invalid request status." }, { status: 400 });
+  if (body.project_status !== undefined) {
+    if (typeof body.project_status !== "string" || !["requested", "in_progress", "completed", "canceled"].includes(body.project_status)) return NextResponse.json({ error: "Invalid project status." }, { status: 400 });
+    update.project_status = body.project_status;
   }
   if (body.status === "signed") {
     const signedPath = current.signed_agreement_path;
@@ -65,6 +70,7 @@ export async function PATCH(request: Request) {
     if (body.agreement_status === "signed") return NextResponse.json({ error: "Mark the request Signed only after uploading and verifying the executed agreement." }, { status: 409 });
     if (body.agreement_status === "sent") {
       if (!current.agreement_path) return NextResponse.json({ error: "Upload the reviewed agreement PDF before marking it sent." }, { status: 409 });
+      if (current.status !== "agreement_pending" && !canTransitionCollaborationStatus(current.status, "agreement_pending")) return NextResponse.json({ error: "Approve the request before sending an agreement." }, { status: 409 });
       update.agreement_sent_at = new Date().toISOString();
       if (!body.status) update.status = "agreement_pending";
     }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getApiUser, isAdminUser, unauthorized, forbidden } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { randomUUID } from "node:crypto";
 
 const keys = ["ownership", "royalties", "credits", "release_rights"] as const;
 export async function GET() {
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
     if (typeof body.terms?.[key] !== "string" || !body.terms[key].trim() || body.terms[key].length > 2000) return NextResponse.json({ error: "All four terms are required (maximum 2,000 characters each)." }, { status: 400 });
     terms[key] = body.terms[key].trim();
   }
-  const db = getSupabaseAdmin(), version = `collab-${new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)}`;
+  const db = getSupabaseAdmin(), version = `collab-${new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)}-${randomUUID().slice(0, 8)}`;
   const { error: insertError } = await db.from("collaboration_terms").insert({ version, terms, active: true });
   if (insertError) return NextResponse.json({ error: "Could not save the new terms version." }, { status: 500 });
   const { error: deactivateError } = await db.from("collaboration_terms").update({ active: false }).neq("version", version);

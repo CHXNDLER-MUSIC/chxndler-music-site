@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { isValidCollaborationInvite, validateCollaborationSubmission } from "@/lib/collaborationRules.mjs";
+import { validateCollaborationSubmission } from "@/lib/collaborationRules.mjs";
 import { sendCollaborationEmails } from "@/lib/collaborationEmails";
+import { getCollabInviteSession } from "@/lib/collabAccess";
 
 export const runtime = "nodejs";
 const clean = (v: unknown, max: number) => typeof v === "string" ? v.trim().slice(0, max) : "";
@@ -11,33 +12,32 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     if (clean(body.website, 100)) return NextResponse.json({ ok: true }); // honeypot
-    const songId = clean(body.songId, 80), token = clean(body.inviteToken, 256), submissionKey = clean(body.submissionKey, 80), termsVersion = clean(body.termsVersion, 80);
+    const songId = clean(body.songId, 80), submissionKey = clean(body.submissionKey, 80), termsVersion = clean(body.termsVersion, 80);
     const artist = clean(body.artistName, 120), email = clean(body.email, 320).toLowerCase();
     const profile = clean(body.profileLink, 500), phone = clean(body.phone, 40), contribution = clean(body.contributionType, 40), message = clean(body.message, 1200);
-    if (!validateCollaborationSubmission({ songId, inviteToken: token, submissionKey, termsVersion, artistName: artist, email, contributionType: contribution, acknowledged: body.acknowledged })) {
+    const invite = await getCollabInviteSession();
+    if (!invite) return NextResponse.json({ error: "Open your active personal invitation before submitting a request." }, { status: 403 });
+    if (!validateCollaborationSubmission({ songId, inviteId: invite.id, submissionKey, termsVersion, artistName: artist, email, contributionType: contribution, acknowledged: body.acknowledged })) {
       return NextResponse.json({ error: "Check the required fields and acknowledgment." }, { status: 400 });
     }
     const db = getSupabaseAdmin();
-    const tokenHash = createHash("sha256").update(token).digest("hex");
-    const [{ data: invite }, { data: song }, { data: terms }] = await Promise.all([
-      db.from("collaboration_invites").select("id,revoked_at,expires_at,song_id").eq("song_id", songId).eq("token_hash", tokenHash).maybeSingle(),
+    const [{ data: song }, { data: terms }] = await Promise.all([
       db.from("songs").select("id,title,slug,collaboration_enabled").eq("id", songId).maybeSingle(),
-      db.from("collaboration_terms").select("version").eq("version", termsVersion).maybeSingle(),
+      db.from("collaboration_terms").select("version").eq("version", termsVersion).eq("active", true).maybeSingle(),
     ]);
-    if (!isValidCollaborationInvite({ exists: !!invite, revokedAt: invite?.revoked_at, expiresAt: invite?.expires_at, collaborationEnabled: song?.collaboration_enabled === true }) || !song || invite?.song_id !== songId) return NextResponse.json({ error: "This invitation is invalid, expired, or disabled." }, { status: 403 });
+    if (!song || song.collaboration_enabled !== true) return NextResponse.json({ error: "This invitation is invalid, expired, or disabled." }, { status: 403 });
     if (!terms) return NextResponse.json({ error: "Collaboration terms are not configured." }, { status: 503 });
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const ip = request.headers.get("x-real-ip")?.trim() || request.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() || "unknown";
     const ipHash = createHash("sha256").update(`${process.env.SUPABASE_SERVICE_ROLE_KEY}:${ip}`).digest("hex");
-    const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const rate = await db.from("collaboration_requests").select("id", { count: "exact", head: true }).eq("submission_ip_hash", ipHash).gte("submitted_at", since);
-    if (rate.error) {
-      console.error("[collab] rate limit lookup failed", rate.error);
+    const rate = await db.rpc("consume_collaboration_rate_limit", { p_ip_hash: ipHash });
+    if (rate.error || typeof rate.data !== "boolean") {
+      console.error("[collab] rate limit check failed", rate.error);
       return NextResponse.json({ error: "Request service is temporarily unavailable. Please try again." }, { status: 503 });
     }
-    if ((rate.count || 0) >= 4) return NextResponse.json({ error: "Please try again later." }, { status: 429 });
+    if (!rate.data) return NextResponse.json({ error: "Please try again later." }, { status: 429 });
     const submittedAt = new Date().toISOString();
     const { data: row, error } = await db.from("collaboration_requests").insert({
-      submission_key: submissionKey, submission_ip_hash: ipHash, song_id: songId, artist_name: artist, email, profile_link: profile || null, phone: phone || null,
+      submission_key: submissionKey, submission_ip_hash: ipHash, invite_id: invite.id, song_id: songId, artist_name: artist, email, profile_link: profile || null, phone: phone || null,
       contribution_type: contribution, message: message || null, terms_version: terms.version,
       acknowledged_at: submittedAt, submitted_at: submittedAt,
     }).select("id").single();

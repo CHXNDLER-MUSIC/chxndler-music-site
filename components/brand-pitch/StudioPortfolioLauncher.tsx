@@ -337,58 +337,82 @@ function ArtistReleaseCard({
   onHover: () => void;
 }) {
   const { activeId, playing, currentTime, duration } = useBrandAudio();
+  const { playHover, playClick } = useInteractionSound();
   const isActive = activeId === releaseAudioId(release.slug);
   const progress = isActive && duration > 0 ? Math.min(1, currentTime / duration) : 0;
 
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      onMouseEnter={onHover}
-      aria-label={`Play ${release.title}`}
-      data-release-slug={release.slug}
-      className="release-card group block w-full text-left rounded-[0.5rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
-      style={{ outlineColor: PINK }}
-    >
-      <div
-        className="relative w-full overflow-hidden rounded-[0.5rem] border bg-white/5"
-        style={{
-          aspectRatio: "1 / 1",
-          borderColor: isActive ? `${PINK}aa` : "rgba(255,255,255,0.1)",
-          boxShadow: isActive ? `0 0 1.5rem -0.5rem ${PINK}99` : undefined,
-        }}
+    <div className="release-card w-full rounded-[0.5rem]" data-release-slug={release.slug}>
+      <button
+        type="button"
+        onClick={onOpen}
+        onMouseEnter={onHover}
+        aria-label={`Play ${release.title}`}
+        className="release-artwork group block w-full text-left rounded-[0.5rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem]"
+        style={{ outlineColor: PINK }}
       >
-        <img
-          src={release.coverArt}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.035]"
-          data-no-lazy="" // see ui.tsx SectionShell for why
-        />
-        <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 group-focus-visible:opacity-100 flex items-end justify-center pb-[0.875rem]">
-          <span className="inline-flex items-center gap-[0.35rem] rounded-full bg-black/70 px-[0.75rem] py-[0.3rem] text-[0.625rem] font-bold uppercase tracking-[0.15em] text-white">
-            ▶ Play Song
-          </span>
-        </div>
-        {isActive && playing && (
-          <span className="pointer-events-none absolute top-[0.5rem] left-[0.5rem] rounded-full bg-black/70 px-[0.625rem] py-[0.25rem] text-[0.5625rem] font-bold uppercase tracking-[0.15em]" style={{ color: PINK }}>
-            Now Playing
-          </span>
-        )}
-        {isActive && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[0.25rem] bg-white/15">
-            <div className="h-full" style={{ width: `${progress * 100}%`, background: PINK }} />
+        <div
+          className="relative w-full overflow-hidden rounded-[0.5rem] border bg-white/5"
+          style={{
+            aspectRatio: "1 / 1",
+            borderColor: isActive ? `${PINK}aa` : "rgba(255,255,255,0.1)",
+            boxShadow: isActive ? `0 0 1.5rem -0.5rem ${PINK}99` : undefined,
+          }}
+        >
+          <img
+            src={release.coverArt}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.035]"
+            data-no-lazy="" // see ui.tsx SectionShell for why
+          />
+          <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 group-focus-visible:opacity-100 flex items-end justify-center pb-[0.875rem]">
+            <span className="inline-flex items-center gap-[0.35rem] rounded-full bg-black/70 px-[0.75rem] py-[0.3rem] text-[0.625rem] font-bold uppercase tracking-[0.15em] text-white">
+              ▶ Play Song
+            </span>
           </div>
-        )}
-      </div>
-      <div className="mt-[0.625rem] text-center">
-        <p className="text-[0.875rem] sm:text-[1rem] font-bold uppercase tracking-[0.08em] text-white break-words">{release.title}</p>
+          {isActive && playing && (
+            <span className="pointer-events-none absolute top-[0.5rem] left-[0.5rem] rounded-full bg-black/70 px-[0.625rem] py-[0.25rem] text-[0.5625rem] font-bold uppercase tracking-[0.15em]" style={{ color: PINK }}>
+              Now Playing
+            </span>
+          )}
+          {isActive && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[0.25rem] bg-white/15">
+              <div className="h-full" style={{ width: `${progress * 100}%`, background: PINK }} />
+            </div>
+          )}
+        </div>
+        <div className="mt-[0.625rem] text-center">
+          <p className="text-[0.875rem] sm:text-[1rem] font-bold uppercase tracking-[0.08em] text-white break-words">{release.title}</p>
+        </div>
+      </button>
+      <div className="mt-[0.625rem] flex items-center justify-center gap-[0.5rem]">
+        {[
+          { label: "Spotify", href: release.spotifyUrl, color: "#1ed760", icon: <><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Z" fill="currentColor"/><path d="M7 9.1c3.5-1.05 7.45-.65 10.2 1.05M7.7 12c2.8-.8 6.05-.5 8.4.95m-7.65 1.95c2.05-.55 4.35-.3 6.1.75" fill="none" stroke="#111" strokeWidth="1.3" strokeLinecap="round"/></> },
+          { label: "Apple Music", href: release.appleMusicUrl, color: "#fa2d48", icon: <path d="M16.37 1.43c0 1.14-.42 2.2-1.23 3.17-.98 1.16-2.16 1.83-3.43 1.72a3.5 3.5 0 0 1-.03-.43c0-1.1.48-2.27 1.33-3.2.43-.49.98-.9 1.63-1.22.64-.31 1.25-.49 1.82-.52.03.16.04.32.04.48ZM20.5 15.3c-.24.56-.53 1.08-.87 1.57-.47.68-.85 1.15-1.13 1.42-.43.45-.89.68-1.38.69-.35 0-.77-.1-1.26-.31-.49-.2-.94-.3-1.35-.3-.43 0-.89.1-1.39.3-.5.21-.9.32-1.21.33-.47.02-.94-.21-1.4-.7-.3-.3-.69-.79-1.17-1.48a10.3 10.3 0 0 1-1.25-2.48c-.38-1.02-.58-2-.58-2.94 0-1.09.24-2.02.71-2.78a4.1 4.1 0 0 1 1.46-1.48 3.9 3.9 0 0 1 1.97-.55c.39 0 .9.12 1.53.36.63.24 1.04.36 1.23.36.14 0 .6-.14 1.38-.42.74-.26 1.36-.37 1.86-.33 1.37.11 2.4.65 3.09 1.63-1.22.74-1.83 1.78-1.82 3.13.01 1.05.4 1.94 1.16 2.66.34.32.72.57 1.14.75-.09.26-.2.52-.32.77Z"/> },
+          { label: "YouTube", href: release.youtubeUrl, color: "#ff0033", icon: <><path d="M23.5 6.2a3 3 0 0 0-2.1-2.12C19.55 3.56 12 3.56 12 3.56s-7.55 0-9.4.52A3 3 0 0 0 .5 6.2 31.3 31.3 0 0 0 0 12a31.3 31.3 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.12c1.85.52 9.4.52 9.4.52s7.55 0 9.4-.52a3 3 0 0 0 2.1-2.12A31.3 31.3 0 0 0 24 12a31.3 31.3 0 0 0-.5-5.8Z" fill="currentColor"/><path d="m9.6 15.6 6.3-3.6-6.3-3.6v7.2Z" fill="#111"/></> },
+        ].filter((platform) => !!platform.href).map((platform) => (
+          <a
+            key={platform.label}
+            href={platform.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Listen to ${release.title} on ${platform.label}`}
+            title={platform.label}
+            onClick={(event) => { event.stopPropagation(); playClick(); }}
+            onMouseEnter={playHover}
+            className="inline-flex h-[2.25rem] w-[2.25rem] items-center justify-center rounded-full border border-white/10 bg-white/[0.04] transition-transform hover:scale-110 hover:border-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            style={{ color: platform.color, outlineColor: platform.color }}
+          >
+            <svg viewBox="0 0 24 24" className="h-[1rem] w-[1rem]" fill="currentColor" aria-hidden="true">{platform.icon}</svg>
+          </a>
+        ))}
       </div>
 
       <style jsx>{`
-        .release-card:hover > div {
+        .release-card:hover .release-artwork > div:first-child {
           border-color: ${PINK}88 !important;
         }
       `}</style>
-    </button>
+    </div>
   );
 }

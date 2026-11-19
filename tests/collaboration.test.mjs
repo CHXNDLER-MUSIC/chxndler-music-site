@@ -2,11 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { validateCollaborationSubmission, canMarkAgreementSigned, isConfiguredAdmin, canTransitionCollaborationStatus, isValidCollaborationInvite } from "../lib/collaborationRules.mjs";
 
-const valid = { songId: "song-id", inviteToken: "private-token", submissionKey: "123e4567-e89b-12d3-a456-426614174000", termsVersion: "2026-11-18-v1", artistName: "Artist", email: "artist@example.com", contributionType: "Songwriting", acknowledged: true };
+const valid = { songId: "song-id", inviteId: "123e4567-e89b-12d3-a456-426614174001", submissionKey: "123e4567-e89b-12d3-a456-426614174000", termsVersion: "2026-11-18-v1", artistName: "Artist", email: "artist@example.com", contributionType: "Songwriting", acknowledged: true };
 
 test("submission requires identity, email, invite, contribution and acknowledgment", () => {
   assert.equal(validateCollaborationSubmission(valid), true);
-  for (const field of ["songId", "inviteToken", "artistName", "email", "submissionKey", "termsVersion", "contributionType"]) {
+  for (const field of ["songId", "inviteId", "artistName", "email", "submissionKey", "termsVersion", "contributionType"]) {
     assert.equal(validateCollaborationSubmission({ ...valid, [field]: "" }), false, `${field} is required`);
   }
   assert.equal(validateCollaborationSubmission({ ...valid, acknowledged: false }), false);
@@ -38,6 +38,7 @@ test("private invite access requires a live token and enabled song", () => {
 
 test("request workflow permits only intended next steps", () => {
   assert.equal(canTransitionCollaborationStatus("new", "reviewing"), true);
+  assert.equal(canTransitionCollaborationStatus("new", "canceled"), true);
   assert.equal(canTransitionCollaborationStatus("reviewing", "approved"), true);
   assert.equal(canTransitionCollaborationStatus("approved", "agreement_pending"), true);
   assert.equal(canTransitionCollaborationStatus("agreement_pending", "signed"), true);

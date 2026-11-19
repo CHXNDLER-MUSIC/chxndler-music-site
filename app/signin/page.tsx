@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser as supabaseClient } from "@/lib/supabase/client";
+import { isAdminEmail } from "@/lib/adminAccess";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -95,33 +96,38 @@ export default function SignInPage() {
 
       // Ensure profile row exists then check if user needs onboarding
       let dest = next;
+      const isAdmin = isAdminEmail(verifyData?.session?.user?.email);
       try {
-        const { error: rpcError } = await supabaseClient.rpc('ensure_profile');
-        if (rpcError) {
-          const uid = verifyData?.session?.user?.id;
-          const uemail = verifyData?.session?.user?.email;
-          if (uid) {
-            await supabaseClient
-              .from('profiles')
-              .upsert({ id: uid, email: uemail }, { onConflict: 'id', ignoreDuplicates: true });
+        if (!isAdmin) {
+          const { error: rpcError } = await supabaseClient.rpc('ensure_profile');
+          if (rpcError) {
+            const uid = verifyData?.session?.user?.id;
+            const uemail = verifyData?.session?.user?.email;
+            if (uid) {
+              await supabaseClient
+                .from('profiles')
+                .upsert({ id: uid, email: uemail }, { onConflict: 'id', ignoreDuplicates: true });
+            }
+          }
+          // Use profile_complete — ensure_profile never sets this true, only onboarding does
+          const { data } = await supabaseClient.from('profiles').select('profile_complete').maybeSingle();
+          if (!data?.profile_complete) {
+            if (verifyData?.session) {
+              try { sessionStorage.setItem('chx_at', verifyData.session.access_token); } catch {}
+              try { sessionStorage.setItem('chx_rt', verifyData.session.refresh_token); } catch {}
+            }
+            dest = '/onboarding?entry=start';
           }
         }
-        // Use profile_complete — ensure_profile never sets this true, only onboarding does
-        const { data } = await supabaseClient.from('profiles').select('profile_complete').maybeSingle();
-        if (!data?.profile_complete) {
+      } catch {
+        // On any error, default to onboarding for safety
+        if (!isAdmin) {
           if (verifyData?.session) {
             try { sessionStorage.setItem('chx_at', verifyData.session.access_token); } catch {}
             try { sessionStorage.setItem('chx_rt', verifyData.session.refresh_token); } catch {}
           }
           dest = '/onboarding?entry=start';
         }
-      } catch {
-        // On any error, default to onboarding for safety
-        if (verifyData?.session) {
-          try { sessionStorage.setItem('chx_at', verifyData.session.access_token); } catch {}
-          try { sessionStorage.setItem('chx_rt', verifyData.session.refresh_token); } catch {}
-        }
-        dest = '/onboarding?entry=start';
       }
 
       setTimeout(() => router.replace(dest), 1400);
