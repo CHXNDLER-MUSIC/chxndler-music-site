@@ -20,7 +20,7 @@ export async function GET() {
   ]);
   if (ideas.error || opportunities.error || placements.error) return NextResponse.json({ error: "Apply the sync ideas and workspace migrations before loading sync records." }, { status: 503 });
   const names = new Map((songs.data || []).map(song => [song.id, song.title]));
-  return NextResponse.json({ songs: songs.data || [], ideas: ideas.data || [], opportunities: (opportunities.data || []).map(row => ({ ...row, song_title: names.get(row.song_id) || "" })), placements: (placements.data || []).map(row => ({ ...row, song_title: names.get(row.song_id) || "" })) });
+  return NextResponse.json({ songs: songs.data || [], ideas: (ideas.data || []).map(row => ({ ...row, song_title: names.get(row.song_id) || row.song_title })), opportunities: (opportunities.data || []).map(row => ({ ...row, song_title: names.get(row.song_id) || "" })), placements: (placements.data || []).map(row => ({ ...row, song_title: names.get(row.song_id) || "" })) });
 }
 
 const tables = { opportunity: "sync_opportunities", placement: "sync_placements" } as const;

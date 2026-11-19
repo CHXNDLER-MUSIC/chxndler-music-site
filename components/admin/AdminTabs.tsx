@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import SongTracker from "@/components/admin/SongTracker";
-import SyncOutreachTab from "@/components/admin/SyncOutreachTab";
 import FinanceTab from "@/components/admin/FinanceTab";
 import TasksTab from "@/components/admin/TasksTab";
 import OverviewTab from "@/components/admin/OverviewTab";
@@ -22,7 +21,7 @@ function TabIcon({ name }: { name: IconName }) {
     finance: <><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M7 15h2m6 0h2"/></>,
     more: <><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></>,
   };
-  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="admin-tab-icon">{paths[name]}</svg>;
+  return <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="admin-tab-icon h-4 w-4 shrink-0">{paths[name]}</svg>;
 }
 
 export default function AdminTabs() {
@@ -38,6 +37,11 @@ export default function AdminTabs() {
     const requestedSubtab = new URLSearchParams(window.location.search).get("section")?.toLowerCase();
     if (legacySubtab || ["pitches", "gigs", "sync", "contacts"].includes(requestedSubtab || "")) {
       setOutreachSection((legacySubtab || requestedSubtab) as "pitches" | "gigs" | "sync" | "contacts");
+    }
+    if (legacySubtab) {
+      const params = new URLSearchParams(window.location.search);
+      params.set("view", "outreach"); params.set("section", legacySubtab);
+      window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
     }
   }, []);
   const choose = (value: Tab) => { setTab(value); setMoreOpen(false); };

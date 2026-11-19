@@ -14,10 +14,10 @@ function clean(body: Record<string, unknown>) {
 export async function GET() {
   const denied = await gate(); if (denied) return denied;
   const db = getSupabaseAdmin();
-  const [records, songs] = await Promise.all([db.from("outreach_records").select("id,song_id,category,contact_name,organization,contact_email,pitch,sent_at,status,follow_up_at,notes,result,created_at").order("updated_at", { ascending: false }), db.from("songs").select("id,title,slug").order("title")]);
+  const [records, songs] = await Promise.all([db.from("outreach_records").select("id,song_id,song_title,category,contact_name,organization,contact_email,pitch,sent_at,status,follow_up_at,notes,result,created_at").order("updated_at", { ascending: false }), db.from("songs").select("id,title,slug").order("title")]);
   if (records.error) return NextResponse.json({ error: records.error.message }, { status: 503 });
   const titles = new Map((songs.data || []).map(song => [song.id, song.title]));
-  return NextResponse.json({ songs: songs.data || [], records: (records.data || []).map(row => ({ ...row, song_title: titles.get(row.song_id) || "" })) });
+  return NextResponse.json({ songs: songs.data || [], records: (records.data || []).map(row => ({ ...row, song_title: titles.get(row.song_id) || row.song_title || "" })) });
 }
 export async function POST(request: Request) {
   const denied = await gate(); if (denied) return denied;

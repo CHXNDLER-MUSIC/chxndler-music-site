@@ -7,7 +7,6 @@ import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 import { youtubeSkyFor } from "@/lib/sky-youtube";
 import { releaseAudioSrc } from "@/components/brand-pitch/artistRelease";
 import type { ArtistRelease } from "@/components/brand-pitch/artistRelease";
-import CollabAccessGate from "@/components/collab/CollabAccessGate";
 import { getCollabInviteSession } from "@/lib/collabAccess";
 
 export const dynamic = "force-dynamic";
@@ -171,7 +170,7 @@ export default async function CollabPage() {
   const catalog = inviteSession
     ? await fetchArtistSongs()
     : await fetchArtistSongs([...new Set(musicVideos.map(project => project.song_id))]);
-  if (!inviteSession) return <CollabGallery artistReleases={[]} unreleasedSongs={[]} defaultView="video" invitedDisplayName="" invitedEmail="" musicVideos={musicVideos} canViewFeatures={false} />;
+  if (!inviteSession) return <CollabGallery artistReleases={catalog.released} unreleasedSongs={catalog.unreleased} defaultView="video" invitedDisplayName="" invitedEmail="" musicVideos={musicVideos} canViewFeatures={false} />;
   const allCatalogSongs = [...catalog.released, ...catalog.unreleased];
   const invitedSong = inviteSession.scope === "song" && inviteSession.song_id
     ? allCatalogSongs.find((song) => song.databaseId === inviteSession.song_id && song.readyForCollab === true) || null

@@ -18,9 +18,8 @@ export default async function AdminHome() {
 
   return <main className="admin-dashboard min-h-screen px-5 py-8 text-white sm:px-10 sm:py-12" style={{ background: "#09090c" }}>
     <div className="mx-auto max-w-5xl">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <header className="mb-6 flex justify-center">
         <BrandNavigation />
-        <p className="text-xs font-black tracking-[.28em] text-[#ff3ea5]">ADMIN</p>
       </header>
       <AdminTabs />
     </div>

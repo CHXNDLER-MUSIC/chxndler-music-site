@@ -64,4 +64,13 @@ update public.sync_ideas i
 set song_id = s.id, updated_at = now()
 from public.songs s
 where i.song_id is null
-  and trim(both '-' from regexp_replace(regexp_replace(lower(i.song_title), '[^a-z0-9]+', '-', 'g'), '-+', '-', 'g')) = s.slug;
+  and regexp_replace(lower(i.song_title), '[^a-z0-9]', '', 'g') = regexp_replace(lower(s.title), '[^a-z0-9]', '', 'g');
+
+-- Link legacy pitch records by their existing song title without changing
+-- outreach history or replacing any established song_id relationships.
+update public.outreach_records r
+set song_id = s.id, updated_at = now()
+from public.songs s
+where r.song_id is null
+  and coalesce(r.song_title, '') <> ''
+  and regexp_replace(lower(r.song_title), '[^a-z0-9]', '', 'g') = regexp_replace(lower(s.title), '[^a-z0-9]', '', 'g');

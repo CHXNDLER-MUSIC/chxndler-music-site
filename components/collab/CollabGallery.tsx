@@ -77,13 +77,14 @@ function CollabGalleryContent({
   invitedDisplayName: string;
   canViewFeatures: boolean;
 }) {
+  const [category, setCategory] = useState<"features" | "videos">(canViewFeatures && defaultView !== "video" ? "features" : "videos");
   const [tab, setTab] = useState<Tab>(defaultView);
   const [selected, setSelected] = useState<SelectedItem | null>(null);
   const [requestProject, setRequestProject] = useState<string | null>(null);
   const audio = useBrandAudio();
 
   const items = useMemo<SelectedItem[]>(() => {
-    if (!canViewFeatures) return [];
+    if (!canViewFeatures || category !== "features") return [];
     const catalog = [...artistReleases, ...unreleasedSongs].filter((song, index, rows) => rows.findIndex(other => other.databaseId === song.databaseId) === index);
     const songs = filterCollabCatalog(catalog, tab);
     return songs.map((release) => ({
@@ -92,7 +93,7 @@ function CollabGalleryContent({
       audioUrl: release.audioUrl,
       release,
     }));
-  }, [tab, artistReleases, unreleasedSongs, canViewFeatures]);
+  }, [tab, artistReleases, unreleasedSongs, canViewFeatures, category]);
 
   useEffect(() => {
     if (!invitedSongSlug) return;
@@ -153,8 +154,12 @@ function CollabGalleryContent({
         </div>
       </header>
 
-      <div className="collab-tabs" role="tablist" aria-label="Music and collaboration categories">
-        {COLLAB_CATALOG_FILTERS.filter(value => canViewFeatures || value === "video").map((value) => (
+      <div className="collab-category-tabs" role="tablist" aria-label="Collaboration categories">
+        {canViewFeatures && <button type="button" role="tab" aria-selected={category === "features"} onClick={() => setCategory("features")}>Music Features</button>}
+        <button type="button" role="tab" aria-selected={category === "videos"} onClick={() => setCategory("videos")}>Music Videos</button>
+      </div>
+      {category === "features" && <div className="collab-tabs" role="tablist" aria-label="Music feature filters">
+        {COLLAB_CATALOG_FILTERS.map((value) => (
           <button
             key={value}
             type="button"
@@ -170,9 +175,9 @@ function CollabGalleryContent({
             {TAB_LABELS[value]}
           </button>
         ))}
-      </div>
+      </div>}
 
-      {musicVideos.length > 0 && <section className="collab-video-opportunities" aria-label="Music video opportunities">
+      {category === "videos" && (musicVideos.length > 0 ? <section className="collab-video-opportunities" aria-label="Music video opportunities">
         <div><p className="collab-video-kicker">MUSIC VIDEOS</p><h2>Bring a song to life.</h2></div>
         <div className="collab-video-grid">{musicVideos.map(project => {
           const song = [...artistReleases, ...unreleasedSongs].find(item => item.slug === project.songs?.slug);
@@ -184,9 +189,9 @@ function CollabGalleryContent({
             </div>
           </article>;
         })}</div>
-      </section>}
+      </section> : <div className="collab-empty"><p>NO MUSIC VIDEO PROJECTS YET.</p><span>Check back soon for new video opportunities.</span></div>)}
 
-      {items.length ? (
+      {category === "features" && (items.length ? (
         <section className="collab-grid" aria-label={TAB_LABELS[tab]}>
           {items.map((item, index) => (
             <button
@@ -223,9 +228,9 @@ function CollabGalleryContent({
           <p>NO SONGS IN THIS VIEW YET.</p>
         <span>{tab === "collabs" ? "No songs are currently marked Ready for Collab." : tab === "video" ? "No collaboration-ready songs currently need a music video." : "No final or released songs yet."}</span>
         </div>
-      )}
+      ))}
 
-      {tab === "collabs" && <div className="collab-extra-cta"><a href={`mailto:info@chxndler-music.com?subject=${encodeURIComponent("Have something else in mind?")}`}>Have something else in mind? <span aria-hidden="true">↗</span></a></div>}
+      {category === "features" && tab === "collabs" && <div className="collab-extra-cta"><a href={`mailto:info@chxndler-music.com?subject=${encodeURIComponent("Have something else in mind?")}`}>Have something else in mind? <span aria-hidden="true">↗</span></a></div>}
 
       {selected && (
         <MediaViewerModal
@@ -277,6 +282,9 @@ function CollabGalleryContent({
         .collab-extra-cta a:hover{background:rgba(255,62,165,.12);border-color:#ff3ea5}
         .collab-extra-cta a:focus-visible{outline:2px solid #ff3ea5;outline-offset:3px}
         .collab-wordmark{color:#fff;text-decoration:none;font-size:.8rem;letter-spacing:.18em}
+        .collab-category-tabs{display:flex;gap:.5rem;max-width:900px;margin:0 auto 1rem;padding:.25rem;border:1px solid rgba(255,255,255,.09);border-radius:999px;background:rgba(255,255,255,.035)}
+        .collab-category-tabs button{flex:1;border:0;border-radius:999px;background:transparent;color:rgba(255,255,255,.58);padding:.8rem;font-size:.7rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+        .collab-category-tabs button[aria-selected="true"]{background:rgba(255,62,165,.14);color:#ff62b0;box-shadow:inset 0 0 0 1px rgba(255,62,165,.38)}
         .collab-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:900px;margin:0 auto 1.5rem;padding:.25rem;border-radius:999px;background:rgba(255,255,255,.055)}
         .collab-tabs button{border:0;border-radius:999px;background:transparent;color:var(--tab-color);opacity:.7;padding:.75rem .5rem;font-size:.7rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s,opacity .2s}
         .collab-tabs button[data-tab="collabs"]{--tab-color:#ff3ea5}

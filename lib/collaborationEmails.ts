@@ -3,6 +3,7 @@ import { songCoverPath } from "@/lib/songCover";
 export type CollaborationEmailRequest = {
   id: string; artist_name: string; email: string; profile_link: string | null; phone: string | null;
   contribution_type: string; message: string | null; submitted_at: string;
+  portfolio_url?: string | null; estimated_rate?: string | null;
   songs?: { title: string; slug: string } | null;
 };
 export type EmailRecipient = "admin" | "artist";
@@ -35,15 +36,16 @@ export async function sendCollaborationEmails(request: CollaborationEmailRequest
   const detailUrl = `${baseUrl}/admin/collaborations?request=${encodeURIComponent(request.id)}`;
   const cover = request.songs?.slug ? `${baseUrl}${songCoverPath(request.songs.slug, songTitle)}` : "";
   const message = request.message || "No message provided";
-  const profile = request.profile_link || "Not provided", phone = request.phone || "Not provided";
-  const content = `<div style="background:#09090c;color:#fff;padding:28px;font:15px Arial"><h1 style="color:#ff3ea5">New Collab Request</h1>${cover ? `<img src="${escapeHtml(cover)}" width="120" alt="${escapeHtml(songTitle)} artwork">` : ""}<p><b>Song:</b> ${escapeHtml(songTitle)}</p><p><b>Artist:</b> ${escapeHtml(request.artist_name)}</p><p><b>Email:</b> ${escapeHtml(request.email)}</p><p><b>Profile:</b> ${escapeHtml(profile)}</p><p><b>Phone:</b> ${escapeHtml(phone)}</p><p><b>Contribution:</b> ${escapeHtml(request.contribution_type)}</p><p><b>Idea:</b><br>${escapeHtml(message)}</p><p><b>Submitted:</b> ${escapeHtml(new Date(request.submitted_at).toLocaleString("en-US", { timeZone: "UTC", timeZoneName: "short" }))}</p><a style="display:inline-block;padding:12px 18px;background:#ff3ea5;color:#09090c;text-decoration:none;font-weight:bold" href="${escapeHtml(detailUrl)}">View Request →</a></div>`;
+  const profile = request.profile_link || "Not provided", portfolio = request.portfolio_url || profile, phone = request.phone || "Not provided";
+  const title = request.contribution_type === "Music Video" ? "New Music Video Application" : "New Collab Request";
+  const content = `<div style="background:#09090c;color:#fff;padding:28px;font:15px Arial"><h1 style="color:#ff3ea5">${title}</h1>${cover ? `<img src="${escapeHtml(cover)}" width="120" alt="${escapeHtml(songTitle)} artwork">` : ""}<p><b>Song:</b> ${escapeHtml(songTitle)}</p><p><b>Artist:</b> ${escapeHtml(request.artist_name)}</p><p><b>Email:</b> ${escapeHtml(request.email)}</p><p><b>Portfolio:</b> ${escapeHtml(portfolio)}</p>${request.estimated_rate ? `<p><b>Estimated rate:</b> ${escapeHtml(request.estimated_rate)}</p>` : ""}<p><b>Profile:</b> ${escapeHtml(profile)}</p><p><b>Phone:</b> ${escapeHtml(phone)}</p><p><b>Contribution:</b> ${escapeHtml(request.contribution_type)}</p><p><b>Idea:</b><br>${escapeHtml(message)}</p><p><b>Submitted:</b> ${escapeHtml(new Date(request.submitted_at).toLocaleString("en-US", { timeZone: "UTC", timeZoneName: "short" }))}</p><a style="display:inline-block;padding:12px 18px;background:#ff3ea5;color:#09090c;text-decoration:none;font-weight:bold" href="${escapeHtml(detailUrl)}">View Request →</a></div>`;
 
   for (const recipient of recipients) {
     try {
       let response;
       if (recipient === "admin") {
         if (!adminAddress) throw new Error("COLLAB_NOTIFICATION_EMAIL is not configured.");
-        response = await transport.sendMail({ from, to: adminAddress, replyTo, subject: `New Collab Request: ${songTitle} — ${request.artist_name}`, html: content });
+        response = await transport.sendMail({ from, to: adminAddress, replyTo, subject: `${title}: ${songTitle} — ${request.artist_name}`, html: content });
       } else {
         response = await transport.sendMail({
           from, to: request.email, replyTo,
