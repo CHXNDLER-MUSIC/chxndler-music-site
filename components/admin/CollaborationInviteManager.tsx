@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 
 type Song = { id: string; title: string; collaboration_enabled?: boolean };
-type Invite = { id: string; display_name: string; song_id: string | null; songs?: { title: string } | { title: string }[] | null; status: string; expires_at: string | null; last_accessed_at: string | null; requests_count: number };
+type Invite = { id: string; display_name: string; song_id: string | null; invite_scope?: "catalog" | "video" | "song"; invitee_email?: string | null; songs?: { title: string } | { title: string }[] | null; status: string; expires_at: string | null; last_accessed_at: string | null; requests_count: number };
 
 export default function CollaborationInviteManager() {
   const [displayName, setDisplayName] = useState("");
   const [expiryDays, setExpiryDays] = useState("30");
   const [songId, setSongId] = useState("");
+  const [scope, setScope] = useState<"catalog" | "video" | "song">("catalog");
+  const [inviteeEmail, setInviteeEmail] = useState("");
   const [songs, setSongs] = useState<Song[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
   const [link, setLink] = useState("");
@@ -22,15 +24,15 @@ export default function CollaborationInviteManager() {
     else setMessage(data.error || "Could not load invitations.");
   }, []);
   useEffect(() => { void load(); }, [load]);
-  useEffect(() => { void fetch("/api/music-video-projects/songs", { cache: "no-store" }).then(response => response.json()).then(data => setSongs(data.songs || [])).catch(() => setMessage("Could not load songs.")); }, []);
+  useEffect(() => { void fetch("/api/music-video-projects/songs", { cache: "no-store" }).then(response => response.json()).then(data => { setSongs(data.songs || []); const target = new URLSearchParams(window.location.search).get("song"); if (target && (data.songs || []).some((song: Song) => song.id === target)) { setScope("song"); setSongId(target); } }).catch(() => setMessage("Could not load songs.")); }, []);
 
   async function create(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setMessage(""); setLink("");
     try {
-      const response = await fetch("/api/admin/collaboration-invites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayName, songId, expiryDays }) });
+      const response = await fetch("/api/admin/collaboration-invites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayName, songId: scope === "song" ? songId : null, scope, inviteeEmail, expiryDays }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not generate invitation.");
-      setDisplayName(""); setLink(data.link); setMessage("Song-specific invitation link generated. Copy it now; the secure token is shown only once."); await load();
+      setDisplayName(""); setInviteeEmail(""); setSongId(""); setLink(data.link); setMessage("Personal invitation link generated. Copy it now; the secure token is shown only once."); await load();
     } catch (error) { setMessage(error instanceof Error ? error.message : "Could not generate invitation."); }
     finally { setBusy(false); }
   }
@@ -64,7 +66,7 @@ export default function CollaborationInviteManager() {
     setBusy(true); setMessage(""); setLink("");
     try {
       const name = invite.display_name.replace(/ \(legacy [^)]+\)$/, "");
-      const response = await fetch("/api/admin/collaboration-invites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayName: name, songId: invite.song_id, expiryDays }) });
+      const response = await fetch("/api/admin/collaboration-invites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayName: name, songId: invite.song_id, scope: invite.invite_scope || (invite.song_id ? "song" : "catalog"), inviteeEmail: invite.invitee_email || "", expiryDays }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not regenerate invitation.");
       setLink(data.link);
@@ -78,10 +80,12 @@ export default function CollaborationInviteManager() {
   return <section className="mb-6 rounded-2xl border border-[#ff3ea5]/20 bg-white/[.025] p-4 sm:p-6">
     <p className="text-xs font-bold uppercase tracking-[.2em] text-[#ff3ea5]">Personal invitations</p>
     <h2 className="mt-1 text-xl font-bold">Invite a creative into The Heartverse</h2>
-    <p className="mt-1 text-sm text-white/50">Create a private, expiring link for one song. Each invitation has its own revocable access token.</p>
+    <p className="mt-1 text-sm text-white/50">Create a private, expiring link for the catalog, video opportunities, or one song.</p>
     <form onSubmit={create} className="mt-4 flex flex-wrap gap-2">
       <input required maxLength={120} value={displayName} onChange={event => setDisplayName(event.target.value)} placeholder="Display name, artist name, or handle" className="min-w-56 flex-1 rounded-lg border border-white/10 bg-black/30 p-3 text-sm" />
-      <select required value={songId} onChange={event => setSongId(event.target.value)} className="min-w-48 rounded-lg border border-white/10 bg-[#17171c] p-3 text-sm"><option value="">Choose song…</option>{songs.map(song => <option key={song.id} value={song.id}>{song.title}</option>)}</select>
+      <input type="email" maxLength={320} value={inviteeEmail} onChange={event => setInviteeEmail(event.target.value)} placeholder="Email (optional)" className="min-w-56 rounded-lg border border-white/10 bg-black/30 p-3 text-sm" />
+      <select value={scope} onChange={event => setScope(event.target.value as typeof scope)} className="rounded-lg border border-white/10 bg-[#17171c] p-3 text-sm"><option value="catalog">Explore all songs</option><option value="video">Browse video opportunities</option><option value="song">Specific song</option></select>
+      {scope === "song" && <select required value={songId} onChange={event => setSongId(event.target.value)} className="min-w-48 rounded-lg border border-white/10 bg-[#17171c] p-3 text-sm"><option value="">Choose song…</option>{songs.map(song => <option key={song.id} value={song.id}>{song.title}</option>)}</select>}
       <select value={expiryDays} onChange={event => setExpiryDays(event.target.value)} className="rounded-lg border border-white/10 bg-[#17171c] p-3 text-sm"><option value="7">Expires in 7 days</option><option value="30">Expires in 30 days</option><option value="90">Expires in 90 days</option><option value="never">No expiration</option></select>
       <button disabled={busy} className="rounded-lg bg-[#FD52AF] px-4 py-3 text-sm font-bold text-black disabled:opacity-50">{busy ? "Working…" : "Generate invitation link"}</button>
       {songId && songs.find(item => item.id === songId)?.collaboration_enabled && <button type="button" disabled={busy} onClick={() => void disableSong()} className="rounded-lg border border-white/15 px-4 py-3 text-xs text-white/65 disabled:opacity-50">Disable requests for song</button>}

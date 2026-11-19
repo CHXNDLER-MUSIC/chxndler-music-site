@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getApiUser, isAdminUser } from "@/lib/apiAuth";
 import AdminTabs from "@/components/admin/AdminTabs";
+import BrandNavigation from "@/components/admin/BrandNavigation";
 
 export default async function AdminHome() {
   const auth = await getApiUser();
@@ -17,11 +18,9 @@ export default async function AdminHome() {
 
   return <main className="admin-dashboard min-h-screen px-5 py-8 text-white sm:px-10 sm:py-12" style={{ background: "#09090c" }}>
     <div className="mx-auto max-w-5xl">
-      <Link href="/" className="text-xs font-bold tracking-[.2em] text-white/45">ENTER THE HEARTVERSE</Link>
-      <header className="my-10">
-        <p className="text-xs font-bold tracking-[.28em] text-[#ff3ea5]">ADMIN</p>
-        <h1 className="mt-2 text-4xl font-black">Song workspaces</h1>
-        <p className="mt-3 max-w-2xl text-sm text-white/75">Each song has one home for its story, lyrics, collaborators, video, outreach, and release links.</p>
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <BrandNavigation />
+        <p className="text-xs font-black tracking-[.28em] text-[#ff3ea5]">ADMIN</p>
       </header>
       <AdminTabs />
     </div>

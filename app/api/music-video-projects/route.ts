@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 export const runtime = "nodejs";
 const statuses = ["concept", "planning", "agreement", "filming", "editing", "delivered", "complete"];
 const visibilities = ["public", "invite_only", "hidden"];
+const collaborationStages = ["Seeking", "Discussing", "Confirmed", "Production", "Delivered"];
 
 export async function GET(request: Request) {
   const id = new URL(request.url).searchParams.get("id");
@@ -44,6 +45,7 @@ export async function PATCH(request: Request) {
   const body = await request.json(), id = String(body.id || ""), update: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (typeof body.visibility === "string" && visibilities.includes(body.visibility)) update.visibility = body.visibility;
   if (typeof body.status === "string" && statuses.includes(body.status)) update.status = body.status;
+  if (typeof body.collaboration_stage === "string" && collaborationStages.includes(body.collaboration_stage)) update.collaboration_stage = body.collaboration_stage;
   if (typeof body.public_concept === "string") update.public_concept = body.public_concept.slice(0, 1000);
   if (typeof body.public_status === "string") update.public_status = body.public_status.slice(0, 80);
   if (typeof body.next_action === "string") update.next_action = body.next_action.slice(0, 240);

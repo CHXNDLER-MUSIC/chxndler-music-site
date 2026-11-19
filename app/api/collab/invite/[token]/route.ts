@@ -10,7 +10,7 @@ async function findInvite(token: string) {
   if (!/^[A-Za-z0-9_-]{40,60}$/.test(token)) return null;
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const { data } = await getSupabaseAdmin().from("collaboration_invites")
-    .select("id,display_name")
+    .select("id,display_name,invite_scope,song_id")
     .eq("token_hash", tokenHash).is("revoked_at", null)
     .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`).maybeSingle();
   return data;
@@ -23,7 +23,7 @@ export async function GET(_request: Request, { params }: Context) {
   try {
     const invite = await findInvite(token);
     if (!invite) return NextResponse.json({ error: "This invitation is invalid, expired, or has been revoked." }, { status: 404, headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" } });
-    return NextResponse.json({ displayName: invite.display_name }, { headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" } });
+    return NextResponse.json({ displayName: invite.display_name, scope: invite.invite_scope || (invite.song_id ? "song" : "catalog"), songId: invite.song_id }, { headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" } });
   } catch (error) {
     console.error("[collab/invite] lookup failed", error);
     return NextResponse.json({ error: "This invitation could not be checked right now." }, { status: 503 });

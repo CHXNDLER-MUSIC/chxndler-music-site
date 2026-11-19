@@ -12,6 +12,10 @@ export type ArtistRelease = {
   readyForCollab?: boolean;
   collaborationInterests?: string[];
   collaborationDescription?: string;
+  videoConcept?: string;
+  audioStatus?: "Demo" | "In Progress" | "Final" | "Released";
+  isReleased?: boolean;
+  collaborationOpportunities?: Array<"feature" | "video" | "remix">;
   releaseDate?: string | null;
   slug: string;
   title: string;

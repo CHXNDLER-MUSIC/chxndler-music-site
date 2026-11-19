@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { songs as catalog } from "@/lib/songs-consolidated";
+import { supabaseTrackUrl } from "@/lib/supabaseTrackUrl";
 
 type SongInfo = { title: string; key: string; capo: string; shape: string };
 type PracticeEntry = SongInfo & { id: string; lyrics: string };
@@ -30,6 +31,7 @@ const practiceCatalog: SongInfo[] = catalog.map(song => {
   const info = catalogInfoByTitle.get(key) || (song.slug === "mr-brightside-killers-cover" ? catalogInfoByTitle.get("mrbrightside") : undefined);
   return { title: song.title, key: info?.key ?? "", capo: info?.capo ?? "", shape: info?.shape ?? "" };
 });
+export function practiceInfoFor(title: string) { return practiceCatalog.find(info => info.title.toLowerCase() === title.toLowerCase()) || null; }
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const storageKey = "chxndler-admin-practice-v1";
 function slugify(title: string) { return title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
@@ -116,7 +118,7 @@ export default function PracticeTab({ campaignSong = "" }: { campaignSong?: stri
       <span className="self-center text-xs text-white/40">{saved ? "Saved on this device" : "Autosaves as you edit"}</span>
     </div>
     {!entries.length ? <div className="rounded-xl border border-dashed border-white/15 p-10 text-center text-sm text-white/45">No songs added for this date yet. Choose one above and press +.</div> : <div className="space-y-4">{entries.map(entry => {
-      const song = trackFor(entry.title); const slug = song?.slug || slugify(entry.title); const instrumental = song ? `https://hjpaiolhhugwzblarfix.supabase.co/storage/v1/object/public/tracks/${encodeURIComponent(`${slug}-instrumental.mp3`)}` : ""; const backgroundVideo = backgroundVideos[slugify(entry.title)]; const backgroundSource = backgroundVideo ? backgroundVideoSource(backgroundVideo) : null;
+      const song = trackFor(entry.title); const slug = song?.slug || slugify(entry.title); const instrumental = song ? supabaseTrackUrl(`${slug}-instrumental.mp3`) : ""; const backgroundVideo = backgroundVideos[slugify(entry.title)]; const backgroundSource = backgroundVideo ? backgroundVideoSource(backgroundVideo) : null;
       return <article key={entry.id} className="overflow-hidden rounded-xl border border-white/10 bg-white/[.025]">
         <div className="flex flex-wrap items-center gap-4 p-4">
           {song?.cover && <img src={song.cover} alt={`${entry.title} cover art`} className="h-16 w-16 rounded-lg object-cover" />}

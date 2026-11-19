@@ -28,7 +28,7 @@ export async function PATCH(request: Request) {
   const auth = await getApiUser(); if (!auth) return unauthorized(); if (!isAdminUser(auth.user)) return forbidden();
   const body = await request.json(), id = String(body.id || ""), db = getSupabaseAdmin();
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
-  const { data: current, error: currentError } = await db.from("collaboration_requests").select("status,agreement_status,agreement_path,signed_agreement_path").eq("id", id).maybeSingle();
+  const { data: current, error: currentError } = await db.from("collaboration_requests").select("status,agreement_status,agreement_path,signed_agreement_path,song_id,contribution_type").eq("id", id).maybeSingle();
   if (currentError || !current) return NextResponse.json({ error: "Request not found." }, { status: 404 });
   const allowed = ["new","reviewing","approved","declined","agreement_pending","signed","in_progress","completed","canceled","archived"];
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -78,6 +78,16 @@ export async function PATCH(request: Request) {
   }
   const { data, error } = await db.from("collaboration_requests").update(update).eq("id", id).select("id,status,agreement_status").single();
   if (error) return NextResponse.json({ error: "Unable to update request." }, { status: 500 });
+  if (current.contribution_type === "Music Video" && ["approved", "in_progress", "completed"].includes(String(body.status || ""))) {
+    const stage = body.status === "approved" ? "Confirmed" : body.status === "in_progress" ? "Production" : "Delivered";
+    const { data: created } = await db.from("music_video_projects").upsert({ song_id: current.song_id, project_type: "primary", collaboration_stage: stage }, { onConflict: "song_id,project_type", ignoreDuplicates: true }).select("id").maybeSingle();
+    const existing = created ? null : await db.from("music_video_projects").select("id").eq("song_id", current.song_id).eq("project_type", "primary").maybeSingle();
+    const projectId = created?.id || existing?.data?.id;
+    if (projectId) {
+      await db.from("music_video_projects").update({ collaboration_stage: stage }).eq("id", projectId);
+      await db.from("collaboration_requests").update({ music_video_project_id: projectId, project_status: body.status === "completed" ? "completed" : body.status === "in_progress" ? "in_progress" : "requested" }).eq("id", id);
+    }
+  }
   if (body.status || body.agreement_status || body.internal_notes || body.agreement || Object.keys(update).length > 1) {
     await db.from("collaboration_request_events").insert({ request_id: id, event: body.status === "signed" ? "signed" : body.status || body.agreement_status || "request_updated", details: { actor: auth.user.email, updates: Object.keys(update).filter((key) => key !== "updated_at") } });
   }

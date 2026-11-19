@@ -1,15 +1,9 @@
 /**
- * Supabase Storage public URL builder for audio tracks.
- *
- * The bucket "tracks" is public — no auth keys needed for playback.
- * Filenames are percent-encoded so spaces, parentheses, and other
- * special characters resolve correctly.
+ * Route audio through the server so private catalog tracks can be authorized
+ * before a short-lived Supabase URL is issued.
  */
 
-const SUPABASE_STORAGE_URL =
-  "https://hjpaiolhhugwzblarfix.supabase.co/storage/v1/object/public/tracks";
-
-/** Build a public Supabase Storage URL for a track file. */
+/** Build a same-origin authorized audio URL. */
 export function supabaseTrackUrl(filename: string): string {
-  return `${SUPABASE_STORAGE_URL}/${encodeURIComponent(filename)}`;
+  return `/api/audio?path=${encodeURIComponent(filename)}`;
 }

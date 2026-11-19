@@ -5,23 +5,11 @@ import ArtistReleaseDetail from "@/components/brand-pitch/ArtistReleaseDetail";
 import { BrandAudioProvider, useBrandAudio } from "@/components/brand-pitch/BrandAudioContext";
 import MediaViewerModal from "@/components/brand-pitch/MediaViewerModal";
 import SkyVideoBackground from "@/components/brand-pitch/SkyVideoBackground";
-import { releaseAudioId, releaseAudioSrc, releaseNowPlaying, type ArtistRelease } from "@/components/brand-pitch/artistRelease";
-import { slugify } from "@/lib/slug";
+import { releaseAudioSrc, releaseNowPlaying, type ArtistRelease } from "@/components/brand-pitch/artistRelease";
+import { COLLAB_CATALOG_FILTERS, filterCollabCatalog } from "@/lib/collabCatalog.mjs";
 import { playCollabClickSound } from "@/components/collab/playCollabClickSound";
 
-export type CollabProject = {
-  id: string;
-  title: string;
-  coverUrl: string | null;
-  audioUrl: string | null;
-  instrumentalUrl: string | null;
-  lyricsUrl: string | null;
-  meaningUrl: string | null;
-  backgroundUrl: string | null;
-  backgroundIsVideo: boolean;
-};
-
-type Tab = "collabs" | "released" | "unreleased";
+type Tab = "collabs" | "video" | "complete";
 type SelectedItem = {
   id: string;
   release: ArtistRelease;
@@ -35,11 +23,7 @@ type SelectedItem = {
   from: Tab;
 };
 
-const TAB_LABELS: Record<Tab, string> = {
-  collabs: "Open for Collab",
-  released: "Artist Releases",
-  unreleased: "Unreleased",
-};
+const TAB_LABELS: Record<Tab, string> = { collabs: "Open for Collab", video: "Video Needed", complete: "Complete" };
 
 function placeholderCover(title: string) {
   const text = title.replace(/[&<>]/g, " ");
@@ -48,91 +32,66 @@ function placeholderCover(title: string) {
 }
 
 export default function CollabGallery({
-  projects,
   artistReleases,
   unreleasedSongs,
   invitedSongSlug = null,
+  defaultView = "collabs",
+  invitedEmail = "",
   musicVideos,
   invitedDisplayName = "",
 }: {
-  projects: CollabProject[];
   artistReleases: ArtistRelease[];
   unreleasedSongs: ArtistRelease[];
   invitedSongSlug?: string | null;
+  defaultView?: "collabs" | "video";
+  invitedEmail?: string;
   musicVideos: Array<{ id: string; song_id: string; public_concept: string; public_status: string; songs?: { title: string; slug: string } }>;
   invitedDisplayName?: string;
 }) {
   return (
     <BrandAudioProvider>
-      <CollabGalleryContent projects={projects} artistReleases={artistReleases} unreleasedSongs={unreleasedSongs} invitedSongSlug={invitedSongSlug} musicVideos={musicVideos} invitedDisplayName={invitedDisplayName} />
+      <CollabGalleryContent artistReleases={artistReleases} unreleasedSongs={unreleasedSongs} invitedSongSlug={invitedSongSlug} defaultView={defaultView} invitedEmail={invitedEmail} musicVideos={musicVideos} invitedDisplayName={invitedDisplayName} />
     </BrandAudioProvider>
   );
 }
 
 function CollabGalleryContent({
-  projects,
   artistReleases,
   unreleasedSongs,
   invitedSongSlug,
+  defaultView,
+  invitedEmail,
   musicVideos,
   invitedDisplayName,
 }: {
-  projects: CollabProject[];
   artistReleases: ArtistRelease[];
   unreleasedSongs: ArtistRelease[];
   invitedSongSlug: string | null;
+  defaultView: "collabs" | "video";
+  invitedEmail: string;
   musicVideos: Array<{ id: string; song_id: string; public_concept: string; public_status: string; songs?: { title: string; slug: string } }>;
   invitedDisplayName: string;
 }) {
-  const [tab, setTab] = useState<Tab>(unreleasedSongs.length ? "unreleased" : invitedSongSlug ? "released" : "collabs");
+  const [tab, setTab] = useState<Tab>(defaultView);
   const [selected, setSelected] = useState<SelectedItem | null>(null);
   const audio = useBrandAudio();
 
   const items = useMemo<SelectedItem[]>(() => {
-    if (tab === "collabs") {
-      return projects.map((project) => {
-        const linkedSong = [...artistReleases, ...unreleasedSongs].find(song => slugify(song.title) === slugify(project.title));
-        return {
-        id: `collab:${project.id}`,
-        from: tab,
-        coverUrl: project.coverUrl,
-        audioUrl: project.audioUrl || undefined,
-        instrumentalUrl: project.instrumentalUrl,
-        lyricsUrl: project.lyricsUrl,
-        meaningUrl: project.meaningUrl,
-        backgroundUrl: project.backgroundUrl,
-        backgroundIsVideo: project.backgroundIsVideo,
-        release: {
-          databaseId: linkedSong?.databaseId,
-          collaborationEnabled: linkedSong?.collaborationEnabled,
-          audioAvailable: !!project.audioUrl,
-          slug: slugify(project.title),
-          title: project.title,
-          artist: "CHXNDLER × COLLABORATOR",
-          coverArt: project.coverUrl || placeholderCover(project.title),
-          spotifyUrl: "",
-          appleMusicUrl: "",
-          youtubeUrl: "",
-          videoEmbedUrl: null,
-          cardArt: null,
-          skyVideoUrl: null,
-        },
-      };
-      });
-    }
-
-    const songs = tab === "released" ? artistReleases : [...unreleasedSongs].sort((a, b) => {
-      if (!a.releaseDate) return b.releaseDate ? 1 : a.title.localeCompare(b.title);
-      if (!b.releaseDate) return -1;
-      return a.releaseDate.localeCompare(b.releaseDate);
-    });
+    const catalog = [...artistReleases, ...unreleasedSongs].filter((song, index, rows) => rows.findIndex(other => other.databaseId === song.databaseId) === index);
+    const songs = filterCollabCatalog(catalog, tab);
     return songs.map((release) => ({
       id: `${tab}:${release.slug}`,
       from: tab,
       audioUrl: release.audioUrl,
       release,
     }));
-  }, [tab, projects, artistReleases, unreleasedSongs]);
+  }, [tab, artistReleases, unreleasedSongs]);
+
+  useEffect(() => {
+    if (!invitedSongSlug) return;
+    const release = [...artistReleases, ...unreleasedSongs].find(song => song.slug === invitedSongSlug);
+    if (release) setSelected({ id: `invite:${release.slug}`, from: "collabs", release, audioUrl: release.audioUrl });
+  }, [invitedSongSlug, artistReleases, unreleasedSongs]);
 
   useEffect(() => {
     if (!selected) return;
@@ -150,7 +109,7 @@ function CollabGalleryContent({
     playCollabClickSound();
     audio.pause();
     setSelected(item);
-    const src = item.audioUrl ?? (item.from === "collabs" || (item.from === "unreleased" && item.release.audioAvailable === false) ? "" : releaseAudioSrc(item.release.slug));
+    const src = item.audioUrl ?? (item.release.audioAvailable === false ? "" : releaseAudioSrc(item.release.slug));
     if (src) audio.play(item.id, src, releaseNowPlaying(item.release));
   };
 
@@ -169,7 +128,7 @@ function CollabGalleryContent({
       )}
       <div className="collab-modal-scrim" />
     </div>
-  ) : selected?.from === "collabs" ? undefined : selected?.release.skyVideoUrl ? (
+  ) : selected?.release.skyVideoUrl ? (
     <SkyVideoBackground url={selected.release.skyVideoUrl} />
   ) : selected ? (
     <div className="collab-modal-background">
@@ -188,7 +147,7 @@ function CollabGalleryContent({
       </header>
 
       <div className="collab-tabs" role="tablist" aria-label="Music and collaboration categories">
-        {(["collabs", "released", "unreleased"] as const).map((value) => (
+        {COLLAB_CATALOG_FILTERS.map((value) => (
           <button
             key={value}
             type="button"
@@ -198,7 +157,7 @@ function CollabGalleryContent({
             onClick={() => {
               playCollabClickSound();
               closeDetail();
-              setTab(value);
+              setTab(value as Tab);
             }}
           >
             {TAB_LABELS[value]}
@@ -224,7 +183,7 @@ function CollabGalleryContent({
         <section className="collab-grid" aria-label={TAB_LABELS[tab]}>
           {items.map((item, index) => (
             <button
-              className={`collab-cover collab-cover-${index % 7}${(item.from === "collabs" && !item.audioUrl) || (item.from === "unreleased" && item.release.audioAvailable === false) ? " collab-cover-unavailable" : ""}`}
+              className={`collab-cover collab-cover-${index % 7}${item.release.audioAvailable === false ? " collab-cover-unavailable" : ""}`}
               key={item.id}
               onClick={() => openItem(item)}
               aria-label={`Open ${item.release.title}`}
@@ -247,14 +206,15 @@ function CollabGalleryContent({
                   {item.audioUrl && <span className="collab-cover-mark" aria-hidden="true">▶</span>}
                 </>
               )}
-              {item.from === "unreleased" && item.release.releaseDate && <span className="collab-release-date">Release date · {new Date(`${item.release.releaseDate}T00:00:00`).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>}
+              {item.release.releaseDate && <span className="collab-release-date">Release date · {new Date(`${item.release.releaseDate}T00:00:00`).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>}
+              {!!item.release.collaborationOpportunities?.length && <span className="collab-opportunity-badges">{item.release.collaborationOpportunities.map(value => <span key={value} data-opportunity={value}>{value === "feature" ? "Open for Feature" : value === "video" ? "Video Needed" : "Open for Remix"}</span>)}</span>}
             </button>
           ))}
         </section>
       ) : (
         <div className="collab-empty">
-          <p>{tab === "unreleased" ? "NO UNRELEASED TRACKS YET." : tab === "released" ? "NO ARTIST RELEASES YET." : "THE ARTWORK IS ON ITS WAY."}</p>
-        <span>{tab === "collabs" ? "Cover art uploaded to the Collabs folder will appear here." : tab === "unreleased" ? (invitedSongSlug ? "The invited demo is not available right now." : "Unreleased demos are available by private invitation.") : "Tracks appear here as they are added to the CHXNDLER catalog."}</span>
+          <p>NO SONGS IN THIS VIEW YET.</p>
+        <span>{tab === "collabs" ? "No songs are currently marked Ready for Collab." : tab === "video" ? "No collaboration-ready songs currently need a music video." : "No final or released songs yet."}</span>
         </div>
       )}
 
@@ -280,16 +240,17 @@ function CollabGalleryContent({
           <ArtistReleaseDetail
             key={selected.id}
             release={selected.release}
-            audioSrcOverride={selected.from === "collabs" ? selected.audioUrl ?? "" : selected.release.audioAvailable === false ? "" : selected.audioUrl}
-            instrumentalSrcOverride={selected.from === "collabs" ? selected.instrumentalUrl ?? null : null}
+            audioSrcOverride={selected.release.audioAvailable === false ? "" : selected.audioUrl}
+            instrumentalSrcOverride={null}
             audioIdOverride={selected.id}
-            lyricsUrlOverride={selected.from === "collabs" ? selected.lyricsUrl || undefined : undefined}
-            showLyricsSection={selected.from === "collabs"}
-            showInstrumentalControl={selected.from === "collabs"}
-            meaningUrlOverride={selected.from === "collabs" ? selected.meaningUrl : null}
-            showCollabRequest={selected.from === "collabs" || selected.release.collaborationEnabled === true || !selected.release.videoEmbedUrl}
-            showStreamingLinks={selected.from === "released"}
+            lyricsUrlOverride={undefined}
+            showLyricsSection={false}
+            showInstrumentalControl={false}
+            meaningUrlOverride={null}
+            showCollabRequest={selected.release.readyForCollab === true}
+            showStreamingLinks={selected.release.isReleased === true}
             invitedName={invitedDisplayName}
+            invitedEmail={invitedEmail}
           />
         </MediaViewerModal>
       )}
@@ -303,11 +264,11 @@ function CollabGalleryContent({
         .collab-extra-cta a:hover{background:rgba(255,62,165,.12);border-color:#ff3ea5}
         .collab-extra-cta a:focus-visible{outline:2px solid #ff3ea5;outline-offset:3px}
         .collab-wordmark{color:#fff;text-decoration:none;font-size:.8rem;letter-spacing:.18em}
-        .collab-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:760px;margin:0 auto 1.5rem;padding:.25rem;border-radius:999px;background:rgba(255,255,255,.055)}
+        .collab-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:900px;margin:0 auto 1.5rem;padding:.25rem;border-radius:999px;background:rgba(255,255,255,.055)}
         .collab-tabs button{border:0;border-radius:999px;background:transparent;color:var(--tab-color);opacity:.7;padding:.75rem .5rem;font-size:.7rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s,opacity .2s}
-        .collab-tabs button[data-tab="collabs"]{--tab-color:#54c8ff}
-        .collab-tabs button[data-tab="released"]{--tab-color:#ffd43b}
-        .collab-tabs button[data-tab="unreleased"]{--tab-color:#ff3ea5}
+        .collab-tabs button[data-tab="collabs"]{--tab-color:#ff3ea5}
+        .collab-tabs button[data-tab="video"]{--tab-color:#69e0c0}
+        .collab-tabs button[data-tab="complete"]{--tab-color:#83c9ff}
         .collab-tabs button[aria-selected="true"]{background:color-mix(in srgb,var(--tab-color) 23%,#17171a);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tab-color) 38%,transparent);color:var(--tab-color);opacity:1}
         .collab-tabs button:hover:not([aria-selected="true"]){opacity:1}
         .collab-video-opportunities{max-width:1600px;margin:0 auto 2rem;padding:1.2rem;border:1px solid rgba(255,62,165,.22);background:linear-gradient(120deg,rgba(255,62,165,.08),rgba(255,255,255,.02))}
@@ -316,7 +277,8 @@ function CollabGalleryContent({
         .collab-tabs button:focus-visible,.collab-back:focus-visible{outline:2px solid #ff3ea5;outline-offset:2px}
         .collab-grid{max-width:1600px;margin:0 auto;columns:2;column-gap:clamp(.55rem,1vw,1rem)}
         .collab-cover{position:relative;display:block;width:100%;break-inside:avoid;margin:0 0 clamp(.55rem,1vw,1rem);padding:0;border:1px solid rgba(255,255,255,.12);border-radius:3px;overflow:hidden;background:#121216;cursor:pointer;text-align:left}
-        .collab-release-date{position:absolute;left:.65rem;bottom:.65rem;padding:.45rem .6rem;border:1px solid rgba(255,62,165,.35);border-radius:999px;background:rgba(8,8,11,.82);color:#ff9bcc;font-size:.62rem;font-weight:800;letter-spacing:.04em;backdrop-filter:blur(8px)}
+        .collab-release-date{position:absolute;right:.65rem;top:.65rem;padding:.45rem .6rem;border:1px solid rgba(255,62,165,.35);border-radius:999px;background:rgba(8,8,11,.82);color:#ff9bcc;font-size:.62rem;font-weight:800;letter-spacing:.04em;backdrop-filter:blur(8px)}
+        .collab-opportunity-badges{position:absolute;left:.6rem;right:.6rem;bottom:.6rem;display:flex;flex-wrap:wrap;gap:.3rem;pointer-events:none}.collab-opportunity-badges span{border-radius:999px;padding:.3rem .5rem;background:rgba(8,8,11,.78);font-size:.56rem;font-weight:800;letter-spacing:.025em;backdrop-filter:blur(6px)}.collab-opportunity-badges [data-opportunity="feature"]{color:#ff78bd}.collab-opportunity-badges [data-opportunity="video"]{color:#69e0c0}.collab-opportunity-badges [data-opportunity="remix"]{color:#83c9ff}
         .collab-cover img{display:block;width:100%;height:auto;transition:transform .5s cubic-bezier(.2,.7,.2,1),filter .3s}
         .collab-cover-unavailable img{filter:grayscale(1);opacity:.48}
         .collab-cover-unavailable .collab-cover-placeholder{filter:grayscale(1);opacity:.58}

@@ -1,23 +1,70 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import SongTracker from "@/components/admin/SongTracker";
-import PracticeTab from "@/components/admin/PracticeTab";
-import PlaylistsTab from "@/components/admin/PlaylistsTab";
 import SyncOutreachTab from "@/components/admin/SyncOutreachTab";
-import GigOutreachTab from "@/components/admin/GigOutreachTab";
-import YouTubeTab from "@/components/admin/YouTubeTab";
-import IndustryConnectionsTab from "@/components/admin/IndustryConnectionsTab";
 import FinanceTab from "@/components/admin/FinanceTab";
 import TasksTab from "@/components/admin/TasksTab";
+import OverviewTab from "@/components/admin/OverviewTab";
+import OutreachWorkspace from "@/components/admin/OutreachWorkspace";
+
+type Tab = "overview" | "songs" | "outreach" | "tasks" | "finance";
+type IconName = "overview" | "songs" | "outreach" | "tasks" | "finance" | "more";
+const primary: Array<[Tab, string, IconName]> = [["overview", "Overview", "overview"], ["songs", "Songs", "songs"], ["outreach", "Outreach", "outreach"]];
+const more: Array<[Tab, string, IconName]> = [["tasks", "Tasks", "tasks"], ["finance", "Finance", "finance"]];
+
+function TabIcon({ name }: { name: IconName }) {
+  const paths: Record<IconName, ReactNode> = {
+    overview: <><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></>,
+    songs: <><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></>,
+    outreach: <><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></>,
+    tasks: <><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></>,
+    finance: <><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M7 15h2m6 0h2"/></>,
+    more: <><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></>,
+  };
+  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="admin-tab-icon">{paths[name]}</svg>;
+}
 
 export default function AdminTabs() {
-  const [tab, setTab] = useState<"tasks" | "songs" | "practice" | "playlists" | "youtube" | "sync" | "gigs" | "connections" | "finance">("songs");
-  const [practiceSong, setPracticeSong] = useState("");
+  const [tab, setTab] = useState<Tab>("overview");
+  const [outreachSection, setOutreachSection] = useState<"pitches" | "gigs" | "sync" | "contacts">("pitches");
+  const [moreOpen, setMoreOpen] = useState(false);
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("view")?.toLowerCase();
+    const match = [...primary, ...more].find(([id]) => id === requested);
+    if (match) setTab(match[0]);
+    else if (["gigs", "connections", "contacts", "sync"].includes(requested || "")) setTab("outreach");
+    const legacySubtab = requested === "sync" ? "sync" : requested === "gigs" ? "gigs" : requested === "connections" ? "contacts" : null;
+    const requestedSubtab = new URLSearchParams(window.location.search).get("section")?.toLowerCase();
+    if (legacySubtab || ["pitches", "gigs", "sync", "contacts"].includes(requestedSubtab || "")) {
+      setOutreachSection((legacySubtab || requestedSubtab) as "pitches" | "gigs" | "sync" | "contacts");
+    }
+  }, []);
+  const choose = (value: Tab) => { setTab(value); setMoreOpen(false); };
   return <>
-    <div role="tablist" aria-label="Admin workspaces" className="mb-6 flex gap-2 overflow-x-auto rounded-2xl border border-[#292930] bg-[#111116] p-2">
-      {([["songs", "Songs"], ["tasks", "Tasks"], ["practice", "Practice"], ["playlists", "Outreach"], ["youtube", "YouTube"], ["sync", "Sync ideas"], ["gigs", "Gig outreach"], ["connections", "Industry connections"], ["finance", "Finance"]] as const).map(([id, label]) => <button role="tab" aria-selected={tab === id} key={id} onClick={() => setTab(id)} className={`shrink-0 rounded-xl px-4 py-3 text-sm font-bold transition ${tab === id ? "bg-[#FC54AF] text-[#160711] shadow-[0_4px_18px_rgba(252,84,175,.2)]" : "text-white/75 hover:bg-white/10 hover:text-white"}`}>{label}</button>)}
-    </div>
-    {tab === "tasks" ? <TasksTab /> : tab === "songs" ? <SongTracker /> : tab === "practice" ? <PracticeTab campaignSong={practiceSong} /> : tab === "youtube" ? <YouTubeTab /> : tab === "sync" ? <SyncOutreachTab /> : tab === "gigs" ? <GigOutreachTab /> : tab === "connections" ? <IndustryConnectionsTab /> : tab === "finance" ? <FinanceTab /> : <PlaylistsTab onPractice={song => { setPracticeSong(song); setTab("practice"); }} />}
+    <nav aria-label="Music admin" className="admin-tabs mb-6 flex items-center gap-1 rounded-xl border border-white/10 bg-[#111116] p-1.5">
+      {primary.map(([id, label, icon]) => <button key={id} type="button" data-tab={id} aria-current={tab === id ? "page" : undefined} onClick={() => choose(id)} className="admin-tab min-w-0 flex-1 rounded-lg px-2 py-2.5 text-xs font-semibold transition sm:px-4"><TabIcon name={icon}/><span>{label}</span></button>)}
+      <div className="relative shrink-0">
+        <button type="button" data-tab={more.some(([id]) => id === tab) ? tab : "more"} aria-expanded={moreOpen} aria-haspopup="menu" onClick={() => setMoreOpen(value => !value)} className="admin-tab admin-more rounded-lg px-3 py-2.5 text-xs font-semibold transition"><TabIcon name="more"/><span>More</span><span aria-hidden="true">⌄</span></button>
+        {moreOpen && <div role="menu" className="absolute right-0 top-full z-30 mt-2 min-w-52 rounded-xl border border-white/10 bg-[#15151b] p-1.5 shadow-2xl">{more.map(([id, label, icon]) => <button key={id} type="button" role="menuitem" data-tab={id} onClick={() => choose(id)} className={`admin-menu-item ${tab === id ? "is-active" : ""}`}><TabIcon name={icon}/><span>{label}</span></button>)}</div>}
+      </div>
+    </nav>
+    {tab === "overview" ? <OverviewTab /> : tab === "songs" ? <SongTracker /> : tab === "tasks" ? <TasksTab /> : tab === "outreach" ? <OutreachWorkspace initialSection={outreachSection} onSectionChange={setOutreachSection} /> : <FinanceTab />}
+    <style jsx>{`
+      .admin-tab-icon{width:1rem;height:1rem;flex:none}
+      .admin-tab{display:flex;align-items:center;justify-content:center;gap:.45rem;color:rgba(255,255,255,.56);white-space:nowrap}
+      .admin-tab[data-tab="overview"]{--tab-accent:#59c9ff}
+      .admin-tab[data-tab="songs"]{--tab-accent:#fd52af}
+      .admin-tab[data-tab="outreach"]{--tab-accent:#ffc857}
+      .admin-tab[data-tab="tasks"]{--tab-accent:#68d7b0}
+      .admin-tab[data-tab="finance"]{--tab-accent:#82aaff}
+      .admin-tab[data-tab="more"]{--tab-accent:#fd52af}
+      .admin-tab[aria-current="page"],.admin-more[aria-expanded="true"]{color:var(--tab-accent);background:color-mix(in srgb,var(--tab-accent) 12%,#111116);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tab-accent) 30%,transparent)}
+      .admin-tab:hover{color:var(--tab-accent,#fff);background:color-mix(in srgb,var(--tab-accent,#fff) 8%,#111116)}
+      .admin-menu-item{display:flex;align-items:center;gap:.65rem;width:100%;border:0;border-radius:.6rem;background:transparent;padding:.7rem .75rem;text-align:left;color:rgba(255,255,255,.68);font-size:.875rem}
+      .admin-menu-item[data-tab="tasks"]{--tab-accent:#68d7b0}.admin-menu-item[data-tab="finance"]{--tab-accent:#82aaff}
+      .admin-menu-item:hover,.admin-menu-item.is-active{color:var(--tab-accent);background:color-mix(in srgb,var(--tab-accent) 10%,#15151b)}
+      @media(max-width:420px){.admin-tab{gap:.25rem;font-size:.65rem}.admin-more{padding-inline:.55rem}.admin-tab-icon{width:.9rem;height:.9rem}}
+    `}</style>
   </>;
 }

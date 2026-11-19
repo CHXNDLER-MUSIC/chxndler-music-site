@@ -17,15 +17,9 @@ export async function GET() {
   const denied = await gate();
   if (denied) return denied;
   const db = getSupabaseAdmin();
-  const { data: songs, error: songError } = await db.from("songs").select("id,title,slug").eq("is_released", false).not("slug", "is", null);
+  const { data: songs, error: songError } = await db.from("songs").select("id,title,slug").not("slug", "is", null);
   if (songError) return NextResponse.json({ error: "Unable to load unreleased songs." }, { status: 500 });
   const songRows = songs || [];
-  if (songRows.length) {
-    const { data: existing } = await db.from("admin_tasks").select("song_id").eq("business_area", "unreleased_song").eq("title", "Complete song profile");
-    const have = new Set((existing || []).map(task => task.song_id));
-    const missing = songRows.filter(song => !have.has(song.id)).map(song => ({ business_area: "unreleased_song", song_id: song.id, title: "Complete song profile", description: "Develop this song’s profile, meaning, lyrics, and music video workspace." }));
-    if (missing.length) await db.from("admin_tasks").insert(missing); // Concurrent duplicate inserts are harmless; re-read below.
-  }
   const { data: tasks, error } = await db.from("admin_tasks").select("*").order("due_at", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false });
   if (error) return NextResponse.json({ error: "Unable to load tasks. Apply the task tracker migration first." }, { status: 500 });
   const songById = new Map(songRows.map(song => [song.id, song]));
@@ -48,10 +42,11 @@ export async function POST(request: Request) {
     due_at: typeof body.due_at === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.due_at) ? body.due_at : null,
     song_id: null,
   };
-  if (body.business_area === "unreleased_song") {
-    if (typeof body.song_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.song_id)) return NextResponse.json({ error: "Choose an existing unreleased song." }, { status: 400 });
-    const { data: song } = await getSupabaseAdmin().from("songs").select("id").eq("id", body.song_id).eq("is_released", false).maybeSingle();
-    if (!song) return NextResponse.json({ error: "That song is not an unreleased song in the catalog." }, { status: 400 });
+  if (body.business_area === "unreleased_song" && (!body.song_id || typeof body.song_id !== "string")) return NextResponse.json({ error: "Choose a song for this task." }, { status: 400 });
+  if (body.song_id) {
+    if (typeof body.song_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.song_id)) return NextResponse.json({ error: "Choose a valid song." }, { status: 400 });
+    const { data: song } = await getSupabaseAdmin().from("songs").select("id,is_released").eq("id", body.song_id).maybeSingle();
+    if (!song || (body.business_area === "unreleased_song" && song.is_released)) return NextResponse.json({ error: "Choose an existing song that matches this task scope." }, { status: 400 });
     row.song_id = song.id;
   }
   const { data, error } = await getSupabaseAdmin().from("admin_tasks").insert(row).select("*").single();

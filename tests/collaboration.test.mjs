@@ -6,6 +6,7 @@ const valid = { songId: "song-id", inviteId: "123e4567-e89b-12d3-a456-4266141740
 
 test("submission requires identity, email, invite, contribution and acknowledgment", () => {
   assert.equal(validateCollaborationSubmission(valid), true);
+  assert.equal(validateCollaborationSubmission({ ...valid, contributionType: "Other" }), true);
   for (const field of ["songId", "inviteId", "artistName", "email", "submissionKey", "termsVersion", "contributionType"]) {
     assert.equal(validateCollaborationSubmission({ ...valid, [field]: "" }), false, `${field} is required`);
   }
