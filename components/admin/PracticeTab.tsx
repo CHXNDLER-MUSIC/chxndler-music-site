@@ -50,33 +50,19 @@ export function practiceInfoFor(title: string) { return practiceCatalog.find(inf
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const storageKey = "chxndler-admin-practice-v1";
 function slugify(title: string) { return title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
-function backgroundVideoSource(value: string) {
-  try {
-    const url = new URL(value);
-    const host = url.hostname.replace(/^www\./, "");
-    if (host === "youtu.be" || host.endsWith("youtube.com")) {
-      const id = host === "youtu.be" ? url.pathname.slice(1) : url.searchParams.get("v") || url.pathname.match(/\/(?:embed|shorts)\/([^/?]+)/)?.[1];
-      return id ? { kind: "embed" as const, src: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&playsinline=1` } : null;
-    }
-    if (host === "vimeo.com" || host === "player.vimeo.com") {
-      const id = url.pathname.match(/\/(?:video\/)?(\d+)/)?.[1];
-      return id ? { kind: "embed" as const, src: `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&loop=1&background=1` } : null;
-    }
-    return /\.(mp4|webm|ogg|m3u8)$/i.test(url.pathname) ? { kind: "video" as const, src: value } : { kind: "embed" as const, src: value };
-  } catch { return null; }
+function keyColor(key: string) {
+  const colors: Record<string, string> = { C: "#fb7185", "A#": "#f472b6", G: "#4ade80", "D#": "#a78bfa", D: "#38bdf8", A: "#facc15", F: "#2dd4bf", "C#": "#c084fc", E: "#fb923c", B: "#f87171", "F#": "#e879f9" };
+  return colors[key] || "#d4d4dc";
 }
 
 export default function PracticeTab({ campaignSong = "" }: { campaignSong?: string }) {
   const [date, setDate] = useState(today), [entries, setEntries] = useState<PracticeEntry[]>([]), [selected, setSelected] = useState("");
-  const [backgroundVideos, setBackgroundVideos] = useState<Record<string, string>>({});
+  const [songSearch, setSongSearch] = useState("");
+  const [songPickerOpen, setSongPickerOpen] = useState(false);
   const [saved, setSaved] = useState(false);
   const lyricsRequests = useRef(new Set<string>());
   const activeDate = useRef(date);
   activeDate.current = date;
-  useEffect(() => { fetch("/api/admin/song-tracker", { cache: "no-store" }).then(response => response.ok ? response.json() : null).then(data => {
-    const map: Record<string, string> = {}; for (const song of data?.songs || []) if (song.sky_video_url) map[slugify(song.title)] = song.sky_video_url;
-    setBackgroundVideos(map);
-  }).catch(() => {}); }, []);
   useEffect(() => {
     try { const all = JSON.parse(localStorage.getItem(storageKey) || "{}"); setEntries(Array.isArray(all[date]) ? all[date] : []); }
     catch { setEntries([]); }
@@ -112,6 +98,7 @@ export default function PracticeTab({ campaignSong = "" }: { campaignSong?: stri
     }
   }, [entries, date]);
   const choices = useMemo(() => practiceCatalog.filter(info => !entries.some(entry => slugify(entry.title) === slugify(info.title))), [entries]);
+  const filteredChoices = useMemo(() => choices.filter(song => song.title.toLowerCase().includes(songSearch.toLowerCase())), [choices, songSearch]);
   function persist(next: PracticeEntry[]) {
     setEntries(next); setSaved(false);
     try { const all = JSON.parse(localStorage.getItem(storageKey) || "{}"); all[date] = next; localStorage.setItem(storageKey, JSON.stringify(all)); setSaved(true); }
@@ -119,7 +106,7 @@ export default function PracticeTab({ campaignSong = "" }: { campaignSong?: stri
   }
   function addSong() {
     const song = practiceCatalog.find(item => item.title === selected); if (!song) return;
-    persist([...entries, { ...song, id: `${Date.now()}-${Math.random()}`, lyrics: "" }]); setSelected("");
+    persist([...entries, { ...song, id: `${Date.now()}-${Math.random()}`, lyrics: "" }]); setSelected(""); setSongSearch(""); setSongPickerOpen(false);
   }
   const trackFor = (title: string) => catalog.find(song => slugify(song.title) === slugify(title) || (slugify(title) === "mr-brightside" && song.slug === "mr-brightside-killers-cover"));
   return <section>
@@ -128,20 +115,25 @@ export default function PracticeTab({ campaignSong = "" }: { campaignSong?: stri
       <label className="grid gap-1 text-xs text-white/50">Practice date<input type="date" value={date} onChange={event => setDate(event.target.value)} className="rounded-lg border border-white/10 bg-[#111116] px-3 py-2 text-sm text-white" /></label>
     </div>
     <div className="mb-5 flex flex-wrap gap-2">
-      <select value={selected} onChange={event => setSelected(event.target.value)} aria-label="Choose a song to practice" className="h-14 min-w-0 flex-1 appearance-none rounded-lg border border-white/15 bg-[#111116] px-4 text-sm text-white focus:border-[#ff66b4] focus:outline-none"><option value="" className="bg-[#111116] text-white">Choose a song to practice · {choices.length} available</option>{choices.map(song => <option key={song.title} value={song.title} className="bg-[#111116] text-white">{song.title}</option>)}</select>
+      <div className="relative min-w-0 flex-1">
+        <button type="button" aria-haspopup="listbox" aria-expanded={songPickerOpen} onClick={() => setSongPickerOpen(open => !open)} className="flex h-14 w-full items-center justify-between gap-3 rounded-lg border border-white/15 bg-[#111116] px-4 text-left text-sm focus:border-[#ff66b4] focus:outline-none"><span style={{ color: selected ? keyColor(practiceInfoFor(selected)?.key || "") : undefined }}>{selected || `Choose a song to practice · ${choices.length} available`}</span><span className="text-[#ff66b4]">⌄</span></button>
+        {songPickerOpen && <div className="absolute inset-x-0 top-full z-30 mt-2 max-h-80 overflow-hidden rounded-xl border border-white/15 bg-[#17171c] shadow-2xl">
+          <input autoFocus type="search" value={songSearch} onChange={event => setSongSearch(event.target.value)} placeholder="Search songs…" aria-label="Search songs to practice" className="w-full border-b border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"/>
+          <div role="listbox" aria-label="Songs to practice" className="max-h-64 overflow-y-auto p-1.5">{filteredChoices.map(song => <button key={song.title} type="button" role="option" aria-selected={selected === song.title} onClick={() => { setSelected(song.title); setSongPickerOpen(false); }} className="flex w-full items-center justify-between gap-4 rounded-lg px-3 py-2.5 text-left text-sm transition hover:bg-white/[.07]" style={{ color: keyColor(song.key) }}><span className="font-semibold">{song.title}</span><span className="shrink-0 text-[.68rem] text-white/45">{song.key ? `Key ${song.key}` : "Key —"} · {song.capo ? `Capo ${song.capo}` : "Capo —"}</span></button>)}{!filteredChoices.length && <p className="px-3 py-5 text-center text-sm text-white/40">No songs found.</p>}</div>
+        </div>}
+      </div>
       <button type="button" onClick={addSong} disabled={!selected} aria-label="Add song to practice" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[#ff3ea5] text-4xl font-semibold text-black shadow-[0_0_22px_rgba(255,62,165,0.35)] transition hover:bg-[#ff66b4] hover:shadow-[0_0_30px_rgba(255,62,165,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff9dce] disabled:opacity-40">+</button>
       <span className="self-center text-xs text-white/40">{saved ? "Saved on this device" : "Autosaves as you edit"}</span>
     </div>
     {!entries.length ? <div className="rounded-xl border border-dashed border-white/15 p-10 text-center text-sm text-white/45">No songs added for this date yet. Choose one above and press +.</div> : <div className="space-y-4">{entries.map(entry => {
-      const song = trackFor(entry.title); const slug = song?.slug || slugify(entry.title); const instrumental = song ? supabaseTrackUrl(`${slug}-instrumental.mp3`) : ""; const backgroundVideo = backgroundVideos[slugify(entry.title)]; const backgroundSource = backgroundVideo ? backgroundVideoSource(backgroundVideo) : null;
+      const song = trackFor(entry.title); const slug = song?.slug || slugify(entry.title); const instrumental = song ? supabaseTrackUrl(`${slug}-instrumental.mp3`) : "";
       return <article key={entry.id} className="overflow-hidden rounded-xl border border-white/10 bg-white/[.025]">
         <div className="flex flex-wrap items-center gap-4 p-4">
           {song?.cover && <img src={song.cover} alt={`${entry.title} cover art`} className="h-16 w-16 rounded-lg object-cover" />}
-          <div className="min-w-[10rem] flex-1"><h3 className="font-bold">{entry.title}</h3><div className="mt-2 flex flex-wrap gap-2 text-xs">{[["Key", entry.key], ["Capo", entry.capo], ["Shape", entry.shape]].map(([label, value]) => <span key={label} className="rounded-md bg-white/[.07] px-2 py-1 text-white/75">{label}: {value || "—"}</span>)}</div></div>
+          <div className="min-w-[10rem] flex-1"><h3 className="font-bold" style={{ color: keyColor(entry.key) }}>{entry.title}</h3><div className="mt-2 flex flex-wrap gap-2 text-xs"><span className="rounded-md border border-violet-300/20 bg-violet-300/[.09] px-2 py-1 text-violet-200">Key: {entry.key || "—"}</span><span className="rounded-md border border-sky-300/20 bg-sky-300/[.09] px-2 py-1 text-sky-200">Capo: {entry.capo || "—"}</span><span className="rounded-md border border-amber-300/20 bg-amber-300/[.09] px-2 py-1 text-amber-200">Shape: {entry.shape || "—"}</span></div></div>
           {song?.sources?.[0]?.src && <a href={song.sources[0].src} target="_blank" rel="noreferrer" className="rounded-lg border border-white/15 px-3 py-2 text-xs text-white/70">Full song ↗</a>}
           <button type="button" onClick={() => persist(entries.filter(item => item.id !== entry.id))} className="rounded-lg px-3 py-2 text-xs text-white/40 hover:text-red-300">Remove</button>
         </div>
-        {backgroundSource && <div className="border-t border-white/10 bg-black/30 p-4"><p className="mb-2 text-[.65rem] font-bold uppercase tracking-[.15em] text-white/40">Background video</p>{backgroundSource.kind === "video" ? <video src={backgroundSource.src} autoPlay muted loop playsInline controls className="max-h-[28rem] w-full rounded-lg bg-black object-contain" /> : <iframe src={backgroundSource.src} title={`${entry.title} background video`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen className="aspect-video w-full rounded-lg bg-black" />}</div>}
         {song && <div className="border-t border-white/10 px-4 py-3"><p className="mb-2 text-[.65rem] font-bold uppercase tracking-[.15em] text-white/40">Instrumental · if available</p><audio controls preload="none" src={instrumental} className="h-9 w-full max-w-md" onError={event => { event.currentTarget.hidden = true; const msg = event.currentTarget.nextElementSibling as HTMLElement | null; if (msg) msg.hidden = false; }} /><p hidden className="text-xs text-white/40">No instrumental file found at the standard song path.</p></div>}
         <div className="border-t border-white/10 p-4"><label className="mb-2 block text-[.65rem] font-bold uppercase tracking-[.15em] text-white/40">Lyrics / practice notes</label><textarea value={entry.lyrics} onChange={event => persist(entries.map(item => item.id === entry.id ? { ...item, lyrics: event.target.value } : item))} placeholder="Lyrics load automatically when available. Add practice notes here…" rows={8} className="w-full resize-y rounded-lg border border-white/10 bg-black/20 p-3 text-sm leading-6 text-white placeholder:text-white/25" /></div>
       </article>;

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { songCoverPath } from "@/lib/songCover";
 import { songProductionLabel, trackedProductionMilestones } from "@/lib/songWorkflow";
+import PracticeTab from "@/components/admin/PracticeTab";
 
 type Song = {
   id: string; title: string; slug: string; is_released: boolean; workflow_stage?: string | null;
@@ -42,6 +43,7 @@ export default function OverviewTab() {
   const [activeOutreach, setActiveOutreach] = useState(0);
   const [error, setError] = useState("");
   const [taskError, setTaskError] = useState("");
+  const [practiceOpen, setPracticeOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -64,6 +66,13 @@ export default function OverviewTab() {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (!practiceOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setPracticeOpen(false); };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [practiceOpen]);
 
   useEffect(() => {
     const handleProgressUpdate = (event: Event) => {
@@ -113,6 +122,19 @@ export default function OverviewTab() {
       <Link href="/admin?view=songs&filter=released" className="group rounded-xl border border-white/[.08] bg-[#111116] px-4 py-3 transition hover:-translate-y-px hover:border-emerald-300/25 sm:px-5"><span className="block text-xs font-semibold text-white/45">Released</span><span className="mt-1 block text-2xl font-black tabular-nums text-emerald-200">{loading ? "—" : releasedCount}</span></Link>
       <Link href="/admin?view=outreach" className="group rounded-xl border border-white/[.08] bg-[#111116] px-4 py-3 transition hover:-translate-y-px hover:border-sky-300/25 sm:px-5"><span className="block text-xs font-semibold text-white/45">Active Outreach</span><span className="mt-1 block text-2xl font-black tabular-nums text-sky-200">{loading ? "—" : activeOutreach}</span></Link>
     </section>
+
+    <button type="button" onClick={() => setPracticeOpen(true)} aria-haspopup="dialog" className="group flex w-full items-center gap-4 rounded-2xl border border-[#FD52AF]/20 bg-gradient-to-r from-[#21121c] to-[#111116] p-4 text-left transition hover:-translate-y-px hover:border-[#FD52AF]/45 hover:from-[#291522] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FD52AF] sm:p-5">
+      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-[#FD52AF]/25 bg-[#FD52AF]/[.09] text-[#FD52AF]"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
+      <span className="min-w-0 flex-1"><span className="block text-[.62rem] font-bold uppercase tracking-[.17em] text-[#FD52AF]">Practice</span><span className="mt-1 block text-base font-bold text-white">Pick a song and start a session</span><span className="mt-1 block text-xs text-white/45">Song key, capo, chords, lyrics, and tracks in one place.</span></span>
+      <span aria-hidden="true" className="text-lg text-[#FD52AF] transition-transform group-hover:translate-x-1">→</span>
+    </button>
+
+    {practiceOpen && <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 p-3 backdrop-blur-sm sm:p-6" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setPracticeOpen(false); }}>
+      <section role="dialog" aria-modal="true" aria-labelledby="practice-dialog-title" className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0d0d11] shadow-2xl">
+        <header className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6"><div><p className="text-[.62rem] font-bold uppercase tracking-[.17em] text-[#FD52AF]">Practice</p><h2 id="practice-dialog-title" className="text-lg font-bold text-white">Choose a song</h2></div><button type="button" autoFocus onClick={() => setPracticeOpen(false)} aria-label="Close practice" className="grid h-9 w-9 place-items-center rounded-lg text-xl text-white/55 transition hover:bg-white/[.08] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FD52AF]">×</button></header>
+        <div className="overflow-y-auto p-4 sm:p-6"><PracticeTab/></div>
+      </section>
+    </div>}
 
     <section aria-labelledby="currently-working-title" className="relative overflow-hidden rounded-2xl border border-white/[.08] bg-[#101014] shadow-[0_20px_65px_rgba(0,0,0,.25)]">
       <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-[#FD52AF]/[.07] blur-3xl" />

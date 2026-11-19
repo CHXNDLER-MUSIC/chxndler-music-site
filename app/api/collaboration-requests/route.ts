@@ -8,19 +8,38 @@ import { getCollabInviteSession } from "@/lib/collabAccess";
 export const runtime = "nodejs";
 const clean = (v: unknown, max: number) => typeof v === "string" ? v.trim().slice(0, max) : "";
 
+function normalizeProfileLink(value: string): string | null {
+  if (!value) return null;
+  const handle = value.match(/^@?([A-Za-z0-9._]{1,30})$/);
+  if (handle) return `https://instagram.com/${handle[1]}`;
+  const candidate = /^[a-z][a-z0-9+.-]*:\/\//i.test(value) ? value : `https://${value}`;
+  try {
+    const url = new URL(candidate);
+    return ["https:", "http:"].includes(url.protocol) ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     if (clean(body.website, 100)) return NextResponse.json({ ok: true }); // honeypot
     const songId = clean(body.songId, 80), submissionKey = clean(body.submissionKey, 80), termsVersion = clean(body.termsVersion, 80);
-    const artist = clean(body.artistName, 120), submittedEmail = clean(body.email, 320).toLowerCase();
-    const profile = clean(body.profileLink, 500), portfolio = clean(body.portfolioUrl, 500), estimatedRate = clean(body.estimatedRate, 120), phone = clean(body.phone, 40), contribution = clean(body.contributionType, 40), message = clean(body.message, 1200), videoProjectId = clean(body.videoProjectId, 80);
+    const submittedEmail = clean(body.email, 320).toLowerCase();
+    const rawProfile = clean(body.profileLink, 500), profile = normalizeProfileLink(rawProfile), portfolio = clean(body.portfolioUrl, 500), estimatedRate = clean(body.estimatedRate, 120), phone = clean(body.phone, 40), contribution = clean(body.contributionType, 40), message = clean(body.message, 1200), videoProjectId = clean(body.videoProjectId, 80);
+    if (rawProfile && !profile) return NextResponse.json({ error: "Enter an Instagram handle or a valid http(s) profile URL." }, { status: 400 });
     const invite = await getCollabInviteSession();
     const isVideoApplication = contribution === "Music Video";
     const publicVideoApplication = !invite && isVideoApplication;
     if (!invite && !publicVideoApplication) return NextResponse.json({ error: "Enter with your approved name or open your active personal invitation before submitting a collaboration request." }, { status: 403 });
     const email = submittedEmail || invite?.email || "";
-    const artistName = artist || invite?.display_name || "";
+    // Invitation identity comes from the signed server session. Public music
+    // video applications have no invitation identity, so use the email's
+    // local part as the existing required admin-facing name value.
+    const artistName = invite
+      ? invite.display_name
+      : publicVideoApplication ? submittedEmail.split("@")[0] : "";
     if (!validateCollaborationSubmission({ songId, inviteId: invite?.id, allowPublicApplication: publicVideoApplication, submissionKey, termsVersion, artistName, email, contributionType: contribution, acknowledged: body.acknowledged })) {
       return NextResponse.json({ error: "Check the required fields and acknowledgment." }, { status: 400 });
     }
