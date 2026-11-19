@@ -23,13 +23,15 @@ export async function GET() {
   if (!auth) return unauthorized();
   if (!isAdminUser(auth.user)) return forbidden();
   const db = getSupabaseAdmin();
-  const [songWithReleaseDate, requests, videos, tasks, outreach, sync, brandArts] = await Promise.all([
+  const [songWithReleaseDate, requests, videos, tasks, outreach, sync, placements, contentItems, brandArts] = await Promise.all([
     db.from("songs").select("id,title,slug,is_released,release_date,updated_at,audio_status,collaboration_opportunities,video_concept,collaboration_enabled,production_stages,production_tracking_started,production_progress_verified,ready_for_collab,collab_interests,collaboration_description,workflow_stage,next_action,next_action_manual,created_at,sky_video_url,youtube_music_video_url,spotify_url,karaoke_url,practice_notes").order("title", { ascending: true }),
     db.from("collaboration_requests").select("id,song_id,status,submitted_at,contribution_type"),
     db.from("music_video_projects").select("id,song_id,status,visibility,next_action,assigned_videographer,public_concept,public_status,project_type,collaboration_stage"),
     db.from("admin_tasks").select("id,song_id,title,status,priority,due_at,created_at").neq("status", "done").not("song_id", "is", null).order("due_at", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false }),
     db.from("outreach_records").select("id,song_id,status,category").not("song_id", "is", null),
     db.from("sync_opportunities").select("id,song_id,status").not("song_id", "is", null),
+    db.from("sync_placements").select("id,song_id").not("song_id", "is", null),
+    db.from("song_content_items").select("id,song_id,status").not("song_id", "is", null),
     db.from("brand_pitches").select("song_title,cover_art_path,hero_art_path").not("cover_art_path", "is", null),
   ]);
   let songs: any = songWithReleaseDate;
@@ -55,6 +57,8 @@ export async function GET() {
   const taskRows = tasks.error ? [] : tasks.data || [];
   const outreachRows = outreach.error ? [] : outreach.data || [];
   const syncRows = sync.error ? [] : sync.data || [];
+  const placementRows = placements.error ? [] : placements.data || [];
+  const contentRows = contentItems.error ? [] : contentItems.data || [];
   const brandArtByTitle = new Map<string, string>();
   for (const row of brandArts.data || []) {
     const key = normalizeSongTitle(row.song_title);
@@ -68,6 +72,10 @@ export async function GET() {
     const linkedTask = song.next_action_manual ? null : taskRows.find(task => task.song_id === song.id) || null;
     const activeOutreachCount = outreachRows.filter(row => row.song_id === song.id && activePitchStatuses.has(row.status || "")).length
       + syncRows.filter(row => row.song_id === song.id && !!row.status && !terminalSyncStatuses.has(row.status)).length;
+    const playlistPitched = song.production_stages?.playlist_pitch === true || outreachRows.some(row => row.song_id === song.id && /playlist/i.test(row.category || "") && ["Contacted", "Sent", "Follow-up", "Interested", "Won", "Accepted"].includes(row.status || ""));
+    const syncPlacement = song.production_stages?.sync_placement === true || placementRows.some(row => row.song_id === song.id);
+    const musicVideoReleased = !!song.youtube_music_video_url || !!musicVideo;
+    const contentReleased = contentRows.some(row => row.song_id === song.id && row.status === "Published");
     return ({
     ...song,
     brand_cover_path: brandArtByTitle.get(normalizeSongTitle(song.title)) || null,
@@ -83,6 +91,15 @@ export async function GET() {
     next_action_manual: song.next_action_manual === true,
     linkedTask,
     activeOutreachCount,
+    postRelease: {
+      playlistPitched,
+      syncPlacement,
+      spotifyCanvas: song.production_stages?.spotify_canvas === true,
+      sky: song.production_stages?.sky === true,
+      chxndlerCard: song.production_stages?.chxndler_card === true,
+      musicVideo: musicVideoReleased,
+      contentReleased,
+    },
     collaboration_opportunities: Array.isArray(song.collaboration_opportunities) ? song.collaboration_opportunities : [],
     requests: requestRows.filter(row => row.song_id === song.id),
     musicVideo,

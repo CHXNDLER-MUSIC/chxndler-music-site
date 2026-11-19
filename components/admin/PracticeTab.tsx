@@ -8,11 +8,13 @@ type SongInfo = { title: string; key: string; capo: string; shape: string };
 type PracticeEntry = SongInfo & { id: string; lyrics: string };
 const catalogInfo: SongInfo[] = [
   { title: "ALONE", key: "E", capo: "3", shape: "C" }, { title: "ALWAYS ON MY MIND", key: "D#", capo: "3", shape: "C" },
-  { title: "AMERICAN DREAM", key: "A#", capo: "3", shape: "G" }, { title: "AM I PRETTY WHEN I CRY", key: "D", capo: "2", shape: "C" },
+  { title: "AMERICAN DREAM", key: "A#", capo: "3", shape: "G" }, { title: "AMERICAN DREAM (ACOUSTIC)", key: "A#", capo: "3", shape: "G" },
+  { title: "AM I PRETTY WHEN I CRY", key: "D", capo: "2", shape: "C" }, { title: "AM I PRETTY WHEN I CRY (ACOUSTIC)", key: "D", capo: "2", shape: "C" },
   { title: "BABY", key: "A#", capo: "3", shape: "G" }, { title: "BE MY BEE", key: "B", capo: "4", shape: "G" },
   { title: "BLUE", key: "", capo: "", shape: "" }, { title: "CHEERLEADER", key: "E", capo: "4", shape: "C" },
   { title: "COLLIDE", key: "B", capo: "0", shape: "B" }, { title: "COLORS OF OUR HOME", key: "A#", capo: "3", shape: "G" },
   { title: "EMO GIRL", key: "C", capo: "0", shape: "C" }, { title: "FEELING THIS", key: "C#", capo: "0", shape: "C" },
+  { title: "HAPPY MEAL (ACOUSTIC)", key: "A#", capo: "3", shape: "G" },
   { title: "HOME", key: "D", capo: "2", shape: "C" }, { title: "HOUSE PARTY", key: "A", capo: "2", shape: "G" },
   { title: "I LIKE ME BETTER", key: "A", capo: "2", shape: "G" }, { title: "I MIGHT FALL IN LOVE WITH YOU", key: "F#", capo: "2", shape: "E" },
   { title: "I WOULD DIE FOR YOUR LOVE", key: "A#", capo: "3", shape: "G" }, { title: "LETTING GO", key: "F", capo: "5", shape: "C" },

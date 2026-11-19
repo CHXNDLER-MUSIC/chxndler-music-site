@@ -1,4 +1,4 @@
-HAPPY MEAL
+HAPPY MEAL (ACOUSTIC)
 
 Mom, can we stop? I saw the sign Yellow arches glowing in the sky
 I want the toy I want the fries  I want the little box with happiness inside

@@ -58,7 +58,6 @@ const TAGLINES: Record<string, string> = {
   "paris": "Poison love kissed anyway.",
   "pokemon": "Dream big, fight hard, never stop chasing.",
   "somebody-to-love": "You gave real love, they weren't the one.",
-  "studio": "Where dreams echo into sound.",
   "they-feel-too": "Every alien heart still aches.",
   "tienes-un-amigo": "Friendship finds you anywhere.",
   "were-just-friends": "Lines blur between us.",
@@ -190,6 +189,10 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
   // Unreleased early access: ALONE (ACOUSTIC)
   // Audio sources default to Supabase Storage paths: alone-acoustic.opus/mp3
   { title: "ALONE (ACOUSTIC)", hasLyrics: true },
+  { title: "AMERICAN DREAM", hasLyrics: true },
+  { title: "AMERICAN DREAM (ACOUSTIC)", hasLyrics: true },
+  { title: "AM I PRETTY WHEN I CRY", hasLyrics: true },
+  { title: "AM I PRETTY WHEN I CRY (ACOUSTIC)", hasLyrics: true },
   // Supabase Storage file is named with spaces/caps, not the slugified default — must override src
   { title: "ALWAYS ON MY MIND", cover: "/covers/ALWAYS ON MY MIND.webp", src: "/tracks/ALWAYS ON MY MIND.mp3", hasLyrics: true },
   { title: "ALWAYS ON MY MIND (ACOUSTIC)", cover: "/covers/ALWAYS ON MY MIND (ACOUSTIC).webp", src: "/tracks/ALWAYS ON MY MIND (ACOUSTIC).mp3", hasLyrics: true },
@@ -246,6 +249,11 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     cover: "/covers/COLORS OF OUR HOME (BLUMA Game Soundtrack).webp",
     src: "/tracks/COLORS-OF-OUR-HOME-_BLUMA-Game-Soundtrack_.opus",
   },
+  { title: "EMO GIRL", hasLyrics: true },
+  { title: "HAPPY MEAL (ACOUSTIC)", hasLyrics: true },
+  { title: "I LIKE ME BETTER", hasLyrics: true },
+  { title: "I WOULD DIE FOR YOUR LOVE", hasLyrics: true },
+  { title: "I WOULD DIE FOR YOUR LOVE (ACOUSTIC)", hasLyrics: true },
   { title: "KID FOREVER (永遠の子供)", src: "/tracks/kid-forever.opus", cover: "/covers/KID FOREVER.webp", sections: [
     { time: 12.3, label: "Verse 1", kind: "verse" },
     { time: 42.8, label: "Chorus 1", kind: "chorus" },
@@ -253,6 +261,11 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 104.2, label: "Chorus 2", kind: "chorus" },
     { time: 134.9, label: "Final Chorus", kind: "chorus" }
   ] },
+  { title: "PLAYDOUGH", hasLyrics: true },
+  { title: "TIDE IN", hasLyrics: true },
+  { title: "FEELING THIS", hasLyrics: true },
+  { title: "CHEERLEADER", hasLyrics: true },
+  { title: "CHEERLEADER (ACOUSTIC)", hasLyrics: true },
   { title: "OCEAN GIRL", cover:"/covers/OCEAN GIRL.webp", src: "/tracks/ocean-girl.opus", sections: [
     { time: 16.7, label: "Verse 1", kind: "verse" },
     { time: 48.3, label: "Chorus 1", kind: "chorus" },
