@@ -12,6 +12,7 @@ const defaultTerms = {
 
 const contributionOptions = [
   { value: "Vocals / Feature", label: "Sing / Feature", note: "Bring your voice to the track." },
+  { value: "Sing / Rap on Verse", label: "Sing / Rap on Verse", note: "Add a vocal verse to the song." },
   { value: "Production / Remix", label: "Produce / Remix", note: "Shape a new sound together." },
   { value: "Music Video", label: "Music Video", note: "Build the visual world." },
   { value: "Other", label: "Something Else", note: "Share another idea." },

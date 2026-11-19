@@ -268,10 +268,10 @@ export default function SongTracker() {
     <section aria-label="Songs by post release activity" className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
       {postReleaseKpis.map(item => {
         const active = columnFilter?.key === "postRelease" && columnFilter.value === `missing:${item.key}`;
-        const total = songs.filter(song => song.postRelease?.[item.key] === true).length;
+        const total = songs.filter(song => song.postRelease?.[item.key] !== true).length;
         return <button key={item.key} type="button" aria-pressed={active} onClick={() => filterByPostRelease(active ? "all" : `missing:${item.key}`)} className={`group relative min-w-0 overflow-hidden rounded-xl border px-3 py-3 text-left transition hover:-translate-y-px hover:bg-white/[.045] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${active ? "border-white/20 bg-white/[.055]" : "border-white/[.08] bg-[#101014]"}`}>
           <span className="absolute inset-x-0 top-0 h-0.5 opacity-80" style={{ backgroundColor: item.color }}/>
-          <span className="flex flex-col items-start gap-1.5"><OpportunityIcon kind={item.kind} className="h-6 w-6" color={item.color}/><span className="truncate text-[.68rem] font-semibold" style={{ color: item.color }}>{item.label}</span></span>
+          <span className="flex flex-col items-start gap-1.5"><OpportunityIcon kind={item.kind} className="h-6 w-6" color={item.color}/><span className="truncate text-[.68rem] font-semibold" style={{ color: item.color }}>{item.label}</span><span className="text-[.6rem] font-bold uppercase tracking-[.12em] text-white/45">Missing</span></span>
           <span className="mt-1 block text-xl font-black tabular-nums" style={{ color: item.color }}>{loading ? "—" : total}</span>
         </button>;
       })}
