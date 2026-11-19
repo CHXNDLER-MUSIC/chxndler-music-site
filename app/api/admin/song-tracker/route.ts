@@ -8,7 +8,7 @@ export async function GET() {
   if (!isAdminUser(auth.user)) return forbidden();
   const db = getSupabaseAdmin();
   const [songs, requests, videos] = await Promise.all([
-    db.from("songs").select("id,title,slug,is_released,collaboration_enabled,created_at,sky_video_url,youtube_music_video_url").order("title", { ascending: true }),
+    db.from("songs").select("id,title,slug,is_released,release_date,collaboration_enabled,created_at,sky_video_url,youtube_music_video_url").order("title", { ascending: true }),
     db.from("collaboration_requests").select("id,song_id,status,submitted_at,contribution_type"),
     db.from("music_video_projects").select("id,song_id,status,visibility,next_action"),
   ]);
@@ -29,9 +29,10 @@ export async function PATCH(request: Request) {
   if (!isAdminUser(auth.user)) return forbidden();
   const body = await request.json();
   if (typeof body.songId !== "string" || !/^[0-9a-f-]{36}$/i.test(body.songId)) return NextResponse.json({ error: "Invalid song." }, { status: 400 });
-  const update: Record<string, boolean> = {};
+  const update: Record<string, boolean | string | null> = {};
   if (typeof body.is_released === "boolean") update.is_released = body.is_released;
   if (typeof body.collaboration_enabled === "boolean") update.collaboration_enabled = body.collaboration_enabled;
+  if (body.release_date === null || (typeof body.release_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.release_date))) update.release_date = body.release_date;
   if (!Object.keys(update).length) return NextResponse.json({ error: "No supported changes provided." }, { status: 400 });
   const { error } = await getSupabaseAdmin().from("songs").update(update).eq("id", body.songId);
   if (error) return NextResponse.json({ error: "Unable to update this song." }, { status: 500 });

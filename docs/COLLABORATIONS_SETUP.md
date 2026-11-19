@@ -8,6 +8,7 @@ Apply these migrations to the existing Supabase project, in filename order:
 2. `20261126_collaboration_system_completion.sql` — idempotency, atomic rate limits, agreement fields, and the private agreement bucket.
 3. `20261127_personalized_collaboration_invites.sql` — expiring named invitation sessions and request-to-invite association.
 4. `20261129_collaboration_invites_per_song.sql` — permits multiple distinct song invitations for one collaborator.
+5. `20261201_restore_collab_authorized_people.sql` — retains the private approved-person allowlist (including Ari Ness) for name-based entry to `/collab`.
 
 Requests, terms history, invite tokens, rate-limit records, and event history are accessible through server routes using the Supabase service role. Anonymous visitors cannot read these tables. The invite link contains a random bearer token; Supabase stores only its SHA-256 hash. A signed, HTTP-only session cookie is rechecked against the invitation row, so expiration and revocation take effect on subsequent requests.
 
@@ -26,7 +27,7 @@ Emails are attempted after the request is saved. Admin and artist sends are inde
 
 Visit `/admin/collaborations` while signed in as an authorized admin. Create an invitation by entering a display name, choosing a song, and choosing an expiration. Copy and privately send the generated link; it is only shown once. The invite enables requests for that song. Revoke an invite from the list to end access. Invitees can access the private collaboration experience and submit for the associated song only.
 
-The public form stores the exact active terms version and acknowledgment timestamp. Admins can publish a new version from the terms editor; prior versions remain available for audit. Review and manage requests in the Requests, Active, and Completed tabs. Notification emails link to `/admin/collaborations?request=<request-id>` and require admin authentication.
+The public form stores the exact active terms version and acknowledgment timestamp. Approved people can enter `/collab` with the first and last name in the private allowlist or a qualifying approved request; other collaborators use their personalized invitation link. Admins can publish a new version from the terms editor; prior versions remain available for audit. Review and manage requests in the Requests, Active, and Completed tabs. Notification emails link to `/admin/collaborations?request=<request-id>` and require admin authentication.
 
 ## Agreements and limitations
 

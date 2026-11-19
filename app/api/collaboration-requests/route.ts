@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const artist = clean(body.artistName, 120), email = clean(body.email, 320).toLowerCase();
     const profile = clean(body.profileLink, 500), phone = clean(body.phone, 40), contribution = clean(body.contributionType, 40), message = clean(body.message, 1200);
     const invite = await getCollabInviteSession();
-    if (!invite) return NextResponse.json({ error: "Open your active personal invitation before submitting a request." }, { status: 403 });
+    if (!invite) return NextResponse.json({ error: "Enter with your approved collaborator name or open your active personal invitation before submitting a request." }, { status: 403 });
     if (!validateCollaborationSubmission({ songId, inviteId: invite.id, submissionKey, termsVersion, artistName: artist, email, contributionType: contribution, acknowledged: body.acknowledged })) {
       return NextResponse.json({ error: "Check the required fields and acknowledgment." }, { status: 400 });
     }
@@ -37,7 +37,10 @@ export async function POST(request: Request) {
     if (!rate.data) return NextResponse.json({ error: "Please try again later." }, { status: 429 });
     const submittedAt = new Date().toISOString();
     const { data: row, error } = await db.from("collaboration_requests").insert({
-      submission_key: submissionKey, submission_ip_hash: ipHash, invite_id: invite.id, song_id: songId, artist_name: artist, email, profile_link: profile || null, phone: phone || null,
+      submission_key: submissionKey, submission_ip_hash: ipHash,
+      invite_id: invite.source === "invite" ? invite.id : null,
+      authorized_person_id: invite.source === "authorized_person" ? invite.id : null,
+      song_id: songId, artist_name: artist, email, profile_link: profile || null, phone: phone || null,
       contribution_type: contribution, message: message || null, terms_version: terms.version,
       acknowledged_at: submittedAt, submitted_at: submittedAt,
     }).select("id").single();

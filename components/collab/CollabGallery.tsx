@@ -121,7 +121,11 @@ function CollabGalleryContent({
       });
     }
 
-    const songs = tab === "released" ? artistReleases : unreleasedSongs;
+    const songs = tab === "released" ? artistReleases : [...unreleasedSongs].sort((a, b) => {
+      if (!a.releaseDate) return b.releaseDate ? 1 : a.title.localeCompare(b.title);
+      if (!b.releaseDate) return -1;
+      return a.releaseDate.localeCompare(b.releaseDate);
+    });
     return songs.map((release) => ({
       id: `${tab}:${release.slug}`,
       from: tab,
@@ -242,6 +246,7 @@ function CollabGalleryContent({
                   {item.audioUrl && <span className="collab-cover-mark" aria-hidden="true">▶</span>}
                 </>
               )}
+              {item.from === "unreleased" && item.release.releaseDate && <span className="collab-release-date">Release date · {new Date(`${item.release.releaseDate}T00:00:00`).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>}
             </button>
           ))}
         </section>
@@ -309,6 +314,7 @@ function CollabGalleryContent({
         .collab-tabs button:focus-visible,.collab-back:focus-visible{outline:2px solid #ff3ea5;outline-offset:2px}
         .collab-grid{max-width:1600px;margin:0 auto;columns:2;column-gap:clamp(.55rem,1vw,1rem)}
         .collab-cover{position:relative;display:block;width:100%;break-inside:avoid;margin:0 0 clamp(.55rem,1vw,1rem);padding:0;border:1px solid rgba(255,255,255,.12);border-radius:3px;overflow:hidden;background:#121216;cursor:pointer;text-align:left}
+        .collab-release-date{position:absolute;left:.65rem;bottom:.65rem;padding:.45rem .6rem;border:1px solid rgba(255,62,165,.35);border-radius:999px;background:rgba(8,8,11,.82);color:#ff9bcc;font-size:.62rem;font-weight:800;letter-spacing:.04em;backdrop-filter:blur(8px)}
         .collab-cover img{display:block;width:100%;height:auto;transition:transform .5s cubic-bezier(.2,.7,.2,1),filter .3s}
         .collab-cover-unavailable img{filter:grayscale(1);opacity:.48}
         .collab-cover-unavailable .collab-cover-placeholder{filter:grayscale(1);opacity:.58}

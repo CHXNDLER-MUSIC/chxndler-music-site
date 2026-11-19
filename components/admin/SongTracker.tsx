@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 type Request = { id: string; status: string; submitted_at: string; contribution_type: string };
-type SongRow = { id: string; title: string; slug: string; is_released: boolean; collaboration_enabled: boolean; requests: Request[]; musicVideo: null | { id: string; status: string; visibility: string; next_action: string } };
+type SongRow = { id: string; title: string; slug: string; is_released: boolean; release_date: string | null; collaboration_enabled: boolean; requests: Request[]; musicVideo: null | { id: string; status: string; visibility: string; next_action: string } };
 const statusTone: Record<string, string> = { new: "text-pink-300", reviewing: "text-amber-200", approved: "text-emerald-300", declined: "text-white/40", agreement_pending: "text-amber-200", signed: "text-emerald-300", in_progress: "text-sky-300", completed: "text-emerald-300", canceled: "text-white/40", archived: "text-white/40" };
 
 export default function SongTracker() {
@@ -22,6 +22,12 @@ export default function SongTracker() {
     const r = await fetch("/api/admin/song-tracker", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ songId: song.id, [key]: next }) });
     if (!r.ok) { setSongs(current => current.map(item => item.id === song.id ? { ...item, [key]: !next } : item)); const j = await r.json(); setError(j.error || "Could not save change."); }
   }
+  async function setReleaseDate(song: SongRow, release_date: string) {
+    setError("");
+    setSongs(current => current.map(item => item.id === song.id ? { ...item, release_date: release_date || null } : item));
+    const r = await fetch("/api/admin/song-tracker", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ songId: song.id, release_date: release_date || null }) });
+    if (!r.ok) { setSongs(current => current.map(item => item.id === song.id ? { ...item, release_date: song.release_date } : item)); const j = await r.json(); setError(j.error || "Could not save release date."); }
+  }
   return <>
     <section className="grid gap-3 sm:grid-cols-3">
       {[{ label: "Songs", value: songs.length }, { label: "Released", value: songs.filter(song => song.is_released).length }, { label: "Open outreach", value: songs.filter(song => song.collaboration_enabled).length }].map(card => <div key={card.label} className="rounded-xl border border-white/10 bg-white/[.03] p-4"><p className="text-xs uppercase tracking-[.16em] text-white/45">{card.label}</p><p className="mt-2 text-2xl font-black">{card.value}</p></div>)}
@@ -30,7 +36,7 @@ export default function SongTracker() {
     {error && <p className="mb-4 rounded-lg border border-red-400/20 bg-red-400/5 p-3 text-sm text-red-200">{error}</p>}
     {loading ? <p className="p-8 text-center text-white/45">Loading song tracker…</p> : <div className="overflow-hidden rounded-xl border border-white/10"><div className="hidden grid-cols-[minmax(12rem,1.5fr)_8rem_9rem_minmax(12rem,1fr)] gap-3 bg-white/[.05] px-4 py-3 text-[.65rem] font-bold uppercase tracking-[.16em] text-white/45 md:grid"><span>Song</span><span>Release</span><span>Outreach</span><span>Activity</span></div>
       {visible.map(song => <article key={song.id} className="grid gap-3 border-t border-white/10 px-4 py-4 md:grid-cols-[minmax(12rem,1.5fr)_8rem_9rem_minmax(12rem,1fr)] md:items-center"><div><h2 className="font-bold">{song.title}</h2><p className="mt-1 text-xs text-white/35">{song.slug}</p><div className="mt-2 flex gap-3 text-xs"><Link className="text-[#ff66b4]" href={`/songs/${song.slug}`}>Song page ↗</Link><Link className="text-white/55" href={`/admin/music-videos${song.musicVideo ? `/${song.musicVideo.id}` : ""}`}>{song.musicVideo ? "Video workspace ↗" : "Set up video"}</Link></div></div>
-        <button onClick={() => void toggle(song, "is_released")} className={`w-fit rounded-full px-3 py-1.5 text-xs font-semibold ${song.is_released ? "bg-emerald-400/10 text-emerald-300" : "bg-white/10 text-white/60"}`}>{song.is_released ? "Released" : "Unreleased"}</button>
+        <div className="grid gap-2"><button onClick={() => void toggle(song, "is_released")} className={`w-fit rounded-full px-3 py-1.5 text-xs font-semibold ${song.is_released ? "bg-emerald-400/10 text-emerald-300" : "bg-white/10 text-white/60"}`}>{song.is_released ? "Released" : "Unreleased"}</button><label className="text-[10px] text-white/40">Release date<input type="date" value={song.release_date || ""} onChange={event => void setReleaseDate(song, event.target.value)} className="mt-1 block rounded border border-white/10 bg-[#111116] p-1.5 text-xs text-white" /></label></div>
         <button onClick={() => void toggle(song, "collaboration_enabled")} className={`w-fit rounded-full px-3 py-1.5 text-xs font-semibold ${song.collaboration_enabled ? "bg-[#ff3ea5]/15 text-[#ff80c4]" : "bg-white/10 text-white/50"}`}>{song.collaboration_enabled ? "Outreach open" : "Outreach closed"}</button>
         <div className="text-xs text-white/55"><p>{song.requests.length} request{song.requests.length === 1 ? "" : "s"} · <Link className="text-[#ff66b4]" href={`/admin/collaborations${song.requests[0] ? `?request=${song.requests[0].id}` : ""}`}>Manage outreach ↗</Link></p>{song.requests.slice(0, 2).map(request => <p key={request.id} className={`mt-1 capitalize ${statusTone[request.status] || ""}`}>{request.status.replaceAll("_", " ")} · {request.contribution_type}</p>)}{song.musicVideo && <p className="mt-1">Video: {song.musicVideo.status} · {song.musicVideo.next_action}</p>}</div>
       </article>)}{visible.length === 0 && <p className="p-8 text-center text-sm text-white/45">{songs.length ? "No songs match this view." : "No songs found."}</p>}</div>}

@@ -9,6 +9,7 @@ import type { NowPlaying } from "@/lib/mediaSession";
 export type ArtistRelease = {
   databaseId?: string;
   collaborationEnabled?: boolean;
+  releaseDate?: string | null;
   slug: string;
   title: string;
   /** True when the corresponding audio object exists in the Supabase tracks bucket. */

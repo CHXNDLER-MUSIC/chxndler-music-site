@@ -41,16 +41,21 @@ async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleas
   try {
     const supabase = getSupabaseAdmin();
     const [initialSongsRes, cardsRes] = await Promise.all([
-      supabase.from("songs").select("id, slug, title, is_released, collaboration_enabled, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url"),
+      supabase.from("songs").select("id, slug, title, is_released, collaboration_enabled, release_date, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url"),
       supabase.from("cards").select("card_name"),
     ]);
-    // This column is introduced by the collaboration migration and may not
-    // exist yet in a local/older Supabase schema. A missing opt-in flag must
-    // not hide the entire artist catalog.
+    // Optional catalog fields may not exist yet in an older local schema.
     let songRows: Array<Record<string, any>> | null = initialSongsRes.data as Array<Record<string, any>> | null;
-    if (initialSongsRes.error?.message.includes("collaboration_enabled")) {
+    if (initialSongsRes.error?.message.includes("release_date")) {
+      const fallback = await supabase.from("songs").select("id, slug, title, is_released, collaboration_enabled, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url");
+      songRows = fallback.data?.map((row) => ({ ...row, release_date: null })) || null;
+      if (fallback.error?.message.includes("collaboration_enabled")) {
+        const olderFallback = await supabase.from("songs").select("id, slug, title, is_released, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url");
+        songRows = olderFallback.data?.map((row) => ({ ...row, collaboration_enabled: false, release_date: null })) || null;
+      }
+    } else if (initialSongsRes.error?.message.includes("collaboration_enabled")) {
       const fallback = await supabase.from("songs").select("id, slug, title, is_released, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url");
-      songRows = fallback.data?.map((row) => ({ ...row, collaboration_enabled: false })) || null;
+      songRows = fallback.data?.map((row) => ({ ...row, collaboration_enabled: false, release_date: null })) || null;
       if (fallback.error) console.error("[collab] Could not load song catalog:", fallback.error);
     } else if (initialSongsRes.error) {
       console.error("[collab] Could not load song catalog:", initialSongsRes.error);
@@ -77,6 +82,7 @@ async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleas
             slug,
             databaseId: String(row.id),
             collaborationEnabled: row.collaboration_enabled === true,
+            releaseDate: typeof row.release_date === "string" ? row.release_date : null,
             title,
             artist: "CHXNDLER",
             coverArt: songCoverPath(slug, title),
@@ -218,15 +224,19 @@ export default async function CollabPage() {
   }
 
   const catalog = await fetchArtistSongs();
-  const invitedSong = [...catalog.released, ...catalog.unreleased].find((song) => song.databaseId === inviteSession.song_id);
+  const invitedSong = inviteSession.song_id
+    ? [...catalog.released, ...catalog.unreleased].find((song) => song.databaseId === inviteSession.song_id)
+    : null;
   const released = catalog.released.map((song) => ({
     ...song,
-    collaborationEnabled: song.databaseId === inviteSession.song_id && song.collaborationEnabled,
+    collaborationEnabled: inviteSession.song_id ? song.databaseId === inviteSession.song_id && song.collaborationEnabled : song.collaborationEnabled,
   }));
-  const unreleased = catalog.unreleased.filter((song) => song.databaseId === inviteSession.song_id);
+  const unreleased = inviteSession.song_id
+    ? catalog.unreleased.filter((song) => song.databaseId === inviteSession.song_id)
+    : catalog.unreleased;
   const invitedProjects = invitedSong
     ? projects.filter((project) => normalizeTitle(project.title) === normalizeTitle(invitedSong.title))
-    : [];
+    : inviteSession.song_id ? [] : projects;
   let musicVideos: Array<{ id: string; song_id: string; public_concept: string; public_status: string; songs?: { title: string; slug: string } }> = [];
   try {
     const { data } = await getSupabaseAdmin().from("music_video_projects")
