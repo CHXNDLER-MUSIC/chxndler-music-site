@@ -81,7 +81,7 @@ export async function GET() {
 }
 
 /** POST { "live": true/false } — toggle the flag (admin only) */
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   const auth = await getApiUser();
   if (!auth) return unauthorized();
   if (!isAdminUser(auth.user)) return forbidden();

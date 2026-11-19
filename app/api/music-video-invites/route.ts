@@ -19,6 +19,8 @@ export async function POST(request: Request) {
   }
   let emailStatus: "sent" | "not_configured" | "failed" = "not_configured";
   const { data: project } = await db.from("music_video_projects").select("songs(title)").eq("id", projectId).maybeSingle();
+  const joinedSong = Array.isArray(project?.songs) ? project.songs[0] : project?.songs;
+  const songTitle = joinedSong?.title || "CHXNDLER";
   const host = process.env.SMTP_HOST, from = process.env.SMTP_FROM, user = process.env.SMTP_USER, pass = process.env.SMTP_PASS;
   if (host && from && user && pass) {
     try {
@@ -26,9 +28,9 @@ export async function POST(request: Request) {
       const transport = nodemailer.default.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
       await Promise.all(invites.map(invite => transport.sendMail({
         from, to: invite.email, replyTo: process.env.COLLAB_REPLY_TO || from,
-        subject: `Music video collaboration · ${project?.songs?.title || "CHXNDLER"}`,
-        text: `You have been invited to collaborate on the ${project?.songs?.title || "CHXNDLER"} music video. Open your private project workspace: ${invite.link}\n\nThis link expires in 30 days and can be revoked by the project owner.`,
-        html: `<p>You have been invited to collaborate on the <strong>${String(project?.songs?.title || "CHXNDLER").replace(/[&<>"']/g, "")}</strong> music video.</p><p><a href="${invite.link}">Open your private project workspace</a></p><p>This link expires in 30 days and can be revoked by the project owner.</p>`,
+        subject: `Music video collaboration · ${songTitle}`,
+        text: `You have been invited to collaborate on the ${songTitle} music video. Open your private project workspace: ${invite.link}\n\nThis link expires in 30 days and can be revoked by the project owner.`,
+        html: `<p>You have been invited to collaborate on the <strong>${String(songTitle).replace(/[&<>"']/g, "")}</strong> music video.</p><p><a href="${invite.link}">Open your private project workspace</a></p><p>This link expires in 30 days and can be revoked by the project owner.</p>`,
       })));
       emailStatus = "sent";
     } catch (error) { console.error("[music-video] invite email failed", error); emailStatus = "failed"; }

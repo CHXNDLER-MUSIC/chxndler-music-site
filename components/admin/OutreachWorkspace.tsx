@@ -16,6 +16,7 @@ export default function OutreachWorkspace({ initialSection = "pitches", onSectio
   const [rows, setRows] = useState<Row[]>([]), [songs, setSongs] = useState<Array<{id:string;title:string}>>([]);
   const [loading, setLoading] = useState(true), [error, setError] = useState(""), [query, setQuery] = useState(""), [statusFilter, setStatusFilter] = useState("All statuses");
   const [detail, setDetail] = useState<Row|null>(null), [draft, setDraft] = useState(blank), [open, setOpen] = useState(false), [saving, setSaving] = useState(false);
+  useEffect(() => setSection(initialSection), [initialSection]);
   async function load() { setLoading(true); const response=await fetch("/api/admin/outreach-workspace",{cache:"no-store"}); const data=await response.json(); if(response.ok){setRows(data.records||[]);setSongs(data.songs||[]);setError("");}else setError(data.error||"Unable to load outreach."); setLoading(false); }
   useEffect(()=>{void load();},[]);
   function changeSection(value:Section){setSection(value);onSectionChange?.(value);setQuery("");}

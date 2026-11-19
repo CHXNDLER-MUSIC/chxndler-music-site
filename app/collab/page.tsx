@@ -72,6 +72,9 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
         const released = row.is_released === true || row.audio_status === "Released";
         const hasVideo = !!row.youtube_music_video_url || !!row.sky_video_url || (videoProjectsRes.data || []).some(project => project.song_id === row.id);
         const savedOpportunities = Array.isArray(row.collaboration_opportunities) ? row.collaboration_opportunities : (Array.isArray(row.collab_interests) ? row.collab_interests.map((value: string) => /video/i.test(value) ? "video" : /remix/i.test(value) ? "remix" : /feature|vocal/i.test(value) ? "feature" : "").filter(Boolean) : []);
+        const opportunities: NonNullable<ArtistRelease["collaborationOpportunities"]> = ["remix"];
+        if (!hasVideo) opportunities.push("video");
+        if (!released) opportunities.push(...savedOpportunities.filter((value: string): value is "feature" => value === "feature"));
         const links = resolveSongLinks(row);
         const rawLink = (value: unknown) => typeof value === "string" ? value : "";
         const cardName = cardNames.get(normalizeTitle(title));
@@ -85,7 +88,7 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
             collaborationInterests: Array.isArray(row.collab_interests) ? row.collab_interests : [],
             audioStatus: row.audio_status || (released ? "Released" : "Demo"),
             isReleased: released,
-            collaborationOpportunities: released ? [...new Set(["remix", ...(!hasVideo ? ["video"] : [])])] : [...new Set(["remix", ...savedOpportunities.filter((value: string) => value === "feature"), ...(!hasVideo ? ["video"] : [])])],
+            collaborationOpportunities: [...new Set(opportunities)],
             collaborationDescription: typeof row.collaboration_description === "string" ? row.collaboration_description : "",
             videoConcept: typeof row.video_concept === "string" ? row.video_concept : "",
             releaseDate: typeof row.release_date === "string" ? row.release_date : null,

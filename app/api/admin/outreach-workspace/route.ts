@@ -6,7 +6,19 @@ async function gate() { const auth = await getApiUser(); if (!auth) return unaut
 const fields = ["song_id", "category", "contact_name", "organization", "contact_email", "pitch", "sent_at", "status", "follow_up_at", "notes", "result"] as const;
 function clean(body: Record<string, unknown>) {
   const row: Record<string, unknown> = {};
-  for (const field of fields) if (field in body) row[field] = body[field] === "" ? null : body[field];
+  for (const field of fields) if (field in body) {
+    const value = body[field];
+    if (field === "song_id") {
+      if (value !== null && value !== "" && (typeof value !== "string" || !/^[0-9a-f-]{36}$/i.test(value))) throw new Error("Choose a valid song.");
+      row[field] = value || null;
+    } else if (field === "sent_at" || field === "follow_up_at") {
+      if (value !== null && value !== "" && (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(`${value}T00:00:00`)))) throw new Error(`Enter a valid ${field === "sent_at" ? "sent" : "follow-up"} date.`);
+      row[field] = value || null;
+    } else {
+      if (value !== null && typeof value !== "string") throw new Error(`Invalid ${field.replaceAll("_", " ")}.`);
+      row[field] = typeof value === "string" ? value.trim().slice(0, field === "pitch" || field === "notes" ? 10000 : field === "result" ? 2000 : 500) || null : null;
+    }
+  }
   if (row.status && !["Planned", "Sent", "Follow-up", "Accepted", "Declined", "Closed"].includes(String(row.status))) throw new Error("Choose a valid outreach status.");
   if (row.category && !["Playlists", "Blogs & Press", "Influencers", "Radio", "Sync Pitching", "Other"].includes(String(row.category))) throw new Error("Choose a valid category.");
   return row;
@@ -21,7 +33,9 @@ export async function GET() {
 }
 export async function POST(request: Request) {
   const denied = await gate(); if (denied) return denied;
-  const body = await request.json();
+  let body: Record<string, unknown>;
+  try { body = await request.json(); if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error(); }
+  catch { return NextResponse.json({ error: "Invalid outreach record." }, { status: 400 }); }
   try {
     const row = clean(body);
     if (typeof row.contact_name !== "string" || !row.contact_name.trim()) return NextResponse.json({ error: "Enter a contact or recipient." }, { status: 400 });
@@ -33,11 +47,14 @@ export async function POST(request: Request) {
 }
 export async function PATCH(request: Request) {
   const denied = await gate(); if (denied) return denied;
-  const body = await request.json(); if (typeof body.id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.id)) return NextResponse.json({ error: "Choose a valid outreach record." }, { status: 400 });
+  let body: Record<string, unknown>;
+  try { body = await request.json(); if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error(); }
+  catch { return NextResponse.json({ error: "Invalid outreach record." }, { status: 400 }); }
+  if (typeof body.id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.id)) return NextResponse.json({ error: "Choose a valid outreach record." }, { status: 400 });
   try {
     const row = clean(body); row.updated_at = new Date().toISOString();
-    const { error } = await getSupabaseAdmin().from("outreach_records").update(row).eq("id", body.id);
-    if (error) return NextResponse.json({ error: "Unable to update this outreach record." }, { status: 500 });
+    const { data, error } = await getSupabaseAdmin().from("outreach_records").update(row).eq("id", body.id).select("id").maybeSingle();
+    if (error || !data) return NextResponse.json({ error: "Unable to update this outreach record." }, { status: error ? 500 : 404 });
     return NextResponse.json({ ok: true });
   } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid outreach record." }, { status: 400 }); }
 }

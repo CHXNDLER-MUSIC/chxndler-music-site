@@ -29,7 +29,7 @@ const nullable = new Set(["deadline", "submitted_at", "follow_up_at", "placement
 export async function POST(request: Request) {
   const denied = await gate(); if (denied) return denied;
   const body = await request.json();
-  if (typeof body.kind !== "string" || !(body.kind in tables)) return NextResponse.json({ error: "Choose an opportunity or placement." }, { status: 400 });
+  if (typeof body.kind !== "string" || !Object.hasOwn(tables, body.kind)) return NextResponse.json({ error: "Choose an opportunity or placement." }, { status: 400 });
   const kind = body.kind as keyof typeof tables;
   const allowed = kind === "opportunity"
     ? ["song_id", "project_name", "contact_name", "organization", "contact_email", "media_type", "deadline", "submitted_at", "status", "potential_fee", "follow_up_at", "notes"]
@@ -57,7 +57,7 @@ export async function PATCH(request: Request) {
     if (error) return NextResponse.json({ error: "Unable to update this sync idea." }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
-  if (typeof body.kind !== "string" || !(body.kind in tables) || typeof body.id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.id)) return NextResponse.json({ error: "Choose a valid sync record." }, { status: 400 });
+  if (typeof body.kind !== "string" || !Object.hasOwn(tables, body.kind) || typeof body.id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.id)) return NextResponse.json({ error: "Choose a valid sync record." }, { status: 400 });
   const kind = body.kind as keyof typeof tables;
   const allowed = kind === "opportunity"
     ? ["song_id", "project_name", "contact_name", "organization", "contact_email", "media_type", "deadline", "submitted_at", "status", "potential_fee", "follow_up_at", "notes"]

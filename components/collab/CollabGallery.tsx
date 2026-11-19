@@ -149,15 +149,8 @@ function CollabGalleryContent({
     <main className="collab-page">
       <header className="collab-heading">
         <a className="collab-wordmark" href="/">CHXNDLER</a>
-        <div className="collab-heading-actions">
-          <span>COLLABORATIONS</span>
-        </div>
       </header>
 
-      <div className="collab-category-tabs" role="tablist" aria-label="Collaboration categories">
-        {canViewFeatures && <button type="button" role="tab" aria-selected={category === "features"} onClick={() => setCategory("features")}>Music Features</button>}
-        <button type="button" role="tab" aria-selected={category === "videos"} onClick={() => setCategory("videos")}>Music Videos</button>
-      </div>
       {category === "features" && <div className="collab-tabs" role="tablist" aria-label="Music feature filters">
         {COLLAB_CATALOG_FILTERS.map((value) => (
           <button
@@ -275,13 +268,12 @@ function CollabGalleryContent({
 
       <style jsx>{`
         .collab-page{min-height:100vh;background:#08080b;color:#fff;padding:clamp(1rem,3vw,3rem);}
-        .collab-heading{display:flex;justify-content:space-between;align-items:center;margin:0 auto 1.1rem;max-width:1600px;color:#ff3ea5;font-size:.7rem;font-weight:800;letter-spacing:.28em}
-        .collab-heading-actions{display:flex;align-items:center;gap:1rem}
+        .collab-heading{display:flex;justify-content:center;align-items:center;margin:0 auto 1.1rem;max-width:1600px;color:#ff3ea5;font-size:.7rem;font-weight:800;letter-spacing:.28em}
         .collab-extra-cta{max-width:1600px;margin:1.5rem auto 0;display:flex;justify-content:center}
         .collab-extra-cta a{display:inline-flex;align-items:center;gap:.4rem;border:1px solid rgba(255,62,165,.55);border-radius:999px;padding:.7rem 1rem;color:#fff;text-decoration:none;font-size:.68rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;transition:background .2s,border-color .2s}
         .collab-extra-cta a:hover{background:rgba(255,62,165,.12);border-color:#ff3ea5}
         .collab-extra-cta a:focus-visible{outline:2px solid #ff3ea5;outline-offset:3px}
-        .collab-wordmark{color:#fff;text-decoration:none;font-size:.8rem;letter-spacing:.18em}
+        .collab-wordmark{color:#ff3ea5;text-decoration:none;font-size:.8rem;letter-spacing:.18em}
         .collab-category-tabs{display:flex;gap:.5rem;max-width:900px;margin:0 auto 1rem;padding:.25rem;border:1px solid rgba(255,255,255,.09);border-radius:999px;background:rgba(255,255,255,.035)}
         .collab-category-tabs button{flex:1;border:0;border-radius:999px;background:transparent;color:rgba(255,255,255,.58);padding:.8rem;font-size:.7rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
         .collab-category-tabs button[aria-selected="true"]{background:rgba(255,62,165,.14);color:#ff62b0;box-shadow:inset 0 0 0 1px rgba(255,62,165,.38)}
