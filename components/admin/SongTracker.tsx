@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { songCoverPath } from "@/lib/songCover";
 import { getBrandArtUrl } from "@/lib/brandPitchStorage";
@@ -38,9 +38,12 @@ function productionCategory(song: SongRow): PipelineKey {
 
 function matchesProductionFilter(song: SongRow, value: string) {
   const milestones = song.production_stages || {};
-  if (value === "wrote") return milestones.lyrics === true || milestones.write === true;
-  if (value === "recorded") return milestones.recorded === true || milestones.record === true;
-  if (value === "mixed") return song.is_released || milestones.mixed === true || milestones.mix === true;
+  const wrote = milestones.lyrics === true || milestones.write === true;
+  const recorded = milestones.recorded === true || milestones.record === true;
+  const mixed = song.is_released || milestones.mixed === true || milestones.mix === true;
+  if (value === "wrote") return wrote && !recorded && !mixed;
+  if (value === "recorded") return recorded && !mixed;
+  if (value === "mixed") return mixed;
   return productionCategory(song) === value;
 }
 
@@ -201,10 +204,10 @@ export default function SongTracker() {
     setSongFilterText("");
   }
 
-  function filterHeader(key: string, label: string, choices: Array<{ value: string; label: string }>) {
+  function filterHeader(key: string, label: string, choices: Array<{ value: string; label: string; color?: string; icon?: ReactNode }>) {
     const active = columnFilter?.key === key;
     const currentValue = columnFilter?.key === key ? columnFilter.value : "";
-    return <div className="relative"><button type="button" aria-expanded={columnMenu === key} onClick={() => setColumnMenu(current => current === key ? null : key)} className="text-left hover:text-white">{label}{active ? ` · ${key === "song" ? currentValue : choices.find(choice => choice.value === currentValue)?.label || currentValue}` : ""}⌄</button>{columnMenu === key && <div className="absolute left-0 top-full z-30 mt-2 max-h-64 min-w-48 overflow-auto rounded-lg border border-white/10 bg-[#17171c] p-1 normal-case tracking-normal shadow-xl">{key === "song" ? <><button type="button" onClick={() => { setSongFilterText(""); setColumnFilter(null); setColumnMenu(null); }} className="block w-full rounded px-3 py-2 text-left text-xs text-white/60 hover:bg-white/10">Clear</button><input autoFocus type="search" value={songFilterText} onChange={event => { setSongFilterText(event.target.value); setColumnFilter(event.target.value ? {key, value:event.target.value} : null); }} placeholder="Type a song title…" className="w-full appearance-none rounded border border-white/10 bg-[#0b0b0f] px-3 py-2 text-xs text-white outline-none placeholder:text-white/40 [color-scheme:dark] focus:border-[#FD52AF]/50"/></> : <button type="button" onClick={() => { setColumnFilter(null); setColumnMenu(null); }} className="block w-full rounded px-3 py-2 text-left text-xs text-white/60 hover:bg-white/10">All</button>}{key !== "song" && choices.map(choice=><button key={choice.value} type="button" onClick={() => { setColumnFilter({key,value:choice.value}); setColumnMenu(null); }} className="block w-full rounded px-3 py-2 text-left text-xs text-white/75 hover:bg-white/10">{choice.label}</button>)}</div>}</div>;
+    return <div className="relative"><button type="button" aria-expanded={columnMenu === key} onClick={() => setColumnMenu(current => current === key ? null : key)} className="text-left hover:text-white">{label}{active ? ` · ${key === "song" ? currentValue : choices.find(choice => choice.value === currentValue)?.label || currentValue}` : ""}⌄</button>{columnMenu === key && <div className="absolute left-0 top-full z-30 mt-2 max-h-64 min-w-52 overflow-auto rounded-lg border border-white/10 bg-[#17171c] p-1 normal-case tracking-normal shadow-xl">{key === "song" ? <><button type="button" onClick={() => { setSongFilterText(""); setColumnFilter(null); setColumnMenu(null); }} className="block w-full rounded px-3 py-2 text-left text-xs text-white/60 hover:bg-white/10">Clear</button><input autoFocus type="search" value={songFilterText} onChange={event => { setSongFilterText(event.target.value); setColumnFilter(event.target.value ? {key, value:event.target.value} : null); }} placeholder="Type a song title…" className="w-full appearance-none rounded border border-white/10 bg-[#0b0b0f] px-3 py-2 text-xs text-white outline-none placeholder:text-white/40 [color-scheme:dark] focus:border-[#FD52AF]/50"/></> : <button type="button" onClick={() => { setColumnFilter(null); setColumnMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs font-semibold text-white/65 hover:bg-white/10"><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5 shrink-0"><circle cx="10" cy="10" r="7.5"/><path d="M6.5 10h7"/></svg><span>All</span></button>}{key !== "song" && choices.map(choice=><button key={choice.value} type="button" onClick={() => { setColumnFilter({key,value:choice.value}); setColumnMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs font-semibold hover:bg-white/10" style={{color:choice.color||"#d4d4d8"}}>{choice.icon&&<span className="grid h-5 w-5 shrink-0 place-items-center">{choice.icon}</span>}<span>{choice.label}</span></button>)}</div>}</div>;
   }
 
   return <section className="song-portfolio">
@@ -215,10 +218,10 @@ export default function SongTracker() {
 
     <section aria-label="Songs by production stage" className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
       {[{ key: "all", label: "All songs", color: "#E8E8EF", count: songs.length },
+        { key: "unset", label: "Not Set", color: "#777783", count: songs.filter(song => productionCategory(song) === "unset").length },
         { key: "wrote", label: "Wrote", color: "#A78BFA", count: songs.filter(song => matchesProductionFilter(song, "wrote")).length },
         { key: "recorded", label: "Recorded", color: "#42B8E8", count: songs.filter(song => matchesProductionFilter(song, "recorded")).length },
-        { key: "mixed", label: "Mixed", color: "#F2B84B", count: songs.filter(song => matchesProductionFilter(song, "mixed")).length },
-        { key: "unset", label: "Not Set", color: "#777783", count: songs.filter(song => productionCategory(song) === "unset").length }].map(item => {
+        { key: "mixed", label: "Mixed", color: "#F2B84B", count: songs.filter(song => matchesProductionFilter(song, "mixed")).length }].map(item => {
         const active = item.key === "all" ? !columnFilter || columnFilter.key !== "production" : columnFilter?.key === "production" && columnFilter.value === item.key;
         const stage: "Writing" | "Recording" | "Mixing" | null = item.key === "wrote" ? "Writing" : item.key === "recorded" ? "Recording" : item.key === "mixed" ? "Mixing" : null;
         return <button key={item.key} type="button" aria-pressed={active} onClick={() => filterByProductionStage(item.key)} className={`group relative overflow-hidden rounded-xl border px-3 py-3 text-left transition hover:-translate-y-px hover:bg-white/[.045] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${active ? "border-white/20 bg-white/[.055]" : "border-white/[.08] bg-[#101014]"}`}>
@@ -233,7 +236,7 @@ export default function SongTracker() {
 
     {error && <p role="alert" className="mb-4 rounded-xl border border-red-400/20 bg-red-400/[.05] p-3 text-sm text-red-200">{error}</p>}
     {loading ? <div className="rounded-2xl border border-white/[.08] bg-[#101014] p-8 text-center text-sm text-white/45">Loading your songs…</div> : !sorted.length ? <div className="rounded-2xl border border-dashed border-white/[.14] bg-[#101014]/60 p-10 text-center"><p className="font-semibold text-white/75">{songs.length ? "No songs match these filters." : "Your music universe is ready."}</p><p className="mt-1 text-sm text-white/40">{songs.length ? "Try a different search or clear the filters." : "Add your first song to create a workspace."}</p>{songs.length > 0 && <button type="button" onClick={clearFilters} className="mt-4 text-sm font-semibold text-[#FD52AF]">Clear filters</button>}</div> : <div className="overflow-visible rounded-2xl border border-white/[.08] bg-[#101014]">
-      <div className="hidden border-b border-white/[.07] px-5 py-3 text-[.65rem] font-bold uppercase tracking-[.13em] text-white/35 lg:grid lg:grid-cols-[minmax(14rem,1.2fr)_minmax(14rem,1.1fr)_minmax(15rem,1.2fr)_minmax(13rem,1fr)] lg:gap-5">{filterHeader("song", "Song", [])}{filterHeader("production", "Production", [{value:"wrote",label:"Wrote"},{value:"recorded",label:"Recorded"},{value:"mixed",label:"Mixed"},{value:"unset",label:"Not Set"}])}{filterHeader("postRelease", "Post Release", [{value:"spotifyCanvas",label:"Spotify Canvas"},{value:"sky",label:"Sky"},{value:"chxndlerCard",label:"CHXNDLER Card"},{value:"musicVideo",label:"Music Video"},{value:"contentReleased",label:"Content Release"},{value:"playlistPitched",label:"Playlist Pitched"},{value:"syncPlacement",label:"Sync Placement"}])}{filterHeader("opportunities", "Opportunities", [{value:"video",label:"Video Work"},{value:"outreach",label:"Active Outreach"}])}</div>
+      <div className="hidden border-b border-white/[.07] px-5 py-3 text-[.65rem] font-bold uppercase tracking-[.13em] text-white/35 lg:grid lg:grid-cols-[minmax(14rem,1.2fr)_minmax(14rem,1.1fr)_minmax(15rem,1.2fr)_minmax(13rem,1fr)] lg:gap-5">{filterHeader("song", "Song", [])}{filterHeader("production", "Production", [{value:"wrote",label:"Wrote",color:"#A78BFA",icon:<ProductionStageIcon stage="Writing" className="h-5 w-5"/>},{value:"recorded",label:"Recorded",color:"#42B8E8",icon:<ProductionStageIcon stage="Recording" className="h-5 w-5"/>},{value:"mixed",label:"Mixed",color:"#F2B84B",icon:<ProductionStageIcon stage="Mixing" className="h-5 w-5"/>},{value:"unset",label:"Not Set",color:"#777783",icon:<ProductionStageIcon stage={null} className="h-5 w-5"/>}])}{filterHeader("postRelease", "Post Release", [{value:"spotifyCanvas",label:"Spotify Canvas",color:"#1ED760",icon:<OpportunityIcon kind="spotify" className="h-5 w-5"/>},{value:"sky",label:"Sky",color:"#42B8E8",icon:<OpportunityIcon kind="sky" className="h-5 w-5"/>},{value:"chxndlerCard",label:"CHXNDLER Card",color:"#A78BFA",icon:<OpportunityIcon kind="card" className="h-5 w-5"/>},{value:"musicVideo",label:"Music Video",color:"#FB7185",icon:<OpportunityIcon kind="video" className="h-5 w-5"/>},{value:"contentReleased",label:"Content Release",color:"#60A5FA",icon:<OpportunityIcon kind="content" className="h-5 w-5"/>},{value:"playlistPitched",label:"Playlist Pitched",color:"#FD52AF",icon:<OpportunityIcon kind="playlist" className="h-5 w-5"/>},{value:"syncPlacement",label:"Sync Placement",color:"#F2B84B",icon:<OpportunityIcon kind="sync" className="h-5 w-5"/>}])}{filterHeader("opportunities", "Opportunities", [{value:"video",label:"Video Work"},{value:"outreach",label:"Active Outreach"}])}</div>
       {sorted.map(song => {
         const collabReady = song.ready_for_collab === true, hasVideoWork = !!song.musicVideo || hasVideoOpportunity(song), hasOutreach = (song.activeOutreachCount || 0) > 0;
         const requestCount = song.requests?.filter(request => !["declined", "cancelled", "closed"].includes(request.status.toLowerCase())).length || 0;

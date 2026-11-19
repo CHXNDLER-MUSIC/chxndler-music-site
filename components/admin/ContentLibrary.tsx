@@ -1,176 +1,83 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import ContentDetailPanel, { type CatalogSong, type ContentItem } from "@/components/admin/ContentDetailPanel";
 
-type Metrics = { total: number | null; toRecord: number | null; toEdit: number | null; ready: number | null; scheduled: number | null; posted: number | null };
-type ResponseData = { items: ContentItem[]; total: number; page: number; pageSize: number; metrics: Metrics; songs: CatalogSong[]; categories: string[]; types: string[]; suggestions?: { titles: string[]; songs: string[]; categories: string[]; subCategories: string[]; types: string[]; dates: string[] } };
-const workflows = ["All", "To Record", "To Edit", "Ready", "Scheduled", "Posted", "Idea"];
+type Metrics = { total: number | null; recorded?: number | null; edited?: number | null; toRecord: number | null; toEdit: number | null; ready: number | null; scheduled: number | null; posted: number | null };
+type Payload = { items: ContentItem[]; total: number; page: number; pageSize: number; metrics: Metrics; songs: CatalogSong[]; categories: string[]; types: string[] };
 const blankMetrics: Metrics = { total: 0, toRecord: 0, toEdit: 0, ready: 0, scheduled: 0, posted: 0 };
+const statusStyles: Record<string, string> = { Idea: "text-white/55 bg-white/[.06]", "To Record": "text-sky-200 bg-sky-300/10", "To Edit": "text-amber-200 bg-amber-300/10", Ready: "text-fuchsia-200 bg-fuchsia-300/10", Scheduled: "text-violet-200 bg-violet-300/10", Posted: "text-emerald-200 bg-emerald-300/10" };
+const stages = ["Idea", "To Record", "To Edit", "Ready", "Posted"];
+const stageFilter = ["All", "Needs Action", "Scheduled", "Posted"];
+const count = (n: number | null | undefined) => n == null ? "—" : n.toLocaleString();
 
-function Status({ status }: { status: string }) {
-  const styles: Record<string, string> = { Posted: "bg-emerald-300/10 text-emerald-200", Scheduled: "bg-sky-300/10 text-sky-200", Ready: "bg-violet-300/10 text-violet-200", "To Edit": "bg-amber-300/10 text-amber-200", "To Record": "bg-[#FD52AF]/10 text-[#ff9dcd]", Idea: "bg-white/[.06] text-white/50" };
-  return <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-[.65rem] font-semibold ${styles[status] || styles.Idea}`}>{status}</span>;
+function stagePatch(status: string) {
+  if (status === "Idea" || status === "To Record") return { recorded: false, edited: false, post_ready: false, published: false };
+  if (status === "To Edit") return { recorded: true, edited: false, post_ready: false, published: false };
+  if (status === "Ready") return { recorded: true, edited: true, post_ready: true, published: false };
+  if (status === "Posted") return { recorded: true, edited: true, post_ready: true, published: true };
+  return {};
 }
 
-function ProgressCheck({ label, checked, onChange, disabled }: { label: string; checked: boolean; onChange: (value: boolean) => void; disabled?: boolean }) {
-  return <label className="inline-flex cursor-pointer items-center justify-center p-1" title={`${label}: ${checked ? "complete" : "incomplete"}`} onClick={event => event.stopPropagation()}><input type="checkbox" aria-label={`${label} complete`} checked={checked} disabled={disabled} onChange={event => onChange(event.target.checked)} className="h-4 w-4 cursor-pointer accent-[#FD52AF] disabled:cursor-wait"/></label>;
-}
-
-function dateLabel(item: ContentItem) {
-  if (!item.planned_date) return "—";
-  return <span className={item.is_placeholder_date ? "text-amber-200/65" : "text-white/65"}>{item.planned_date}{item.is_placeholder_date && <small className="ml-1">placeholder</small>}</span>;
-}
-
-const categoryColors: Record<string, string> = {
-  OTHER: "#9CA3AF",
-  SCENES: "#C4A1FF",
-  STUDIO: "#FF83C2",
-  ACOUSTIC: "#70D8FF",
-  BRAND: "#FFD166",
-  SOCIAL: "#7DE2B8",
-};
-
-function labelColor(label: string, palette: Record<string, string> = {}) {
-  const normalized = label.trim().toUpperCase();
-  if (palette[normalized]) return palette[normalized];
-  let hash = 0;
-  for (const character of normalized) hash = (hash * 31 + character.charCodeAt(0)) | 0;
-  return `hsl(${Math.abs(hash) % 360} 78% 73%)`;
+function planned(item: ContentItem) {
+  if (!item.planned_date || item.is_placeholder_date) return null;
+  return `${item.planned_date}${item.planned_time ? ` · ${item.planned_time}` : ""}`;
 }
 
 export default function ContentLibrary({ songId: scopedSongId }: { songId?: string }) {
-  const [items, setItems] = useState<ContentItem[]>([]);
-  const [songs, setSongs] = useState<CatalogSong[]>([]);
-  const [suggestions, setSuggestions] = useState<NonNullable<ResponseData["suggestions"]>>({ titles: [], songs: [], categories: [], subCategories: [], types: [], dates: [] });
-  const [metrics, setMetrics] = useState<Metrics>(blankMetrics);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize] = useState(50);
-  const [songFilter, setSongFilter] = useState(scopedSongId || "");
-  const [songNameFilter, setSongNameFilter] = useState("");
-  const [titleFilter, setTitleFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [subCategoryFilter, setSubCategoryFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
-  const [workflow, setWorkflow] = useState("All");
-  const [dateFilter, setDateFilter] = useState("");
-  const [recordFilter, setRecordFilter] = useState("");
-  const [editFilter, setEditFilter] = useState("");
-  const [postFilter, setPostFilter] = useState("");
-  const [openFilter, setOpenFilter] = useState<string | null>(null);
-  const [sort, setSort] = useState("planned_date");
-  const [direction, setDirection] = useState("asc");
-  const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [error, setError] = useState("");
-  const [panelItem, setPanelItem] = useState<ContentItem | null | undefined>(undefined);
+  const [items, setItems] = useState<ContentItem[]>([]), [songs, setSongs] = useState<CatalogSong[]>([]), [metrics, setMetrics] = useState<Metrics>(blankMetrics);
+  const [total, setTotal] = useState(0), [page, setPage] = useState(1), [pageSize] = useState(50), [type, setType] = useState(""), [filter, setFilter] = useState("All"), [query, setQuery] = useState("");
+  const [view, setView] = useState<"List" | "Board">("List"), [loading, setLoading] = useState(true), [busyId, setBusyId] = useState<string | null>(null), [error, setError] = useState(""), [panelItem, setPanelItem] = useState<ContentItem | null | undefined>(undefined);
+  const [types, setTypes] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (scopedSongId) return;
-    const params = new URLSearchParams(window.location.search);
-    const requestedSong = params.get("songId") || params.get("song");
-    if (requestedSong) setSongFilter(requestedSong);
-  }, [scopedSongId]);
-  useEffect(() => { setPage(1); }, [songFilter, songNameFilter, titleFilter, categoryFilter, subCategoryFilter, typeFilter, workflow, dateFilter, recordFilter, editFilter, postFilter, sort, direction]);
-
+  useEffect(() => { if (!scopedSongId) { const params = new URLSearchParams(window.location.search); setQuery(params.get("q") || ""); } }, [scopedSongId]);
+  useEffect(() => { setPage(1); }, [scopedSongId, type, filter, query]);
   const load = useCallback(async (requestedPage = page) => {
     setLoading(true); setError("");
-    const params = new URLSearchParams({ page: String(requestedPage), pageSize: String(pageSize), sort, direction });
-    if (songFilter) params.set("songId", songFilter);
-    if (songNameFilter) params.set("songName", songNameFilter);
-    if (titleFilter) params.set("title", titleFilter);
-    if (categoryFilter) params.set("category", categoryFilter);
-    if (subCategoryFilter) params.set("subCategory", subCategoryFilter);
-    if (typeFilter) params.set("type", typeFilter);
-    if (workflow !== "All") params.set("workflow", workflow);
-    if (dateFilter) params.set("plannedDate", dateFilter);
-    if (recordFilter) params.set("recorded", recordFilter);
-    if (editFilter) params.set("edited", editFilter);
-    if (postFilter) params.set("post_ready", postFilter);
-    const response = await fetch(`/api/admin/content-items?${params}`, { cache: "no-store" });
-    const body = await response.json();
+    const params = new URLSearchParams({ page: String(requestedPage), pageSize: String(pageSize), sort: "workflow_priority", direction: "asc" });
+    if (scopedSongId) params.set("songId", scopedSongId);
+    if (type) params.set("type", type);
+    if (query.trim()) params.set("q", query.trim());
+    if (filter !== "All") params.set("workflow", filter);
+    const response = await fetch(`/api/admin/content-items?${params}`, { cache: "no-store" }), body = await response.json();
     if (!response.ok) { setError(body.error || "Unable to load content."); setLoading(false); return; }
-    const result = body as ResponseData;
-    setItems(result.items || []); setTotal(result.total || 0); setMetrics(result.metrics || blankMetrics);
-    setSongs(result.songs || []); setSuggestions(result.suggestions || { titles: [], songs: [], categories: [], subCategories: [], types: [], dates: [] }); setLoading(false);
-  }, [page, pageSize, sort, direction, songFilter, songNameFilter, titleFilter, categoryFilter, subCategoryFilter, typeFilter, workflow, dateFilter, recordFilter, editFilter, postFilter]);
+    const result = body as Payload; setItems(result.items || []); setTotal(result.total || 0); setMetrics(result.metrics || blankMetrics); setSongs(result.songs || []); setTypes(result.types || []); setLoading(false);
+  }, [page, pageSize, scopedSongId, type, filter, query]);
+  useEffect(() => { void load(page); }, [load, page]);
 
-  useEffect(() => { void load(page); }, [load]);
-
-  const currentSong = useMemo(() => songs.find(song => song.id === songFilter), [songs, songFilter]);
-  const toggleSort = (key: string) => { if (sort === key) setDirection(value => value === "asc" ? "desc" : "asc"); else { setSort(key); setDirection("asc"); } };
-  const saveItem = async (item: ContentItem) => { setPanelItem(undefined); await load(page); };
-  async function toggle(item: ContentItem, field: "recorded" | "edited" | "post_ready", value: boolean) {
+  async function changeStatus(item: ContentItem, status: string) {
+    const patch = stagePatch(status); if (!Object.keys(patch).length) return;
     setBusyId(item.id); setError("");
-    const response = await fetch("/api/admin/content-items", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: item.id, [field]: value }) });
+    const response = await fetch("/api/admin/content-items", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: item.id, ...patch }) });
     const body = await response.json(); setBusyId(null);
-    if (!response.ok) { setError(body.error || "Unable to update this item."); return; }
+    if (!response.ok) { setError(body.error || "Unable to update content stage."); return; }
     setItems(current => current.map(row => row.id === item.id ? body.item : row));
-    const summary = await fetch(`/api/admin/content-items?page=${page}&pageSize=${pageSize}${songFilter ? `&songId=${songFilter}` : ""}`, { cache: "no-store" }).then(result => result.json());
-    if (summary.metrics) setMetrics(summary.metrics);
+    void fetch(`/api/admin/content-items?page=${page}&pageSize=${pageSize}${scopedSongId ? `&songId=${scopedSongId}` : ""}`, { cache: "no-store" }).then(r => r.json()).then(data => { if (data.metrics) setMetrics(data.metrics); });
   }
 
-  const clearFilters = () => { if (!scopedSongId) setSongFilter(""); setSongNameFilter(""); setTitleFilter(""); setCategoryFilter(""); setSubCategoryFilter(""); setTypeFilter(""); setWorkflow("All"); setDateFilter(""); setRecordFilter(""); setEditFilter(""); setPostFilter(""); setSort("planned_date"); setDirection("asc"); setOpenFilter(null); setPage(1); };
-  const headerInput = "mt-2 w-full rounded-md border border-white/10 bg-[#101014] px-2 py-1.5 text-[.7rem] font-normal normal-case tracking-normal text-white outline-none placeholder:text-white/30 focus:border-violet-300/40";
-  const headerFilter = (key: string) => {
-    if (openFilter !== key) return null;
-    const textInput = (value: string, onChange: (value: string) => void, listId: string, options: string[], placeholder = "Filter") => <><input autoFocus value={value} onChange={event => onChange(event.target.value)} list={listId} placeholder={placeholder} aria-label={`Filter ${key}`} className={headerInput}/><datalist id={listId}>{options.map(option => <option key={option} value={option}/>)}</datalist></>;
-    const boolInput = (label: string, value: string, onChange: (value: string) => void) => <div className="mt-2 flex gap-1 normal-case tracking-normal">{[{value:"",text:"All"},{value:"true",text:"✓ Yes"},{value:"false",text:"✕ No"}].map(option=><button key={option.value||"all"} type="button" aria-pressed={value===option.value} onClick={()=>onChange(option.value)} className={`rounded-md border px-2 py-1 text-[.65rem] ${value===option.value?"border-[#FD52AF]/40 bg-[#FD52AF]/10 text-[#ff9dcd]":"border-white/10 text-white/55 hover:text-white"}`} aria-label={`${label}: ${option.value===""?"all":option.value==="true"?"yes":"no"}`}>{option.text}</button>)}</div>;
-    if (key === "title") return textInput(titleFilter, setTitleFilter, "content-title-suggestions", suggestions.titles);
-    if (key === "song_name") return textInput(songNameFilter, setSongNameFilter, "content-song-suggestions", suggestions.songs, "Filter song");
-    if (key === "category") return <div className="space-y-1">{textInput(categoryFilter, setCategoryFilter, "content-category-suggestions", suggestions.categories, "Category")}{textInput(subCategoryFilter, setSubCategoryFilter, "content-subcategory-suggestions", suggestions.subCategories, "Sub-category")}</div>;
-    if (key === "media_type") return textInput(typeFilter, setTypeFilter, "content-type-suggestions", suggestions.types);
-    if (key === "workflow_status") return <select value={workflow} onChange={event=>setWorkflow(event.target.value)} aria-label="Filter workflow status" className={headerInput}><option value="All">All statuses</option>{workflows.filter(value=>value!=="All").map(value=><option key={value}>{value}</option>)}</select>;
-    if (key === "recorded") return boolInput("Recorded", recordFilter, setRecordFilter);
-    if (key === "edited") return boolInput("Edited", editFilter, setEditFilter);
-    if (key === "post_ready") return boolInput("Posted", postFilter, setPostFilter);
-    if (key === "planned_date") return <input type="date" value={dateFilter} onChange={event=>setDateFilter(event.target.value)} aria-label="Filter planned date" className={headerInput}/>;
-    return null;
-  };
-  const paginationCount = Math.max(1, Math.ceil(total / pageSize));
-  const metricCards: Array<[string, number | null, string]> = [["Total Content", metrics.total, "text-white"], ["To Record", metrics.toRecord, "text-[#ff9dcd]"], ["To Edit", metrics.toEdit, "text-amber-200"], ["Published", metrics.posted, "text-emerald-200"]];
-  const workflowCount: Record<string, number | null> = { "To Record": metrics.toRecord, "To Edit": metrics.toEdit, Ready: metrics.ready, Scheduled: metrics.scheduled, Posted: metrics.posted };
+  const actionable = (metrics.toRecord || 0) + (metrics.toEdit || 0) + (metrics.ready || 0);
+  const summary = `${count(metrics.posted)} of ${count(metrics.total)} posted · ${actionable.toLocaleString()} need attention`;
+  const filterItems = items;
+  const maxPage = Math.max(1, Math.ceil(total / pageSize));
+  const row = (item: ContentItem, compact = false) => <article key={item.id} className="group flex min-w-0 items-center gap-3 border-b border-white/[.07] px-3 py-3 last:border-0 hover:bg-white/[.025] sm:px-4">
+    <button type="button" onClick={() => item.music_video_project_id ? window.location.assign(`/admin/music-videos/${item.music_video_project_id}`) : setPanelItem(item)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+      {item.media_url && /\.(png|jpe?g|gif|webp|avif)(\?|$)/i.test(item.media_url) ? <img src={item.media_url} alt="" className="h-10 w-10 shrink-0 rounded-md border border-white/10 object-cover"/> : <span aria-hidden="true" className="h-10 w-10 shrink-0 rounded-md border border-white/[.08] bg-white/[.025]"/>}
+      <span className="min-w-0"><span className="block truncate text-sm font-semibold text-white group-hover:text-[#ff9dcd]">{item.title}</span><span className="mt-1 block truncate text-xs text-white/40">{[item.media_type, item.sub_category || item.category, item.canonical_song_title || item.song_name].filter(Boolean).join(" · ") || "Uncategorized"}</span></span>
+    </button>
+    <span className="hidden min-w-24 text-right text-xs text-white/40 sm:block">{item.is_placeholder_date ? "Unscheduled" : planned(item) || ""}</span>
+    <span className={`hidden rounded-full px-2.5 py-1 text-[.65rem] font-semibold sm:inline-flex ${statusStyles[item.workflow_status] || "text-violet-200 bg-violet-300/10"}`}>{item.workflow_status === "Ready" ? "Ready to Post" : item.workflow_status}</span>
+    {item.music_video_project_id ? <span className="shrink-0 text-xs text-[#ff9dcd]">Open project ↗</span> : <label className="flex shrink-0 items-center gap-2" onClick={event => event.stopPropagation()}><span className="sr-only">Move {item.title} to stage</span><select aria-label={`Status for ${item.title}`} disabled={busyId === item.id} value={item.workflow_status === "Scheduled" ? "Ready" : item.workflow_status === "Ready" ? "Ready" : stages.includes(item.workflow_status) ? item.workflow_status : "Idea"} onChange={event => void changeStatus(item, event.target.value)} className="max-w-[116px] rounded-md border border-white/10 bg-[#121217] px-2 py-1.5 text-[.68rem] text-white/75 disabled:opacity-50"><option value="Idea">Idea</option><option value="To Record">To Record</option><option value="To Edit">To Edit</option><option value="Ready">Ready to Post</option><option value="Posted">Posted</option></select></label>}
+    <button type="button" aria-label={`Open ${item.title}`} onClick={() => setPanelItem(item)} className="text-white/30 hover:text-white">›</button>
+  </article>;
 
   return <section className="space-y-4">
-    {!scopedSongId && <><header className="flex flex-wrap items-end gap-3"><div className="mr-auto"><p className="text-[.62rem] font-bold uppercase tracking-[.2em] text-violet-300">Publishing library</p><h1 className="mt-1 text-2xl font-black">Content</h1></div><button type="button" onClick={() => setPanelItem(null)} className="rounded-lg bg-[#FD52AF] px-4 py-2.5 text-sm font-bold text-black">+ Add Content</button></header>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">{metricCards.map(([label, count, color]) => <div key={label} className="rounded-xl border border-white/[.08] bg-[#111116] px-3 py-3"><p className="text-[.68rem] text-white/45">{label}</p><p className={`mt-1 text-xl font-black tabular-nums ${color}`}>{count ?? "—"}</p></div>)}</div>
-    </>}
-    {scopedSongId && <header className="flex flex-wrap items-center gap-3"><div className="mr-auto"><p className="text-[.62rem] font-bold uppercase tracking-[.2em] text-violet-300">Song content</p><h2 className="text-xl font-black">{currentSong?.title || "Content"}</h2></div><button type="button" onClick={() => setPanelItem(null)} className="rounded-lg bg-[#FD52AF] px-4 py-2.5 text-sm font-bold text-black">+ Add Content</button></header>}
-
-    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/[.08] bg-[#111116] p-2">
-      {workflows.map(value => <button key={value} type="button" onClick={() => setWorkflow(value)} aria-pressed={workflow === value} className={`rounded-full px-3 py-1.5 text-[.68rem] font-semibold transition ${workflow === value ? "bg-violet-300/15 text-violet-100" : "text-white/45 hover:bg-white/[.05] hover:text-white/75"}`}>{value}{value !== "All" && workflowCount[value] !== null ? <span className="ml-1.5 opacity-55">{workflowCount[value]}</span> : null}</button>)}
-      <button type="button" onClick={clearFilters} className="ml-auto rounded-lg border border-white/10 px-3 py-1.5 text-xs text-white/55 hover:text-white">Reset filters</button>
-    </div>
+    <header className="flex flex-wrap items-center gap-3"><div className="mr-auto"><h1 className="text-2xl font-black">Content</h1><p className="mt-1 text-xs text-white/45">{scopedSongId ? "Content linked to this song" : summary}</p></div>{!scopedSongId && <Link href="/admin?view=content" className="hidden text-sm font-semibold text-white/55 hover:text-white sm:inline">View All Content ↗</Link>}<button type="button" onClick={() => setPanelItem(null)} className="rounded-lg bg-[#FD52AF] px-4 py-2.5 text-sm font-bold text-black">+ Add Content</button></header>
+    {!scopedSongId && <><div className="flex flex-wrap items-center gap-2 text-xs text-white/45">{[["Planned", metrics.total], ["Recorded", metrics.recorded], ["Edited", metrics.edited], ["Posted", metrics.posted]].map(([label, value]) => <span key={String(label)} className="rounded-md border border-white/[.08] px-2.5 py-1.5"><b className="mr-1.5 text-white">{count(value as number | null)}</b>{label}</span>)}<span className="ml-auto">{count(metrics.posted)} / {count(metrics.total)} posted</span></div><div role="progressbar" aria-label="Published content progress" aria-valuemin={0} aria-valuemax={metrics.total || 0} aria-valuenow={metrics.posted || 0} className="h-1 overflow-hidden rounded-full bg-white/[.08]"><div className="h-full rounded-full bg-gradient-to-r from-violet-400 to-[#FD52AF]" style={{ width: `${metrics.total ? Math.min(100, Math.round((metrics.posted || 0) / metrics.total * 100)) : 0}%` }}/></div></>}
     {error && <p role="alert" className="rounded-lg border border-red-300/20 bg-red-300/[.06] p-3 text-sm text-red-200">{error}</p>}
-
-    <div className="hidden overflow-hidden rounded-xl border border-white/10 bg-[#111116] md:block">
-      <table className="w-full table-fixed border-collapse text-left text-sm">
-        <thead className="bg-[#17171c] text-[.6rem] uppercase tracking-wider text-white/40"><tr>
-          {[["title", "Content title", "24%"], ["song_name", "Song", "16%"], ["category", "Category / sub-category", "16%"], ["media_type", "Type", "9%"], ["workflow_status", "Status", "10%"], ["recorded", "Recorded", "4%"], ["edited", "Edited", "4%"], ["post_ready", "Post", "4%"], ["planned_date", "Planned date", "13%"]].map(([key, label, width]) => <th key={key} style={{ width }} className="px-2 py-2 align-top font-bold sm:px-3"><button type="button" aria-expanded={openFilter===key} onClick={() => setOpenFilter(current => current===key ? null : key)} className="text-left hover:text-white">{label}<span className="ml-1 text-[.55rem]">{openFilter===key?"⌃":"⌄"}</span></button><button type="button" aria-label={"Sort by " + label} onClick={() => toggleSort(key)} className="ml-1 text-white/40 hover:text-white">↕</button>{sort === key ? <span className="ml-1 text-violet-200">{direction === "asc" ? "↑" : "↓"}</span> : null}{headerFilter(key)}</th>)}
-        </tr></thead>
-        <tbody className="divide-y divide-white/[.055]">
-          {items.map(item => <tr key={item.id} onClick={() => setPanelItem(item)} onKeyDown={event => { if (event.key === "Enter" && event.target === event.currentTarget) setPanelItem(item); }} tabIndex={0} className="cursor-pointer align-middle transition hover:bg-white/[.025] focus:bg-white/[.04]">
-            <td className="px-2 py-3 sm:px-3"><button type="button" onClick={event => { event.stopPropagation(); setPanelItem(item); }} className="line-clamp-2 text-left text-xs font-semibold text-white hover:text-[#ff9dcd]">{item.title}{item.is_sample && <span className="ml-1 text-[.55rem] text-amber-200">sample</span>}</button></td>
-            <td className="px-2 py-3 sm:px-3"><span className="block truncate text-xs font-semibold" style={{ color: labelColor(item.canonical_song_title || item.song_name || "") }}>{item.canonical_song_title || item.song_name || "Unlinked"}</span>{item.song_link_status === "unmatched" || item.song_link_status === "ambiguous" ? <span className="text-[.56rem] text-amber-200/70">{item.song_link_status} song</span> : null}</td>
-            <td className="px-2 py-3 sm:px-3"><span className="block truncate text-xs font-semibold" style={{ color: labelColor(item.category || "—", categoryColors) }}>{item.category || "—"}</span><span className="block truncate text-[.62rem] text-white/35">{item.sub_category || "—"}</span></td>
-            <td className="px-2 py-3 text-xs text-white/55">{item.media_type || "—"}</td><td className="px-2 py-3"><Status status={item.workflow_status}/></td>
-            <td className="px-2 py-3 text-center"><ProgressCheck label="Record" checked={item.recorded === true} disabled={busyId === item.id} onChange={value => void toggle(item, "recorded", value)}/></td>
-            <td className="px-2 py-3 text-center"><ProgressCheck label="Edit" checked={item.edited === true} disabled={busyId === item.id} onChange={value => void toggle(item, "edited", value)}/></td>
-            <td className="px-2 py-3 text-center"><ProgressCheck label="Post" checked={item.post_ready === true} disabled={busyId === item.id} onChange={value => void toggle(item, "post_ready", value)}/></td>
-            <td className="px-2 py-3 text-xs text-white/55 sm:px-3">{dateLabel(item)}</td>
-          </tr>)}
-          {!loading && !items.length && <tr><td colSpan={9} className="px-4 py-12 text-center text-sm text-white/40">No content matches this view.</td></tr>}
-        </tbody>
-      </table>
-    </div>
-
-    <div className="space-y-2 md:hidden">
-      {items.map(item => <article key={item.id} onClick={() => setPanelItem(item)} className="cursor-pointer rounded-xl border border-white/[.08] bg-[#111116] p-3 active:border-[#FD52AF]/30"><div className="flex items-start gap-2"><div className="min-w-0 flex-1"><h3 className="line-clamp-2 text-sm font-bold text-white">{item.title}</h3><p className="mt-1 truncate text-xs"><span style={{ color: labelColor(item.canonical_song_title || item.song_name || "") }}>{item.canonical_song_title || item.song_name || "Unlinked"}</span><span className="text-white/35"> · </span><span style={{ color: labelColor(item.category || "Uncategorized", categoryColors) }}>{item.category || "Uncategorized"}</span></p></div><Status status={item.workflow_status}/></div><div className="mt-3 flex items-center gap-3 border-t border-white/[.06] pt-2"><span className="mr-auto text-[.65rem] text-white/40">{item.media_type || item.sub_category || "Other"} · {dateLabel(item)}</span><span className="flex items-center gap-1 text-[.6rem] text-white/40">R<ProgressCheck label="Record" checked={item.recorded === true} disabled={busyId === item.id} onChange={value => void toggle(item, "recorded", value)}/></span><span className="flex items-center gap-1 text-[.6rem] text-white/40">E<ProgressCheck label="Edit" checked={item.edited === true} disabled={busyId === item.id} onChange={value => void toggle(item, "edited", value)}/></span><span className="flex items-center gap-1 text-[.6rem] text-white/40">P<ProgressCheck label="Post" checked={item.post_ready === true} disabled={busyId === item.id} onChange={value => void toggle(item, "post_ready", value)}/></span></div></article>)}
-      {!loading && !items.length && <p className="rounded-xl border border-white/10 bg-[#111116] px-4 py-12 text-center text-sm text-white/40">No content matches this view.</p>}
-    </div>
-
-    <footer className="flex items-center justify-between text-xs text-white/45"><span>{loading ? "Loading…" : `${total.toLocaleString()} items · Page ${page} of ${paginationCount}`}</span><div className="flex gap-2"><button type="button" disabled={page <= 1 || loading} onClick={() => setPage(value => Math.max(1, value - 1))} className="rounded-lg border border-white/10 px-3 py-2 disabled:opacity-30">Previous</button><button type="button" disabled={page >= paginationCount || loading} onClick={() => setPage(value => value + 1)} className="rounded-lg border border-white/10 px-3 py-2 disabled:opacity-30">Next</button></div></footer>
-    {panelItem !== undefined && <ContentDetailPanel item={panelItem} songs={songs} initialSongId={songFilter || null} onClose={() => setPanelItem(undefined)} onSaved={item => void saveItem(item)}/>}
+    <div className="flex flex-wrap items-center gap-2"><div className="flex gap-1 rounded-lg border border-white/[.08] p-1">{stageFilter.map(value => <button key={value} type="button" onClick={() => setFilter(value)} aria-pressed={filter === value} className={`rounded-md px-3 py-1.5 text-xs font-semibold ${filter === value ? "bg-white/[.1] text-white" : "text-white/45 hover:text-white"}`}>{value}</button>)}</div><select value={type} onChange={event => setType(event.target.value)} aria-label="Filter content type" className="rounded-lg border border-white/10 bg-[#111116] px-3 py-2 text-xs text-white/65"><option value="">All types</option>{types.map(value => <option key={value} value={value}>{value}</option>)}</select><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search content or song" aria-label="Search content" className="min-w-[150px] flex-1 rounded-lg border border-white/10 bg-[#111116] px-3 py-2 text-xs text-white outline-none placeholder:text-white/35 focus:border-[#FD52AF]/40"/><div className="ml-auto flex rounded-lg border border-white/[.08] p-1">{(["List", "Board"] as const).map(value => <button key={value} onClick={() => setView(value)} aria-pressed={view === value} className={`rounded-md px-3 py-1.5 text-xs ${view === value ? "bg-white/[.1] text-white" : "text-white/45"}`}>{value}</button>)}</div></div>
+    {loading ? <p className="py-12 text-center text-sm text-white/40">Loading content…</p> : view === "List" ? <div className="overflow-hidden rounded-xl border border-white/[.08] bg-[#111116]">{filterItems.length ? filterItems.map(item => row(item)) : <p className="p-10 text-center text-sm text-white/40">No content in this view.</p>}</div> : <div className="flex gap-3 overflow-x-auto pb-2">{[...stages, "Music Video"].map(status => <section key={status} className="w-[min(82vw,300px)] shrink-0 rounded-xl border border-white/[.08] bg-[#111116]"><header className="sticky top-0 flex items-center justify-between rounded-t-xl border-b border-white/[.07] bg-[#111116] px-3 py-3"><h2 className="text-sm font-semibold">{status === "Ready" ? "Ready to Post" : status}</h2><span className="text-xs text-white/40">{filterItems.filter(item => status === "Music Video" ? !!item.music_video_project_id : !item.music_video_project_id && (item.workflow_status === status || status === "Ready" && item.workflow_status === "Scheduled")).length}</span></header>{filterItems.filter(item => status === "Music Video" ? !!item.music_video_project_id : !item.music_video_project_id && (item.workflow_status === status || status === "Ready" && item.workflow_status === "Scheduled")).map(item => <div key={item.id} className="px-2">{row(item, true)}</div>)}</section>)}</div>}
+    <footer className="flex items-center justify-between text-xs text-white/40"><span>{total.toLocaleString()} items · page {page} of {maxPage}</span><div className="flex gap-2"><button disabled={page <= 1 || loading} onClick={() => setPage(n => n - 1)} className="rounded-md border border-white/10 px-3 py-2 disabled:opacity-30">Previous</button><button disabled={page >= maxPage || loading} onClick={() => setPage(n => n + 1)} className="rounded-md border border-white/10 px-3 py-2 disabled:opacity-30">Next</button></div></footer>
+    {panelItem !== undefined && <ContentDetailPanel item={panelItem} songs={songs} initialSongId={scopedSongId || null} onClose={() => setPanelItem(undefined)} onSaved={() => { setPanelItem(undefined); void load(page); }}/ >}
   </section>;
 }

@@ -4,14 +4,16 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 
 type Project = { id: string; visibility: string; status: string; public_concept: string; public_status: string; next_action: string; workspace: Record<string, any>; assigned_videographer?: Record<string, any>; songs?: { title: string; slug: string } };
-type Tab = "creative" | "production" | "collaboration";
-const tabs: Array<[Tab, string]> = [["creative", "Creative"], ["production", "Production"], ["collaboration", "Collaboration"]];
+type Tab = "creative" | "production" | "collaboration" | "release";
+const tabs: Array<[Tab, string]> = [["creative", "Creative"], ["production", "Production"], ["collaboration", "Collaboration"], ["release", "Release"]];
 const fields: Record<Tab, Array<[string, string]>> = {
-  creative: [["songMeaning", "What the song means"], ["themes", "Themes and emotional message"], ["audienceFeeling", "What the audience should feel"], ["importantLyrics", "Important lyrics and meaning"], ["visualDirection", "Visual direction"], ["logline", "One sentence concept"], ["vision", "Creative vision"], ["story", "Story summary"], ["beginningMiddleEnd", "Beginning, middle, ending"], ["aesthetic", "Visual aesthetic"], ["moodLightingColorsCameraEditing", "Mood, lighting, colors and editing"], ["mustHave", "Must have moments"], ["avoid", "Things to avoid"]],
-  production: [["shootDate", "Planned shoot date"], ["filmingHoursDays", "Filming hours or days"], ["locations", "Locations and access notes"], ["crew", "Crew and equipment"], ["budget", "Proposed or agreed budget"], ["schedule", "Shoot schedule"], ["requirements", "Production checklist"], ["includedRevisionRounds", "Included revision rounds"], ["paymentMilestones", "Payment milestones"]],
+  creative: [["overallConcept", "Overall concept"], ["songMeaning", "What the song means"], ["themes", "Themes and emotional message"], ["audienceFeeling", "What the audience should feel"], ["importantLyrics", "Important lyrics and meaning"], ["visualReferences", "Visual references or moodboard links"], ["creativeDirection", "Creative direction"], ["charactersPerformers", "Characters and performers"], ["numberOfLocations", "Number of locations"], ["visualDirection", "Visual direction"], ["logline", "One sentence concept"], ["vision", "Creative vision"], ["story", "Story summary"], ["beginningMiddleEnd", "Beginning, middle, ending"], ["aesthetic", "Visual aesthetic"], ["moodLightingColorsCameraEditing", "Mood, lighting, colors and editing"], ["wardrobe", "Styling and wardrobe"], ["props", "Props"], ["specialEffects", "Special effects / requirements"], ["mustHave", "Must have moments"], ["avoid", "Things to avoid"]],
+  production: [["stage", "Production stage"], ["shootDate", "Planned shoot date"], ["deliveryDate", "Target delivery date"], ["filmingHoursDays", "Estimated shoot duration"], ["locations", "Locations and access notes"], ["crew", "Crew and equipment"], ["budget", "Proposed or agreed budget"], ["schedule", "Shoot schedule"], ["requirements", "Production checklist"], ["includedRevisionRounds", "Included revision rounds"], ["paymentMilestones", "Payment milestones"]],
   collaboration: [["videographer", "Videographer details"], ["approvedScope", "Approved scope"], ["agreement", "Agreement status and terms"], ["signedAgreementLink", "Signed agreement link"], ["payments", "Payment tracking"], ["internalNotes", "Private owner notes"]],
+  release: [["finalApproved", "Final video approved"], ["releaseDate", "Release date"], ["videoUrl", "Published video URL"], ["publicationStatus", "Publication status"]],
 };
 const stages = ["concept", "planning", "agreement", "filming", "editing", "delivered", "complete"];
+const workflowStages = ["Concept", "Planning", "Pre-production", "Filming", "Editing", "Review", "Delivered", "Released"];
 const visibilities = ["hidden", "invite_only", "public"];
 
 export default function MusicVideoWorkspace({ params }: { params: Promise<{ id: string }> }) {

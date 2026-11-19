@@ -33,9 +33,18 @@ export async function POST(request: Request) {
   if (!songId) return NextResponse.json({ error: "Select a song." }, { status: 400 });
   const { data, error } = await db.from("music_video_projects").upsert({ song_id: songId, project_type: "primary" }, { onConflict: "song_id,project_type", ignoreDuplicates: true }).select("id").maybeSingle();
   if (error) return NextResponse.json({ error: "Could not create project. Confirm the migration is applied and the song exists." }, { status: 500 });
-  if (data) return NextResponse.json({ id: data.id });
-  const existing = await db.from("music_video_projects").select("id").eq("song_id", songId).eq("project_type", "primary").single();
-  return NextResponse.json({ id: existing.data?.id });
+  const existing = data ? null : await db.from("music_video_projects").select("id,song_id,songs(title)").eq("song_id", songId).eq("project_type", "primary").single();
+  const project = data ? { id: data.id, song_id: songId } : existing.data;
+  if (!project?.id) return NextResponse.json({ error: "Project could not be loaded." }, { status: 500 });
+  const { data: linked, error: linkReadError } = await db.from("content_items").select("id").eq("music_video_project_id", project.id).maybeSingle();
+  if (linkReadError) return NextResponse.json({ error: "Project created, but the linked Content entry could not be checked. Apply the content workspace migration." }, { status: 503 });
+  if (!linked) {
+  const { data: song } = await db.from("songs").select("title").eq("id", songId).single();
+    const songTitle = song?.title || null;
+    const { error: linkError } = await db.from("content_items").insert({ title: `${songTitle || "Song"} — Official Music Video`, category: "MUSIC VIDEO", sub_category: "OFFICIAL VIDEO", song_name: songTitle, song_id: project.song_id, recorded: false, edited: false, post_ready: false, media_type: "VIDEO", purpose: "Official music video production", music_video_project_id: project.id, is_reportable: false });
+    if (linkError && linkError.code !== "23505") return NextResponse.json({ error: "Project created, but its linked Content entry could not be saved." }, { status: 500 });
+  }
+  return NextResponse.json({ id: project.id });
 }
 
 export async function PATCH(request: Request) {

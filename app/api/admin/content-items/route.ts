@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { getApiUser, isAdminUser, unauthorized, forbidden } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
-const fields = "id,source_row,legacy_x5,title,category,sub_category,song_name,song_id,canonical_song_title,song_link_status,recorded,edited,post_ready,media_type,purpose,source_url,media_url,script,planned_date,planned_time,caption,text_on_screen,hidden,hashtags,legacy_date_time,editor,legacy_minutes,published,legacy_posted_raw,is_placeholder_date,is_sample,workflow_status,created_at,updated_at";
-const textFields = new Set(["title", "category", "sub_category", "song_name", "media_type", "purpose", "source_url", "media_url", "script", "planned_time", "caption", "text_on_screen", "hashtags", "legacy_date_time", "editor", "legacy_minutes"]);
+const fields = "id,source_row,legacy_x5,title,category,sub_category,song_name,song_id,canonical_song_title,song_link_status,recorded,edited,post_ready,media_type,purpose,source_url,media_url,script,planned_date,planned_time,caption,text_on_screen,hidden,hashtags,legacy_date_time,editor,legacy_minutes,published,legacy_posted_raw,is_placeholder_date,is_sample,workflow_status,workflow_priority,recorded_at,edited_at,published_at,platform,music_video_project_id,is_reportable,music_video_status,music_video_next_action,created_at,updated_at";
+const textFields = new Set(["title", "category", "sub_category", "song_name", "media_type", "purpose", "source_url", "media_url", "script", "planned_time", "caption", "text_on_screen", "hashtags", "legacy_date_time", "editor", "legacy_minutes", "platform"]);
+const timestampFields = new Set(["recorded_at", "edited_at", "published_at"]);
 const booleanFields = new Set(["recorded", "edited", "post_ready", "published", "hidden", "legacy_x5"]);
-const editableFields = new Set([...textFields, ...booleanFields, "planned_date", "song_id"]);
+const editableFields = new Set([...textFields, ...booleanFields, ...timestampFields, "planned_date", "song_id"]);
 const validId = (value: unknown) => typeof value === "string" && /^[0-9a-f-]{36}$/i.test(value);
 const sanitizeSearch = (value: string) => value.trim().slice(0, 100).replace(/[%,()\\.*]/g, " ").replace(/\s+/g, " ").trim();
 
@@ -36,7 +37,9 @@ function applyFilters(query: any, params: URLSearchParams) {
   if (songName) query = query.ilike("song_name", songName.slice(0, 120));
   if (subCategory) query = query.eq("sub_category", subCategory.slice(0, 100));
   if (plannedDate) query = query.eq("planned_date", plannedDate.slice(0, 20));
-  if (["Idea", "To Record", "To Edit", "Ready", "Scheduled", "Posted"].includes(workflow || "")) query = query.eq("workflow_status", workflow);
+  if (workflow === "Needs Action") query = query.in("workflow_status", ["Idea", "To Record", "To Edit", "Ready"]);
+  else if (workflow === "Ready to Post") query = query.eq("workflow_status", "Ready");
+  else if (["Idea", "To Record", "To Edit", "Ready", "Scheduled", "Posted", "Music Video"].includes(workflow || "")) query = query.eq("workflow_status", workflow);
   if (recorded === "true" || recorded === "false") query = query.eq("recorded", recorded === "true");
   if (edited === "true" || edited === "false") query = query.eq("edited", edited === "true");
   if (postReady === "true" || postReady === "false") query = query.eq("post_ready", postReady === "true");
@@ -56,7 +59,7 @@ export async function GET(request: Request) {
   const pageSize = Math.min(100, Math.max(10, Number.parseInt(params.get("pageSize") || "50", 10) || 50));
   const from = (page - 1) * pageSize;
   const sort = params.get("sort") || "planned_date";
-  const sortColumn = ["title", "song_name", "category", "media_type", "planned_date", "workflow_status", "recorded", "edited", "post_ready"].includes(sort) ? sort : "planned_date";
+  const sortColumn = ["title", "song_name", "category", "media_type", "planned_date", "workflow_status", "workflow_priority", "recorded", "edited", "post_ready"].includes(sort) ? sort : "workflow_priority";
   const ascending = params.get("direction") === "asc";
 
   let pageQuery = applyFilters(db.from("content_items_library").select(fields, { count: "exact" }), params)
@@ -71,13 +74,15 @@ export async function GET(request: Request) {
   if (facetsError) return NextResponse.json({ error: `Unable to load content filters: ${facetsError.message}` }, { status: 500 });
 
   const countFor = async (predicate?: (query: any) => any) => {
-    let query = db.from("content_items_library").select("id", { count: "exact", head: true });
+    let query = db.from("content_items_library").select("id", { count: "exact", head: true }).eq("is_reportable", true);
     if (predicate) query = predicate(query);
     const result = await query;
     return result.error ? null : result.count || 0;
   };
-  const [total, toRecord, toEdit, ready, scheduled, posted] = await Promise.all([
+  const [total, recordedCount, editedCount, toRecord, toEdit, ready, scheduled, posted] = await Promise.all([
     countFor(),
+    countFor(query => query.eq("recorded", true)),
+    countFor(query => query.eq("edited", true)),
     countFor(query => query.eq("workflow_status", "To Record")),
     countFor(query => query.eq("workflow_status", "To Edit")),
     countFor(query => query.eq("workflow_status", "Ready")),
@@ -88,7 +93,7 @@ export async function GET(request: Request) {
   let songSummary: { total: number; recorded: number; edited: number; posted: number; formats: Array<{ name: string; count: number }> } | null = null;
   const songId = params.get("songId");
   if (songId && validId(songId)) {
-    const perSong = await db.from("content_items_library").select("category,sub_category,media_type,workflow_status,recorded,edited,published", { count: "exact" }).eq("song_id", songId).order("source_row", { ascending: true });
+    const perSong = await db.from("content_items_library").select("category,sub_category,media_type,workflow_status,recorded,edited,published", { count: "exact" }).eq("song_id", songId).eq("is_reportable", true).order("source_row", { ascending: true });
     if (perSong.error) return NextResponse.json({ error: `Unable to load song content summary: ${perSong.error.message}` }, { status: 503 });
     const grouped = new Map<string, number>();
     for (const item of perSong.data || []) {
@@ -107,7 +112,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     items: data || [], total: count || 0, page, pageSize,
-    metrics: { total, toRecord, toEdit, ready, scheduled, posted },
+    metrics: { total, recorded: recordedCount, edited: editedCount, toRecord, toEdit, ready, scheduled, posted },
     songs: songs || [], categories: [...new Set((facets || []).map(row => row.category).filter((value): value is string => !!value))].sort(),
     types: [...new Set((facets || []).map(row => row.media_type).filter((value): value is string => !!value))].sort(),
     suggestions: {
@@ -146,6 +151,8 @@ export async function PATCH(request: Request) {
   const body = await request.json();
   if (!validId(body.id)) return NextResponse.json({ error: "Invalid content item." }, { status: 400 });
   const db = getSupabaseAdmin();
+  const { data: linkedVideo } = await db.from("content_items").select("music_video_project_id").eq("id", body.id).maybeSingle();
+  if (linkedVideo?.music_video_project_id) return NextResponse.json({ error: "This row is linked to the Music Video project. Update it in the Music Video workspace." }, { status: 409 });
   const payload = normalizePayload(body, true);
   if (payload instanceof NextResponse) return payload;
   if (payload.song_id) {
@@ -172,6 +179,9 @@ function normalizePayload(body: Record<string, unknown>, partial: boolean): Reco
     } else if (booleanFields.has(key)) {
       if (typeof value !== "boolean" && value !== null) return NextResponse.json({ error: `Invalid ${key}.` }, { status: 400 });
       result[key] = value;
+    } else if (timestampFields.has(key)) {
+      if (value !== null && (typeof value !== "string" || Number.isNaN(Date.parse(value)))) return NextResponse.json({ error: `Invalid ${key}.` }, { status: 400 });
+      result[key] = value || null;
     } else if (key === "planned_date") {
       if (value !== null && (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))) return NextResponse.json({ error: "Use a valid planned date." }, { status: 400 });
       result[key] = value || null;
