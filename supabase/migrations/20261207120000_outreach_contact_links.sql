@@ -3,6 +3,7 @@
 alter table public.outreach_records
   add column if not exists contact_id uuid references public.marketing_contacts(id) on delete set null,
   add column if not exists opportunity_url text not null default '',
+  add column if not exists contact_method text not null default '',
   add column if not exists record_type text not null default 'opportunity';
 
 alter table public.outreach_records drop constraint if exists outreach_records_record_type_check;
@@ -19,7 +20,9 @@ alter table public.sync_opportunities
 
 alter table public.collaboration_invites
   add column if not exists personal_message text not null default '',
-  add column if not exists contribution_type text not null default 'Other';
+  add column if not exists contribution_type text not null default 'Other',
+  add column if not exists contact_id uuid references public.marketing_contacts(id) on delete set null;
+create index if not exists collaboration_invites_contact_idx on public.collaboration_invites(contact_id) where contact_id is not null;
 
 alter table public.gig_outreach
   add column if not exists contact_id uuid references public.marketing_contacts(id) on delete set null,
@@ -107,6 +110,10 @@ drop trigger if exists sync_followup_date_sync on public.admin_tasks;
 create trigger sync_followup_date_sync after update of due_at, status on public.admin_tasks
 for each row when (old.sync_opportunity_id is not null and (old.due_at is distinct from new.due_at or old.status is distinct from new.status))
 execute function public.sync_sync_followup_date();
+
+-- Backfill current dated follow-ups into the existing task list idempotently.
+update public.outreach_records set follow_up_at = follow_up_at where follow_up_at is not null;
+update public.sync_opportunities set follow_up_at = follow_up_at where follow_up_at is not null;
 
 create table if not exists public.outreach_communications (
   id uuid primary key default gen_random_uuid(),

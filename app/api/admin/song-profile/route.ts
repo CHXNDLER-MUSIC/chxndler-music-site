@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   const id = new URL(request.url).searchParams.get("id") || "";
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid song." }, { status: 400 });
   const db = getSupabaseAdmin();
-  const songFields = "id,title,slug,is_released,created_at,spotify_url,apple_music_url,youtube_music_video_url,karaoke_url,sky_video_url,production_stages,production_tracking_started,audio_status,workflow_stage,ready_for_collab,collab_interests,collaboration_description,practice_notes,next_action";
+  const songFields = "id,title,slug,is_released,created_at,spotify_url,apple_music_url,youtube_music_video_url,karaoke_url,sky_video_url,production_stages,production_tracking_started,audio_status,workflow_stage,ready_for_collab,collab_interests,collaboration_description,practice_notes,next_action,meaning,category,submit_hub,genre,sub_genre,sub_genre_2,lyrics,bpm,musical_key";
   let releaseDateAvailable = true;
   let songResult = await db.from("songs").select(`${songFields},release_date`).eq("id", id).maybeSingle();
   if (songResult.error && /release_date/i.test(songResult.error.message)) {
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     db.from("music_video_projects").select("id,status,visibility,public_concept,workspace,next_action,assigned_videographer").eq("song_id", song.id).eq("project_type", "primary").maybeSingle(),
     db.from("collaboration_requests").select("id,status,submitted_at,contribution_type,artist_name,message").eq("song_id", song.id).order("submitted_at", { ascending: false }),
   ]);
-  const meaning = (meanings || []).find(item => item.meaning_of_song?.trim())?.meaning_of_song || "";
+  const meaning = song.meaning || (meanings || []).find(item => item.meaning_of_song?.trim())?.meaning_of_song || "";
   return NextResponse.json({ song: { ...song, release_date: song.release_date ?? null }, releaseDateAvailable, meaning, musicVideo: video || null, requests: requests || [], coverUrl: songCoverPath(song.slug, song.title), lyricUrl: `/api/lyrics/${encodeURIComponent(song.slug)}` });
 }
 
@@ -43,6 +43,21 @@ export async function PATCH(request: Request) {
   const db = getSupabaseAdmin();
   const { data: song } = await db.from("songs").select("id,title").eq("id", body.songId).single();
   if (!song) return NextResponse.json({ error: "Song not found." }, { status: 404 });
+  const metadataKeys = ["meaning", "category", "submit_hub", "genre", "sub_genre", "sub_genre_2", "lyrics", "musical_key"] as const;
+  const metadata: Record<string, string | number | null> = {};
+  for (const key of metadataKeys) {
+    if (body[key] === undefined) continue;
+    if (typeof body[key] !== "string") return NextResponse.json({ error: `${key} must be text.` }, { status: 400 });
+    metadata[key] = body[key].trim().slice(0, key === "lyrics" ? 50000 : 500);
+  }
+  if (body.bpm !== undefined) {
+    if (body.bpm !== null && (!Number.isInteger(body.bpm) || body.bpm < 1 || body.bpm > 400)) return NextResponse.json({ error: "BPM must be between 1 and 400." }, { status: 400 });
+    metadata.bpm = body.bpm;
+  }
+  if (Object.keys(metadata).length) {
+    const { error } = await db.from("songs").update(metadata).eq("id", song.id);
+    if (error) return NextResponse.json({ error: "Unable to save song details. Apply the song catalog metadata migration." }, { status: 503 });
+  }
   if (typeof body.meaning === "string") {
     const { data: records, error: findError } = await db.from("song_outreach_status").select("id").ilike("song", song.title);
     if (findError) return NextResponse.json({ error: "Apply the song outreach migration before saving song meaning." }, { status: 503 });

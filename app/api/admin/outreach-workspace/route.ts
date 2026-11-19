@@ -3,7 +3,7 @@ import { getApiUser, isAdminUser, unauthorized, forbidden } from "@/lib/apiAuth"
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 async function gate() { const auth = await getApiUser(); if (!auth) return unauthorized(); if (!isAdminUser(auth.user)) return forbidden(); return null; }
-const fields = ["song_id", "contact_id", "opportunity_url", "record_type", "playlist_name", "platform", "playlist_genre", "link", "category", "contact_name", "organization", "contact_email", "pitch", "sent_at", "status", "follow_up_at", "notes", "result"] as const;
+const fields = ["song_id", "contact_id", "opportunity_url", "contact_method", "record_type", "playlist_name", "platform", "playlist_genre", "link", "category", "contact_name", "organization", "contact_email", "pitch", "sent_at", "status", "follow_up_at", "notes", "result"] as const;
 function clean(body: Record<string, unknown>) {
   const row: Record<string, unknown> = {};
   for (const field of fields) if (field in body) {
@@ -28,7 +28,7 @@ function clean(body: Record<string, unknown>) {
 export async function GET() {
   const denied = await gate(); if (denied) return denied;
   const db = getSupabaseAdmin();
-  const [records, songs, contacts] = await Promise.all([db.from("outreach_records").select("id,song_id,contact_id,opportunity_url,record_type,playlist_name,platform,playlist_genre,link,song_title,category,contact_name,organization,contact_email,pitch,sent_at,status,follow_up_at,notes,result,created_at,updated_at").order("updated_at", { ascending: false }), db.from("songs").select("id,title,slug").order("title"), db.from("marketing_contacts").select("id,first_name,last_name,email,venue,industry_category,connection_status").order("first_name")]);
+  const [records, songs, contacts] = await Promise.all([db.from("outreach_records").select("id,song_id,contact_id,opportunity_url,contact_method,record_type,playlist_name,platform,playlist_genre,link,song_title,category,contact_name,organization,contact_email,pitch,sent_at,status,follow_up_at,notes,result,created_at,updated_at").order("updated_at", { ascending: false }), db.from("songs").select("id,title,slug").order("title"), db.from("marketing_contacts").select("id,first_name,last_name,email,venue,industry_category,connection_status").order("first_name")]);
   if (records.error) return NextResponse.json({ error: records.error.message }, { status: 503 });
   const titles = new Map((songs.data || []).map(song => [song.id, song.title]));
   return NextResponse.json({ songs: songs.data || [], contacts: contacts.data || [], records: (records.data || []).map(row => ({ ...row, song_title: titles.get(row.song_id) || row.song_title || "" })) });

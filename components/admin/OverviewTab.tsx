@@ -11,7 +11,7 @@ type Song = {
   production_stages?: Record<string, boolean>; next_action?: string; next_action_manual?: boolean;
   linkedTask?: Task | null;
 };
-type Task = { id: string; title: string; status: string; priority: string; due_at: string | null; business_area?: string; song_id?: string | null; song?: { id: string; title: string } | null };
+type Task = { id: string; title: string; status: string; priority: string; due_at: string | null; business_area?: string; song_id?: string | null; song?: { id: string; title: string } | null; content?: { id: string; song_id: string } | null };
 type OutreachRecord = { id: string; status?: string | null };
 type SyncRecord = { id: string; status?: string | null };
 
@@ -126,7 +126,7 @@ export default function OverviewTab() {
       {taskError && <p role="alert" className="mb-3 rounded-lg border border-red-300/10 bg-red-300/[.04] px-3 py-2 text-xs text-red-200">{taskError}</p>}
       {loading ? <p className="py-5 text-center text-sm text-white/40">Loading tasks…</p> : actionableTasks.length ? <ul className="divide-y divide-white/[.06]">{actionableTasks.slice(0, 5).map(task => {
         const isOverdue = !!task.due_at && task.due_at < today;
-        const taskHref = `/admin?view=tasks&task=${task.id}`;
+        const taskHref = task.content ? `/admin/songs/${task.content.song_id}?tab=content&content=${task.content.id}` : `/admin?view=tasks&task=${task.id}`;
         return <li key={task.id} className="flex items-center gap-3 py-3 first:pt-1 last:pb-1">
           <button type="button" disabled={taskSaving === task.id} onClick={() => void completeTask(task)} aria-label={`Mark ${task.title} complete`} className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-white/20 text-transparent transition hover:border-[#FD52AF] hover:bg-[#FD52AF]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FD52AF] disabled:opacity-40"><span aria-hidden="true">✓</span></button>
           <div className="min-w-0 flex-1"><Link href={taskHref} className="block truncate text-sm font-semibold text-white/85 transition hover:text-[#ff9dcd]">{task.title}</Link><div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[.66rem] text-white/40">{task.song && <Link href={`/admin/songs/${task.song.id}`} className="truncate hover:text-white/70">{task.song.title}</Link>}{task.due_at && <span className={isOverdue ? "font-semibold text-amber-200" : ""}>{isOverdue ? "Overdue · " : "Due "}{task.due_at}</span>}{task.priority === "high" && <span className="rounded-full bg-amber-200/[.08] px-1.5 py-0.5 font-semibold text-amber-100">High priority</span>}</div></div>

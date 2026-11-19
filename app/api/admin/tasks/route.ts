@@ -26,7 +26,10 @@ export async function GET() {
   const allSongIds = [...new Set((tasks || []).map(task => task.song_id).filter(Boolean))];
   const { data: linkedSongs } = allSongIds.length ? await db.from("songs").select("id,title,slug").in("id", allSongIds) : { data: [] as Array<{id:string;title:string;slug:string}> };
   const songMap = new Map([...(linkedSongs || []), ...songById.values()].map(song => [song.id, song]));
-  return NextResponse.json({ tasks: (tasks || []).map(task => ({ ...task, song: task.song_id ? songMap.get(task.song_id) || null : null })) });
+  const contentIds = [...new Set((tasks || []).map(task => task.content_item_id).filter(Boolean))];
+  const { data: content } = contentIds.length ? await db.from("song_content_items").select("id,song_id,title").in("id", contentIds) : { data: [] as Array<{id:string;song_id:string;title:string}> };
+  const contentMap = new Map((content || []).map(item => [item.id, item]));
+  return NextResponse.json({ tasks: (tasks || []).map(task => ({ ...task, song: task.song_id ? songMap.get(task.song_id) || null : null, content: task.content_item_id ? contentMap.get(task.content_item_id) || null : null })) });
 }
 
 export async function POST(request: Request) {
