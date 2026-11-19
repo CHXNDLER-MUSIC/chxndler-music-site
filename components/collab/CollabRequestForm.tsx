@@ -11,6 +11,7 @@ const defaultTerms = {
 };
 
 const contributionOptions = [
+  { value: "Songwriting", label: "Write a Song", note: "Build a new song together from scratch." },
   { value: "Vocals / Feature", label: "Sing / Feature", note: "Sing or rap a verse, or add a vocal feature." },
   { value: "Production / Remix", label: "Produce / Remix", note: "Shape a new sound together." },
   { value: "Music Video", label: "Music Video", note: "Build the visual world." },
@@ -19,7 +20,7 @@ const contributionOptions = [
 
 const fieldClass = "mt-2 block h-12 w-full rounded-xl border border-white/[.12] bg-black/30 px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#FD52AF]/65 focus:ring-2 focus:ring-[#FD52AF]/15";
 
-export default function CollabRequestForm({ songId, title, artwork, invitedName, invitedEmail = "", initialContributionType = "", videoProjectId = "", close }: { songId: string; title: string; artwork: string; invitedName: string; invitedEmail?: string; initialContributionType?: string; videoProjectId?: string; close: () => void }) {
+export default function CollabRequestForm({ songId, title, artwork, invitedName, invitedEmail = "", initialContributionType = "", initialMessage = "", videoProjectId = "", close }: { songId: string; title: string; artwork: string; invitedName: string; invitedEmail?: string; initialContributionType?: string; initialMessage?: string; videoProjectId?: string; close: () => void }) {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
@@ -123,7 +124,7 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
   }
 
   return <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/75 backdrop-blur-sm sm:items-center sm:p-5" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) closeRef.current(); }}>
-    <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="collab-form-title" className="relative max-h-[100dvh] w-full max-w-[48rem] overflow-y-auto overscroll-contain rounded-t-3xl border border-white/[.12] bg-[#101014] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6 text-white shadow-[0_0_0_1px_rgba(253,82,175,.06),0_2rem_5rem_rgba(0,0,0,.6)] sm:max-h-[92dvh] sm:rounded-3xl sm:px-9 sm:pb-8 sm:pt-8">
+    <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="collab-form-title" className="relative max-h-[100dvh] w-full max-w-[48rem] overflow-y-auto overscroll-contain rounded-t-3xl border border-white/[.12] bg-[#101014] px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5 text-white shadow-[0_0_0_1px_rgba(253,82,175,.06),0_2rem_5rem_rgba(0,0,0,.6)] sm:max-h-[92dvh] sm:rounded-3xl sm:px-9 sm:pb-6 sm:pt-6">
       {!done && <button type="button" onClick={close} aria-label="Close collaboration request" className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full text-lg text-white/45 transition hover:bg-white/[.06] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FD52AF]">×</button>}
       {done ? <div className="flex min-h-[24rem] flex-col items-center justify-center px-2 py-10 text-center">
         <span aria-hidden="true" className="mb-5 grid h-11 w-11 place-items-center rounded-full border border-[#FD52AF]/45 bg-[#FD52AF]/10 text-[#FD52AF]"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4 4L19 6"/></svg></span>
@@ -132,13 +133,13 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
         <button type="button" onClick={close} className="mt-8 min-h-12 rounded-full bg-[#FD52AF] px-7 text-sm font-extrabold text-[#170d14] transition hover:shadow-[0_0_24px_rgba(253,82,175,.28)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Back to Music</button>
       </div> : <>
         <header className="mb-4 pr-10 text-center sm:mb-5 sm:pr-12">
-          <img src="/elements/logo.webp" alt="CHXNDLER" className="mx-auto mb-4 h-16 w-56 object-contain" />
-          <h2 id="collab-form-title" className="text-2xl font-black leading-tight tracking-tight sm:text-3xl">COLLABORATE ON {title}</h2>
+          <img src="/elements/logo.webp" alt="CHXNDLER" className="mx-auto mb-3 h-20 w-52 object-contain" />
+          <h2 id="collab-form-title" className="text-2xl font-black leading-tight tracking-tight sm:text-3xl">COLLABORATE ON <span className="block text-[#ff3ea5]">{title}</span></h2>
         </header>
 
         <form onSubmit={submit} className="space-y-4">
           <input name="website" tabIndex={-1} autoComplete="off" className="absolute -left-[10000px] h-px w-px opacity-0" aria-hidden="true" />
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <label htmlFor="collab-email" className="block text-xs font-semibold text-white/75">Email address <span className="text-[#FD52AF]">*</span>
               <input ref={emailRef} id="collab-email" name="email" type="email" required autoComplete="email" maxLength={320} value={email} onChange={event => setEmail(event.target.value)} placeholder="you@example.com" className={fieldClass}/>
             </label>
@@ -156,7 +157,7 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
               {contributionOptions.map(option => {
                 const selected = contributionType === option.value;
                 const disabled = isPublicVideoApplication && option.value !== "Music Video";
-                return <label key={option.value} className={`relative flex min-h-[4.5rem] cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#FD52AF] ${disabled ? "cursor-not-allowed opacity-35" : selected ? "border-[#FD52AF]/60 bg-[#FD52AF]/[.08]" : "border-white/[.1] bg-white/[.02] hover:border-white/20 hover:bg-white/[.04]"}`}>
+                return <label key={option.value} className={`relative flex min-h-[4.25rem] cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 transition focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#FD52AF] ${disabled ? "cursor-not-allowed opacity-35" : selected ? "border-[#FD52AF]/60 bg-[#FD52AF]/[.08]" : "border-white/[.1] bg-white/[.02] hover:border-white/20 hover:bg-white/[.04]"}`}>
                   <input className="sr-only" type="radio" name="contributionType" value={option.value} checked={selected} disabled={disabled} required onChange={() => setContributionType(option.value)}/>
                   <span aria-hidden="true" className={`grid h-4 w-4 shrink-0 place-items-center rounded-full border ${selected ? "border-[#FD52AF]" : "border-white/30"}`}>{selected && <span className="h-2 w-2 rounded-full bg-[#FD52AF]"/>}</span>
                   <span className="min-w-0"><span className={`block text-sm font-bold ${selected ? "text-white" : "text-white/80"}`}>{option.label}</span><span className="mt-0.5 block text-xs text-white/45">{option.note}</span></span>
@@ -167,19 +168,19 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
           </fieldset>
 
           <label htmlFor="collab-message" className="block text-sm font-semibold text-white/85">Your idea <span className="text-xs font-normal text-white/40">Optional</span>
-            <textarea id="collab-message" name="message" maxLength={1200} rows={4} placeholder="What are you imagining?" className="mt-2 block min-h-32 w-full resize-y rounded-xl border border-white/[.12] bg-black/30 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/30 focus:border-[#FD52AF]/65 focus:ring-2 focus:ring-[#FD52AF]/15"/>
+            <textarea id="collab-message" name="message" maxLength={1200} rows={3} defaultValue={initialMessage} placeholder="What are you imagining?" className="mt-2 block min-h-24 w-full resize-y rounded-xl border border-white/[.12] bg-black/30 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/30 focus:border-[#FD52AF]/65 focus:ring-2 focus:ring-[#FD52AF]/15"/>
           </label>
 
-          <section aria-labelledby="collab-note-heading" className="space-y-2 py-1">
+          <section aria-labelledby="collab-note-heading" className="space-y-1.5 py-0.5">
             <h3 id="collab-note-heading" className="text-sm font-semibold text-[#FD52AF]">A little note before we create</h3>
             <ul className="max-w-2xl space-y-1 text-sm leading-6 text-white/65">
               <li className="flex gap-2"><span aria-hidden="true" className="text-[#FD52AF]">★</span><span>Please keep unreleased music <strong className="font-bold text-white/85">between us</strong>.</span></li>
-              <li className="flex gap-2"><span aria-hidden="true" className="text-[#FD52AF]">★</span><span>If we decide to collaborate, we&apos;ll work out <strong className="font-bold text-white/85">credits, splits, and compensation</strong> together before getting started.</span></li>
+              <li className="flex gap-2"><span aria-hidden="true" className="text-[#FD52AF]">★</span><span>{contributionType === "Music Video" ? <>If we decide to collaborate, we&apos;ll work out the <strong className="font-bold text-white/85">video concept, creative direction, and responsibilities</strong> together before getting started.</> : <>If we decide to collaborate, we&apos;ll work out <strong className="font-bold text-white/85">credits, splits, and compensation</strong> together before getting started.</>}</span></li>
             </ul>
           </section>
 
           {error && <p role="alert" className="rounded-xl border border-rose-300/20 bg-rose-300/[.06] px-4 py-3 text-sm leading-5 text-rose-100">{error}</p>}
-          <button type="submit" disabled={!canSubmit} className="min-h-14 w-full rounded-full bg-[#FD52AF] px-6 py-4 text-sm font-extrabold text-[#170d14] shadow-[0_8px_24px_rgba(253,82,175,.14)] transition hover:shadow-[0_0_28px_rgba(253,82,175,.3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none">{busy ? "Sending your request…" : "Send Collaboration Request →"}</button>
+          <button type="submit" disabled={!canSubmit} className="min-h-12 w-full rounded-full bg-[#FD52AF] px-6 py-3 text-sm font-extrabold text-[#170d14] shadow-[0_8px_24px_rgba(253,82,175,.14)] transition hover:shadow-[0_0_28px_rgba(253,82,175,.3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none">{busy ? "Sending your request…" : "Send Collaboration Request →"}</button>
         </form>
       </>}
     </section>

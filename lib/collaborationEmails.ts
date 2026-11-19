@@ -32,7 +32,7 @@ export async function sendCollaborationEmails(request: CollaborationEmailRequest
     for (const recipient of recipients) result[recipient] = { status: "failed", messageId: null, error: detail };
     return result;
   }
-  const from = `CHXNDLER <${fromAddress}>`, songTitle = request.songs?.title || "CHXNDLER track";
+  const from = `CHXNDLER <${fromAddress}>`, songTitle = request.songs?.title || "Original song idea";
   const detailUrl = `${baseUrl}/admin/collaborations?request=${encodeURIComponent(request.id)}`;
   const cover = request.songs?.slug ? `${baseUrl}${songCoverPath(request.songs.slug, songTitle)}` : "";
   const message = request.message || "No message provided";
