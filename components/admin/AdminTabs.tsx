@@ -62,14 +62,15 @@ export default function AdminTabs() {
     <nav aria-label="Music admin" className="admin-tabs mb-6 flex items-center gap-1 rounded-xl border border-white/10 bg-[#111116] p-1.5">
       {primary.map(([id, label, icon]) => <button key={id} type="button" data-tab={id} aria-current={tab === id ? "page" : undefined} onClick={() => choose(id)} className="admin-tab min-w-0 flex-1 rounded-lg px-2 py-2.5 text-xs font-semibold transition sm:px-4"><TabIcon name={icon}/><span>{label}</span></button>)}
       <div className="relative shrink-0" ref={moreRoot}>
-        <button type="button" data-tab={more.some(([id]) => id === tab) ? tab : "more"} aria-expanded={moreOpen} aria-haspopup="menu" onClick={() => setMoreOpen(value => !value)} className="admin-tab admin-more rounded-lg px-3 py-2.5 text-xs font-semibold transition"><TabIcon name="more"/><span>More</span><span aria-hidden="true">⌄</span></button>
+        <button type="button" data-tab={more.some(([id]) => id === tab) ? tab : "more"} aria-expanded={moreOpen} aria-haspopup="menu" onClick={() => setMoreOpen(value => !value)} className="admin-tab admin-more rounded-lg px-3 py-2.5 text-xs font-semibold transition"><TabIcon name="more"/><span className="admin-more-label">More <span aria-hidden="true">⌄</span></span></button>
         {moreOpen && <div role="menu" className="absolute right-0 top-full z-30 mt-2 min-w-52 rounded-xl border border-white/10 bg-[#15151b] p-1.5 shadow-2xl">{more.map(([id, label, icon]) => <button key={id} type="button" role="menuitem" data-tab={id} onClick={() => choose(id)} className={`admin-menu-item ${tab === id ? "is-active" : ""}`}><TabIcon name={icon}/><span>{label}</span></button>)}</div>}
       </div>
     </nav>
     {tab === "overview" ? <OverviewTab /> : tab === "songs" ? <SongTracker /> : tab === "tasks" ? <TasksTab /> : tab === "outreach" ? <OutreachWorkspace initialSection={outreachSection} onSectionChange={section => { setOutreachSection(section); const params = new URLSearchParams(window.location.search); params.set("view", "outreach"); params.set("section", section); window.history.pushState(null, "", `${window.location.pathname}?${params.toString()}`); }} initialSongId={outreachSongId} /> : <FinanceTab />}
     <style jsx>{`
       .admin-tab-icon{width:1rem;height:1rem;flex:none}
-      .admin-tab{display:flex;align-items:center;justify-content:center;gap:.45rem;color:rgba(255,255,255,.56);white-space:nowrap}
+      .admin-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;color:rgba(255,255,255,.56);white-space:nowrap}
+      .admin-more-label{display:flex;align-items:center;gap:.2rem}
       .admin-tab[data-tab="overview"]{--tab-accent:#59c9ff}
       .admin-tab[data-tab="songs"]{--tab-accent:#fd52af}
       .admin-tab[data-tab="outreach"]{--tab-accent:#ffc857}

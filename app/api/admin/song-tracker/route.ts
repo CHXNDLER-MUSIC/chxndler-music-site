@@ -3,49 +3,68 @@ import { getApiUser, isAdminUser, unauthorized, forbidden } from "@/lib/apiAuth"
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { slugify } from "@/lib/slug";
 
+const HIDDEN_ADMIN_SONG_TITLES = new Set([
+  "welcome back",
+  "welcome to the heartverse",
+  "you are home",
+  "space music",
+]);
+
+function normalizeSongTitle(title: unknown) {
+  return String(title || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
 export async function GET() {
   const auth = await getApiUser();
   if (!auth) return unauthorized();
   if (!isAdminUser(auth.user)) return forbidden();
   const db = getSupabaseAdmin();
-  const [songResult, requests, videos, tasks] = await Promise.all([
+  const [songWithReleaseDate, requests, videos, tasks, outreach, sync] = await Promise.all([
     db.from("songs").select("id,title,slug,is_released,release_date,audio_status,collaboration_opportunities,video_concept,collaboration_enabled,production_stages,production_tracking_started,ready_for_collab,collab_interests,collaboration_description,workflow_stage,next_action,next_action_manual,created_at,sky_video_url,youtube_music_video_url,spotify_url,karaoke_url,practice_notes").order("title", { ascending: true }),
     db.from("collaboration_requests").select("id,song_id,status,submitted_at,contribution_type"),
-    db.from("music_video_projects").select("id,song_id,status,visibility,next_action,assigned_videographer,public_concept"),
-    db.from("admin_tasks").select("song_id,title,status,priority,due_at,created_at").neq("status", "done").not("song_id", "is", null).order("due_at", { ascending: true, nullsFirst: false }),
+    db.from("music_video_projects").select("id,song_id,status,visibility,next_action,assigned_videographer,public_concept,public_status,project_type"),
+    db.from("admin_tasks").select("id,song_id,title,status,priority,due_at,created_at").neq("status", "done").not("song_id", "is", null).order("due_at", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false }),
+    db.from("outreach_records").select("id,song_id,status,category").not("song_id", "is", null),
+    db.from("sync_opportunities").select("id,song_id,status").not("song_id", "is", null),
   ]);
-  let songs: any = songResult;
-  // Keep the tracker readable while optional schema migrations are being applied.
-  if (songs.error && /production_stages|ready_for_collab|column/i.test(songs.error.message)) {
-    songs = await db.from("songs").select("id,title,slug,is_released,release_date,collaboration_enabled,created_at,sky_video_url,youtube_music_video_url").order("title", { ascending: true });
-  }
+  let songs: any = songWithReleaseDate;
+  let releaseDateAvailable = true;
+  // Older deployments may not have release_date. Fall back without dropping
+  // the production and collaboration fields that the portfolio depends on.
   if (songs.error && /release_date|column/i.test(songs.error.message)) {
-    songs = await db.from("songs").select("id,title,slug,is_released,collaboration_enabled,created_at,sky_video_url,youtube_music_video_url").order("title", { ascending: true });
+    releaseDateAvailable = false;
+    songs = await db.from("songs").select("id,title,slug,is_released,audio_status,collaboration_opportunities,video_concept,collaboration_enabled,production_stages,production_tracking_started,ready_for_collab,collab_interests,collaboration_description,workflow_stage,next_action,next_action_manual,created_at,sky_video_url,youtube_music_video_url,spotify_url,karaoke_url,practice_notes").order("title", { ascending: true });
   }
   if (songs.error) return NextResponse.json({ error: `Unable to load the song catalog: ${songs.error.message}` }, { status: 500 });
   // Projects are an additive feature and may not be migrated in this environment yet.
   const videoRows = videos.error ? [] : videos.data || [];
   const requestRows = requests.error ? [] : requests.data || [];
   const taskRows = tasks.error ? [] : tasks.data || [];
-  return NextResponse.json({ songs: (songs.data || []).map(song => {
-    const musicVideo = videoRows.find(row => row.song_id === song.id) || null;
-    const hasMusicVideo = !!musicVideo || !!song.youtube_music_video_url || !!song.sky_video_url;
-    const isReleased = song.is_released || song.audio_status === "Released";
-    const productionStages = { ...(song.production_stages || {}), ...(hasMusicVideo ? { music_video: true } : {}) };
-    const opportunities = isReleased ? ["remix"] : [...new Set(["remix", ...(song.collaboration_opportunities || []).filter((value: string) => value === "feature"), ...(!hasMusicVideo ? ["video"] : [])])];
+  const outreachRows = outreach.error ? [] : outreach.data || [];
+  const syncRows = sync.error ? [] : sync.data || [];
+  return NextResponse.json({ releaseDateAvailable, songs: (songs.data || []).filter(song => !HIDDEN_ADMIN_SONG_TITLES.has(normalizeSongTitle(song.title))).map(song => {
+    const musicVideo = videoRows.find(row => row.song_id === song.id && (!row.project_type || row.project_type === "primary")) || null;
+    const linkedTask = song.next_action_manual ? null : taskRows.find(task => task.song_id === song.id) || null;
+    const activeOutreachCount = outreachRows.filter(row => row.song_id === song.id && !["Accepted", "Declined", "Closed"].includes(row.status || "")).length
+      + syncRows.filter(row => row.song_id === song.id && !["Licensed", "Passed"].includes(row.status || "")).length;
     return ({
     ...song,
     release_date: song.release_date ?? null,
-    production_stages: productionStages,
-    production_tracking_started: song.production_tracking_started === true || Object.values(productionStages).some(value => value === true),
+    production_stages: song.production_stages || {},
+    production_tracking_started: song.production_tracking_started === true,
     ready_for_collab: song.ready_for_collab === true,
     collab_interests: Array.isArray(song.collab_interests) ? song.collab_interests : [],
     collaboration_description: song.collaboration_description || "",
-    workflow_stage: song.workflow_stage || "Idea",
+    workflow_stage: song.workflow_stage || null,
     next_action: song.next_action || "",
     next_action_manual: song.next_action_manual === true,
-    derived_next_action: song.next_action_manual ? "" : taskRows.find(task => task.song_id === song.id)?.title || "",
-    collaboration_opportunities: opportunities,
+    linkedTask,
+    activeOutreachCount,
+    collaboration_opportunities: Array.isArray(song.collaboration_opportunities) ? song.collaboration_opportunities : [],
     requests: requestRows.filter(row => row.song_id === song.id),
     musicVideo,
   }); }) });
