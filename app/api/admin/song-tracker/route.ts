@@ -108,10 +108,10 @@ export async function PATCH(request: Request) {
   }
   if (typeof body.songId !== "string" || !/^[0-9a-f-]{36}$/i.test(body.songId)) return NextResponse.json({ error: "Invalid song." }, { status: 400 });
   const update: Record<string, any> = {};
-  if (typeof body.is_released === "boolean") { update.is_released = body.is_released; if (body.is_released) update.collaboration_opportunities = ["remix"]; }
+  if (typeof body.is_released === "boolean") update.is_released = body.is_released;
   if (typeof body.collaboration_enabled === "boolean") update.collaboration_enabled = body.collaboration_enabled;
-  if (["Demo", "In Progress", "Final", "Released"].includes(body.audio_status)) { update.audio_status = body.audio_status; if (body.audio_status === "Released") update.collaboration_opportunities = ["remix"]; }
-  if (Array.isArray(body.collaboration_opportunities) && body.collaboration_opportunities.every((value: unknown) => ["feature", "video", "remix"].includes(String(value)))) update.collaboration_opportunities = [...new Set(["remix", ...body.collaboration_opportunities.filter((value: string) => value !== "video")])];
+  if (["Demo", "In Progress", "Final", "Released"].includes(body.audio_status)) update.audio_status = body.audio_status;
+  if (Array.isArray(body.collaboration_opportunities) && body.collaboration_opportunities.every((value: unknown) => ["feature", "video", "remix"].includes(String(value)))) update.collaboration_opportunities = [...new Set(body.collaboration_opportunities)];
   if (typeof body.video_concept === "string") update.video_concept = body.video_concept.trim().slice(0, 500);
   if (typeof body.ready_for_collab === "boolean") update.ready_for_collab = body.ready_for_collab;
   if (Array.isArray(body.collab_interests) && body.collab_interests.every((value: unknown) => typeof value === "string")) {
@@ -119,8 +119,8 @@ export async function PATCH(request: Request) {
     update.collab_interests = [...new Set(body.collab_interests.filter((value: string) => allowed.has(value)))];
   }
   if (typeof body.collaboration_description === "string") update.collaboration_description = body.collaboration_description.trim().slice(0, 500);
-  if (["Idea", "Writing", "Recording", "Mixing", "Mastering", "Ready"].includes(body.workflow_stage)) update.workflow_stage = body.workflow_stage;
-  if (typeof body.next_action === "string") { update.next_action = body.next_action.trim().slice(0, 240); update.next_action_manual = true; }
+  if (["Idea", "Writing", "Recording", "Mixing", "Mastering", "Ready"].includes(body.workflow_stage)) { update.workflow_stage = body.workflow_stage; update.production_tracking_started = true; }
+  if (typeof body.next_action === "string") { update.next_action = body.next_action.trim().slice(0, 240); update.next_action_manual = Boolean(update.next_action); }
   if (body.release_date === null || (typeof body.release_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.release_date))) update.release_date = body.release_date;
   const stageKeys = ["concept", "lyrics", "recorded", "mix", "mastered", "ready", "music_video", "playlist_pitch", "sync_placement"] as const;
   if (body.stage !== undefined) {
@@ -129,10 +129,6 @@ export async function PATCH(request: Request) {
     if (readError || !song) return NextResponse.json({ error: "Production stages are unavailable. Apply the song production stages migration." }, { status: 503 });
     update.production_stages = { ...(song.production_stages || {}), [body.stage]: body.complete };
     update.production_tracking_started = true;
-  }
-  if (Array.isArray(update.collaboration_opportunities)) {
-    const { data: currentSong } = await db.from("songs").select("is_released,audio_status").eq("id", body.songId).maybeSingle();
-    if (body.is_released === true || body.audio_status === "Released" || currentSong?.is_released || currentSong?.audio_status === "Released") update.collaboration_opportunities = ["remix"];
   }
   if (!Object.keys(update).length) return NextResponse.json({ error: "No supported changes provided." }, { status: 400 });
   const { error } = await db.from("songs").update(update).eq("id", body.songId);
