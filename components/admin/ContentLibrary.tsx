@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import ContentDetailPanel, { type CatalogSong, type ContentItem } from "@/components/admin/ContentDetailPanel";
 
 type Metrics = { total: number | null; recorded?: number | null; edited?: number | null; toRecord: number | null; toEdit: number | null; ready: number | null; scheduled: number | null; posted: number | null };
@@ -11,14 +10,6 @@ const statusStyles: Record<string, string> = { Idea: "text-white/55 bg-white/[.0
 const stages = ["Idea", "To Record", "To Edit", "Ready", "Posted"];
 const stageFilter = ["All", "Needs Action", "Scheduled", "Posted"];
 const count = (n: number | null | undefined) => n == null ? "—" : n.toLocaleString();
-
-function stagePatch(status: string) {
-  if (status === "Idea" || status === "To Record") return { recorded: false, edited: false, post_ready: false, published: false };
-  if (status === "To Edit") return { recorded: true, edited: false, post_ready: false, published: false };
-  if (status === "Ready") return { recorded: true, edited: true, post_ready: true, published: false };
-  if (status === "Posted") return { recorded: true, edited: true, post_ready: true, published: true };
-  return {};
-}
 
 function planned(item: ContentItem) {
   if (!item.planned_date || item.is_placeholder_date) return null;
@@ -46,12 +37,12 @@ export default function ContentLibrary({ songId: scopedSongId }: { songId?: stri
   }, [page, pageSize, scopedSongId, type, filter, query]);
   useEffect(() => { void load(page); }, [load, page]);
 
-  async function changeStatus(item: ContentItem, status: string) {
-    const patch = stagePatch(status); if (!Object.keys(patch).length) return;
+  async function toggleStatus(item: ContentItem, key: "recorded" | "edited" | "post_ready" | "published") {
+    if (item.music_video_project_id || busyId === item.id) return;
     setBusyId(item.id); setError("");
-    const response = await fetch("/api/admin/content-items", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: item.id, ...patch }) });
+    const response = await fetch("/api/admin/content-items", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: item.id, [key]: !item[key] }) });
     const body = await response.json(); setBusyId(null);
-    if (!response.ok) { setError(body.error || "Unable to update content stage."); return; }
+    if (!response.ok) { setError(body.error || "Unable to update content status."); return; }
     setItems(current => current.map(row => row.id === item.id ? body.item : row));
     void fetch(`/api/admin/content-items?page=${page}&pageSize=${pageSize}${scopedSongId ? `&songId=${scopedSongId}` : ""}`, { cache: "no-store" }).then(r => r.json()).then(data => { if (data.metrics) setMetrics(data.metrics); });
   }
@@ -60,6 +51,12 @@ export default function ContentLibrary({ songId: scopedSongId }: { songId?: stri
   const summary = `${count(metrics.posted)} of ${count(metrics.total)} posted · ${actionable.toLocaleString()} need attention`;
   const filterItems = items;
   const maxPage = Math.max(1, Math.ceil(total / pageSize));
+  const statusActions = [
+    { key: "recorded" as const, label: "Record", color: "text-sky-300", icon: <><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3m-4 0h8"/></> },
+    { key: "edited" as const, label: "Edit", color: "text-violet-300", icon: <><path d="m15 5 4 4M4 20l4.5-1 10.8-10.8a2.1 2.1 0 0 0-3-3L5.5 16 4 20Z"/><path d="M13.5 6.5 17.5 10.5"/></> },
+    { key: "post_ready" as const, label: "Ready", color: "text-fuchsia-300", icon: <><path d="m5 12 4 4L19 6"/><circle cx="12" cy="12" r="9"/></> },
+    { key: "published" as const, label: "Posted", color: "text-emerald-300", icon: <><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4Z"/></> },
+  ];
   const row = (item: ContentItem, compact = false) => <article key={item.id} className="group flex min-w-0 items-center gap-3 border-b border-white/[.07] px-3 py-3 last:border-0 hover:bg-white/[.025] sm:px-4">
     <button type="button" onClick={() => item.music_video_project_id ? window.location.assign(`/admin/music-videos/${item.music_video_project_id}`) : setPanelItem(item)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
       {item.media_url && /\.(png|jpe?g|gif|webp|avif)(\?|$)/i.test(item.media_url) ? <img src={item.media_url} alt="" className="h-10 w-10 shrink-0 rounded-md border border-white/10 object-cover"/> : <span aria-hidden="true" className="h-10 w-10 shrink-0 rounded-md border border-white/[.08] bg-white/[.025]"/>}
@@ -67,12 +64,12 @@ export default function ContentLibrary({ songId: scopedSongId }: { songId?: stri
     </button>
     <span className="hidden min-w-24 text-right text-xs text-white/40 sm:block">{item.is_placeholder_date ? "Unscheduled" : planned(item) || ""}</span>
     <span className={`hidden rounded-full px-2.5 py-1 text-[.65rem] font-semibold sm:inline-flex ${statusStyles[item.workflow_status] || "text-violet-200 bg-violet-300/10"}`}>{item.workflow_status === "Ready" ? "Ready to Post" : item.workflow_status}</span>
-    {item.music_video_project_id ? <span className="shrink-0 text-xs text-[#ff9dcd]">Open project ↗</span> : <label className="flex shrink-0 items-center gap-2" onClick={event => event.stopPropagation()}><span className="sr-only">Move {item.title} to stage</span><select aria-label={`Status for ${item.title}`} disabled={busyId === item.id} value={item.workflow_status === "Scheduled" ? "Ready" : item.workflow_status === "Ready" ? "Ready" : stages.includes(item.workflow_status) ? item.workflow_status : "Idea"} onChange={event => void changeStatus(item, event.target.value)} className="max-w-[116px] rounded-md border border-white/10 bg-[#121217] px-2 py-1.5 text-[.68rem] text-white/75 disabled:opacity-50"><option value="Idea">Idea</option><option value="To Record">To Record</option><option value="To Edit">To Edit</option><option value="Ready">Ready to Post</option><option value="Posted">Posted</option></select></label>}
+    <div role="group" className="flex shrink-0 items-center gap-1" aria-label={`Content status for ${item.title}`} onClick={event => event.stopPropagation()}>{statusActions.map(action => { const active = Boolean(item[action.key]); return <button key={action.key} type="button" aria-label={`${action.label}: ${active ? "complete" : "incomplete"} for ${item.title}`} aria-pressed={active} title={`${action.label}${active ? " complete" : " not complete"}${item.music_video_project_id ? " · Update in Music Video workspace" : ""}`} disabled={busyId === item.id || Boolean(item.music_video_project_id)} onClick={() => void toggleStatus(item, action.key)} className={`grid h-9 w-9 place-items-center rounded-md transition hover:bg-white/[.07] disabled:cursor-not-allowed ${active ? action.color : "text-white/25 hover:text-white/65"}`}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">{action.icon}</svg></button>; })}</div>
     <button type="button" aria-label={`Open ${item.title}`} onClick={() => setPanelItem(item)} className="text-white/30 hover:text-white">›</button>
   </article>;
 
   return <section className="space-y-4">
-    <header className="flex flex-wrap items-center gap-3"><div className="mr-auto"><h1 className="text-2xl font-black">Content</h1><p className="mt-1 text-xs text-white/45">{scopedSongId ? "Content linked to this song" : summary}</p></div>{!scopedSongId && <Link href="/admin?view=content" className="hidden text-sm font-semibold text-white/55 hover:text-white sm:inline">View All Content ↗</Link>}<button type="button" onClick={() => setPanelItem(null)} className="rounded-lg bg-[#FD52AF] px-4 py-2.5 text-sm font-bold text-black">+ Add Content</button></header>
+    <header className="flex flex-wrap items-center gap-3"><div className="mr-auto"><h1 className="text-2xl font-black">Content</h1><p className="mt-1 text-xs text-white/45">{scopedSongId ? "Content linked to this song" : summary}</p></div><button type="button" onClick={() => setPanelItem(null)} className="rounded-lg bg-[#FD52AF] px-4 py-2.5 text-sm font-bold text-black">+ Add Content</button></header>
     {!scopedSongId && <><div className="flex flex-wrap items-center gap-2 text-xs text-white/45">{[["Planned", metrics.total], ["Recorded", metrics.recorded], ["Edited", metrics.edited], ["Posted", metrics.posted]].map(([label, value]) => <span key={String(label)} className="rounded-md border border-white/[.08] px-2.5 py-1.5"><b className="mr-1.5 text-white">{count(value as number | null)}</b>{label}</span>)}<span className="ml-auto">{count(metrics.posted)} / {count(metrics.total)} posted</span></div><div role="progressbar" aria-label="Published content progress" aria-valuemin={0} aria-valuemax={metrics.total || 0} aria-valuenow={metrics.posted || 0} className="h-1 overflow-hidden rounded-full bg-white/[.08]"><div className="h-full rounded-full bg-gradient-to-r from-violet-400 to-[#FD52AF]" style={{ width: `${metrics.total ? Math.min(100, Math.round((metrics.posted || 0) / metrics.total * 100)) : 0}%` }}/></div></>}
     {error && <p role="alert" className="rounded-lg border border-red-300/20 bg-red-300/[.06] p-3 text-sm text-red-200">{error}</p>}
     <div className="flex flex-wrap items-center gap-2"><div className="flex gap-1 rounded-lg border border-white/[.08] p-1">{stageFilter.map(value => <button key={value} type="button" onClick={() => setFilter(value)} aria-pressed={filter === value} className={`rounded-md px-3 py-1.5 text-xs font-semibold ${filter === value ? "bg-white/[.1] text-white" : "text-white/45 hover:text-white"}`}>{value}</button>)}</div><select value={type} onChange={event => setType(event.target.value)} aria-label="Filter content type" className="rounded-lg border border-white/10 bg-[#111116] px-3 py-2 text-xs text-white/65"><option value="">All types</option>{types.map(value => <option key={value} value={value}>{value}</option>)}</select><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search content or song" aria-label="Search content" className="min-w-[150px] flex-1 rounded-lg border border-white/10 bg-[#111116] px-3 py-2 text-xs text-white outline-none placeholder:text-white/35 focus:border-[#FD52AF]/40"/><div className="ml-auto flex rounded-lg border border-white/[.08] p-1">{(["List", "Board"] as const).map(value => <button key={value} onClick={() => setView(value)} aria-pressed={view === value} className={`rounded-md px-3 py-1.5 text-xs ${view === value ? "bg-white/[.1] text-white" : "text-white/45"}`}>{value}</button>)}</div></div>

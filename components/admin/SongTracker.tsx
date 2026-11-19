@@ -60,6 +60,15 @@ const pipeline = [
   { key: "complete", label: "Complete", color: "#55D6A4" },
   { key: "unset", label: "Not Set", color: "#777783" },
 ] as const;
+const postReleaseKpis: Array<{ key: keyof NonNullable<SongRow["postRelease"]>; label: string; kind: OpportunityIconKind; color: string }> = [
+  { key: "spotifyCanvas", label: "Spotify Canvas", kind: "spotify", color: "#1ED760" },
+  { key: "sky", label: "Sky", kind: "sky", color: "#42B8E8" },
+  { key: "chxndlerCard", label: "CHXNDLER Card", kind: "card", color: "#A78BFA" },
+  { key: "musicVideo", label: "Music Video", kind: "video", color: "#FB7185" },
+  { key: "contentReleased", label: "Content Release", kind: "content", color: "#60A5FA" },
+  { key: "playlistPitched", label: "Playlist Pitched", kind: "playlist", color: "#FD52AF" },
+  { key: "syncPlacement", label: "Sync Placement", kind: "sync", color: "#F2B84B" },
+];
 function OpportunityIcon({ kind, className = "h-3.5 w-3.5" }: { kind: OpportunityIconKind; className?: string }) {
   return <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={`${className} shrink-0`}>
     {kind === "video" ? <><rect x="2" y="4" width="11" height="12" rx="2"/><path d="m13 8 5-3v10l-5-3"/></>
@@ -162,7 +171,6 @@ export default function SongTracker() {
       if (columnFilter.key === "progress" && columnFilter.value === "not_started" && (!verified || done > 0)) return false;
       if (columnFilter.key === "progress" && columnFilter.value === "unknown" && verified) return false;
       if (columnFilter.key === "collaboration" && columnFilter.value !== "all" && String(collabReady) !== columnFilter.value) return false;
-      if (columnFilter.key === "opportunities" && columnFilter.value !== "all" && (columnFilter.value === "video" ? !hasVideoOpportunity(song) : !(song.activeOutreachCount || 0))) return false;
     }
     return true;
   }), [songs, statusFilter, today, columnFilter]);
@@ -204,6 +212,12 @@ export default function SongTracker() {
     setSongFilterText("");
   }
 
+  function filterByPostRelease(key: keyof NonNullable<SongRow["postRelease"]> | "all") {
+    setStatusFilter("all");
+    setColumnFilter(key === "all" ? null : { key: "postRelease", value: key });
+    setSongFilterText("");
+  }
+
   function filterHeader(key: string, label: string, choices: Array<{ value: string; label: string; color?: string; icon?: ReactNode }>) {
     const active = columnFilter?.key === key;
     const currentValue = columnFilter?.key === key ? columnFilter.value : "";
@@ -216,13 +230,13 @@ export default function SongTracker() {
       <button type="button" onClick={() => setAdding(value => !value)} className="rounded-xl bg-[#FD52AF] px-4 py-3 text-sm font-extrabold text-[#170d14] shadow-[0_8px_28px_rgba(253,82,175,.16)] transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">{adding ? "Cancel" : "+ Add Song"}</button>
     </header>
 
-    <section aria-label="Songs by production stage" className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+    <section aria-label="Songs by production stage" className="mb-5 grid grid-cols-5 gap-2">
       {[{ key: "all", label: "All songs", color: "#E8E8EF", count: songs.length },
         { key: "unset", label: "Not Set", color: "#777783", count: songs.filter(song => productionCategory(song) === "unset").length },
         { key: "wrote", label: "Wrote", color: "#A78BFA", count: songs.filter(song => matchesProductionFilter(song, "wrote")).length },
         { key: "recorded", label: "Recorded", color: "#42B8E8", count: songs.filter(song => matchesProductionFilter(song, "recorded")).length },
         { key: "mixed", label: "Mixed", color: "#F2B84B", count: songs.filter(song => matchesProductionFilter(song, "mixed")).length }].map(item => {
-        const active = item.key === "all" ? !columnFilter || columnFilter.key !== "production" : columnFilter?.key === "production" && columnFilter.value === item.key;
+        const active = item.key === "all" ? !columnFilter : columnFilter?.key === "production" && columnFilter.value === item.key;
         const stage: "Writing" | "Recording" | "Mixing" | null = item.key === "wrote" ? "Writing" : item.key === "recorded" ? "Recording" : item.key === "mixed" ? "Mixing" : null;
         return <button key={item.key} type="button" aria-pressed={active} onClick={() => filterByProductionStage(item.key)} className={`group relative overflow-hidden rounded-xl border px-3 py-3 text-left transition hover:-translate-y-px hover:bg-white/[.045] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${active ? "border-white/20 bg-white/[.055]" : "border-white/[.08] bg-[#101014]"}`}>
           <span className="absolute inset-x-0 top-0 h-0.5 opacity-80" style={{ backgroundColor: item.color }}/>
@@ -232,25 +246,32 @@ export default function SongTracker() {
       })}
     </section>
 
+    <section aria-label="Songs by post release activity" className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
+      {postReleaseKpis.map(item => {
+        const active = columnFilter?.key === "postRelease" && columnFilter.value === item.key;
+        const total = songs.filter(song => song.postRelease?.[item.key] === true).length;
+        return <button key={item.key} type="button" aria-pressed={active} onClick={() => filterByPostRelease(active ? "all" : item.key)} className={`group relative min-w-0 overflow-hidden rounded-xl border px-3 py-3 text-left transition hover:-translate-y-px hover:bg-white/[.045] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${active ? "border-white/20 bg-white/[.055]" : "border-white/[.08] bg-[#101014]"}`}>
+          <span className="absolute inset-x-0 top-0 h-0.5 opacity-80" style={{ backgroundColor: item.color }}/>
+          <span className="flex flex-col items-start gap-1.5"><OpportunityIcon kind={item.kind} className="h-6 w-6"/><span className="truncate text-[.68rem] font-semibold" style={{ color: item.color }}>{item.label}</span></span>
+          <span className="mt-1 block text-xl font-black tabular-nums" style={{ color: item.color }}>{loading ? "—" : total}</span>
+        </button>;
+      })}
+    </section>
+
     {adding && <form onSubmit={createSong} className="mb-4 grid gap-3 rounded-2xl border border-[#FD52AF]/20 bg-[#111116] p-4 sm:grid-cols-[1fr_auto] sm:items-end"><label className="text-sm font-medium text-white/75">Song title<input autoFocus required maxLength={120} value={newTitle} onChange={event => setNewTitle(event.target.value)} placeholder="Name your song" className="mt-2 block w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder:text-white/30"/></label><button disabled={creating} className="rounded-xl bg-[#FD52AF] px-5 py-3 font-bold text-black disabled:opacity-60">{creating ? "Creating…" : "Create workspace"}</button></form>}
 
     {error && <p role="alert" className="mb-4 rounded-xl border border-red-400/20 bg-red-400/[.05] p-3 text-sm text-red-200">{error}</p>}
     {loading ? <div className="rounded-2xl border border-white/[.08] bg-[#101014] p-8 text-center text-sm text-white/45">Loading your songs…</div> : !sorted.length ? <div className="rounded-2xl border border-dashed border-white/[.14] bg-[#101014]/60 p-10 text-center"><p className="font-semibold text-white/75">{songs.length ? "No songs match these filters." : "Your music universe is ready."}</p><p className="mt-1 text-sm text-white/40">{songs.length ? "Try a different search or clear the filters." : "Add your first song to create a workspace."}</p>{songs.length > 0 && <button type="button" onClick={clearFilters} className="mt-4 text-sm font-semibold text-[#FD52AF]">Clear filters</button>}</div> : <div className="overflow-visible rounded-2xl border border-white/[.08] bg-[#101014]">
-      <div className="hidden border-b border-white/[.07] px-5 py-3 text-[.65rem] font-bold uppercase tracking-[.13em] text-white/35 lg:grid lg:grid-cols-[minmax(14rem,1.2fr)_minmax(14rem,1.1fr)_minmax(15rem,1.2fr)_minmax(13rem,1fr)] lg:gap-5">{filterHeader("song", "Song", [])}{filterHeader("production", "Production", [{value:"wrote",label:"Wrote",color:"#A78BFA",icon:<ProductionStageIcon stage="Writing" className="h-5 w-5"/>},{value:"recorded",label:"Recorded",color:"#42B8E8",icon:<ProductionStageIcon stage="Recording" className="h-5 w-5"/>},{value:"mixed",label:"Mixed",color:"#F2B84B",icon:<ProductionStageIcon stage="Mixing" className="h-5 w-5"/>},{value:"unset",label:"Not Set",color:"#777783",icon:<ProductionStageIcon stage={null} className="h-5 w-5"/>}])}{filterHeader("postRelease", "Post Release", [{value:"spotifyCanvas",label:"Spotify Canvas",color:"#1ED760",icon:<OpportunityIcon kind="spotify" className="h-5 w-5"/>},{value:"sky",label:"Sky",color:"#42B8E8",icon:<OpportunityIcon kind="sky" className="h-5 w-5"/>},{value:"chxndlerCard",label:"CHXNDLER Card",color:"#A78BFA",icon:<OpportunityIcon kind="card" className="h-5 w-5"/>},{value:"musicVideo",label:"Music Video",color:"#FB7185",icon:<OpportunityIcon kind="video" className="h-5 w-5"/>},{value:"contentReleased",label:"Content Release",color:"#60A5FA",icon:<OpportunityIcon kind="content" className="h-5 w-5"/>},{value:"playlistPitched",label:"Playlist Pitched",color:"#FD52AF",icon:<OpportunityIcon kind="playlist" className="h-5 w-5"/>},{value:"syncPlacement",label:"Sync Placement",color:"#F2B84B",icon:<OpportunityIcon kind="sync" className="h-5 w-5"/>}])}{filterHeader("opportunities", "Opportunities", [{value:"video",label:"Video Work"},{value:"outreach",label:"Active Outreach"}])}</div>
+      <div className="hidden border-b border-white/[.07] px-5 py-3 text-[.65rem] font-bold uppercase tracking-[.13em] text-white/35 lg:grid lg:grid-cols-[minmax(15rem,1.2fr)_minmax(9rem,.7fr)_minmax(18rem,1.3fr)] lg:gap-5">{filterHeader("song", "Song", [])}{filterHeader("production", "Production", [{value:"wrote",label:"Wrote",color:"#A78BFA",icon:<ProductionStageIcon stage="Writing" className="h-5 w-5"/>},{value:"recorded",label:"Recorded",color:"#42B8E8",icon:<ProductionStageIcon stage="Recording" className="h-5 w-5"/>},{value:"mixed",label:"Mixed",color:"#F2B84B",icon:<ProductionStageIcon stage="Mixing" className="h-5 w-5"/>},{value:"unset",label:"Not Set",color:"#777783",icon:<ProductionStageIcon stage={null} className="h-5 w-5"/>}])}{filterHeader("postRelease", "Post Release", postReleaseKpis.map(item => ({value:item.key,label:item.label,color:item.color,icon:<OpportunityIcon kind={item.kind} className="h-5 w-5"/>})))}</div>
       {sorted.map(song => {
-        const collabReady = song.ready_for_collab === true, hasVideoWork = !!song.musicVideo || hasVideoOpportunity(song), hasOutreach = (song.activeOutreachCount || 0) > 0;
-        const requestCount = song.requests?.filter(request => !["declined", "cancelled", "closed"].includes(request.status.toLowerCase())).length || 0;
-        const badges = [collabReady || requestCount ? { label: requestCount ? `Collab · ${requestCount}` : "Collab Open", href: `/admin/songs/${song.id}?tab=Collabs`, color: "pink", icon: null } : null,
-          hasVideoWork ? { label: song.musicVideo ? "Video Work" : "Video Needed", href: song.musicVideo ? `/admin/music-videos/${song.musicVideo.id}` : `/admin/songs/${song.id}?tab=Overview`, color: "blue", icon: "video" as const } : null,
-          hasOutreach ? { label: `Outreach · ${song.activeOutreachCount}`, href: `/admin?view=outreach&song=${song.id}`, color: "green", icon: null } : null].filter(Boolean) as Array<{label:string;href:string;color:string;icon:OpportunityIconKind|null}>;
-        return <article key={song.id} className="grid gap-3 border-b border-white/[.06] p-3 transition-colors last:border-0 hover:bg-white/[.015] sm:p-4 lg:grid-cols-[minmax(14rem,1.2fr)_minmax(14rem,1.1fr)_minmax(15rem,1.2fr)_minmax(13rem,1fr)] lg:items-center lg:gap-5 lg:px-5">
+        const collabReady = song.ready_for_collab === true;
+        return <article key={song.id} className="grid gap-3 border-b border-white/[.06] p-3 transition-colors last:border-0 hover:bg-white/[.015] sm:p-4 lg:grid-cols-[minmax(15rem,1.2fr)_minmax(9rem,.7fr)_minmax(18rem,1.3fr)] lg:items-center lg:gap-5 lg:px-5">
           <div className="flex min-w-0 items-center gap-3">
             <button type="button" onClick={() => void openSongInfo(song)} aria-label={`Show ${song.title} information`} className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-white/[.09] bg-gradient-to-br from-[#271323] to-[#111116] shadow-[0_4px_20px_rgba(0,0,0,.25)] sm:h-16 sm:w-16"><span className="grid h-full w-full place-items-center px-1 text-center text-[.48rem] font-black tracking-[.1em] text-[#FD52AF]/65">CHXNDLER</span><img src={song.brand_cover_path ? getBrandArtUrl(song.brand_cover_path) || songCoverPath(song.slug, song.title) : songCoverPath(song.slug, song.title)} alt="" onError={event => { if (song.brand_cover_path && !event.currentTarget.dataset.fallback) { event.currentTarget.dataset.fallback = "1"; event.currentTarget.src = songCoverPath(song.slug, song.title); } else event.currentTarget.style.display = "none"; }} className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 hover:scale-105"/></button>
             <div className="min-w-0"><button type="button" onClick={() => void openSongInfo(song)} className="block truncate text-left text-sm font-bold text-white transition hover:text-[#ff8bc4]">{song.title}</button><span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[.62rem] font-semibold ${song.is_released ? "bg-emerald-300/[.08] text-emerald-200" : "bg-white/[.055] text-white/45"}`}>{song.is_released ? "Released" : "Unreleased"}</span></div>
           </div>
           <div className="min-w-0"><span className="mb-1 block text-[.62rem] font-semibold uppercase tracking-wider text-white/35 lg:hidden">Workflow Progress</span><SongProductionProgress song={song} onSaved={updated => saveProductionProgress(song, updated)} compact/></div>
           <div className="min-w-0"><span className="mb-1 block text-[.62rem] font-semibold uppercase tracking-wider text-white/35 lg:hidden">Post Release</span><PostReleaseIcons song={song} onToggle={(key, value) => void togglePostRelease(song, key, value)}/></div>
-          <div className="flex min-h-8 min-w-0 flex-wrap items-center gap-1.5"><span className="w-full text-[.62rem] font-semibold uppercase tracking-wider text-white/35 lg:hidden">Opportunities</span>{badges.length ? badges.map(badge => <Link key={badge.label} href={badge.href} aria-label={badge.label} title={badge.label} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[.62rem] font-semibold transition hover:brightness-125 ${badge.color === "pink" ? "border-[#FD52AF]/20 bg-[#FD52AF]/[.07] text-[#ffb2d8]" : badge.color === "blue" ? "border-sky-300/20 bg-sky-300/[.06] text-sky-200" : "border-emerald-300/20 bg-emerald-300/[.06] text-emerald-200"}`}>{badge.icon && <OpportunityIcon kind={badge.icon} />}{badge.label}</Link>) : <span className="text-xs text-white/30">No active opportunities</span>}</div>
         </article>;
       })}
     </div>}

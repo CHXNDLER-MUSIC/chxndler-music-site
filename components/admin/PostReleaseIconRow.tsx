@@ -3,7 +3,7 @@ export type PostReleaseState = Record<PostReleaseKey, boolean>;
 type IconKind = "video" | "playlist" | "sync" | "content" | "spotify" | "sky" | "card";
 
 function Icon({ kind }: { kind: IconKind }) {
-  return <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7 shrink-0">
+  return <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0">
     {kind === "video" ? <><rect x="2" y="4" width="11" height="12" rx="2"/><path d="m13 8 5-3v10l-5-3"/></>
       : kind === "playlist" ? <><path d="M11 3v10.5a2.5 2.5 0 1 1-1.5-2.3V5l7-1.5v8a2.5 2.5 0 1 1-1.5-2.3V2.7L11 3Z"/><path d="M3 5h4M3 8h3"/></>
       : kind === "sync" ? <><path d="M4 7.5 7 5l3 2.5-3 2.5-3-2.5ZM10 7.5 13 5l3 2.5-3 2.5-3-2.5Z"/><path d="m7 10 2 2 2-2M9 12v3M5 15h8"/></>
@@ -25,10 +25,10 @@ const items: Array<{ kind: IconKind; key: PostReleaseKey; label: string; color: 
 ];
 
 export default function PostReleaseIconRow({ state, onToggle }: { state?: Partial<PostReleaseState> | null; onToggle: (key: PostReleaseKey, value: boolean) => void }) {
-  return <div className="flex flex-wrap items-center gap-2.5" aria-label={`Post release: ${items.map(item => `${item.label} ${state?.[item.key] ? "complete" : "not set"}`).join(", ")}`}>
+  return <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" aria-label={`Release and promotion progress: ${items.map(item => `${item.label} ${state?.[item.key] ? "complete" : "not set"}`).join(", ")}`}>
     {items.map(item => {
       const done = state?.[item.key] === true;
-      return <button key={item.key} type="button" title={`${item.label} · ${done ? "On" : "Off"} (click to toggle)`} aria-label={`${item.label} ${done ? "on" : "off"}. Click to toggle.`} aria-pressed={done} onClick={() => onToggle(item.key, !done)} className="rounded-md p-0.5 transition hover:bg-white/[.08] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white" style={{ color: item.color, opacity: done ? 1 : .38 }}><Icon kind={item.kind}/></button>;
+      return <button key={item.key} type="button" title={`Click to mark ${item.label} ${done ? "incomplete" : "complete"}`} aria-label={`${item.label}: ${done ? "complete" : "incomplete"}. Click to toggle.`} aria-pressed={done} onClick={() => onToggle(item.key, !done)} className={`flex min-w-0 items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left transition hover:bg-white/[.035] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${done ? "border-white/[.10] bg-white/[.025]" : "border-white/[.06] opacity-60"}`}><span className="shrink-0" style={{ color: item.color }}><Icon kind={item.kind}/></span><span className="min-w-0 flex-1 truncate text-xs font-medium text-white/70">{item.label}</span><span className={`text-[.62rem] font-semibold ${done ? "text-emerald-200" : "text-white/35"}`}>{done ? "Done" : "Not yet"}</span></button>;
     })}
   </div>;
 }

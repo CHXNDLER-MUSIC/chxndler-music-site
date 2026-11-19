@@ -83,12 +83,12 @@ export async function PATCH(request: Request) {
   const db = getSupabaseAdmin();
   const { data: song } = await db.from("songs").select("id,title").eq("id", body.songId).single();
   if (!song) return NextResponse.json({ error: "Song not found." }, { status: 404 });
-  const metadataKeys = ["meaning", "category", "submit_hub", "genre", "sub_genre", "sub_genre_2", "lyrics", "musical_key"] as const;
+  const metadataKeys = ["meaning", "category", "submit_hub", "genre", "sub_genre", "sub_genre_2", "lyrics", "musical_key", "practice_notes"] as const;
   const metadata: Record<string, string | number | null> = {};
   for (const key of metadataKeys) {
     if (body[key] === undefined) continue;
     if (typeof body[key] !== "string") return NextResponse.json({ error: `${key} must be text.` }, { status: 400 });
-    metadata[key] = body[key].trim().slice(0, key === "lyrics" ? 50000 : 500);
+    metadata[key] = body[key].trim().slice(0, key === "lyrics" ? 50000 : key === "practice_notes" ? 12000 : 500);
   }
   if (body.bpm !== undefined) {
     if (body.bpm !== null && (!Number.isInteger(body.bpm) || body.bpm < 1 || body.bpm > 400)) return NextResponse.json({ error: "BPM must be between 1 and 400." }, { status: 400 });
@@ -101,6 +101,10 @@ export async function PATCH(request: Request) {
   if (body.chord_shape !== undefined) {
     if (typeof body.chord_shape !== "string") return NextResponse.json({ error: "Chord shape must be text." }, { status: 400 });
     metadata.chord_shape = body.chord_shape.trim().slice(0, 40);
+  }
+  if (body.release_date !== undefined) {
+    if (body.release_date !== null && (typeof body.release_date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(body.release_date) || Number.isNaN(Date.parse(`${body.release_date}T00:00:00Z`)))) return NextResponse.json({ error: "Release date must use YYYY-MM-DD." }, { status: 400 });
+    metadata.release_date = body.release_date;
   }
   if (Object.keys(metadata).length) {
     const { error } = await db.from("songs").update(metadata).eq("id", song.id);
