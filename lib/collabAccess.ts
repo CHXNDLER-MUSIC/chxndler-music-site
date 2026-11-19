@@ -16,11 +16,6 @@ export function createCollabSession(inviteId: string) {
   return `${payload}.${signature(payload)}`;
 }
 
-export function createAuthorizedPersonSession(personId: string) {
-  const payload = Buffer.from(JSON.stringify({ personId, exp: Math.floor(Date.now() / 1000) + collabSessionMaxAge })).toString("base64url");
-  return `${payload}.${signature(payload)}`;
-}
-
 function parseSession(token?: string) {
   if (!token) return null;
   const [payload, sig, ...extra] = token.split(".");
@@ -30,9 +25,8 @@ function parseSession(token?: string) {
   if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
   try {
     const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-    return Number.isFinite(parsed.exp) && parsed.exp > Math.floor(Date.now() / 1000) &&
-      (typeof parsed.inviteId === "string" || typeof parsed.personId === "string")
-      ? parsed as { inviteId?: string; personId?: string; exp: number } : null;
+    return Number.isFinite(parsed.exp) && parsed.exp > Math.floor(Date.now() / 1000) && typeof parsed.inviteId === "string"
+      ? parsed as { inviteId: string; exp: number } : null;
   } catch { return null; }
 }
 
