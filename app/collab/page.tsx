@@ -7,6 +7,10 @@ import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 import { youtubeSkyFor } from "@/lib/sky-youtube";
 import { releaseAudioSrc } from "@/components/brand-pitch/artistRelease";
 import type { ArtistRelease } from "@/components/brand-pitch/artistRelease";
+import { createHash } from "node:crypto";
+import { cookies } from "next/headers";
+import CollabAccessGate from "@/components/collab/CollabAccessGate";
+import { COLLAB_ACCESS_COOKIE, isValidCollabAccessToken } from "@/lib/collabAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -136,7 +140,22 @@ async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleas
   }
 }
 
-export default async function CollabPage() {
+async function invitedSongId(token: string): Promise<string | null> {
+  if (!/^[A-Za-z0-9_-]{40,60}$/.test(token)) return null;
+  const hash = createHash("sha256").update(token).digest("hex");
+  const { data, error } = await getSupabaseAdmin().from("collaboration_invites").select("song_id")
+    .eq("token_hash", hash).is("revoked_at", null)
+    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`).maybeSingle();
+  if (error || !data?.song_id) return null;
+  const { data: song } = await getSupabaseAdmin().from("songs").select("id,is_released,collaboration_enabled").eq("id", data.song_id).maybeSingle();
+  return song && song.is_released !== true && song.collaboration_enabled === true ? String(song.id) : null;
+}
+
+export default async function CollabPage({ searchParams }: { searchParams: Promise<{ invite?: string }> }) {
+  const query = await searchParams;
+  const cookieStore = await cookies();
+  if (!isValidCollabAccessToken(cookieStore.get(COLLAB_ACCESS_COOKIE)?.value)) return <CollabAccessGate />;
+
   let projects: CollabProject[] = [];
 
   try {
@@ -205,11 +224,14 @@ export default async function CollabPage() {
   }
 
   const { released, unreleased } = await fetchArtistSongs();
+  const invitedId = await invitedSongId(query.invite || "");
+  const invitedSong = invitedId ? unreleased.find(song => song.databaseId === invitedId) : undefined;
+  const privateUnreleased = invitedSong ? [invitedSong] : [];
   let musicVideos: Array<{ id: string; song_id: string; public_concept: string; public_status: string; songs?: { title: string; slug: string } }> = [];
   try {
     const { data } = await getSupabaseAdmin().from("music_video_projects")
       .select("id,song_id,public_concept,public_status,songs(title,slug)").eq("visibility", "public").order("updated_at", { ascending: false });
     musicVideos = (data || []) as typeof musicVideos;
   } catch (error) { console.error("[collab] Could not load public music video projects:", error); }
-  return <CollabGallery projects={projects} artistReleases={released} unreleasedSongs={unreleased} musicVideos={musicVideos} />;
+  return <CollabGallery projects={projects} artistReleases={released} unreleasedSongs={privateUnreleased} invitedSongSlug={invitedSong?.slug || null} musicVideos={musicVideos} />;
 }

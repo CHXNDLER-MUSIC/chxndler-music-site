@@ -51,16 +51,18 @@ export default function CollabGallery({
   projects,
   artistReleases,
   unreleasedSongs,
+  invitedSongSlug = null,
   musicVideos,
 }: {
   projects: CollabProject[];
   artistReleases: ArtistRelease[];
   unreleasedSongs: ArtistRelease[];
+  invitedSongSlug?: string | null;
   musicVideos: Array<{ id: string; song_id: string; public_concept: string; public_status: string; songs?: { title: string; slug: string } }>;
 }) {
   return (
     <BrandAudioProvider>
-      <CollabGalleryContent projects={projects} artistReleases={artistReleases} unreleasedSongs={unreleasedSongs} musicVideos={musicVideos} />
+      <CollabGalleryContent projects={projects} artistReleases={artistReleases} unreleasedSongs={unreleasedSongs} invitedSongSlug={invitedSongSlug} musicVideos={musicVideos} />
     </BrandAudioProvider>
   );
 }
@@ -69,14 +71,16 @@ function CollabGalleryContent({
   projects,
   artistReleases,
   unreleasedSongs,
+  invitedSongSlug,
   musicVideos,
 }: {
   projects: CollabProject[];
   artistReleases: ArtistRelease[];
   unreleasedSongs: ArtistRelease[];
+  invitedSongSlug: string | null;
   musicVideos: Array<{ id: string; song_id: string; public_concept: string; public_status: string; songs?: { title: string; slug: string } }>;
 }) {
-  const [tab, setTab] = useState<Tab>("collabs");
+  const [tab, setTab] = useState<Tab>(invitedSongSlug ? "unreleased" : "collabs");
   const [selected, setSelected] = useState<SelectedItem | null>(null);
   const audio = useBrandAudio();
 
@@ -129,6 +133,7 @@ function CollabGalleryContent({
   }, [selected, audio]);
 
   const openItem = (item: SelectedItem) => {
+    playCollabClickSound();
     audio.pause();
     setSelected(item);
     const src = item.audioUrl ?? (item.from === "collabs" || (item.from === "unreleased" && item.release.audioAvailable === false) ? "" : releaseAudioSrc(item.release.slug));
@@ -164,9 +169,6 @@ function CollabGalleryContent({
         <a className="collab-wordmark" href="/">CHXNDLER</a>
         <div className="collab-heading-actions">
           <span>COLLABORATIONS</span>
-          <a href={`mailto:info@chxndler-music.com?subject=${encodeURIComponent("Have something else in mind?")}`}>
-            Have something else in mind? <span aria-hidden="true">↗</span>
-          </a>
         </div>
       </header>
 
@@ -176,6 +178,7 @@ function CollabGalleryContent({
             key={value}
             type="button"
             role="tab"
+            data-tab={value}
             aria-selected={tab === value}
             onClick={() => {
               playCollabClickSound();
@@ -235,9 +238,11 @@ function CollabGalleryContent({
       ) : (
         <div className="collab-empty">
           <p>{tab === "unreleased" ? "NO UNRELEASED TRACKS YET." : tab === "released" ? "NO ARTIST RELEASES YET." : "THE ARTWORK IS ON ITS WAY."}</p>
-          <span>{tab === "collabs" ? "Cover art uploaded to the Collabs folder will appear here." : "Tracks appear here as they are added to the CHXNDLER catalog."}</span>
+        <span>{tab === "collabs" ? "Cover art uploaded to the Collabs folder will appear here." : tab === "unreleased" ? (invitedSongSlug ? "The invited demo is not available right now." : "Unreleased demos are available by private invitation.") : "Tracks appear here as they are added to the CHXNDLER catalog."}</span>
         </div>
       )}
+
+      {tab === "collabs" && <div className="collab-extra-cta"><a href={`mailto:info@chxndler-music.com?subject=${encodeURIComponent("Have something else in mind?")}`}>Have something else in mind? <span aria-hidden="true">↗</span></a></div>}
 
       {selected && (
         <MediaViewerModal
@@ -276,13 +281,18 @@ function CollabGalleryContent({
         .collab-page{min-height:100vh;background:#08080b;color:#fff;padding:clamp(1rem,3vw,3rem);}
         .collab-heading{display:flex;justify-content:space-between;align-items:center;margin:0 auto 1.1rem;max-width:1600px;color:#ff3ea5;font-size:.7rem;font-weight:800;letter-spacing:.28em}
         .collab-heading-actions{display:flex;align-items:center;gap:1rem}
-        .collab-heading-actions>a{display:inline-flex;align-items:center;gap:.4rem;border:1px solid rgba(255,62,165,.55);border-radius:999px;padding:.6rem .9rem;color:#fff;text-decoration:none;font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;transition:background .2s,border-color .2s}
-        .collab-heading-actions>a:hover{background:rgba(255,62,165,.12);border-color:#ff3ea5}
-        .collab-heading-actions>a:focus-visible{outline:2px solid #ff3ea5;outline-offset:3px}
+        .collab-extra-cta{max-width:1600px;margin:1.5rem auto 0;display:flex;justify-content:center}
+        .collab-extra-cta a{display:inline-flex;align-items:center;gap:.4rem;border:1px solid rgba(255,62,165,.55);border-radius:999px;padding:.7rem 1rem;color:#fff;text-decoration:none;font-size:.68rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;transition:background .2s,border-color .2s}
+        .collab-extra-cta a:hover{background:rgba(255,62,165,.12);border-color:#ff3ea5}
+        .collab-extra-cta a:focus-visible{outline:2px solid #ff3ea5;outline-offset:3px}
         .collab-wordmark{color:#fff;text-decoration:none;font-size:.8rem;letter-spacing:.18em}
         .collab-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:760px;margin:0 auto 1.5rem;padding:.25rem;border-radius:999px;background:rgba(255,255,255,.055)}
-        .collab-tabs button{border:0;border-radius:999px;background:transparent;color:rgba(255,255,255,.48);padding:.75rem .5rem;font-size:.7rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s}
-        .collab-tabs button[aria-selected="true"]{background:rgba(255,255,255,.14);color:#fff}
+        .collab-tabs button{border:0;border-radius:999px;background:transparent;color:var(--tab-color);opacity:.7;padding:.75rem .5rem;font-size:.7rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s,opacity .2s}
+        .collab-tabs button[data-tab="collabs"]{--tab-color:#54c8ff}
+        .collab-tabs button[data-tab="released"]{--tab-color:#ffd43b}
+        .collab-tabs button[data-tab="unreleased"]{--tab-color:#ff3ea5}
+        .collab-tabs button[aria-selected="true"]{background:color-mix(in srgb,var(--tab-color) 23%,#17171a);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tab-color) 38%,transparent);color:var(--tab-color);opacity:1}
+        .collab-tabs button:hover:not([aria-selected="true"]){opacity:1}
         .collab-video-opportunities{max-width:1600px;margin:0 auto 2rem;padding:1.2rem;border:1px solid rgba(255,62,165,.22);background:linear-gradient(120deg,rgba(255,62,165,.08),rgba(255,255,255,.02))}
         .collab-video-kicker{margin:0;color:#ff3ea5;font-size:.62rem;font-weight:900;letter-spacing:.22em}.collab-video-opportunities h2{margin:.35rem 0 1rem;font-size:1.35rem;font-weight:900}
         .collab-video-grid{display:grid;gap:.8rem}.collab-video-card{display:grid;grid-template-columns:6rem 1fr;gap:1rem;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.25);padding:.75rem}.collab-video-card>img{width:6rem;aspect-ratio:1;object-fit:cover}.collab-video-card h3{margin:.35rem 0;font-size:1rem;font-weight:800}.collab-video-card p{margin:.4rem 0;color:rgba(255,255,255,.65);font-size:.85rem;white-space:pre-wrap}.collab-video-status{color:#ff77bb;font-size:.58rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.collab-video-card audio{display:block;width:min(100%,22rem);height:2rem;margin:.7rem 0}.collab-video-card a{display:inline-block;color:#ff3ea5;font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
@@ -312,7 +322,7 @@ function CollabGalleryContent({
         @media(min-width:700px){.collab-grid{columns:3}.collab-tabs button{font-size:.8rem}}
         @media(min-width:760px){.collab-video-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
         @media(min-width:1100px){.collab-grid{columns:4}}
-        @media(max-width:520px){.collab-tabs button{font-size:.57rem;letter-spacing:.08em;padding:.7rem .25rem}.collab-heading-actions{gap:.5rem;flex-direction:column;align-items:flex-end}.collab-heading-actions>a{font-size:.5rem;padding:.5rem .65rem;letter-spacing:.06em}.collab-heading{font-size:.58rem}}
+        @media(max-width:520px){.collab-tabs button{font-size:.57rem;letter-spacing:.08em;padding:.7rem .25rem}.collab-heading{font-size:.58rem}}
         @media(prefers-reduced-motion:reduce){.collab-cover img,.collab-tabs button{transition:none}}
       `}</style>
     </main>

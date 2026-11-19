@@ -1,21 +1,27 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+const defaultVersion = "2026-11-18-v1";
+const defaultTerms = {
+  ownership: "You retain rights to your original creative contribution, subject to the final signed agreement. Master recording and composition ownership are addressed separately.",
+  royalties: "Master royalties and songwriting/publishing royalties are separate. Applicable splits and compensation will be agreed in writing before work begins.",
+  credits: "Your agreed artist, songwriter, and/or producer credits will be included in the official release metadata.",
+  release_rights: "CHXNDLER coordinates official releases and distribution. No independent upload, release, remix, or commercial use without the required written authorization.",
+};
 const sections = [
-  ["©", "Ownership", "You retain rights to your original creative contribution, subject to the final signed agreement. Master recording and composition ownership are addressed separately."],
-  ["◔", "Royalties", "Master royalties and songwriting/publishing royalties are separate. Applicable splits and compensation will be agreed in writing before work begins."],
-  ["✓", "Credits", "Your agreed artist, songwriter, and/or producer credits will be included in the official release metadata."],
-  ["⬡", "Release Rights", "CHXNDLER coordinates official releases and distribution. No independent upload, release, remix, or commercial use without the required written authorization."],
+  ["©", "Ownership", "ownership"], ["◔", "Royalties", "royalties"], ["✓", "Credits", "credits"], ["⬡", "Release Rights", "release_rights"],
 ];
 
 export default function CollabRequestForm({ songId, title, artwork, close }: { songId: string; title: string; artwork: string; close: () => void }) {
   const [terms, setTerms] = useState(false), [busy, setBusy] = useState(false), [done, setDone] = useState(false), [error, setError] = useState("");
   const [submissionKey] = useState(() => crypto.randomUUID());
+  const [termsVersion, setTermsVersion] = useState(defaultVersion), [termsText, setTermsText] = useState(defaultTerms);
+  useEffect(() => { fetch("/api/collaboration-terms", { cache: "no-store" }).then(async response => { if (!response.ok) return; const result = await response.json(); if (result.version && result.terms) { setTermsVersion(result.version); setTermsText({ ...defaultTerms, ...result.terms }); } }).catch(() => {}); }, []);
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError("");
     const data = new FormData(event.currentTarget);
     try {
-      const response = await fetch("/api/collaboration-requests", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ submissionKey, songId, inviteToken: new URLSearchParams(location.search).get("invite"), artistName: data.get("artistName"), email: data.get("email"), profileLink: data.get("profileLink"), phone: data.get("phone"), contributionType: data.get("contributionType"), message: data.get("message"), acknowledged: data.get("acknowledged") === "on", website: data.get("website") }) });
+      const response = await fetch("/api/collaboration-requests", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ submissionKey, termsVersion, songId, inviteToken: new URLSearchParams(location.search).get("invite"), artistName: data.get("artistName"), email: data.get("email"), profileLink: data.get("profileLink"), phone: data.get("phone"), contributionType: data.get("contributionType"), message: data.get("message"), acknowledged: data.get("acknowledged") === "on", website: data.get("website") }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Please try again.");
       setDone(true);
@@ -33,7 +39,7 @@ export default function CollabRequestForm({ songId, title, artwork, close }: { s
           <div className="grid gap-4 sm:grid-cols-2"><label className="text-xs font-semibold text-white/70">Artist / Stage Name *<input required maxLength={120} name="artistName" className="mt-1 block w-full rounded-lg border border-white/10 bg-black/30 p-3 text-sm text-white"/></label><label className="text-xs font-semibold text-white/70">Email Address *<input required type="email" maxLength={320} name="email" className="mt-1 block w-full rounded-lg border border-white/10 bg-black/30 p-3 text-sm text-white"/></label><label className="text-xs font-semibold text-white/70">Instagram or Music Profile<input maxLength={500} name="profileLink" placeholder="https://" className="mt-1 block w-full rounded-lg border border-white/10 bg-black/30 p-3 text-sm text-white"/></label><label className="text-xs font-semibold text-white/70">Phone Number<input maxLength={40} name="phone" type="tel" className="mt-1 block w-full rounded-lg border border-white/10 bg-black/30 p-3 text-sm text-white"/></label></div>
           <label className="block text-xs font-semibold text-white/70">Contribution Type *<select required name="contributionType" defaultValue="" className="mt-1 block w-full rounded-lg border border-white/10 bg-[#17171c] p-3 text-sm text-white"><option value="" disabled>Select one</option><option>Vocals / Feature</option><option>Production / Remix</option><option>Songwriting</option><option>Other</option></select></label>
           <label className="block text-xs font-semibold text-white/70">Your Idea<textarea name="message" maxLength={1200} rows={3} placeholder="What are you imagining?" className="mt-1 block w-full resize-y rounded-lg border border-white/10 bg-black/30 p-3 text-sm text-white"/></label>
-          <div className="overflow-hidden rounded-xl border border-white/10"><button type="button" onClick={() => setTerms(!terms)} aria-expanded={terms} className="flex w-full items-center justify-between p-4 text-left"><span><b className="block text-sm">Collaboration Terms</b><small className="text-white/50">Ownership, royalties, credits &amp; release rights.</small></span><span className="text-[#ff3ea5]">{terms ? "−" : "+"}</span></button>{terms && <div className="grid gap-3 border-t border-white/10 p-4 sm:grid-cols-2">{sections.map(([icon, title, text]) => <div key={title} className="flex gap-3"><span className="text-xl text-[#ff3ea5]">{icon}</span><p className="text-xs leading-5 text-white/70"><b className="block text-white">{title}</b>{text}</p></div>)}<p className="sm:col-span-2 text-[11px] leading-5 text-white/45">These are general guidelines, not a binding agreement. Final rights, percentages, credits, and permissions will be specified in a separate signed agreement.</p></div>}</div>
+          <div className="overflow-hidden rounded-xl border border-white/10"><button type="button" onClick={() => setTerms(!terms)} aria-expanded={terms} className="flex w-full items-center justify-between p-4 text-left"><span><b className="block text-sm">Collaboration Terms</b><small className="text-white/50">Ownership, royalties, credits &amp; release rights.</small></span><span className="text-[#ff3ea5]">{terms ? "−" : "+"}</span></button>{terms && <div className="grid gap-3 border-t border-white/10 p-4 sm:grid-cols-2">{sections.map(([icon, title, key]) => <div key={title} className="flex gap-3"><span className="text-xl text-[#ff3ea5]">{icon}</span><p className="text-xs leading-5 text-white/70"><b className="block text-white">{title}</b>{termsText[key as keyof typeof defaultTerms]}</p></div>)}<p className="sm:col-span-2 text-[11px] leading-5 text-white/45">These are general guidelines, not a binding agreement. Final rights, percentages, credits, and permissions will be specified in a separate signed agreement.</p><small className="sm:col-span-2 text-[10px] text-white/30">Terms version {termsVersion}</small></div>}</div>
           <label className="flex items-start gap-3 text-xs leading-5 text-white/70"><input required type="checkbox" name="acknowledged" className="mt-1 accent-[#ff3ea5]"/>I understand this is a collaboration request, not a signed agreement or permission to use or release the track.</label>
           {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
           <button disabled={busy} className="w-full rounded-full bg-[#ff3ea5] px-6 py-4 font-extrabold text-black disabled:opacity-50">{busy ? "Submitting…" : "Submit Collab Request →"}</button>
