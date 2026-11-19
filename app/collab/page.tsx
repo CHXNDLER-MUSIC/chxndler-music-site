@@ -27,11 +27,14 @@ function keyFor(stem: string) {
 const NON_RELEASE_TITLES = ["welcome to the heartverse", "you are home", "space music", "welcome back"];
 const normalizeTitle = (title: string) => title.trim().replace(/[‘’ʼ`]/g, "'").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
 
-async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleased: ArtistRelease[] }> {
+async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: ArtistRelease[]; unreleased: ArtistRelease[] }> {
   try {
+    if (onlySongIds && !onlySongIds.length) return { released: [], unreleased: [] };
     const supabase = getSupabaseAdmin();
+    let songQuery = supabase.from("songs").select("id, slug, title, is_released, audio_status, collaboration_enabled, ready_for_collab, collab_interests, collaboration_opportunities, video_concept, collaboration_description, release_date, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url");
+    if (onlySongIds) songQuery = songQuery.in("id", onlySongIds);
     const [initialSongsRes, cardsRes, videoProjectsRes] = await Promise.all([
-      supabase.from("songs").select("id, slug, title, is_released, audio_status, collaboration_enabled, ready_for_collab, collab_interests, collaboration_opportunities, video_concept, collaboration_description, release_date, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url"),
+      songQuery,
       supabase.from("cards").select("card_name"),
       supabase.from("music_video_projects").select("song_id"),
     ]);
@@ -159,9 +162,16 @@ async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleas
 
 export default async function CollabPage() {
   const inviteSession = await getCollabInviteSession();
-  if (!inviteSession) return <CollabAccessGate />;
-
-  const catalog = await fetchArtistSongs();
+  let musicVideos: Array<{ id: string; song_id: string; public_concept: string; public_status: string; songs?: { title: string; slug: string } }> = [];
+  try {
+    const { data } = await getSupabaseAdmin().from("music_video_projects")
+      .select("id,song_id,public_concept,public_status,songs(title,slug)").eq("visibility", "public").order("updated_at", { ascending: false });
+    musicVideos = (data || []).map((project) => ({ ...project, songs: Array.isArray(project.songs) ? project.songs[0] : project.songs })) as unknown as typeof musicVideos;
+  } catch (error) { console.error("[collab] Could not load public music video projects:", error); }
+  const catalog = inviteSession
+    ? await fetchArtistSongs()
+    : await fetchArtistSongs([...new Set(musicVideos.map(project => project.song_id))]);
+  if (!inviteSession) return <CollabGallery artistReleases={[]} unreleasedSongs={[]} defaultView="video" invitedDisplayName="" invitedEmail="" musicVideos={musicVideos} canViewFeatures={false} />;
   const allCatalogSongs = [...catalog.released, ...catalog.unreleased];
   const invitedSong = inviteSession.scope === "song" && inviteSession.song_id
     ? allCatalogSongs.find((song) => song.databaseId === inviteSession.song_id && song.readyForCollab === true) || null
@@ -173,11 +183,5 @@ export default async function CollabPage() {
       : [];
   const released = permittedCatalog.filter(song => song.audioStatus === "Released" || song.audioStatus === "Final");
   const unreleased = permittedCatalog.filter(song => song.audioStatus !== "Released" && song.audioStatus !== "Final");
-  let musicVideos: Array<{ id: string; song_id: string; public_concept: string; public_status: string; songs?: { title: string; slug: string } }> = [];
-  try {
-    const { data } = await getSupabaseAdmin().from("music_video_projects")
-      .select("id,song_id,public_concept,public_status,songs(title,slug)").eq("visibility", "public").order("updated_at", { ascending: false });
-    musicVideos = (data || []).map((project) => ({ ...project, songs: Array.isArray(project.songs) ? project.songs[0] : project.songs })) as unknown as typeof musicVideos;
-  } catch (error) { console.error("[collab] Could not load public music video projects:", error); }
-  return <CollabGallery artistReleases={released} unreleasedSongs={unreleased} invitedSongSlug={inviteSession.scope === "song" ? invitedSong?.slug || null : null} defaultView={inviteSession.scope === "video" ? "video" : "collabs"} invitedDisplayName={inviteSession.display_name} invitedEmail={inviteSession.email || ""} musicVideos={musicVideos} />;
+  return <CollabGallery artistReleases={released} unreleasedSongs={unreleased} invitedSongSlug={inviteSession.scope === "song" ? invitedSong?.slug || null : null} defaultView={inviteSession.scope === "video" ? "video" : "collabs"} invitedDisplayName={inviteSession.display_name} invitedEmail={inviteSession.email || ""} musicVideos={musicVideos} canViewFeatures />;
 }

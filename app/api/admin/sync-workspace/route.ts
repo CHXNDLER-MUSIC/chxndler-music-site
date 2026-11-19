@@ -12,14 +12,15 @@ async function gate() {
 export async function GET() {
   const denied = await gate(); if (denied) return denied;
   const db = getSupabaseAdmin();
-  const [songs, opportunities, placements] = await Promise.all([
+  const [songs, ideas, opportunities, placements] = await Promise.all([
     db.from("songs").select("id,title,slug").order("title"),
+    db.from("sync_ideas").select("*").order("song_title"),
     db.from("sync_opportunities").select("*").order("updated_at", { ascending: false }),
     db.from("sync_placements").select("*").order("placement_date", { ascending: false, nullsFirst: false }),
   ]);
-  if (opportunities.error || placements.error) return NextResponse.json({ error: "Apply the sync workspace migration before loading opportunities." }, { status: 503 });
+  if (ideas.error || opportunities.error || placements.error) return NextResponse.json({ error: "Apply the sync ideas and workspace migrations before loading sync records." }, { status: 503 });
   const names = new Map((songs.data || []).map(song => [song.id, song.title]));
-  return NextResponse.json({ songs: songs.data || [], opportunities: (opportunities.data || []).map(row => ({ ...row, song_title: names.get(row.song_id) || "" })), placements: (placements.data || []).map(row => ({ ...row, song_title: names.get(row.song_id) || "" })) });
+  return NextResponse.json({ songs: songs.data || [], ideas: ideas.data || [], opportunities: (opportunities.data || []).map(row => ({ ...row, song_title: names.get(row.song_id) || "" })), placements: (placements.data || []).map(row => ({ ...row, song_title: names.get(row.song_id) || "" })) });
 }
 
 const tables = { opportunity: "sync_opportunities", placement: "sync_placements" } as const;
@@ -46,6 +47,16 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const denied = await gate(); if (denied) return denied;
   const body = await request.json();
+  if (body.kind === "idea") {
+    if (typeof body.id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.id)) return NextResponse.json({ error: "Choose a valid sync idea." }, { status: 400 });
+    const allowed = ["song_id", "song_title", "core_emotion", "big_category", "movies", "tv_cartoons", "anime", "text_hooks", "scenes_to_search", "notes"];
+    const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    for (const field of allowed) if (field in body) update[field] = body[field] === "" && field === "song_id" ? null : body[field];
+    if (typeof update.song_title === "string" && !update.song_title.trim()) return NextResponse.json({ error: "Song title is required." }, { status: 400 });
+    const { error } = await getSupabaseAdmin().from("sync_ideas").update(update).eq("id", body.id);
+    if (error) return NextResponse.json({ error: "Unable to update this sync idea." }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
   if (typeof body.kind !== "string" || !(body.kind in tables) || typeof body.id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.id)) return NextResponse.json({ error: "Choose a valid sync record." }, { status: 400 });
   const kind = body.kind as keyof typeof tables;
   const allowed = kind === "opportunity"
