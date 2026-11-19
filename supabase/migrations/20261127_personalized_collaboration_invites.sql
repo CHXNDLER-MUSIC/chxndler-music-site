@@ -37,3 +37,4 @@ create index if not exists collaboration_requests_invite_id_idx
 
 -- Invitation tokens remain hashes only. Sessions are signed, short-lived cookies;
 -- every request checks this row again so revocation takes effect immediately.
+drop table if exists public.collab_authorized_people;
