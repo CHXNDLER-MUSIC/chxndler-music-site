@@ -8,7 +8,7 @@ Apply these migrations to the existing Supabase project, in filename order:
 2. `20261126_collaboration_system_completion.sql` — idempotency, atomic rate limits, agreement fields, and the private agreement bucket.
 3. `20261127_personalized_collaboration_invites.sql` — expiring named invitation sessions and request-to-invite association.
 4. `20261129_collaboration_invites_per_song.sql` — permits multiple distinct song invitations for one collaborator.
-5. `20261201_restore_collab_authorized_people.sql` — retains the private approved-person allowlist (including Ari Ness) for name-based entry to `/collab`.
+5. `20261201_restore_collab_authorized_people.sql` — retains the private approved-person allowlist (including Ari Ness) for first/last-name or artist-name entry to `/collab`, and links their subsequent collaboration requests to that person.
 
 Requests, terms history, invite tokens, rate-limit records, and event history are accessible through server routes using the Supabase service role. Anonymous visitors cannot read these tables. The invite link contains a random bearer token; Supabase stores only its SHA-256 hash. A signed, HTTP-only session cookie is rechecked against the invitation row, so expiration and revocation take effect on subsequent requests.
 

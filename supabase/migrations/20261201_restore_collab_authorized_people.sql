@@ -4,8 +4,17 @@ create table if not exists public.collab_authorized_people (
   id uuid primary key default gen_random_uuid(),
   full_name text not null,
   normalized_name text not null unique,
+  artist_name text,
+  normalized_artist_name text,
   created_at timestamptz not null default now()
 );
+
+alter table public.collab_authorized_people
+  add column if not exists artist_name text,
+  add column if not exists normalized_artist_name text;
+create unique index if not exists collab_authorized_people_artist_name_idx
+  on public.collab_authorized_people(normalized_artist_name)
+  where normalized_artist_name is not null;
 
 alter table public.collab_authorized_people enable row level security;
 revoke all on public.collab_authorized_people from anon, authenticated;
