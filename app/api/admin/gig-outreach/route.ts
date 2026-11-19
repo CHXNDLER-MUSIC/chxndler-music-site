@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getApiUser, isAdminUser, unauthorized, forbidden } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
-const fields = ["venue", "neighborhood", "address", "city", "first_name", "last_name", "website", "contact_email", "phone", "capacity", "subject", "email_copy", "form_url", "date_sent", "notes", "performed"] as const;
+const fields = ["venue", "neighborhood", "address", "city", "first_name", "last_name", "website", "contact_email", "phone", "capacity", "subject", "email_copy", "form_url", "date_sent", "notes", "performed", "contact_id", "song_id"] as const;
 
 function valuesFrom(body: Record<string, unknown>) {
   const values: Record<string, string | boolean | null> = {};
@@ -10,6 +10,9 @@ function valuesFrom(body: Record<string, unknown>) {
     const value = body[field];
     if (field === "performed") {
       if (typeof value === "boolean") values[field] = value;
+    } else if (field === "contact_id" || field === "song_id") {
+      if (value === "") values[field] = null;
+      else if (typeof value === "string" && /^[0-9a-f-]{36}$/i.test(value)) values[field] = value;
     } else if (typeof value === "string") {
       values[field] = field === "date_sent" && !value ? null : value.trim();
     }

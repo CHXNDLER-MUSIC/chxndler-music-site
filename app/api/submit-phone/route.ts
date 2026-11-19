@@ -45,10 +45,15 @@ async function awardRelicToUser(admin: ReturnType<typeof getSupabaseAdmin>, user
     }
 
     // Update relics_unlocked_count in profiles
-    await admin.rpc('increment_relics_count', { p_user_id: userId }).catch(() => {
-      // If RPC doesn't exist, just log it
+    try {
+      const { error: countError } = await admin.rpc('increment_relics_count', { p_user_id: userId });
+      if (countError && process.env.NODE_ENV !== "production") {
+        console.log('[submit-phone] Could not increment relics count via RPC:', countError.message);
+      }
+    } catch {
+      // Keep the phone save successful if this optional profile counter RPC is unavailable.
       if (process.env.NODE_ENV !== "production") console.log('[submit-phone] Could not increment relics count via RPC');
-    });
+    }
 
     if (process.env.NODE_ENV !== "production") console.log(`[submit-phone] Awarded relic '${relicCode}' to user ${userId}`);
     return { awarded: true, alreadyOwned: false, relicLabel: relic.label };
@@ -172,16 +177,16 @@ export async function POST(req: NextRequest) {
         });
       }
     } else {
-      // User is not authenticated - save to signal_signups table
+      // Anonymous phone signups use the existing live phone_signups relation.
       const { error: signupError } = await admin
-        .from('signal_signups')
+        .from('phone_signups')
         .insert({
           phone: cleanPhone,
-          created_at: new Date().toISOString()
+          source: 'heartverse'
         });
 
       if (signupError) {
-        console.error('Error saving to signal_signups:', signupError);
+        console.error('Error saving to phone_signups:', signupError);
         throw signupError;
       }
 

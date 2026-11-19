@@ -65,7 +65,10 @@ export async function PATCH(request: Request) {
   if (typeof body.title === "string" && body.title.trim()) update.title = body.title.trim().slice(0, 180);
   if (typeof body.description === "string") update.description = body.description.trim().slice(0, 5000);
   if (body.due_at === null || body.due_at === "") update.due_at = null;
-  else if (typeof body.due_at === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.due_at)) update.due_at = body.due_at;
+  else if (typeof body.due_at === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.due_at)) {
+    update.due_at = body.due_at;
+    if (body.status === undefined) update.status = "todo";
+  }
   if (Object.keys(update).length === 1) return NextResponse.json({ error: "No valid changes provided." }, { status: 400 });
   const { data, error } = await getSupabaseAdmin().from("admin_tasks").update(update).eq("id", body.id).select("id").maybeSingle();
   if (error || !data) return NextResponse.json({ error: "Unable to update this task." }, { status: 500 });

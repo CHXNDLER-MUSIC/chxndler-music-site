@@ -3,7 +3,7 @@ import { getApiUser, isAdminUser, unauthorized, forbidden } from "@/lib/apiAuth"
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 async function gate() { const auth = await getApiUser(); if (!auth) return unauthorized(); if (!isAdminUser(auth.user)) return forbidden(); return null; }
-const fields = ["song_id", "contact_id", "opportunity_url", "category", "contact_name", "organization", "contact_email", "pitch", "sent_at", "status", "follow_up_at", "notes", "result"] as const;
+const fields = ["song_id", "contact_id", "opportunity_url", "record_type", "playlist_name", "platform", "playlist_genre", "link", "category", "contact_name", "organization", "contact_email", "pitch", "sent_at", "status", "follow_up_at", "notes", "result"] as const;
 function clean(body: Record<string, unknown>) {
   const row: Record<string, unknown> = {};
   for (const field of fields) if (field in body) {
@@ -21,13 +21,14 @@ function clean(body: Record<string, unknown>) {
     }
   }
   if (row.status && !["Planned", "Contacted", "Interested", "Won", "Closed", "Not interested", "Sent", "Follow-up", "Accepted", "Declined"].includes(String(row.status))) throw new Error("Choose a valid outreach status.");
+  if (row.record_type && !["prospect", "opportunity"].includes(String(row.record_type))) throw new Error("Choose a valid opportunity type.");
   if (row.category && !["Playlists", "Blogs & Press", "Influencers", "Radio", "Sync Pitching", "Record Labels", "Brands & Businesses", "Other"].includes(String(row.category))) throw new Error("Choose a valid category.");
   return row;
 }
 export async function GET() {
   const denied = await gate(); if (denied) return denied;
   const db = getSupabaseAdmin();
-  const [records, songs, contacts] = await Promise.all([db.from("outreach_records").select("id,song_id,contact_id,opportunity_url,song_title,category,contact_name,organization,contact_email,pitch,sent_at,status,follow_up_at,notes,result,created_at,updated_at").order("updated_at", { ascending: false }), db.from("songs").select("id,title,slug").order("title"), db.from("marketing_contacts").select("id,first_name,last_name,email,venue,industry_category,connection_status").order("first_name")]);
+  const [records, songs, contacts] = await Promise.all([db.from("outreach_records").select("id,song_id,contact_id,opportunity_url,record_type,playlist_name,platform,playlist_genre,link,song_title,category,contact_name,organization,contact_email,pitch,sent_at,status,follow_up_at,notes,result,created_at,updated_at").order("updated_at", { ascending: false }), db.from("songs").select("id,title,slug").order("title"), db.from("marketing_contacts").select("id,first_name,last_name,email,venue,industry_category,connection_status").order("first_name")]);
   if (records.error) return NextResponse.json({ error: records.error.message }, { status: 503 });
   const titles = new Map((songs.data || []).map(song => [song.id, song.title]));
   return NextResponse.json({ songs: songs.data || [], contacts: contacts.data || [], records: (records.data || []).map(row => ({ ...row, song_title: titles.get(row.song_id) || row.song_title || "" })) });
@@ -39,8 +40,8 @@ export async function POST(request: Request) {
   catch { return NextResponse.json({ error: "Invalid outreach record." }, { status: 400 }); }
   try {
     const row = clean(body);
-    if (typeof row.contact_name !== "string" || !row.contact_name.trim()) return NextResponse.json({ error: "Enter a contact or recipient." }, { status: 400 });
-    row.contact_name = row.contact_name.trim().slice(0, 180); row.status ??= "Planned"; row.updated_at = new Date().toISOString();
+    if (![row.contact_name, row.organization, row.playlist_name].some(value => typeof value === "string" && value.trim())) return NextResponse.json({ error: "Enter a target or opportunity name." }, { status: 400 });
+    if (typeof row.contact_name === "string") row.contact_name = row.contact_name.trim().slice(0, 180); row.status ??= "Planned"; row.record_type ??= "opportunity"; row.updated_at = new Date().toISOString();
     const { data, error } = await getSupabaseAdmin().from("outreach_records").insert(row).select("id").single();
     if (error) return NextResponse.json({ error: "Unable to save this outreach record." }, { status: 500 });
     return NextResponse.json({ id: data.id }, { status: 201 });

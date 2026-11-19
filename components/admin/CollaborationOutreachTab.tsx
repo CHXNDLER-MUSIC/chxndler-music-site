@@ -33,7 +33,7 @@ export default function CollaborationOutreachTab({ songId = "" }: { songId?: str
 
   async function createInvite(event: React.FormEvent) {
     event.preventDefault(); setNotice(""); setInviteLink("");
-    const response = await fetch("/api/admin/collaboration-invites", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ displayName: invite.name, inviteeEmail: invite.email, scope: "song", songId: invite.songId }) });
+    const response = await fetch("/api/admin/collaboration-invites", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ displayName: invite.name, inviteeEmail: invite.email, personalMessage: invite.message, scope: "song", songId: invite.songId }) });
     const result = await response.json();
     if (!response.ok) { setNotice(result.error || "Unable to create invitation."); return; }
     setInviteLink(result.link || ""); setNotice("Private song invitation created.");
@@ -47,7 +47,7 @@ export default function CollaborationOutreachTab({ songId = "" }: { songId?: str
       <label className="text-xs text-white/55">Email (optional)<input type="email" value={invite.email} onChange={event => setInvite({ ...invite, email: event.target.value })} className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white" /></label>
       <label className="text-xs text-white/55">Song<select required value={invite.songId} onChange={event => setInvite({ ...invite, songId: event.target.value })} disabled={!!songId} className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white">{!songId && <option value="">Choose a song</option>}{songs.map(song => <option key={song.id} value={song.id}>{song.title}</option>)}</select></label>
       <label className="text-xs text-white/55">Interest<select value={invite.type} onChange={event => setInvite({ ...invite, type: event.target.value })} className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white">{["Feature / Vocals", "Remix", "Other"].map(type => <option key={type}>{type}</option>)}</select></label>
-      <label className="text-xs text-white/55 sm:col-span-2">Personal message (for your reference)<textarea value={invite.message} onChange={event => setInvite({ ...invite, message: event.target.value })} rows={2} className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white" /></label>
+      <label className="text-xs text-white/55 sm:col-span-2">Personal message<textarea value={invite.message} onChange={event => setInvite({ ...invite, message: event.target.value })} rows={2} placeholder="Add a note to include with the invitation" className="mt-1 w-full rounded-lg border border-white/10 bg-[#101014] px-3 py-2.5 text-sm text-white" /></label>
       <div className="flex flex-wrap items-center gap-3 sm:col-span-2"><button className="rounded-lg bg-[#FD52AF] px-4 py-2 text-sm font-bold text-black">Create private invite</button>{notice && <span role="status" className="text-sm text-white/60">{notice}</span>}</div>
       {inviteLink && <label className="text-xs text-white/50 sm:col-span-2">Copy this private link now<input readOnly value={inviteLink} onFocus={event => event.currentTarget.select()} className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white" /></label>}
     </form>}

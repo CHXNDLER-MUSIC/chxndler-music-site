@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function CollabInviteExperience({ token, name }: { token: string; name: string }) {
+export default function CollabInviteExperience({ token, name, personalMessage = "" }: { token: string; name: string; personalMessage?: string }) {
   const router = useRouter();
   const soundRef = useRef<HTMLAudioElement | null>(null);
   const [entering, setEntering] = useState(false);
@@ -43,7 +43,7 @@ export default function CollabInviteExperience({ token, name }: { token: string;
       <img className="collab-invite-wordmark" src="/elements/logo.webp" alt="CHXNDLER" />
       <img className="collab-invite-heart" src="/elements/about.webp" alt="" />
       <h1>Hey {name}, let&apos;s create something.</h1>
-      <p className="collab-invite-message">I&apos;ve got some unreleased music I&apos;d love to share with you. Take a listen and see what speaks to you.</p>
+      <p className="collab-invite-message">{personalMessage || "I've got some unreleased music I’d love to share with you. Take a listen and see what speaks to you."}</p>
       <button type="button" className="collab-invite-enter" onClick={() => void enter()} disabled={entering}>
         <span className="collab-invite-glow" />
         <span>{entering ? "ENTERING THE HEARTVERSE" : "EXPLORE THE MUSIC"}</span><span aria-hidden="true"> →</span>

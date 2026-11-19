@@ -16,15 +16,23 @@ export async function GET(request: Request) {
   const id = new URL(request.url).searchParams.get("id") || "";
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid song." }, { status: 400 });
   const db = getSupabaseAdmin();
-  const { data: song, error } = await db.from("songs").select("id,title,slug,is_released,created_at,spotify_url,apple_music_url,youtube_music_video_url,karaoke_url,sky_video_url,production_stages,workflow_stage,ready_for_collab,collab_interests,collaboration_description,practice_notes,next_action,release_date").eq("id", id).single();
-  if (error || !song) return NextResponse.json({ error: "Song not found." }, { status: 404 });
+  const songFields = "id,title,slug,is_released,created_at,spotify_url,apple_music_url,youtube_music_video_url,karaoke_url,sky_video_url,production_stages,production_tracking_started,audio_status,workflow_stage,ready_for_collab,collab_interests,collaboration_description,practice_notes,next_action";
+  let releaseDateAvailable = true;
+  let songResult = await db.from("songs").select(`${songFields},release_date`).eq("id", id).maybeSingle();
+  if (songResult.error && /release_date/i.test(songResult.error.message)) {
+    releaseDateAvailable = false;
+    songResult = await db.from("songs").select(songFields).eq("id", id).maybeSingle();
+  }
+  const { data: song, error } = songResult;
+  if (error) return NextResponse.json({ error: "Unable to load this song workspace." }, { status: 503 });
+  if (!song) return NextResponse.json({ error: "Song not found." }, { status: 404 });
   const [{ data: meanings }, { data: video }, { data: requests }] = await Promise.all([
     db.from("song_outreach_status").select("meaning_of_song,category").ilike("song", song.title).not("meaning_of_song", "eq", "").limit(10),
     db.from("music_video_projects").select("id,status,visibility,public_concept,workspace,next_action,assigned_videographer").eq("song_id", song.id).eq("project_type", "primary").maybeSingle(),
     db.from("collaboration_requests").select("id,status,submitted_at,contribution_type,artist_name,message").eq("song_id", song.id).order("submitted_at", { ascending: false }),
   ]);
   const meaning = (meanings || []).find(item => item.meaning_of_song?.trim())?.meaning_of_song || "";
-  return NextResponse.json({ song, meaning, musicVideo: video || null, requests: requests || [], coverUrl: songCoverPath(song.slug, song.title), lyricUrl: `/api/lyrics/${encodeURIComponent(song.slug)}` });
+  return NextResponse.json({ song: { ...song, release_date: song.release_date ?? null }, releaseDateAvailable, meaning, musicVideo: video || null, requests: requests || [], coverUrl: songCoverPath(song.slug, song.title), lyricUrl: `/api/lyrics/${encodeURIComponent(song.slug)}` });
 }
 
 export async function PATCH(request: Request) {

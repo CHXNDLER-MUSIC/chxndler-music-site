@@ -255,8 +255,7 @@ export default function SongTracker() {
         const category = songPipelineKey(song), stageColor = pipeline.find(item => item.key === category)?.color || "#777783";
         const collabReady = song.ready_for_collab === true;
         const videoNeeded = hasVideoOpportunity(song), hasOutreach = (song.activeOutreachCount || 0) > 0;
-        const badges = [collabReady ? { label: "Ready for Collab", href: `/admin/songs/${song.id}?tab=Collab`, color: "pink" } : null,
-          videoNeeded ? { label: "Video Needed", href: `/admin/songs/${song.id}?tab=Video`, color: "blue" } : null,
+        const badges = [videoNeeded ? { label: "Video Needed", href: `/admin/songs/${song.id}?tab=Video`, color: "blue" } : null,
           hasOutreach ? { label: "Active Outreach", href: `/admin?view=outreach&song=${song.id}`, color: "green" } : null].filter(Boolean) as Array<{label:string;href:string;color:string}>;
         const nextAction = song.next_action?.trim();
         const task = song.linkedTask && !generatedProfileTask(song.linkedTask.title) ? song.linkedTask : null;
