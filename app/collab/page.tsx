@@ -9,6 +9,7 @@ import { releaseAudioSrc } from "@/components/brand-pitch/artistRelease";
 import type { ArtistRelease } from "@/components/brand-pitch/artistRelease";
 import { getSongBySlug } from "@/lib/songs-consolidated";
 import { getCollabInviteSession } from "@/lib/collabAccess";
+import CollabAccessGate from "@/components/collab/CollabAccessGate";
 
 export const dynamic = "force-dynamic";
 
@@ -191,16 +192,14 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
 
 export default async function CollabPage() {
   const inviteSession = await getCollabInviteSession();
+  if (!inviteSession) return <CollabAccessGate />;
   let musicVideos: Array<{ id: string; song_id: string; public_concept: string; public_status: string; songs?: { title: string; slug: string } }> = [];
   try {
     const { data } = await getSupabaseAdmin().from("music_video_projects")
       .select("id,song_id,public_concept,public_status,songs(title,slug)").eq("visibility", "public").order("updated_at", { ascending: false });
     musicVideos = (data || []).map((project) => ({ ...project, songs: Array.isArray(project.songs) ? project.songs[0] : project.songs })) as unknown as typeof musicVideos;
   } catch (error) { console.error("[collab] Could not load public music video projects:", error); }
-  const catalog = inviteSession
-    ? await fetchArtistSongs()
-    : await fetchArtistSongs([...new Set(musicVideos.map(project => project.song_id))]);
-  if (!inviteSession) return <CollabGallery artistReleases={catalog.released} unreleasedSongs={catalog.unreleased} defaultView="video" invitedDisplayName="" invitedEmail="" musicVideos={musicVideos} canViewFeatures={false} />;
+  const catalog = await fetchArtistSongs();
   const allCatalogSongs = [...catalog.released, ...catalog.unreleased];
   const invitedSong = inviteSession.scope === "song" && inviteSession.song_id
     ? allCatalogSongs.find((song) => song.databaseId === inviteSession.song_id && song.readyForCollab === true) || null

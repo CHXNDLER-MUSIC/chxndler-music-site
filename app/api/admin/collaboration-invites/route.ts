@@ -78,7 +78,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "The new link could not safely replace the existing invitation." }, { status: 500 });
   }
   const base = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
-  return NextResponse.json({ invitation: data, link: `${base}/collab/invite/${token}` });
+  const link = scope === "catalog" ? `${base}/collab` : `${base}/collab/invite/${token}`;
+  return NextResponse.json({ invitation: data, link });
 }
 
 export async function PATCH(request: Request) {
