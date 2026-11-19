@@ -26,6 +26,7 @@ export function trackKeyFromSlug(slug?: string): string | null {
     "ocean-girl-acoustic": "OCEAN_GIRL_ACOUSTIC",
     "ocean-girl-remix": "OCEAN_GIRL_REMIX",
     "paris": "PARIS",
+    "playdough": "PLAYDOUGH",
     "pokemon": "POKEMON",
     "were-just-friends": "WJF",
     "were-just-friends-dmvrco-remix": "WJF_DMVRCO",

@@ -3,9 +3,40 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { songs as catalog } from "@/lib/songs-consolidated";
 import { supabaseTrackUrl } from "@/lib/supabaseTrackUrl";
+import { releaseAudioSrc } from "@/components/brand-pitch/artistRelease";
 
 type SongInfo = { title: string; key: string; capo: string; shape: string };
 type PracticeEntry = SongInfo & { id: string; lyrics: string };
+function PracticeAudioButton({ label, src }: { label: string; src: string }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
+  async function toggle() {
+    const audio = audioRef.current;
+    if (!audio || unavailable) return;
+    if (audio.paused) {
+      try { await audio.play(); setUnavailable(false); }
+      catch { setUnavailable(true); setPlaying(false); }
+    } else audio.pause();
+  }
+  return <div className="flex flex-col items-start gap-1">
+    <audio ref={audioRef} src={src} preload="none" className="sr-only" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} onError={() => { setUnavailable(true); setPlaying(false); }}/>
+    <button type="button" onClick={() => void toggle()} disabled={unavailable} aria-label={`${playing ? "Pause" : "Play"} ${label}`} className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-45 ${label === "Instrumental" ? "border-sky-300/25 bg-sky-300/[.08] text-sky-200 hover:bg-sky-300/[.14]" : "border-[#FD52AF]/30 bg-[#FD52AF]/[.09] text-[#ff9dcd] hover:bg-[#FD52AF]/[.16]"}`}>
+      <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor">{playing ? <path d="M5 4h3.5v12H5zm6.5 0H15v12h-3.5z"/> : <path d="M5 3.5v13l11-6.5-11-6.5Z"/>}</svg>{playing ? "Pause" : label}
+    </button>
+    {unavailable && <span role="status" className="text-[.65rem] text-white/40">Audio unavailable</span>}
+  </div>;
+}
+function PracticeLyricsEditor({ value, onChange, title }: { value: string; onChange: (value: string) => void; title: string }) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [value]);
+  return <textarea ref={textareaRef} aria-label={`Lyrics and practice notes for ${title}`} value={value} onChange={event => onChange(event.target.value)} placeholder="Lyrics load automatically when available. Add practice notes here…" rows={1} className="mt-2 min-h-48 w-full resize-none overflow-hidden rounded-lg border border-white/10 bg-black/20 p-3 text-sm leading-6 text-white placeholder:text-white/25" />;
+}
 const catalogInfo: SongInfo[] = [
   { title: "ALMOST HUMAN", key: "A#", capo: "3", shape: "G" },
   { title: "ALONE", key: "E", capo: "3", shape: "C" }, { title: "ALONE (ACOUSTIC)", key: "E", capo: "3", shape: "C" },
@@ -119,23 +150,22 @@ export default function PracticeTab({ campaignSong = "" }: { campaignSong?: stri
         <button type="button" aria-haspopup="listbox" aria-expanded={songPickerOpen} onClick={() => setSongPickerOpen(open => !open)} className="flex h-14 w-full items-center justify-between gap-3 rounded-lg border border-white/15 bg-[#111116] px-4 text-left text-sm focus:border-[#ff66b4] focus:outline-none"><span style={{ color: selected ? keyColor(practiceInfoFor(selected)?.key || "") : undefined }}>{selected || `Choose a song to practice · ${choices.length} available`}</span><span className="text-[#ff66b4]">⌄</span></button>
         {songPickerOpen && <div className="absolute inset-x-0 top-full z-30 mt-2 max-h-80 overflow-hidden rounded-xl border border-white/15 bg-[#17171c] shadow-2xl">
           <input autoFocus type="search" value={songSearch} onChange={event => setSongSearch(event.target.value)} placeholder="Search songs…" aria-label="Search songs to practice" className="w-full border-b border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"/>
-          <div role="listbox" aria-label="Songs to practice" className="max-h-64 overflow-y-auto p-1.5">{filteredChoices.map(song => <button key={song.title} type="button" role="option" aria-selected={selected === song.title} onClick={() => { setSelected(song.title); setSongPickerOpen(false); }} className="flex w-full items-center justify-between gap-4 rounded-lg px-3 py-2.5 text-left text-sm transition hover:bg-white/[.07]" style={{ color: keyColor(song.key) }}><span className="font-semibold">{song.title}</span><span className="shrink-0 text-[.68rem] text-white/45">{song.key ? `Key ${song.key}` : "Key —"} · {song.capo ? `Capo ${song.capo}` : "Capo —"}</span></button>)}{!filteredChoices.length && <p className="px-3 py-5 text-center text-sm text-white/40">No songs found.</p>}</div>
+          <div role="listbox" aria-label="Songs to practice" className="max-h-64 overflow-y-auto p-1.5">{filteredChoices.map(song => <button key={song.title} type="button" role="option" aria-selected={selected === song.title} onClick={() => { setSelected(song.title); setSongPickerOpen(false); }} className="flex w-full flex-col items-start gap-1.5 rounded-lg px-3 py-2.5 text-left transition hover:bg-white/[.07]"><span className="text-sm font-bold" style={{ color: keyColor(song.key) }}>{song.title}</span><span className="flex flex-wrap gap-1.5 text-[.65rem]"><span className="rounded border border-violet-300/20 bg-violet-300/[.08] px-1.5 py-0.5 text-violet-200">Key: {song.key || "—"}</span><span className="rounded border border-sky-300/20 bg-sky-300/[.08] px-1.5 py-0.5 text-sky-200">Capo: {song.capo || "—"}</span><span className="rounded border border-amber-300/20 bg-amber-300/[.08] px-1.5 py-0.5 text-amber-200">Shape: {song.shape || "—"}</span></span></button>)}{!filteredChoices.length && <p className="px-3 py-5 text-center text-sm text-white/40">No songs found.</p>}</div>
         </div>}
       </div>
       <button type="button" onClick={addSong} disabled={!selected} aria-label="Add song to practice" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[#ff3ea5] text-4xl font-semibold text-black shadow-[0_0_22px_rgba(255,62,165,0.35)] transition hover:bg-[#ff66b4] hover:shadow-[0_0_30px_rgba(255,62,165,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff9dce] disabled:opacity-40">+</button>
       <span className="self-center text-xs text-white/40">{saved ? "Saved on this device" : "Autosaves as you edit"}</span>
     </div>
     {!entries.length ? <div className="rounded-xl border border-dashed border-white/15 p-10 text-center text-sm text-white/45">No songs added for this date yet. Choose one above and press +.</div> : <div className="space-y-4">{entries.map(entry => {
-      const song = trackFor(entry.title); const slug = song?.slug || slugify(entry.title); const instrumental = song ? supabaseTrackUrl(`${slug}-instrumental.mp3`) : "";
+      const song = trackFor(entry.title); const slug = song?.slug || slugify(entry.title); const original = song ? releaseAudioSrc(slug) : supabaseTrackUrl(`${slug}.mp3`); const instrumental = supabaseTrackUrl(`${slug}-instrumental.mp3`);
       return <article key={entry.id} className="overflow-hidden rounded-xl border border-white/10 bg-white/[.025]">
         <div className="flex flex-wrap items-center gap-4 p-4">
           {song?.cover && <img src={song.cover} alt={`${entry.title} cover art`} className="h-16 w-16 rounded-lg object-cover" />}
           <div className="min-w-[10rem] flex-1"><h3 className="font-bold" style={{ color: keyColor(entry.key) }}>{entry.title}</h3><div className="mt-2 flex flex-wrap gap-2 text-xs"><span className="rounded-md border border-violet-300/20 bg-violet-300/[.09] px-2 py-1 text-violet-200">Key: {entry.key || "—"}</span><span className="rounded-md border border-sky-300/20 bg-sky-300/[.09] px-2 py-1 text-sky-200">Capo: {entry.capo || "—"}</span><span className="rounded-md border border-amber-300/20 bg-amber-300/[.09] px-2 py-1 text-amber-200">Shape: {entry.shape || "—"}</span></div></div>
-          {song?.sources?.[0]?.src && <a href={song.sources[0].src} target="_blank" rel="noreferrer" className="rounded-lg border border-white/15 px-3 py-2 text-xs text-white/70">Full song ↗</a>}
+          <div className="flex flex-wrap items-center gap-2"><PracticeAudioButton label="Play" src={original}/><PracticeAudioButton label="Instrumental" src={instrumental}/></div>
           <button type="button" onClick={() => persist(entries.filter(item => item.id !== entry.id))} className="rounded-lg px-3 py-2 text-xs text-white/40 hover:text-red-300">Remove</button>
         </div>
-        {song && <div className="border-t border-white/10 px-4 py-3"><p className="mb-2 text-[.65rem] font-bold uppercase tracking-[.15em] text-white/40">Instrumental · if available</p><audio controls preload="none" src={instrumental} className="h-9 w-full max-w-md" onError={event => { event.currentTarget.hidden = true; const msg = event.currentTarget.nextElementSibling as HTMLElement | null; if (msg) msg.hidden = false; }} /><p hidden className="text-xs text-white/40">No instrumental file found at the standard song path.</p></div>}
-        <div className="border-t border-white/10 p-4"><label className="mb-2 block text-[.65rem] font-bold uppercase tracking-[.15em] text-white/40">Lyrics / practice notes</label><textarea value={entry.lyrics} onChange={event => persist(entries.map(item => item.id === entry.id ? { ...item, lyrics: event.target.value } : item))} placeholder="Lyrics load automatically when available. Add practice notes here…" rows={8} className="w-full resize-y rounded-lg border border-white/10 bg-black/20 p-3 text-sm leading-6 text-white placeholder:text-white/25" /></div>
+        <div className="border-t border-white/10 p-4"><label className="block text-[.65rem] font-bold uppercase tracking-[.15em] text-white/40">Lyrics / practice notes · Auto-saved</label><PracticeLyricsEditor title={entry.title} value={entry.lyrics} onChange={value => persist(entries.map(item => item.id === entry.id ? { ...item, lyrics: value } : item))}/></div>
       </article>;
     })}</div>}
   </section>;

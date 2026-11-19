@@ -161,6 +161,8 @@ export const TRACKS = {
   OCEAN_GIRL_ACOUSTIC: { mp3: S("ocean-girl-acoustic.mp3"), opus: S("ocean-girl-acoustic.opus") },
   OCEAN_GIRL_REMIX: { mp3: S("ocean-girl-remix.mp3"), opus: S("ocean-girl-remix.opus") },
   PARIS: { mp3: S("paris.mp3"), opus: S("paris.opus") },
+  // Uploaded filename is uppercase in storage.
+  PLAYDOUGH: { mp3: S("PLAYDOUGH.mp3") },
   POKEMON: { mp3: S("pokemon.mp3"), opus: S("pokemon.opus") },
   WJF: { mp3: S("we're-just-friends.mp3"), opus: S("we're-just-friends.opus") },
   WJF_DMVRCO: { mp3: S("we're-just-friends-dmvrco-remix.mp3"), opus: S("we're-just-friends-dmvrco-remix.opus") },
