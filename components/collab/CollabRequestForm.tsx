@@ -20,8 +20,6 @@ const contributionOptions = [
 const fieldClass = "mt-2 block h-12 w-full rounded-xl border border-white/[.12] bg-black/30 px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#FD52AF]/65 focus:ring-2 focus:ring-[#FD52AF]/15";
 
 export default function CollabRequestForm({ songId, title, artwork, invitedName, invitedEmail = "", initialContributionType = "", videoProjectId = "", close }: { songId: string; title: string; artwork: string; invitedName: string; invitedEmail?: string; initialContributionType?: string; videoProjectId?: string; close: () => void }) {
-  const [expandedTerms, setExpandedTerms] = useState(false);
-  const [acknowledged, setAcknowledged] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
@@ -89,7 +87,7 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
 
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const selectedContribution = contributionOptions.find(option => option.value === contributionType);
-  const canSubmit = validEmail && Boolean(selectedContribution) && acknowledged && !busy;
+  const canSubmit = validEmail && Boolean(selectedContribution) && !busy;
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -111,7 +109,6 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
           phone: data.get("phone"),
           contributionType,
           message: data.get("message"),
-          acknowledged,
           website: data.get("website"),
         }),
       });
@@ -126,7 +123,7 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
   }
 
   return <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/75 backdrop-blur-sm sm:items-center sm:p-5" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) closeRef.current(); }}>
-    <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="collab-form-title" aria-describedby="collab-form-intro" className="relative max-h-[100dvh] w-full max-w-[48rem] overflow-y-auto overscroll-contain rounded-t-3xl border border-white/[.12] bg-[#101014] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6 text-white shadow-[0_0_0_1px_rgba(253,82,175,.06),0_2rem_5rem_rgba(0,0,0,.6)] sm:max-h-[92dvh] sm:rounded-3xl sm:px-9 sm:pb-8 sm:pt-8">
+    <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="collab-form-title" className="relative max-h-[100dvh] w-full max-w-[48rem] overflow-y-auto overscroll-contain rounded-t-3xl border border-white/[.12] bg-[#101014] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6 text-white shadow-[0_0_0_1px_rgba(253,82,175,.06),0_2rem_5rem_rgba(0,0,0,.6)] sm:max-h-[92dvh] sm:rounded-3xl sm:px-9 sm:pb-8 sm:pt-8">
       {!done && <button type="button" onClick={close} aria-label="Close collaboration request" className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full text-lg text-white/45 transition hover:bg-white/[.06] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FD52AF]">×</button>}
       {done ? <div className="flex min-h-[24rem] flex-col items-center justify-center px-2 py-10 text-center">
         <span aria-hidden="true" className="mb-5 grid h-11 w-11 place-items-center rounded-full border border-[#FD52AF]/45 bg-[#FD52AF]/10 text-[#FD52AF]"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4 4L19 6"/></svg></span>
@@ -134,14 +131,11 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
         <p className="mt-3 max-w-md text-sm leading-6 text-white/60">Thanks for reaching out! I&apos;ll review your idea and get back to you soon.</p>
         <button type="button" onClick={close} className="mt-8 min-h-12 rounded-full bg-[#FD52AF] px-7 text-sm font-extrabold text-[#170d14] transition hover:shadow-[0_0_24px_rgba(253,82,175,.28)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Back to Music</button>
       </div> : <>
-        <header className="mb-7 pr-10 sm:mb-8 sm:pr-12">
-          {invitedName && <p className="mb-2 text-[.62rem] font-bold uppercase tracking-[.18em] text-[#FD52AF]">A personal invitation for {invitedName}</p>}
+        <header className="mb-6 pr-10 sm:mb-7 sm:pr-12">
           <h2 id="collab-form-title" className="text-2xl font-black leading-tight tracking-tight sm:text-3xl">COLLABORATE ON {title}</h2>
-          <p className="mt-2 text-base font-semibold text-white/90">Let&apos;s make something together.</p>
-          <p id="collab-form-intro" className="mt-1 text-sm leading-6 text-white/55"><em>Love this track? Tell me how you&apos;d like to be part of it.</em></p>
         </header>
 
-        <form onSubmit={submit} className="space-y-6">
+        <form onSubmit={submit} className="space-y-5">
           <input name="website" tabIndex={-1} autoComplete="off" className="absolute -left-[10000px] h-px w-px opacity-0" aria-hidden="true" />
           <div className="grid gap-5 sm:grid-cols-2">
             <label htmlFor="collab-email" className="block text-xs font-semibold text-white/75">Email address <span className="text-[#FD52AF]">*</span>
@@ -171,36 +165,24 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
             {isPublicVideoApplication && <p className="mt-2 text-[.68rem] text-white/40">This public project is accepting music video ideas.</p>}
           </fieldset>
 
-          <label htmlFor="collab-message" className="block text-xs font-semibold text-white/75">Your idea <span className="font-normal text-white/40">Optional</span>
-            <textarea id="collab-message" name="message" maxLength={1200} rows={3} placeholder="What are you imagining?" className="mt-2 block min-h-28 w-full resize-y rounded-xl border border-white/[.12] bg-black/30 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/30 focus:border-[#FD52AF]/65 focus:ring-2 focus:ring-[#FD52AF]/15"/>
+          <label htmlFor="collab-message" className="block text-sm font-semibold text-white/85">Your idea <span className="text-xs font-normal text-white/40">Optional</span>
+            <textarea id="collab-message" name="message" maxLength={1200} rows={4} placeholder="What are you imagining?" className="mt-2 block min-h-32 w-full resize-y rounded-xl border border-white/[.12] bg-black/30 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/30 focus:border-[#FD52AF]/65 focus:ring-2 focus:ring-[#FD52AF]/15"/>
           </label>
 
-          <section className="rounded-2xl border border-white/[.1] bg-white/[.02] p-4 sm:p-5" aria-labelledby="collab-guidelines-heading">
-            <h3 id="collab-guidelines-heading" className="text-sm font-bold text-white">Collaboration Guidelines</h3>
-            <p className="mt-1.5 text-xs leading-5 text-white/55">Your request is non-binding. Credits, ownership, royalties, and permissions will be agreed upon separately.</p>
-            <button type="button" aria-expanded={expandedTerms} aria-controls="collab-guidelines-details" onClick={() => setExpandedTerms(value => !value)} className="mt-3 min-h-8 rounded text-xs font-semibold text-[#FD52AF] transition hover:text-[#ff91c8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FD52AF]">{expandedTerms ? "Hide guidelines ↑" : "Read guidelines ↓"}</button>
-            {expandedTerms && <div id="collab-guidelines-details" className="mt-3 space-y-4 border-t border-white/[.08] pt-4">
-              <ul className="list-disc space-y-2 pl-5 text-xs leading-5 text-white/70">
-                <li>Unreleased recordings and demos must remain private. Do not share, upload, sample, distribute, or use the music without written authorization.</li>
-                <li>Songwriting splits, royalties, credits, ownership, and compensation must be agreed in writing before work begins.</li>
-                <li>Official release and distribution require written authorization from CHXNDLER.</li>
-                <li>This request is not a contract or permission to use, release, remix, or distribute the music.</li>
-              </ul>
-              <div className="space-y-3 border-t border-white/[.08] pt-4">
-                <p className="text-[.62rem] font-bold uppercase tracking-[.14em] text-white/40">Current approved terms · {termsVersion}</p>
-                <p className="text-xs leading-5 text-white/65"><strong className="text-white/85">Ownership.</strong> {termsText.ownership}</p>
-                <p className="text-xs leading-5 text-white/65"><strong className="text-white/85">Royalties.</strong> {termsText.royalties}</p>
-                <p className="text-xs leading-5 text-white/65"><strong className="text-white/85">Credits.</strong> {termsText.credits}</p>
-                <p className="text-xs leading-5 text-white/65"><strong className="text-white/85">Release rights.</strong> {termsText.release_rights}</p>
-                <p className="text-[.68rem] leading-5 text-white/45">These are collaboration guidelines, not a binding agreement. Any final rights, percentages, credits, compensation, and permissions will be recorded in a separate signed agreement.</p>
+          <section aria-labelledby="collab-note-heading" className="space-y-2 py-1">
+            <h3 id="collab-note-heading" className="text-sm font-semibold text-[#FD52AF]">A little note before we create</h3>
+            <p className="max-w-2xl text-xs leading-5 text-white/55">Please keep unreleased music between us. If we decide to collaborate, we&apos;ll work out credits, splits, and compensation together before getting started.</p>
+            <details className="pt-0.5">
+              <summary className="w-fit cursor-pointer list-none text-xs text-white/40 underline decoration-white/20 underline-offset-4 transition hover:text-[#FD52AF] hover:decoration-[#FD52AF]/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FD52AF]">View collaboration guidelines</summary>
+              <div className="mt-3 space-y-3 pl-3 text-xs leading-5 text-white/55">
+                <p className="text-[.65rem] font-semibold uppercase tracking-[.12em] text-white/35">Approved guidelines · {termsVersion}</p>
+                <p><span className="font-semibold text-white/70">Ownership.</span> {termsText.ownership}</p>
+                <p><span className="font-semibold text-white/70">Royalties.</span> {termsText.royalties}</p>
+                <p><span className="font-semibold text-white/70">Credits.</span> {termsText.credits}</p>
+                <p><span className="font-semibold text-white/70">Release rights.</span> {termsText.release_rights}</p>
               </div>
-            </div>}
+            </details>
           </section>
-
-          <label className="flex cursor-pointer items-start gap-3 text-xs leading-5 text-white/70">
-            <input type="checkbox" name="acknowledged" required checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#FD52AF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FD52AF]"/>
-            <span>I understand this is a collaboration request, not permission to use or release this track. <span className="text-[#FD52AF]">*</span></span>
-          </label>
 
           {error && <p role="alert" className="rounded-xl border border-rose-300/20 bg-rose-300/[.06] px-4 py-3 text-sm leading-5 text-rose-100">{error}</p>}
           <button type="submit" disabled={!canSubmit} className="min-h-14 w-full rounded-full bg-[#FD52AF] px-6 py-4 text-sm font-extrabold text-[#170d14] shadow-[0_8px_24px_rgba(253,82,175,.14)] transition hover:shadow-[0_0_28px_rgba(253,82,175,.3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none">{busy ? "Sending your request…" : "Send Collaboration Request →"}</button>

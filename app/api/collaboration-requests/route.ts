@@ -40,8 +40,8 @@ export async function POST(request: Request) {
     const artistName = invite
       ? invite.display_name
       : publicVideoApplication ? submittedEmail.split("@")[0] : "";
-    if (!validateCollaborationSubmission({ songId, inviteId: invite?.id, allowPublicApplication: publicVideoApplication, submissionKey, termsVersion, artistName, email, contributionType: contribution, acknowledged: body.acknowledged })) {
-      return NextResponse.json({ error: "Check the required fields and acknowledgment." }, { status: 400 });
+    if (!validateCollaborationSubmission({ songId, inviteId: invite?.id, allowPublicApplication: publicVideoApplication, submissionKey, termsVersion, artistName, email, contributionType: contribution })) {
+      return NextResponse.json({ error: "Check the required fields and try again." }, { status: 400 });
     }
     const db = getSupabaseAdmin();
     const [{ data: song }, { data: terms }, videoProjectResult] = await Promise.all([
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       authorized_person_id: invite?.source === "authorized_person" ? invite.id : null,
       song_id: songId, music_video_project_id: isVideoApplication ? videoProjectId : null, portfolio_url: portfolio || profile || null, estimated_rate: estimatedRate || null, artist_name: artistName, email, profile_link: profile || null, phone: phone || null,
       contribution_type: contribution, message: message || null, terms_version: terms.version,
-      acknowledged_at: submittedAt, submitted_at: submittedAt,
+      acknowledged_at: null, submitted_at: submittedAt,
     }).select("id").single();
     if (error?.code === "23505") {
       const { data: prior } = await db.from("collaboration_requests").select("id").eq("submission_key", submissionKey).maybeSingle();
