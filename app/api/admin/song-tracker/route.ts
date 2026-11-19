@@ -23,13 +23,14 @@ export async function GET() {
   if (!auth) return unauthorized();
   if (!isAdminUser(auth.user)) return forbidden();
   const db = getSupabaseAdmin();
-  const [songWithReleaseDate, requests, videos, tasks, outreach, sync] = await Promise.all([
+  const [songWithReleaseDate, requests, videos, tasks, outreach, sync, brandArts] = await Promise.all([
     db.from("songs").select("id,title,slug,is_released,release_date,updated_at,audio_status,collaboration_opportunities,video_concept,collaboration_enabled,production_stages,production_tracking_started,ready_for_collab,collab_interests,collaboration_description,workflow_stage,next_action,next_action_manual,created_at,sky_video_url,youtube_music_video_url,spotify_url,karaoke_url,practice_notes").order("title", { ascending: true }),
     db.from("collaboration_requests").select("id,song_id,status,submitted_at,contribution_type"),
     db.from("music_video_projects").select("id,song_id,status,visibility,next_action,assigned_videographer,public_concept,public_status,project_type,collaboration_stage"),
     db.from("admin_tasks").select("id,song_id,title,status,priority,due_at,created_at").neq("status", "done").not("song_id", "is", null).order("due_at", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false }),
     db.from("outreach_records").select("id,song_id,status,category").not("song_id", "is", null),
     db.from("sync_opportunities").select("id,song_id,status").not("song_id", "is", null),
+    db.from("brand_pitches").select("song_title,cover_art_path,hero_art_path").not("cover_art_path", "is", null),
   ]);
   let songs: any = songWithReleaseDate;
   let releaseDateAvailable = true;
@@ -52,6 +53,12 @@ export async function GET() {
   const taskRows = tasks.error ? [] : tasks.data || [];
   const outreachRows = outreach.error ? [] : outreach.data || [];
   const syncRows = sync.error ? [] : sync.data || [];
+  const brandArtByTitle = new Map<string, string>();
+  for (const row of brandArts.data || []) {
+    const key = normalizeSongTitle(row.song_title);
+    const path = String(row.cover_art_path || row.hero_art_path || "").trim();
+    if (key && path && !brandArtByTitle.has(key)) brandArtByTitle.set(key, path);
+  }
   const activePitchStatuses = new Set(["Planned", "Sent", "Follow-up"]);
   const terminalSyncStatuses = new Set(["Licensed", "Passed", "Declined", "Closed"]);
   return NextResponse.json({ releaseDateAvailable, updatedAtAvailable, songs: (songs.data || []).filter(song => !HIDDEN_ADMIN_SONG_TITLES.has(normalizeSongTitle(song.title))).map(song => {
@@ -61,6 +68,7 @@ export async function GET() {
       + syncRows.filter(row => row.song_id === song.id && !!row.status && !terminalSyncStatuses.has(row.status)).length;
     return ({
     ...song,
+    brand_cover_path: brandArtByTitle.get(normalizeSongTitle(song.title)) || null,
     release_date: song.release_date ?? null,
     production_stages: song.production_stages || {},
     production_tracking_started: song.production_tracking_started === true,
