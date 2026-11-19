@@ -155,6 +155,7 @@ function CollabGalleryContent({
   };
 
   const closeDetail = () => {
+    playCollabClickSound();
     audio.pause();
     setSelected(null);
   };
@@ -286,7 +287,7 @@ function CollabGalleryContent({
             showLyricsSection={selected.from === "collabs"}
             showInstrumentalControl={selected.from === "collabs"}
             meaningUrlOverride={selected.from === "collabs" ? selected.meaningUrl : null}
-            showCollabRequest={selected.from === "collabs" || selected.release.collaborationEnabled === true}
+            showCollabRequest={selected.from === "collabs" || selected.release.collaborationEnabled === true || !selected.release.videoEmbedUrl}
             showStreamingLinks={selected.from === "released"}
             invitedName={invitedDisplayName}
           />

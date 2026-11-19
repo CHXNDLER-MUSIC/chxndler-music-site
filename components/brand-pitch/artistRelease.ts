@@ -9,6 +9,9 @@ import type { NowPlaying } from "@/lib/mediaSession";
 export type ArtistRelease = {
   databaseId?: string;
   collaborationEnabled?: boolean;
+  readyForCollab?: boolean;
+  collaborationInterests?: string[];
+  collaborationDescription?: string;
   releaseDate?: string | null;
   slug: string;
   title: string;

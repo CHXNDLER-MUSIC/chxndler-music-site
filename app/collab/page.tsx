@@ -41,7 +41,7 @@ async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleas
   try {
     const supabase = getSupabaseAdmin();
     const [initialSongsRes, cardsRes] = await Promise.all([
-      supabase.from("songs").select("id, slug, title, is_released, collaboration_enabled, release_date, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url"),
+      supabase.from("songs").select("id, slug, title, is_released, collaboration_enabled, ready_for_collab, collab_interests, collaboration_description, release_date, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url"),
       supabase.from("cards").select("card_name"),
     ]);
     // Keep the collaborator catalog available if optional metadata columns
@@ -51,7 +51,7 @@ async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleas
     if (initialSongsRes.error) {
       const optionalFallback = await supabase.from("songs").select("id, slug, title, is_released, collaboration_enabled, spotify_url, apple_music_url, youtube_music_video_url, sky_video_url");
       if (!optionalFallback.error) {
-        songRows = (optionalFallback.data || []).map((row) => ({ ...row, release_date: null }));
+        songRows = (optionalFallback.data || []).map((row) => ({ ...row, ready_for_collab: false, collab_interests: [], collaboration_description: "", release_date: null }));
       } else {
         const coreFallback = await supabase.from("songs").select("id, slug, title, is_released");
         if (!coreFallback.error) {
@@ -83,7 +83,10 @@ async function fetchArtistSongs(): Promise<{ released: ArtistRelease[]; unreleas
           release: {
             slug,
             databaseId: String(row.id),
-            collaborationEnabled: row.collaboration_enabled === true,
+            collaborationEnabled: row.ready_for_collab === true,
+            readyForCollab: row.ready_for_collab === true,
+            collaborationInterests: Array.isArray(row.collab_interests) ? row.collab_interests : [],
+            collaborationDescription: typeof row.collaboration_description === "string" ? row.collaboration_description : "",
             releaseDate: typeof row.release_date === "string" ? row.release_date : null,
             title,
             artist: "CHXNDLER",
@@ -227,7 +230,7 @@ export default async function CollabPage() {
 
   const catalog = await fetchArtistSongs();
   const invitedSong = inviteSession.song_id
-    ? [...catalog.released, ...catalog.unreleased].find((song) => song.databaseId === inviteSession.song_id)
+    ? [...catalog.released, ...catalog.unreleased].find((song) => song.databaseId === inviteSession.song_id && song.readyForCollab === true)
     : null;
   const released = catalog.released.filter((song) => !inviteSession.song_id || song.databaseId !== inviteSession.song_id).map((song) => ({
     ...song,
@@ -243,8 +246,8 @@ export default async function CollabPage() {
     // release flag changed after the invite was created.
     ? invitedSong ? [invitedSong] : []
     : inviteSession.source === "authorized_person"
-      ? catalog.unreleased
-      : catalog.unreleased.filter((song) => song.collaborationEnabled);
+      ? catalog.unreleased.filter((song) => song.readyForCollab === true)
+      : catalog.unreleased.filter((song) => song.readyForCollab === true);
   const invitedProjects = invitedSong
     ? projects.filter((project) => normalizeTitle(project.title) === normalizeTitle(invitedSong.title))
     : inviteSession.song_id ? [] : projects;

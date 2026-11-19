@@ -97,6 +97,7 @@ export default function CollectibleViewer({
         onClose={() => setOpen(false)}
         label={songTitle}
         kind="Collectible Card"
+        hideHeader={songTitle.toLowerCase().includes("colors of our home (bluma game soundtrack)")}
         accent={accent}
         maxWidthClassName="max-w-[34rem]"
       >

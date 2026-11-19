@@ -30,6 +30,7 @@ export default function MediaViewerModal({
   accent,
   headerExtra,
   header,
+  hideHeader = false,
   maxWidthClassName,
   background,
   children,
@@ -53,6 +54,8 @@ export default function MediaViewerModal({
    * above a larger headline) than the standard big-title/small-caption
    * layout. `label`/`kind` are still used for the dialog's aria-label. */
   header?: React.ReactNode;
+  /** Suppresses the visual title/caption while retaining the dialog label. */
+  hideHeader?: boolean;
   /** Overrides the default `max-w-[40rem]` — for content wider than a
    * single-media viewer, e.g. a multi-column grid. */
   maxWidthClassName?: string;
@@ -177,7 +180,7 @@ export default function MediaViewerModal({
                 </span>
               </button>
 
-              {header || (
+              {hideHeader ? null : header || (
                 <div className="pr-[2.5rem]">
                   <h2 className="text-[1.25rem] sm:text-[1.5rem] font-bold tracking-tight text-white">{label}</h2>
                   <p className="mt-[0.25rem] text-[0.6875rem] font-semibold tracking-[0.25em] uppercase text-white/50">
@@ -188,7 +191,7 @@ export default function MediaViewerModal({
 
               {headerExtra}
 
-              <div className="mt-[1.5rem]">{children}</div>
+              <div className={hideHeader ? "mt-0" : "mt-[1.5rem]"}>{children}</div>
             </div>
           </motion.div>
         </motion.div>

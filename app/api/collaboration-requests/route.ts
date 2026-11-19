@@ -22,10 +22,10 @@ export async function POST(request: Request) {
     }
     const db = getSupabaseAdmin();
     const [{ data: song }, { data: terms }] = await Promise.all([
-      db.from("songs").select("id,title,slug,collaboration_enabled").eq("id", songId).maybeSingle(),
+      db.from("songs").select("id,title,slug,ready_for_collab").eq("id", songId).maybeSingle(),
       db.from("collaboration_terms").select("version").eq("version", termsVersion).eq("active", true).maybeSingle(),
     ]);
-    if (!song || song.collaboration_enabled !== true) return NextResponse.json({ error: "This invitation is invalid, expired, or disabled." }, { status: 403 });
+    if (!song || song.ready_for_collab !== true || (invite.source === "invite" && invite.song_id && invite.song_id !== songId)) return NextResponse.json({ error: "This invitation is invalid, expired, or disabled for this song." }, { status: 403 });
     if (!terms) return NextResponse.json({ error: "Collaboration terms are not configured." }, { status: 503 });
     const ip = request.headers.get("x-real-ip")?.trim() || request.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() || "unknown";
     const ipHash = createHash("sha256").update(`${process.env.SUPABASE_SERVICE_ROLE_KEY}:${ip}`).digest("hex");

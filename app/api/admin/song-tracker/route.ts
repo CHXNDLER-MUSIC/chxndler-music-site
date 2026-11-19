@@ -9,13 +9,13 @@ export async function GET() {
   if (!isAdminUser(auth.user)) return forbidden();
   const db = getSupabaseAdmin();
   const [songResult, requests, videos] = await Promise.all([
-    db.from("songs").select("id,title,slug,is_released,release_date,collaboration_enabled,production_stages,created_at,sky_video_url,youtube_music_video_url").order("title", { ascending: true }),
+    db.from("songs").select("id,title,slug,is_released,release_date,collaboration_enabled,production_stages,ready_for_collab,collab_interests,collaboration_description,workflow_stage,next_action,next_action_manual,created_at,sky_video_url,youtube_music_video_url").order("title", { ascending: true }),
     db.from("collaboration_requests").select("id,song_id,status,submitted_at,contribution_type"),
     db.from("music_video_projects").select("id,song_id,status,visibility,next_action"),
   ]);
   let songs: any = songResult;
   // Keep the tracker readable while optional schema migrations are being applied.
-  if (songs.error && /production_stages|column/i.test(songs.error.message)) {
+  if (songs.error && /production_stages|ready_for_collab|column/i.test(songs.error.message)) {
     songs = await db.from("songs").select("id,title,slug,is_released,release_date,collaboration_enabled,created_at,sky_video_url,youtube_music_video_url").order("title", { ascending: true });
   }
   if (songs.error && /release_date|column/i.test(songs.error.message)) {
@@ -29,6 +29,12 @@ export async function GET() {
     ...song,
     release_date: song.release_date ?? null,
     production_stages: song.production_stages || { concept: false, lyrics: false, recorded: false, mix: false, mastered: false, music_video: false },
+    ready_for_collab: song.ready_for_collab === true,
+    collab_interests: Array.isArray(song.collab_interests) ? song.collab_interests : [],
+    collaboration_description: song.collaboration_description || "",
+    workflow_stage: song.workflow_stage || "Idea",
+    next_action: song.next_action || "",
+    next_action_manual: song.next_action_manual === true,
     requests: requestRows.filter(row => row.song_id === song.id),
     musicVideo: videoRows.find(row => row.song_id === song.id) || null,
   })) });
@@ -62,21 +68,36 @@ export async function PATCH(request: Request) {
   if (!auth) return unauthorized();
   if (!isAdminUser(auth.user)) return forbidden();
   const body = await request.json();
+  const db = getSupabaseAdmin();
+  if (Array.isArray(body.songIds) && typeof body.ready_for_collab === "boolean") {
+    const ids = [...new Set(body.songIds.filter((id: unknown) => typeof id === "string" && /^[0-9a-f-]{36}$/i.test(id)))].slice(0, 100);
+    if (!ids.length) return NextResponse.json({ error: "Select at least one song." }, { status: 400 });
+    const { error } = await db.from("songs").update({ ready_for_collab: body.ready_for_collab }).in("id", ids);
+    if (error) return NextResponse.json({ error: "Apply the music workspace migration before changing Ready for Collab." }, { status: 503 });
+    return NextResponse.json({ ok: true, updated: ids.length });
+  }
   if (typeof body.songId !== "string" || !/^[0-9a-f-]{36}$/i.test(body.songId)) return NextResponse.json({ error: "Invalid song." }, { status: 400 });
   const update: Record<string, any> = {};
   if (typeof body.is_released === "boolean") update.is_released = body.is_released;
   if (typeof body.collaboration_enabled === "boolean") update.collaboration_enabled = body.collaboration_enabled;
+  if (typeof body.ready_for_collab === "boolean") update.ready_for_collab = body.ready_for_collab;
+  if (Array.isArray(body.collab_interests) && body.collab_interests.every((value: unknown) => typeof value === "string")) {
+    const allowed = new Set(["Feature / Vocals", "Remix", "Music Video", "Other"]);
+    update.collab_interests = [...new Set(body.collab_interests.filter((value: string) => allowed.has(value)))];
+  }
+  if (typeof body.collaboration_description === "string") update.collaboration_description = body.collaboration_description.trim().slice(0, 500);
+  if (["Idea", "Writing", "Recording", "Mixing", "Mastering", "Ready"].includes(body.workflow_stage)) update.workflow_stage = body.workflow_stage;
+  if (typeof body.next_action === "string") { update.next_action = body.next_action.trim().slice(0, 240); update.next_action_manual = true; }
   if (body.release_date === null || (typeof body.release_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.release_date))) update.release_date = body.release_date;
   const stageKeys = ["concept", "lyrics", "recorded", "mix", "mastered", "music_video"] as const;
   if (body.stage !== undefined) {
     if (!stageKeys.includes(body.stage) || typeof body.complete !== "boolean") return NextResponse.json({ error: "Invalid production stage." }, { status: 400 });
-    const db = getSupabaseAdmin();
     const { data: song, error: readError } = await db.from("songs").select("production_stages").eq("id", body.songId).single();
     if (readError || !song) return NextResponse.json({ error: "Production stages are unavailable. Apply the song production stages migration." }, { status: 503 });
     update.production_stages = { ...(song.production_stages || {}), [body.stage]: body.complete };
   }
   if (!Object.keys(update).length) return NextResponse.json({ error: "No supported changes provided." }, { status: 400 });
-  const { error } = await getSupabaseAdmin().from("songs").update(update).eq("id", body.songId);
-  if (error) return NextResponse.json({ error: "Unable to update this song." }, { status: 500 });
+  const { error } = await db.from("songs").update(update).eq("id", body.songId);
+  if (error) return NextResponse.json({ error: /ready_for_collab|workflow_stage|column/i.test(error.message) ? "Apply the music workspace migration before saving these fields." : "Unable to update this song." }, { status: /ready_for_collab|workflow_stage|column/i.test(error.message) ? 503 : 500 });
   return NextResponse.json({ ok: true });
 }
