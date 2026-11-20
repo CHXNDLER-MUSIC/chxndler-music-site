@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { getApiUser, isAdminUser, unauthorized, forbidden } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
-const fields = ["venue", "neighborhood", "address", "city", "first_name", "last_name", "website", "contact_email", "phone", "capacity", "subject", "email_copy", "form_url", "date_sent", "notes", "performed", "contact_id", "song_id"] as const;
+const fields = ["venue", "neighborhood", "address", "city", "first_name", "last_name", "website", "contact_email", "phone", "capacity", "subject", "email_copy", "form_url", "date_sent", "notes", "performed", "video_created", "contact_id", "song_id"] as const;
 
 function valuesFrom(body: Record<string, unknown>) {
   const values: Record<string, string | boolean | null> = {};
   for (const field of fields) {
     const value = body[field];
-    if (field === "performed") {
+    if (field === "performed" || field === "video_created") {
       if (typeof value === "boolean") values[field] = value;
     } else if (field === "contact_id" || field === "song_id") {
       if (value === "") values[field] = null;

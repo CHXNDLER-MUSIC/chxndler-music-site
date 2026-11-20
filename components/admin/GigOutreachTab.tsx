@@ -6,15 +6,15 @@ type Venue = {
   id: string; venue: string; contact_id: string | null; song_id: string | null; neighborhood: string; address: string; city: string;
   first_name: string; last_name: string; website: string; contact_email: string;
   phone: string; capacity: string; subject: string; email_copy: string;
-  form_url: string; date_sent: string | null; notes: string; performed: boolean;
+  form_url: string; date_sent: string | null; notes: string; performed: boolean; video_created: boolean;
 };
 
 const blank: Omit<Venue, "id"> = {
   venue: "", contact_id: null, song_id: null, neighborhood: "", address: "", city: "", first_name: "", last_name: "",
   website: "", contact_email: "", phone: "", capacity: "", subject: "", email_copy: "",
-  form_url: "", date_sent: "", notes: "", performed: false,
+  form_url: "", date_sent: "", notes: "", performed: false, video_created: false,
 };
-const fields: { key: keyof Omit<Venue, "id" | "performed">; label: string; wide?: boolean; type?: string }[] = [
+const fields: { key: keyof Omit<Venue, "id" | "performed" | "video_created">; label: string; wide?: boolean; type?: string }[] = [
   { key: "venue", label: "Venue" }, { key: "neighborhood", label: "Neighborhood" },
   { key: "address", label: "Address", wide: true }, { key: "city", label: "City" },
   { key: "first_name", label: "First name" }, { key: "last_name", label: "Last name" },
@@ -68,6 +68,24 @@ export default function GigOutreachTab() {
     finally { setSaving(false); }
   };
 
+  const toggleVideoCreated = async (row: Venue) => {
+    setError("");
+    const video_created = !row.video_created;
+    setRecords(rows => rows.map(item => item.id === row.id ? { ...item, video_created } : item));
+    try {
+      const response = await fetch("/api/admin/gig-outreach", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...row, video_created }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Unable to update video status.");
+      setRecords(rows => rows.map(item => item.id === row.id ? result.record : item));
+    } catch (err) {
+      setRecords(rows => rows.map(item => item.id === row.id ? row : item));
+      setError(err instanceof Error ? err.message : "Unable to update video status.");
+    }
+  };
+
   const visible = records.filter(row => Object.values(row).some(value => String(value ?? "").toLowerCase().includes(query.trim().toLowerCase())));
   const editor = (value: Omit<Venue, "id">, change: (next: Omit<Venue, "id">) => void, id?: string) => (
     <form onSubmit={event => void save(event, id)} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -80,6 +98,7 @@ export default function GigOutreachTab() {
           <input required={field.key === "venue"} type={field.type || "text"} value={value[field.key] || ""} onChange={event => change({ ...value, [field.key]: event.target.value })} className={inputClass} />}
       </label>)}
       <label className="flex items-center gap-2 text-sm text-white/70"><input type="checkbox" checked={value.performed} onChange={event => change({ ...value, performed: event.target.checked })} className="accent-[#ff3ea5]" /> Performed here</label>
+      <label className="flex items-center gap-2 text-sm text-white/70"><input type="checkbox" checked={value.video_created} onChange={event => change({ ...value, video_created: event.target.checked })} className="accent-[#ff3ea5]" /> Video created</label>
       <div className="flex gap-2 sm:col-span-2 lg:col-span-3"><button disabled={saving} className="rounded-lg bg-[#ff3ea5] px-4 py-2 text-sm font-bold text-black disabled:opacity-50">{saving ? "Saving…" : id ? "Save changes" : "Add venue"}</button>{id && <button type="button" onClick={() => setEditing(null)} className="rounded-lg border border-white/15 px-4 py-2 text-sm">Cancel</button>}</div>
     </form>
   );
@@ -90,14 +109,16 @@ export default function GigOutreachTab() {
     <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search venues, neighborhoods, contacts, notes…" className={`${inputClass} mb-4`} />
     {loading ? <p className="p-8 text-center text-sm text-white/45">Loading venues…</p> : <div className="overflow-x-auto rounded-xl border border-white/10">
       <table className="w-full min-w-[780px] border-collapse text-left text-sm">
-        <thead className="bg-white/[.06] text-[.65rem] uppercase tracking-[.12em] text-white/55"><tr>{["Venue", "Neighborhood", "Contact", "Date sent", "Performed", "Details"].map(label => <th key={label} className="px-4 py-3">{label}</th>)}</tr></thead>
+        <thead className="bg-white/[.06] text-[.65rem] uppercase tracking-[.12em] text-white/55"><tr>{["Venue", "Neighborhood", "Contact", "Date sent", "Performed", "Video created", "Details"].map(label => <th key={label} className="px-4 py-3">{label}</th>)}</tr></thead>
         <tbody>{visible.map((row, index) => <Fragment key={row.id}>
           <tr className={index % 2 ? "bg-white/[.015]" : ""}>
             <td className="border-t border-white/[.07] px-4 py-3 font-bold text-white">{row.venue}</td><td className="border-t border-white/[.07] px-4 py-3 text-white/65">{row.neighborhood || "—"}</td>
             <td className="border-t border-white/[.07] px-4 py-3 text-white/65">{row.contact_email || [row.first_name, row.last_name].filter(Boolean).join(" ") || "—"}</td><td className="border-t border-white/[.07] px-4 py-3 text-white/65">{row.date_sent || "—"}</td>
-            <td className="border-t border-white/[.07] px-4 py-3"><span className={row.performed ? "text-emerald-300" : "text-white/35"}>{row.performed ? "Yes" : "No"}</span></td><td className="border-t border-white/[.07] px-4 py-3"><button onClick={() => { setDraft({ ...row }); setEditing(editing === row.id ? null : row.id); }} className="text-xs font-bold text-[#ff78ba]">{editing === row.id ? "Close" : "Edit"}</button></td>
+            <td className="border-t border-white/[.07] px-4 py-3"><span className={row.performed ? "text-emerald-300" : "text-white/35"}>{row.performed ? "Yes" : "No"}</span></td>
+            <td className="border-t border-white/[.07] px-4 py-3"><button type="button" onClick={() => void toggleVideoCreated(row)} aria-label={`${row.video_created ? "Mark video as not created" : "Mark video as created"} for ${row.venue}`} className={`text-xs font-semibold ${row.video_created ? "text-emerald-300" : "text-white/35"}`}>{row.video_created ? "Yes" : "No"}</button></td>
+            <td className="border-t border-white/[.07] px-4 py-3"><button onClick={() => { setDraft({ ...row }); setEditing(editing === row.id ? null : row.id); }} className="text-xs font-bold text-[#ff78ba]">{editing === row.id ? "Close" : "Edit"}</button></td>
           </tr>
-          {editing === row.id && <tr key={`${row.id}-edit`}><td colSpan={6} className="border-t border-white/10 bg-white/[.025] p-4">{editor(draft, setDraft, row.id)}</td></tr>}
+          {editing === row.id && <tr key={`${row.id}-edit`}><td colSpan={7} className="border-t border-white/10 bg-white/[.025] p-4">{editor(draft, setDraft, row.id)}</td></tr>}
         </Fragment>)}</tbody>
       </table>
       {!visible.length && <p className="p-8 text-center text-sm text-white/45">{records.length ? "No matches. Try another search." : "No venues yet. Add the first one above."}</p>}
