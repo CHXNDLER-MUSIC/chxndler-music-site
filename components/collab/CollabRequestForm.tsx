@@ -88,6 +88,9 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
 
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const selectedContribution = contributionOptions.find(option => option.value === contributionType);
+  const visibleContributionOptions = songId
+    ? contributionOptions.filter(option => option.value !== "Songwriting")
+    : contributionOptions;
   const canSubmit = validEmail && Boolean(selectedContribution) && !busy;
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -154,7 +157,7 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
           <fieldset>
             <legend className="mb-3 text-xs font-semibold text-white/75">How would you like to collaborate? <span className="text-[#FD52AF]">*</span></legend>
             <div role="radiogroup" aria-label="How would you like to collaborate?" className="grid gap-2 sm:grid-cols-2">
-              {contributionOptions.map(option => {
+              {visibleContributionOptions.map(option => {
                 const selected = contributionType === option.value;
                 const disabled = isPublicVideoApplication && option.value !== "Music Video";
                 return <label key={option.value} className={`relative flex min-h-[4.25rem] cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 transition focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#FD52AF] ${disabled ? "cursor-not-allowed opacity-35" : selected ? "border-[#FD52AF]/60 bg-[#FD52AF]/[.08]" : "border-white/[.1] bg-white/[.02] hover:border-white/20 hover:bg-white/[.04]"}`}>
