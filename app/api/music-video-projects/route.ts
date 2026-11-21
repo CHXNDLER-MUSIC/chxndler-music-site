@@ -39,10 +39,16 @@ export async function POST(request: Request) {
   const { data: linked, error: linkReadError } = await db.from("content_items").select("id").eq("music_video_project_id", project.id).maybeSingle();
   if (linkReadError) return NextResponse.json({ error: "Project created, but the linked Content entry could not be checked. Apply the content workspace migration." }, { status: 503 });
   if (!linked) {
-  const { data: song } = await db.from("songs").select("title").eq("id", songId).single();
+    const { data: checklistItem } = await db.from("content_items").select("id").eq("song_id", songId).eq("content_template_key", "official_music_video").is("music_video_project_id", null).maybeSingle();
+    if (checklistItem) {
+      const { error: attachError } = await db.from("content_items").update({ music_video_project_id: project.id, is_reportable: false, updated_at: new Date().toISOString() }).eq("id", checklistItem.id);
+      if (attachError) return NextResponse.json({ error: "Project created, but its checklist item could not be linked." }, { status: 500 });
+    } else {
+      const { data: song } = await db.from("songs").select("title").eq("id", songId).single();
     const songTitle = song?.title || null;
-    const { error: linkError } = await db.from("content_items").insert({ title: `${songTitle || "Song"} — Official Music Video`, category: "MUSIC VIDEO", sub_category: "OFFICIAL VIDEO", song_name: songTitle, song_id: project.song_id, recorded: false, edited: false, post_ready: false, media_type: "VIDEO", purpose: "Official music video production", music_video_project_id: project.id, is_reportable: false });
+      const { error: linkError } = await db.from("content_items").insert({ title: `${songTitle || "Song"} — Official Music Video`, category: "Music Video", sub_category: "Official Video", song_name: songTitle, song_id: project.song_id, recorded: false, edited: false, post_ready: false, media_type: "VIDEO", purpose: "Official music video production", music_video_project_id: project.id, content_template_key: "official_music_video", content_order: 10, is_reportable: false });
     if (linkError && linkError.code !== "23505") return NextResponse.json({ error: "Project created, but its linked Content entry could not be saved." }, { status: 500 });
+    }
   }
   return NextResponse.json({ id: project.id });
 }

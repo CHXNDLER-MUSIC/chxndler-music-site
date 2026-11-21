@@ -15,10 +15,17 @@ type Song = {
 type Task = { id: string; title: string; status: string; priority: string; due_at: string | null; business_area?: string; song_id?: string | null; song?: { id: string; title: string } | null; content?: { id: string; song_id: string } | null };
 type OutreachRecord = { id: string; status?: string | null };
 type SyncRecord = { id: string; status?: string | null };
+type CollaborationRequest = { id: string; artist_name: string; contribution_type: string; status: string; submitted_at: string; songs?: { title?: string } | null };
 
 const generatedProfileTask = (title: string) => title.trim().toLowerCase() === "complete song profile";
 const activePitchStatuses = new Set(["Planned", "Sent", "Follow-up"]);
 const terminalSyncStatuses = new Set(["Licensed", "Passed", "Declined", "Closed"]);
+const songColors = ["#FF8BC4", "#76D8FF", "#B99AFF", "#FFC66D", "#7EE0B5", "#FF9A7A"];
+function songColor(name: string) {
+  let hash = 0;
+  for (const char of name.toUpperCase()) hash = (hash * 31 + char.charCodeAt(0)) | 0;
+  return songColors[Math.abs(hash) % songColors.length];
+}
 
 function localToday() {
   const date = new Date();
@@ -36,6 +43,7 @@ function taskOrder(today: string) {
 export default function OverviewTab() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [collaborationRequests, setCollaborationRequests] = useState<CollaborationRequest[]>([]);
   const [selectedSongId, setSelectedSongId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingSong, setSavingSong] = useState(false);
@@ -50,13 +58,15 @@ export default function OverviewTab() {
     Promise.all([
       fetch("/api/admin/song-tracker", { cache: "no-store" }).then(async response => response.ok ? response.json() : Promise.reject(new Error("Songs unavailable"))),
       fetch("/api/admin/tasks", { cache: "no-store" }).then(async response => response.ok ? response.json() : Promise.reject(new Error("Tasks unavailable"))),
+      fetch("/api/admin/collaboration-requests", { cache: "no-store" }).then(async response => response.ok ? response.json() : { requests: [] }),
       fetch("/api/admin/outreach-workspace", { cache: "no-store" }).then(async response => response.ok ? response.json() : { records: [] }),
       fetch("/api/admin/sync-workspace", { cache: "no-store" }).then(async response => response.ok ? response.json() : { opportunities: [] }),
       fetch("/api/admin/featured-song", { cache: "no-store" }).then(async response => response.ok ? response.json() : Promise.reject(new Error("Featured song preference unavailable"))),
-    ]).then(([songData, taskData, outreachData, syncData, featuredData]) => {
+    ]).then(([songData, taskData, collabData, outreachData, syncData, featuredData]) => {
       if (!active) return;
       setSongs(songData.songs || []);
       setTasks(taskData.tasks || []);
+      setCollaborationRequests((collabData.requests || []).filter((request: CollaborationRequest) => request.status === "new"));
       const pitchCount = (outreachData.records || []).filter((row: OutreachRecord) => activePitchStatuses.has(row.status || "")).length;
       const syncCount = (syncData.opportunities || []).filter((row: SyncRecord) => !!row.status && !terminalSyncStatuses.has(row.status)).length;
       setActiveOutreach(pitchCount + syncCount);
@@ -156,15 +166,24 @@ export default function OverviewTab() {
     <section aria-labelledby="up-next-title" className="rounded-2xl border border-white/[.08] bg-[#101014] p-4 sm:p-5">
       <header className="mb-3 flex items-center justify-between gap-3"><div><p className="text-[.62rem] font-bold uppercase tracking-[.18em] text-white/35">Your task list</p><h2 id="up-next-title" className="mt-0.5 text-base font-bold">Up Next</h2></div><Link href="/admin?view=tasks" className="shrink-0 text-xs font-semibold text-[#FD52AF] transition hover:text-[#ffabd4]">View All Tasks →</Link></header>
       {taskError && <p role="alert" className="mb-3 rounded-lg border border-red-300/10 bg-red-300/[.04] px-3 py-2 text-xs text-red-200">{taskError}</p>}
-      {loading ? <p className="py-5 text-center text-sm text-white/40">Loading tasks…</p> : actionableTasks.length ? <ul className="divide-y divide-white/[.06]">{actionableTasks.slice(0, 5).map(task => {
+      {loading ? <p className="py-5 text-center text-sm text-white/40">Loading tasks…</p> : actionableTasks.length || collaborationRequests.length ? <>
+        {!!actionableTasks.length && <div className="hidden grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_2rem] gap-3 border-b border-white/[.06] pb-2 text-[.6rem] font-bold uppercase tracking-[.14em] text-white/30 sm:grid"><span/><span>Task</span><span>Song</span><span/></div>}
+        <ul className="divide-y divide-white/[.06]">
+        {collaborationRequests.map(request => <li key={`collab-${request.id}`} className="flex items-center gap-3 border-b border-[#FD52AF]/15 py-3 first:pt-1">
+          <span aria-label="Collaboration request" title="Collaboration request" className="grid h-5 w-5 shrink-0 place-items-center text-[#FD52AF]">★</span>
+          <Link href={`/admin/collaborations?request=${encodeURIComponent(request.id)}`} className="min-w-0 flex-1 truncate text-sm font-semibold text-white/90 transition hover:text-[#ff9dcd]">New collaboration request · {request.artist_name} <span className="font-normal text-white/50">· {request.contribution_type}</span></Link>
+          <Link href={`/admin/collaborations?request=${encodeURIComponent(request.id)}`} aria-label={`Review collaboration request from ${request.artist_name}`} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[#FD52AF]/65 transition hover:bg-white/[.05] hover:text-[#FD52AF]">↗</Link>
+        </li>)}
+        {actionableTasks.slice(0, 5).map(task => {
         const isOverdue = !!task.due_at && task.due_at < today;
         const taskHref = task.content ? `/admin/songs/${task.content.song_id}?tab=content&content=${task.content.id}` : `/admin?view=tasks&task=${task.id}`;
-        return <li key={task.id} className="flex items-center gap-3 py-3 first:pt-1 last:pb-1">
+        return <li key={task.id} className="grid grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_2rem] items-center gap-3 py-3 first:pt-1 last:pb-1">
           <button type="button" disabled={taskSaving === task.id} onClick={() => void completeTask(task)} aria-label={`Mark ${task.title} complete`} className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-white/20 text-transparent transition hover:border-[#FD52AF] hover:bg-[#FD52AF]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FD52AF] disabled:opacity-40"><span aria-hidden="true">✓</span></button>
-          <div className="min-w-0 flex-1"><Link href={taskHref} className="block truncate text-sm font-semibold text-white/85 transition hover:text-[#ff9dcd]">{task.title}</Link><div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[.66rem] text-white/40">{task.song && <Link href={`/admin/songs/${task.song.id}`} className="truncate hover:text-white/70">{task.song.title}</Link>}{task.due_at && <span className={isOverdue ? "font-semibold text-amber-200" : ""}>{isOverdue ? "Overdue · " : "Due "}{task.due_at}</span>}{task.priority === "high" && <span className="rounded-full bg-amber-200/[.08] px-1.5 py-0.5 font-semibold text-amber-100">High priority</span>}</div></div>
+          <div className="min-w-0"><Link href={taskHref} className="block truncate text-sm font-semibold text-white/85 transition hover:text-[#ff9dcd]">{task.title}</Link><div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[.66rem] text-white/40">{task.due_at && <span className={isOverdue ? "font-semibold text-amber-200" : ""}>{isOverdue ? "Overdue · " : "Due "}{task.due_at}</span>}{task.priority === "high" && <span className="rounded-full bg-amber-200/[.08] px-1.5 py-0.5 font-semibold text-amber-100">High priority</span>}</div></div>
+          <span className="min-w-0 truncate text-xs font-semibold" style={{ color: task.song ? songColor(task.song.title) : "rgba(255,255,255,.35)" }} title={task.song?.title || "No song"}>{task.song?.title || "—"}</span>
           <Link href={taskHref} aria-label={`Open ${task.title}`} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-white/25 transition hover:bg-white/[.05] hover:text-white/75">↗</Link>
         </li>;
-      })}</ul> : <div className="rounded-xl border border-dashed border-white/[.09] px-4 py-5 text-center"><p className="text-sm font-semibold text-white/65">You’re clear for now.</p><p className="mt-1 text-xs text-white/35">When something needs follow-up, it’ll appear here.</p></div>}
+      })}</ul></> : <div className="rounded-xl border border-dashed border-white/[.09] px-4 py-5 text-center"><p className="text-sm font-semibold text-white/65">You’re clear for now.</p><p className="mt-1 text-xs text-white/35">When something needs follow-up, it’ll appear here.</p></div>}
     </section>
     <style jsx>{`@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}`}</style>
   </div>;

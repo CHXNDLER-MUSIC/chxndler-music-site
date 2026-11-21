@@ -114,7 +114,9 @@ export default function SongTracker() {
   const [columnFilter, setColumnFilter] = useState<{ key: string; value: string } | null>(null);
   const [columnMenu, setColumnMenu] = useState<string | null>(null);
   const [postReleaseMenuOpen, setPostReleaseMenuOpen] = useState(false);
+  const [missingTilesOpen, setMissingTilesOpen] = useState(true);
   const [songFilterText, setSongFilterText] = useState("");
+  const [songSearch, setSongSearch] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -159,6 +161,7 @@ export default function SongTracker() {
 
   const today = localToday();
   const visible = useMemo(() => songs.filter(song => {
+    if (songSearch.trim() && !song.title.toLowerCase().includes(songSearch.trim().toLowerCase())) return false;
     const collabReady = song.ready_for_collab === true;
     const attention = !!song.linkedTask?.due_at && song.linkedTask.due_at < today;
     let matches = true;
@@ -189,14 +192,11 @@ export default function SongTracker() {
       if (columnFilter.key === "collaboration" && columnFilter.value !== "all" && String(collabReady) !== columnFilter.value) return false;
     }
     return true;
-  }), [songs, statusFilter, today, columnFilter]);
+  }), [songs, statusFilter, today, columnFilter, songSearch]);
 
   const sorted = useMemo(() => [...visible].sort((a, b) =>
     a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true }) || a.slug.localeCompare(b.slug),
   ), [visible]);
-  const activePostReleaseFilter = columnFilter?.key === "postRelease"
-    ? `${columnFilter.value.startsWith("missing:") ? "Missing" : "On"} · ${postReleaseKpis.find(item => item.key === (columnFilter.value.startsWith("missing:") ? columnFilter.value.slice("missing:".length) : columnFilter.value))?.label || "Post Release"}`
-    : null;
 
   function saveProductionProgress(song: SongRow, updated: Partial<SongRow>) {
     setSongs(rows => rows.map(row => row.id === song.id ? { ...row, ...updated } : row));
@@ -265,23 +265,28 @@ export default function SongTracker() {
       })}
     </section>
 
-    <section aria-label="Songs by post release activity" className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
+    <section aria-label="Songs by post release activity" className="mb-5">
+      <button type="button" aria-expanded={missingTilesOpen} onClick={() => setMissingTilesOpen(open => !open)} className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-[.12em] text-white/80 hover:text-white"><span aria-hidden="true" className="text-[#FD52AF]">{missingTilesOpen ? "▾" : "▸"}</span>Missing</button>
+      {missingTilesOpen && <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
       {postReleaseKpis.map(item => {
         const active = columnFilter?.key === "postRelease" && columnFilter.value === `missing:${item.key}`;
         const total = songs.filter(song => song.postRelease?.[item.key] !== true).length;
         return <button key={item.key} type="button" aria-pressed={active} onClick={() => filterByPostRelease(active ? "all" : `missing:${item.key}`)} className={`group relative min-w-0 overflow-hidden rounded-xl border px-3 py-3 text-left transition hover:-translate-y-px hover:bg-white/[.045] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${active ? "border-white/20 bg-white/[.055]" : "border-white/[.08] bg-[#101014]"}`}>
           <span className="absolute inset-x-0 top-0 h-0.5 opacity-80" style={{ backgroundColor: item.color }}/>
-          <span className="flex flex-col items-start gap-1.5"><OpportunityIcon kind={item.kind} className="h-6 w-6" color={item.color}/><span className="truncate text-[.68rem] font-semibold" style={{ color: item.color }}>{item.label}</span><span className="text-[.6rem] font-bold uppercase tracking-[.12em] text-white/45">Missing</span></span>
+          <span className="flex flex-col items-start gap-1.5"><OpportunityIcon kind={item.kind} className="h-6 w-6" color={item.color}/><span className="truncate text-[.68rem] font-semibold" style={{ color: item.color }}>{item.label}</span></span>
           <span className="mt-1 block text-xl font-black tabular-nums" style={{ color: item.color }}>{loading ? "—" : total}</span>
         </button>;
       })}
+      </div>}
     </section>
 
     {adding && <form onSubmit={createSong} className="mb-4 grid gap-3 rounded-2xl border border-[#FD52AF]/20 bg-[#111116] p-4 sm:grid-cols-[1fr_auto] sm:items-end"><label className="text-sm font-medium text-white/75">Song title<input autoFocus required maxLength={120} value={newTitle} onChange={event => setNewTitle(event.target.value)} placeholder="Name your song" className="mt-2 block w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder:text-white/30"/></label><button disabled={creating} className="rounded-xl bg-[#FD52AF] px-5 py-3 font-bold text-black disabled:opacity-60">{creating ? "Creating…" : "Create workspace"}</button></form>}
 
+    <label className="mb-4 block"><span className="sr-only">Search songs</span><input type="search" value={songSearch} onChange={event => setSongSearch(event.target.value)} placeholder="Search songs…" className="w-full rounded-xl border border-white/10 bg-[#101014] px-4 py-3 text-base text-white placeholder:text-white/40 outline-none transition focus:border-[#FD52AF]/50" /></label>
+
     {error && <p role="alert" className="mb-4 rounded-xl border border-red-400/20 bg-red-400/[.05] p-3 text-sm text-red-200">{error}</p>}
     {loading ? <div className="rounded-2xl border border-white/[.08] bg-[#101014] p-8 text-center text-sm text-white/45">Loading your songs…</div> : !sorted.length ? <div className="rounded-2xl border border-dashed border-white/[.14] bg-[#101014]/60 p-10 text-center"><p className="font-semibold text-white/75">{songs.length ? "No songs match these filters." : "Your music universe is ready."}</p><p className="mt-1 text-sm text-white/40">{songs.length ? "Try a different search or clear the filters." : "Add your first song to create a workspace."}</p>{songs.length > 0 && <button type="button" onClick={clearFilters} className="mt-4 text-sm font-semibold text-[#FD52AF]">Clear filters</button>}</div> : <div className="overflow-visible rounded-2xl border border-white/[.08] bg-[#101014]">
-      <div className="hidden border-b border-white/[.07] px-5 py-3 text-xs font-bold uppercase tracking-[.13em] text-white/65 lg:grid lg:grid-cols-[minmax(15rem,1.2fr)_minmax(9rem,.7fr)_minmax(18rem,1.3fr)] lg:gap-5">{filterHeader("song", "Song", [])}{filterHeader("production", "Production", [{value:"wrote",label:"Wrote",color:"#A78BFA",icon:<ProductionStageIcon stage="Writing" className="h-5 w-5"/>},{value:"recorded",label:"Recorded",color:"#42B8E8",icon:<ProductionStageIcon stage="Recording" className="h-5 w-5"/>},{value:"mixed",label:"Mixed",color:"#F2B84B",icon:<ProductionStageIcon stage="Mixing" className="h-5 w-5"/>},{value:"unset",label:"Not Set",color:"#777783",icon:<ProductionStageIcon stage={null} className="h-5 w-5"/>}])}<div className="relative flex items-center justify-between" data-song-filter-menu><button type="button" aria-expanded={postReleaseMenuOpen} onClick={() => setPostReleaseMenuOpen(open => !open)} className="text-left hover:text-white">Post Release⌄</button><button type="button" aria-expanded={postReleaseMenuOpen} onClick={() => setPostReleaseMenuOpen(open => !open)} className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-[.62rem] font-semibold normal-case tracking-normal transition ${columnFilter?.key === "postRelease" ? "border-[#FD52AF]/45 bg-[#FD52AF]/[.08] text-white" : "border-white/10 text-white/55 hover:border-white/20 hover:text-white"}`}><span aria-hidden="true">☷</span>{activePostReleaseFilter || "Filter missing"}<span aria-hidden="true">⌄</span></button>{postReleaseMenuOpen && <div className="absolute right-0 top-full z-40 mt-2 max-h-[min(70vh,28rem)] w-72 overflow-y-auto rounded-xl border border-white/10 bg-[#17171c] p-2 normal-case tracking-normal shadow-2xl"><p className="px-2 pb-2 pt-1 text-[.62rem] font-bold uppercase tracking-[.14em] text-white/35">Show songs missing</p>{postReleaseKpis.map(item => <button key={item.key} type="button" onClick={() => { setStatusFilter("all"); setColumnFilter({ key: "postRelease", value: `missing:${item.key}` }); setSongFilterText(""); setPostReleaseMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left text-xs font-semibold text-white/75 hover:bg-white/[.07]"><OpportunityIcon kind={item.kind} className="h-5 w-5" color={item.color}/><span className="flex-1">{item.label}</span><span className="text-[.62rem] font-medium text-white/35">Missing</span></button>)}{columnFilter?.key === "postRelease" && <button type="button" onClick={() => { setColumnFilter(null); setPostReleaseMenuOpen(false); }} className="mt-1 w-full rounded-lg border-t border-white/[.08] px-2 py-2.5 text-left text-xs font-semibold text-[#ff8bc4]">Clear post release filter</button>}</div>}</div></div>
+      <div className="hidden border-b border-white/[.07] px-5 py-3 text-base font-bold uppercase tracking-[.12em] text-white lg:grid lg:grid-cols-[minmax(15rem,1.2fr)_minmax(9rem,.7fr)_minmax(18rem,1.3fr)] lg:gap-5">{filterHeader("song", "Song", [])}{filterHeader("production", "Production", [{value:"wrote",label:"Wrote",color:"#A78BFA",icon:<ProductionStageIcon stage="Writing" className="h-5 w-5"/>},{value:"recorded",label:"Recorded",color:"#42B8E8",icon:<ProductionStageIcon stage="Recording" className="h-5 w-5"/>},{value:"mixed",label:"Mixed",color:"#F2B84B",icon:<ProductionStageIcon stage="Mixing" className="h-5 w-5"/>},{value:"unset",label:"Not Set",color:"#777783",icon:<ProductionStageIcon stage={null} className="h-5 w-5"/>}])}<div className="relative" data-song-filter-menu><button type="button" aria-expanded={postReleaseMenuOpen} onClick={() => setPostReleaseMenuOpen(open => !open)} className="text-left hover:text-white">Post Release⌄</button>{postReleaseMenuOpen && <div className="absolute right-0 top-full z-40 mt-2 max-h-[min(70vh,28rem)] w-72 overflow-y-auto rounded-xl border border-white/10 bg-[#17171c] p-2 normal-case tracking-normal shadow-2xl"><p className="px-2 pb-2 pt-1 text-[.62rem] font-bold uppercase tracking-[.14em] text-white/35">Show songs missing</p>{postReleaseKpis.map(item => <button key={item.key} type="button" onClick={() => { setStatusFilter("all"); setColumnFilter({ key: "postRelease", value: `missing:${item.key}` }); setSongFilterText(""); setPostReleaseMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left text-xs font-semibold text-white/75 hover:bg-white/[.07]"><OpportunityIcon kind={item.kind} className="h-5 w-5" color={item.color}/><span className="flex-1">{item.label}</span><span className="text-[.62rem] font-medium text-white/35">Missing</span></button>)}{columnFilter?.key === "postRelease" && <button type="button" onClick={() => { setColumnFilter(null); setPostReleaseMenuOpen(false); }} className="mt-1 w-full rounded-lg border-t border-white/[.08] px-2 py-2.5 text-left text-xs font-semibold text-[#ff8bc4]">Clear post release filter</button>}</div>}</div></div>
       {sorted.map(song => {
         const collabReady = song.ready_for_collab === true;
         return <article key={song.id} className="grid gap-3 border-b border-white/[.06] p-3 transition-colors last:border-0 hover:bg-white/[.015] sm:p-4 lg:grid-cols-[minmax(15rem,1.2fr)_minmax(9rem,.7fr)_minmax(18rem,1.3fr)] lg:items-center lg:gap-5 lg:px-5">
@@ -289,7 +294,7 @@ export default function SongTracker() {
             <button type="button" onClick={() => void openSongInfo(song)} aria-label={`Show ${song.title} information`} className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-white/[.09] bg-gradient-to-br from-[#271323] to-[#111116] shadow-[0_4px_20px_rgba(0,0,0,.25)] sm:h-16 sm:w-16"><span className="grid h-full w-full place-items-center px-1 text-center text-[.48rem] font-black tracking-[.1em] text-[#FD52AF]/65">CHXNDLER</span><img src={song.brand_cover_path ? getBrandArtUrl(song.brand_cover_path) || songCoverPath(song.slug, song.title) : songCoverPath(song.slug, song.title)} alt="" onError={event => { if (song.brand_cover_path && !event.currentTarget.dataset.fallback) { event.currentTarget.dataset.fallback = "1"; event.currentTarget.src = songCoverPath(song.slug, song.title); } else event.currentTarget.style.display = "none"; }} className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 hover:scale-105"/></button>
             <div className="min-w-0"><button type="button" onClick={() => void openSongInfo(song)} className="block truncate text-left text-sm font-bold text-white transition hover:text-[#ff8bc4]">{song.title}</button><span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[.62rem] font-semibold ${song.is_released ? "bg-emerald-300/[.08] text-emerald-200" : "bg-white/[.055] text-white/45"}`}>{song.is_released ? "Released" : "Unreleased"}</span></div>
           </div>
-          <div className="min-w-0"><span className="mb-1 block text-[.62rem] font-semibold uppercase tracking-wider text-white/35 lg:hidden">Workflow Progress</span><SongProductionProgress song={song} onSaved={updated => saveProductionProgress(song, updated)} compact/></div>
+          <div className="min-w-0"><span className="mb-1 block text-[.62rem] font-semibold uppercase tracking-wider text-white/35 lg:hidden">Production</span><SongProductionProgress song={song} onSaved={updated => saveProductionProgress(song, updated)} compact/></div>
           <div className="min-w-0"><span className="mb-1 block text-[.62rem] font-semibold uppercase tracking-wider text-white/35 lg:hidden">Post Release</span><PostReleaseIcons song={song} onToggle={(key, value) => void togglePostRelease(song, key, value)}/></div>
         </article>;
       })}

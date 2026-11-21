@@ -39,7 +39,7 @@ export default function CollaborationsAdmin() {
   const filtered = rows.filter(row => (groups[tab] as readonly string[]).includes(row.status) && `${row.artist_name} ${row.songs?.title || "Original song idea"} ${row.contribution_type}`.toLowerCase().includes(search.toLowerCase()));
 
   return <main className="min-h-screen bg-[#09090c] p-4 text-white sm:p-8"><div className="mx-auto max-w-7xl">
-    <Link href="/dashboard" className="text-xs text-white/50">← Dashboard</Link>
+    <Link href="/admin" className="text-xs text-white/50">← Dashboard</Link>
     <header className="my-6 flex items-end justify-between gap-4"><div><p className="text-xs font-bold tracking-[.25em] text-[#ff3ea5]">CHXNDLER</p><h1 className="mt-2 text-3xl font-black">Collaborations</h1></div><button onClick={() => void load()} className="rounded-lg border border-white/15 px-4 py-2 text-sm">Refresh</button></header>
     <CollaborationInviteManager />
     <CollaborationTermsEditor />

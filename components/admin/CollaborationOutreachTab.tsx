@@ -16,6 +16,16 @@ export default function CollaborationOutreachTab({ songId = "" }: { songId?: str
   const [inviteOpen, setInviteOpen] = useState(false);
   const [invite, setInvite] = useState({ firstName: "", lastName: "", artistName: "", email: "", phone: "", contactId: "", songId, type: "Feature / Vocals", message: "" });
   const [inviteLink, setInviteLink] = useState("");
+  const [selectedRequest, setSelectedRequest] = useState<Record<string, any> | null>(null);
+  const [requestLoading, setRequestLoading] = useState(false);
+
+  async function openRequest(id: string) {
+    setSelectedRequest(null); setRequestLoading(true);
+    const response = await fetch(`/api/admin/collaboration-requests?id=${encodeURIComponent(id)}`, { cache: "no-store" });
+    const result = await response.json();
+    setSelectedRequest(response.ok ? result.request : { error: result.error || "Unable to load request." });
+    setRequestLoading(false);
+  }
 
   async function load() {
     setLoading(true);
@@ -62,12 +72,12 @@ export default function CollaborationOutreachTab({ songId = "" }: { songId?: str
     </form>}
     {notice && !inviteOpen && <p role="status" className="text-sm text-amber-100">{notice}</p>}
     <div className="divide-y divide-white/[.07]">
-      {visible.map(row => <Link key={row.id} href={`/admin/collaborations?request=${encodeURIComponent(row.id)}`} className="flex flex-wrap items-center gap-2 py-3 hover:bg-white/[.02]">
-        <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{row.artist_name} <span className="font-normal text-white/50">· {row.contribution_type}</span></span><span className="mt-1 block truncate text-xs text-white/40">{row.songs?.title || "Original song idea"} · {new Date(row.submitted_at).toLocaleDateString()}</span>{row.message && <span className="mt-1 block truncate text-xs text-white/55">{row.message}</span>}</span><span className="rounded-full bg-white/[.07] px-2.5 py-1 text-xs text-white/65">{row.status.replaceAll("_", " ")}</span><span aria-hidden="true" className="text-white/35">›</span>
-      </Link>)}
+      {visible.map(row => <button type="button" key={row.id} onClick={() => void openRequest(row.id)} className="flex w-full flex-wrap items-center gap-2 py-3 text-left hover:bg-white/[.02]">
+        <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{row.artist_name} <span className="font-normal text-white/50">· {row.contribution_type}</span></span><span className="mt-1 block truncate text-xs text-white/40">{row.songs?.title || "Original song idea"} · {new Date(row.submitted_at).toLocaleDateString()}</span>{row.message && <span className="mt-1 block truncate text-xs text-white/55">{row.message}</span>}</span><span className={`rounded-full px-2.5 py-1 text-xs ${row.status === "new" ? "bg-[#FD52AF]/15 font-semibold text-[#ff7fc1]" : "bg-white/[.07] text-white/65"}`}>{row.status.replaceAll("_", " ")}</span><span aria-hidden="true" className="text-white/35">›</span>
+      </button>)}
       {!loading && visible.length === 0 && <p className="py-8 text-center text-sm text-white/45">No collaboration requests for this view yet.</p>}
       {loading && <p className="py-6 text-center text-sm text-white/45">Loading collaboration requests…</p>}
     </div>
-    <details className="rounded-xl border border-white/10 bg-white/[.025]"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-[#FD52AF]">Requests, agreements, and active projects <span className="ml-2 text-xs font-normal text-white/45">{visible.length}</span></summary><div className="divide-y divide-white/[.07] border-t border-white/10 px-4">{visible.map(row => <Link key={row.id} href={`/admin/collaborations?request=${encodeURIComponent(row.id)}`} className="block py-3 hover:bg-white/[.02]"><span className="block text-sm font-semibold text-white">{row.artist_name} <span className="font-normal text-white/50">· {row.contribution_type}</span></span><span className="mt-1 block text-xs text-white/50">{row.songs?.title || "Original song idea"} · Request: {row.status.replaceAll("_", " ")} · Agreement: {(row.agreement_status || "not_started").replaceAll("_", " ")} · Project: {(row.project_status || "requested").replaceAll("_", " ")}</span>{row.message && <span className="mt-1 block text-xs leading-5 text-white/55">{row.message}</span>}</Link>)}{!visible.length && <p className="py-4 text-sm text-white/45">No requests, agreements, or projects for this view yet.</p>}</div></details>
+    {(selectedRequest || requestLoading) && <div role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setSelectedRequest(null); }} className="fixed inset-0 z-[120] grid place-items-center bg-black/75 p-4" ><section role="dialog" aria-modal="true" aria-labelledby="collab-request-title" className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-white/10 bg-[#111116] p-5 shadow-2xl"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#FD52AF]">Collaboration Request</p><h3 id="collab-request-title" className="mt-1 text-xl font-bold">{requestLoading ? "Loading…" : selectedRequest?.artist_name || "Request details"}</h3></div><button type="button" onClick={() => setSelectedRequest(null)} aria-label="Close request details" className="rounded-lg px-3 py-1 text-xl text-white/60 hover:bg-white/10">×</button></div>{!requestLoading && selectedRequest && <><div className="mt-5 grid gap-4 sm:grid-cols-2">{[["Contribution", selectedRequest.contribution_type], ["Song", selectedRequest.songs?.title || "Original song idea"], ["Status", selectedRequest.status?.replaceAll("_", " ")], ["Submitted", selectedRequest.submitted_at ? new Date(selectedRequest.submitted_at).toLocaleString() : "—"], ["Email", selectedRequest.email], ["Phone", selectedRequest.phone], ["Agreement", selectedRequest.agreement_status?.replaceAll("_", " ") || "Not started"], ["Project", selectedRequest.project_status?.replaceAll("_", " ") || "Requested"]].filter(([, value]) => value).map(([label, value]) => <div key={label}><p className="text-xs text-white/40">{label}</p><p className="mt-1 text-sm text-white/85">{value}</p></div>)}</div>{selectedRequest.message && <div className="mt-5"><p className="text-xs text-white/40">Message</p><p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-white/80">{selectedRequest.message}</p></div>}{selectedRequest.error && <p role="alert" className="mt-4 text-sm text-rose-300">{selectedRequest.error}</p>}</>}</section></div>}
   </section>;
 }

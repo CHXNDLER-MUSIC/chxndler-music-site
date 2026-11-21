@@ -160,9 +160,9 @@ export default function SongPractice({songId,title,slug,musicalKey,capoFret,chor
 
     <section className="rounded-2xl border border-white/[.08] bg-[#111116] p-4 sm:p-5" aria-labelledby="rehearsal-player-heading">
       <div className="mb-4"><p className="text-[.62rem] font-bold uppercase tracking-[.18em] text-[#EF43A3]">Listen & rehearse</p><h2 id="rehearsal-player-heading" className="mt-1 text-base font-bold">Rehearsal Player</h2></div>
-      <div className="grid gap-3 lg:grid-cols-2">
-        <RehearsalAudioPlayer label="Original Song" src={originalAudio} unavailableText="Original song audio is unavailable right now." />
-        <RehearsalAudioPlayer label="Instrumental" src={instrumentalAudio} unavailableText="No instrumental audio is available for this song yet." />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <RehearsalAudioPlayer label="FULL" src={originalAudio} unavailableText="Full song audio is unavailable right now." />
+        <RehearsalAudioPlayer label="LAYBACK" src={instrumentalAudio} unavailableText="No layback audio is available for this song yet." />
       </div>
     </section>
 

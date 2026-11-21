@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { getApiUser, isAdminUser, unauthorized, forbidden } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
-const fields = "id,source_row,legacy_x5,title,category,sub_category,song_name,song_id,canonical_song_title,song_link_status,recorded,edited,post_ready,media_type,purpose,source_url,media_url,script,planned_date,planned_time,caption,text_on_screen,hidden,hashtags,legacy_date_time,editor,legacy_minutes,published,legacy_posted_raw,is_placeholder_date,is_sample,workflow_status,workflow_priority,recorded_at,edited_at,published_at,platform,music_video_project_id,is_reportable,music_video_status,music_video_next_action,created_at,updated_at";
+const fields = "id,source_row,legacy_x5,title,category,sub_category,song_name,song_id,canonical_song_title,song_link_status,recorded,edited,post_ready,media_type,purpose,source_url,media_url,script,planned_date,planned_time,caption,text_on_screen,hidden,hashtags,legacy_date_time,editor,legacy_minutes,published,legacy_posted_raw,is_placeholder_date,is_sample,workflow_status,workflow_priority,recorded_at,edited_at,published_at,platform,music_video_project_id,is_reportable,music_video_status,music_video_next_action,content_template_key,content_order,created_at,updated_at";
 const textFields = new Set(["title", "category", "sub_category", "song_name", "media_type", "purpose", "source_url", "media_url", "script", "planned_time", "caption", "text_on_screen", "hashtags", "legacy_date_time", "editor", "legacy_minutes", "platform"]);
 const timestampFields = new Set(["recorded_at", "edited_at", "published_at"]);
 const booleanFields = new Set(["recorded", "edited", "post_ready", "published", "hidden", "legacy_x5"]);
-const editableFields = new Set([...textFields, ...booleanFields, ...timestampFields, "planned_date", "song_id"]);
+const editableFields = new Set([...textFields, ...booleanFields, ...timestampFields, "planned_date", "song_id", "content_order"]);
 const validId = (value: unknown) => typeof value === "string" && /^[0-9a-f-]{36}$/i.test(value);
 const sanitizeSearch = (value: string) => value.trim().slice(0, 100).replace(/[%,()\\.*]/g, " ").replace(/\s+/g, " ").trim();
 
@@ -59,7 +59,7 @@ export async function GET(request: Request) {
   const pageSize = Math.min(100, Math.max(10, Number.parseInt(params.get("pageSize") || "50", 10) || 50));
   const from = (page - 1) * pageSize;
   const sort = params.get("sort") || "planned_date";
-  const sortColumn = ["title", "song_name", "canonical_song_title", "category", "media_type", "planned_date", "workflow_status", "workflow_priority", "recorded", "edited", "post_ready"].includes(sort) ? sort : "workflow_priority";
+  const sortColumn = ["title", "song_name", "canonical_song_title", "category", "media_type", "planned_date", "workflow_status", "workflow_priority", "recorded", "edited", "post_ready", "content_order"].includes(sort) ? sort : "workflow_priority";
   const ascending = params.get("direction") === "asc";
 
   let pageQuery = applyFilters(db.from("content_items_library").select(fields, { count: "exact" }), params)
@@ -151,8 +151,6 @@ export async function PATCH(request: Request) {
   const body = await request.json();
   if (!validId(body.id)) return NextResponse.json({ error: "Invalid content item." }, { status: 400 });
   const db = getSupabaseAdmin();
-  const { data: linkedVideo } = await db.from("content_items").select("music_video_project_id").eq("id", body.id).maybeSingle();
-  if (linkedVideo?.music_video_project_id) return NextResponse.json({ error: "This row is linked to the Music Video project. Update it in the Music Video workspace." }, { status: 409 });
   const payload = normalizePayload(body, true);
   if (payload instanceof NextResponse) return payload;
   if (payload.song_id) {
@@ -189,6 +187,9 @@ function normalizePayload(body: Record<string, unknown>, partial: boolean): Reco
       else if (!partial) result.is_placeholder_date = false;
     } else if (key === "song_id") {
       if (value !== null && !validId(value)) return NextResponse.json({ error: "Choose a valid song." }, { status: 400 });
+      result[key] = value;
+    } else if (key === "content_order") {
+      if (!Number.isInteger(value) || Number(value) < 0 || Number(value) > 100000) return NextResponse.json({ error: "Invalid content order." }, { status: 400 });
       result[key] = value;
     }
   }
