@@ -11,6 +11,7 @@ import { playCollabClickSound } from "@/components/collab/playCollabClickSound";
 import CollabRequestForm from "@/components/collab/CollabRequestForm";
 
 type Tab = "collabs" | "video" | "complete";
+type VideoReleaseTab = "released" | "unreleased";
 type SelectedItem = {
   id: string;
   release: ArtistRelease;
@@ -79,6 +80,7 @@ function CollabGalleryContent({
 }) {
   const [category, setCategory] = useState<"features" | "videos">(canViewFeatures && defaultView !== "video" ? "features" : "videos");
   const [tab, setTab] = useState<Tab>(defaultView);
+  const [videoReleaseTab, setVideoReleaseTab] = useState<VideoReleaseTab>("released");
   const [selected, setSelected] = useState<SelectedItem | null>(null);
   const [requestProject, setRequestProject] = useState<string | null>(null);
   const [showOtherIdeaPicker, setShowOtherIdeaPicker] = useState(false);
@@ -88,7 +90,12 @@ function CollabGalleryContent({
   const items = useMemo<SelectedItem[]>(() => {
     if (!canViewFeatures || category !== "features") return [];
     const catalog = [...artistReleases, ...unreleasedSongs].filter((song, index, rows) => rows.findIndex(other => other.databaseId === song.databaseId) === index);
-    const songs = filterCollabCatalog(catalog, tab).sort((a, b) =>
+    const filteredCatalog = filterCollabCatalog(catalog, tab).filter(song => {
+      if (tab !== "video") return true;
+      const released = song.isReleased === true || song.audioStatus === "Final" || song.audioStatus === "Released";
+      return videoReleaseTab === "released" ? released : !released;
+    });
+    const songs = filteredCatalog.sort((a, b) =>
       a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true }) || a.slug.localeCompare(b.slug),
     );
     return songs.map((release) => ({
@@ -97,7 +104,7 @@ function CollabGalleryContent({
       audioUrl: release.audioUrl,
       release,
     }));
-  }, [tab, artistReleases, unreleasedSongs, canViewFeatures, category]);
+  }, [tab, videoReleaseTab, artistReleases, unreleasedSongs, canViewFeatures, category]);
 
   useEffect(() => {
     if (!invitedSongSlug) return;
@@ -167,6 +174,10 @@ function CollabGalleryContent({
             {TAB_LABELS[value]}
           </button>
         ))}
+      </div>}
+
+      {category === "features" && tab === "video" && <div className="collab-release-tabs" role="tablist" aria-label="Video needed release status">
+        {([ ["released", "Released"], ["unreleased", "Unreleased"] ] as const).map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={videoReleaseTab === value} onClick={() => setVideoReleaseTab(value)}>{label}</button>)}
       </div>}
 
       {category === "videos" && (musicVideos.length > 0 ? <section className="collab-video-opportunities" aria-label="Music video opportunities">
@@ -260,7 +271,7 @@ function CollabGalleryContent({
             showLyricsSection={false}
             showInstrumentalControl={false}
             meaningUrlOverride={null}
-            showCollabRequest
+            showCollabRequest={selected.from !== "complete"}
             showStreamingLinks={selected.release.isReleased === true}
             invitedName={invitedDisplayName}
             invitedEmail={invitedEmail}
@@ -292,6 +303,10 @@ function CollabGalleryContent({
         .collab-tabs button[data-tab="complete"]{--tab-color:#83c9ff}
         .collab-tabs button[aria-selected="true"]{background:color-mix(in srgb,var(--tab-color) 23%,#17171a);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tab-color) 38%,transparent);color:var(--tab-color);opacity:1}
         .collab-tabs button:hover:not([aria-selected="true"]){opacity:1}
+        .collab-release-tabs{display:flex;justify-content:center;gap:.5rem;max-width:900px;margin:-.75rem auto 1.5rem}
+        .collab-release-tabs button{border:1px solid rgba(105,224,192,.3);border-radius:999px;background:rgba(255,255,255,.035);color:rgba(255,255,255,.62);padding:.55rem 1rem;font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s,border-color .2s}
+        .collab-release-tabs button[aria-selected="true"]{border-color:rgba(105,224,192,.65);background:rgba(105,224,192,.14);color:#69e0c0}
+        .collab-release-tabs button:focus-visible{outline:2px solid #69e0c0;outline-offset:2px}
         .collab-video-opportunities{max-width:1600px;margin:0 auto 2rem;padding:1.2rem;border:1px solid rgba(255,62,165,.22);background:linear-gradient(120deg,rgba(255,62,165,.08),rgba(255,255,255,.02))}
         .collab-video-kicker{margin:0;color:#ff3ea5;font-size:.62rem;font-weight:900;letter-spacing:.22em}.collab-video-opportunities h2{margin:.35rem 0 1rem;font-size:1.35rem;font-weight:900}
         .collab-video-grid{display:grid;gap:.8rem}.collab-video-card{display:grid;grid-template-columns:6rem 1fr;gap:1rem;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.25);padding:.75rem}.collab-video-card>img{width:6rem;aspect-ratio:1;object-fit:cover}.collab-video-card h3{margin:.35rem 0;font-size:1rem;font-weight:800}.collab-video-card p{margin:.4rem 0;color:rgba(255,255,255,.65);font-size:.85rem;white-space:pre-wrap}.collab-video-status{color:#ff77bb;font-size:.58rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.collab-video-card audio{display:block;width:min(100%,22rem);height:2rem;margin:.7rem 0}.collab-video-card button{display:inline-block;border:1px solid rgba(255,62,165,.55);border-radius:999px;background:transparent;padding:.55rem .8rem;color:#ff3ea5;font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}

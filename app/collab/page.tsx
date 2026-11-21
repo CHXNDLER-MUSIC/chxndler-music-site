@@ -124,7 +124,7 @@ async function fetchArtistSongs(onlySongIds?: string[]): Promise<{ released: Art
         if (readyForCollab) opportunities.push("remix");
         // Some videos are already recorded but are not published yet. Those
         // songs should not be presented as seeking a video collaborator.
-        const videoRecorded = recordedVideoProjects.has(String(row.id)) || ["ALONE", "BE MY BEE", "MAKE BELIEVE", "ALWAYS ON MY MIND (ACOUSTIC)", "COLORS OF OUR HOME (BLUMA GAME SOUNDTRACK)", "LETTING GO"].includes(normalizeTitle(title));
+        const videoRecorded = recordedVideoProjects.has(String(row.id)) || ["BE MY BEE", "MAKE BELIEVE", "ALWAYS ON MY MIND (ACOUSTIC)", "COLORS OF OUR HOME (BLUMA GAME SOUNDTRACK)", "LETTING GO"].includes(normalizeTitle(title));
         if (!hasVideo && !videoRecorded) opportunities.push("video");
         if (!released) opportunities.push(...savedOpportunities.filter((value: string): value is "feature" => value === "feature"));
         const links = resolveSongLinks(row);

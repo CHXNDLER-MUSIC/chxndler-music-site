@@ -132,7 +132,7 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
       {done ? <div className="flex min-h-[24rem] flex-col items-center justify-center px-2 py-10 text-center">
         <span aria-hidden="true" className="mb-5 grid h-11 w-11 place-items-center rounded-full border border-[#FD52AF]/45 bg-[#FD52AF]/10 text-[#FD52AF]"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4 4L19 6"/></svg></span>
         <h2 id="collab-form-title" className="text-2xl font-black tracking-tight sm:text-3xl">Thanks for reaching out!</h2>
-        <p className="mt-3 max-w-md text-sm leading-6 text-white/60">I&apos;ve got your message and am excited to check out your idea. I&apos;ll take a look and get back to you soon!</p>
+        <p className="mt-3 max-w-md text-sm leading-6 text-white/60">I&apos;ll take a look and get back to you soon!</p>
         <a href="https://chxndler.world" className="mt-8 inline-flex min-h-12 items-center justify-center rounded-full bg-[#FD52AF] px-7 text-sm font-extrabold text-[#170d14] transition hover:shadow-[0_0_24px_rgba(253,82,175,.28)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Explore Heartverse</a>
         <p className="mt-5 text-sm text-white/60">There&apos;s more to explore.</p>
       </div> : <>
