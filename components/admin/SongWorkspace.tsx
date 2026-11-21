@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import SongPractice from "@/components/admin/SongPractice";
 import SongContent from "@/components/admin/SongContent";
@@ -61,7 +61,6 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [contentSummary, setContentSummary] = useState<ContentSummary | null>(null);
-  const detailsRef = useRef<HTMLDetailsElement>(null);
 
   async function load(): Promise<Profile | null> {
     setLoading(true); setProfile(null); setError("");
@@ -133,7 +132,7 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
     event.preventDefault(); setSaved(false); setError("");
     const form = new FormData(event.currentTarget);
     const body: Record<string, unknown> = { songId: id };
-    for (const key of ["meaning", "category", "submit_hub", "genre", "sub_genre", "sub_genre_2", "musical_key"]) body[key] = String(form.get(key) || "");
+    for (const key of ["meaning", "category", "genre", "sub_genre", "sub_genre_2", "musical_key"]) body[key] = String(form.get(key) || "");
     body.bpm = String(form.get("bpm") || "") ? Number(form.get("bpm")) : null;
     body.release_date = String(form.get("release_date") || "") || null;
     const response = await fetch("/api/admin/song-profile", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -184,7 +183,7 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
     await load(); selectTab("Music Video");
   }
 
-  if (loading) return <main className={`flex ${embedded ? "min-h-full" : "min-h-screen"} items-center justify-center bg-[#0b0b0f] p-6 text-sm text-white/55`}><span className="inline-flex items-center gap-3"><span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-white/15 border-t-[#42B8E8]"/>Loading song workspace…</span></main>;
+  if (loading) return <main style={{ background: "#0b0b0f" }} className={`admin-dashboard flex ${embedded ? "min-h-full" : "min-h-screen"} items-center justify-center !bg-[#0b0b0f] p-6 text-sm text-white/55`}><span className="inline-flex items-center gap-3"><span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-white/15 border-t-[#EF43A3]"/>Loading song workspace…</span></main>;
   if (!profile) return <main className={`${embedded ? "min-h-full" : "min-h-screen"} bg-[#0b0b0f] p-6 text-sm text-rose-200`}>{error || "Song unavailable."}</main>;
 
   const song = profile.song;
@@ -199,35 +198,34 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
       <header className="mb-5 flex flex-wrap items-center gap-4 sm:gap-5">
         <img src={profile.coverUrl} alt={`${song.title} artwork`} className="h-20 w-20 shrink-0 rounded-xl border border-white/10 object-cover shadow-[0_10px_32px_rgba(0,0,0,.3)] sm:h-24 sm:w-24" />
         <div className="min-w-0 flex-1"><p className="text-[.62rem] font-bold uppercase tracking-[.18em] text-[#EF43A3]">Song workspace</p><h1 className="mt-1 break-words text-2xl font-black tracking-tight sm:text-3xl">{song.title}</h1><div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/50"><span><span className="text-white/30">Release status</span> <strong className="font-semibold text-white/75">{song.is_released ? "Released" : "Unreleased"}</strong></span><span aria-hidden="true" className="text-white/20">·</span><span><span className="text-white/30">Production stage</span> <strong className="font-semibold text-white/75">{songProductionLabel(song)}</strong></span>{song.release_date && <><span aria-hidden="true" className="text-white/20">·</span><span><span className="text-white/30">Release date</span> <strong className="font-semibold text-white/75">{song.release_date}</strong></span></>}</div></div>
-        <button type="button" onClick={() => { if (tab !== "Overview") selectTab("Overview"); window.setTimeout(() => { if (detailsRef.current) { detailsRef.current.open = true; detailsRef.current.scrollIntoView({ behavior: "smooth", block: "center" }); } }, 0); }} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 transition hover:border-[#EF43A3]/40 hover:text-white">Edit details</button>
       </header>
 
-      <nav aria-label="Song workspace" className="mb-5 flex gap-1 overflow-x-auto rounded-xl border border-white/[.07] bg-[#111116] p-1">{tabs.map(item => <button key={item} type="button" onClick={() => selectTab(item)} aria-current={tab === item ? "page" : undefined} className={`shrink-0 rounded-lg px-3.5 py-2.5 text-xs font-semibold transition sm:flex-1 sm:text-sm ${tab === item ? "bg-[#EF43A3]/12 text-white shadow-[inset_0_0_0_1px_rgba(239,67,163,.28)]" : "text-white/45 hover:bg-white/[.04] hover:text-white/80"}`}>{item}</button>)}</nav>
+      <nav aria-label="Song workspace" className="mb-5 flex gap-1 overflow-x-auto rounded-xl border border-white/[.07] bg-[#111116] p-1">{tabs.map(item => <button key={item} type="button" onClick={() => selectTab(item)} aria-current={tab === item ? "page" : undefined} className={`shrink-0 rounded-lg px-3.5 py-2.5 text-xs font-semibold uppercase transition sm:flex-1 sm:text-sm ${tab === item ? "bg-[#EF43A3]/12 text-white shadow-[inset_0_0_0_1px_rgba(239,67,163,.28)]" : "text-white/45 hover:bg-white/[.04] hover:text-white/80"}`}>{item}</button>)}</nav>
       {error && <p role="alert" className="mb-4 rounded-lg border border-red-300/20 bg-red-300/[.06] px-3 py-2.5 text-sm text-red-200">{error}</p>}
 
       {tab === "Overview" && <div className="space-y-4">
         <SongProductionProgress song={song} onSaved={updated => setProfile(current => current ? { ...current, song: { ...current.song, ...updated } } : current)} />
 
         <section className="rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5" aria-labelledby="song-post-release-progress">
-          <div className="mb-2"><p className="text-[.62rem] font-bold uppercase tracking-[.16em] text-white/38">Release &amp; promotion</p><h2 id="song-post-release-progress" className="mt-1 text-sm font-bold">Post release</h2></div>
+          <div className="mb-2"><h2 id="song-post-release-progress" className="text-sm font-bold uppercase tracking-[.08em]">POST RELEASE</h2></div>
           <PostReleaseIconRow compact state={profile.postRelease} onToggle={(key, value) => void patchSong({ stage: postReleaseStage[key], complete: value })} />
         </section>
 
         <section className="rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5" aria-labelledby="song-content-progress">
-          <div className="flex flex-wrap items-center gap-3"><div className="mr-auto"><p className="text-[.62rem] font-bold uppercase tracking-[.16em] text-white/38">Publishing</p><h2 id="song-content-progress" className="mt-1 text-sm font-bold">Content <span className="ml-1 font-semibold text-white/55">— {contentSummary ? `${contentSummary.posted} of ${contentSummary.total} posted` : "Loading totals…"}</span></h2></div><button type="button" onClick={() => selectTab("Content")} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition hover:border-[#EF43A3]/40 hover:text-white">View Content</button></div>
+          <div className="flex flex-wrap items-center gap-3"><div className="mr-auto"><h2 id="song-content-progress" className="text-sm font-bold uppercase tracking-[.08em]">CONTENT <span className="ml-1 font-semibold normal-case tracking-normal text-white/55">— {contentSummary ? `${contentSummary.posted} of ${contentSummary.total} posted` : "Loading totals…"}</span></h2></div><button type="button" onClick={() => selectTab("Content")} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition hover:border-[#EF43A3]/40 hover:text-white">View Content</button></div>
           {contentSummary && <><div className="mt-3 h-1 overflow-hidden rounded-full bg-white/[.08]"><div className="h-full rounded-full bg-[#EF43A3] transition-[width]" style={{ width: `${contentPercent}%` }} /></div><p className="mt-2 text-xs text-white/45">{needsAttention} {needsAttention === 1 ? "item" : "items"} remaining <span className="mx-1.5 text-white/20">·</span>{contentPercent}% complete</p></>}
         </section>
 
         {profile.musicVideo ? <section className="rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5" aria-labelledby="song-music-video">
-          <div className="flex flex-wrap items-start gap-3"><div className="mr-auto"><p className="text-[.62rem] font-bold uppercase tracking-[.16em] text-white/38">Creative production</p><h2 id="song-music-video" className="mt-1 text-sm font-bold">Music Video</h2></div><button type="button" onClick={() => selectTab("Music Video")} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition hover:border-[#EF43A3]/40 hover:text-white">Open Project</button></div>
+          <div className="flex flex-wrap items-start gap-3"><div className="mr-auto"><h2 id="song-music-video" className="text-sm font-bold uppercase tracking-[.08em]">MUSIC VIDEO</h2></div><button type="button" onClick={() => selectTab("Music Video")} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition hover:border-[#EF43A3]/40 hover:text-white">Open Project</button></div>
           <div className="mt-3 grid gap-3 text-sm sm:grid-cols-3"><div><p className="text-[.65rem] text-white/38">Current stage</p><p className="mt-1 font-semibold text-white/80">{projectStage(profile.musicVideo)}</p></div><div><p className="text-[.65rem] text-white/38">Videographer</p><p className="mt-1 font-semibold text-white/80">{projectVideographer(profile.musicVideo)}</p></div><div><p className="text-[.65rem] text-white/38">Next action</p><p className="mt-1 font-semibold text-white/80">{profile.musicVideo.next_action || "Add a next action"}</p></div></div>
         </section> : <section className="flex flex-wrap items-center gap-3 rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:px-5"><div className="mr-auto"><h2 className="text-sm font-bold">Music Video</h2><p className="mt-1 text-xs text-white/45">No project started.</p></div><button type="button" disabled={busy} onClick={() => void createVideo()} className="rounded-lg bg-[#EF43A3] px-3.5 py-2.5 text-xs font-bold text-[#170d14] transition hover:brightness-110 disabled:opacity-50">{busy ? "Planning…" : "+ Plan Music Video"}</button></section>}
 
-        <details ref={detailsRef} className="rounded-xl border border-white/[.08] bg-[#111116]">
+        <details className="rounded-xl border border-white/[.08] bg-[#111116]">
           <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 text-sm font-semibold text-white/75 marker:hidden sm:px-5"><span className="mr-auto">Song Details</span><span className="text-[.65rem] font-normal text-white/35">Metadata, release links &amp; promotion</span><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4"><path strokeLinecap="round" strokeLinejoin="round" d="m5 7.5 5 5 5-5"/></svg></summary>
           <div className="space-y-5 border-t border-white/[.07] px-4 py-4 sm:px-5">
             <form onSubmit={saveCatalog} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {([ ["Meaning", "meaning", meaning], ["Category", "category", song.category], ["Submit Hub", "submit_hub", song.submit_hub], ["Genre", "genre", song.genre], ["Sub-genre", "sub_genre", song.sub_genre], ["Sub-genre 2", "sub_genre_2", song.sub_genre_2] ] as const).map(([label, name, value]) => <label key={name} className="text-xs font-medium text-white/45">{label}<input name={name} defaultValue={value || ""} className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EF43A3]/45" /></label>)}
+              {([ ["Meaning", "meaning", meaning], ["Category", "category", song.category], ["Genre", "genre", song.genre], ["Sub-genre", "sub_genre", song.sub_genre], ["Sub-genre 2", "sub_genre_2", song.sub_genre_2] ] as const).map(([label, name, value]) => <label key={name} className="text-xs font-medium text-white/45">{label}{name === "meaning" ? <textarea name={name} defaultValue={value || ""} rows={4} className="mt-1.5 w-full resize-y rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EF43A3]/45" /> : <input name={name} defaultValue={value || ""} className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EF43A3]/45" />}</label>)}
               <label className="text-xs font-medium text-white/45">BPM<input name="bpm" type="number" min="1" max="400" defaultValue={song.bpm ?? ""} className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EF43A3]/45" /></label>
               <label className="text-xs font-medium text-white/45">Release date<input name="release_date" type="date" defaultValue={song.release_date || ""} className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EF43A3]/45" /></label>
               <button type="submit" className="self-end justify-self-start rounded-lg bg-[#EF43A3] px-4 py-2.5 text-xs font-bold text-[#170d14] transition hover:brightness-110">Save song details</button>{saved && <span role="status" className="self-center text-xs text-emerald-300">Saved</span>}
@@ -235,7 +233,6 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
 
             <div className="border-t border-white/[.07] pt-4"><p className="mb-3 text-xs font-semibold text-white/65">Streaming &amp; associated links</p><div className="grid gap-3 sm:grid-cols-2">{links.map(([label, key]) => <label key={key} className="text-xs font-medium text-white/45">{label}<input type="url" value={linkValues[key] || ""} onChange={event => setLinkValues(current => ({ ...current, [key]: event.target.value }))} placeholder="https://" className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EF43A3]/45" /></label>)}</div><button type="button" onClick={() => void saveLinks()} className="mt-3 rounded-lg border border-white/10 px-3.5 py-2 text-xs font-semibold text-white/65 transition hover:border-[#EF43A3]/40 hover:text-white">Save links</button></div>
 
-            <div className="border-t border-white/[.07] pt-4"><p className="mb-3 text-xs font-semibold text-white/65">Release &amp; promotion progress</p><PostReleaseIconRow state={profile.postRelease} onToggle={(key, value) => void patchSong({ stage: postReleaseStage[key], complete: value })} /></div>
           </div>
         </details>
       </div>}
@@ -243,7 +240,7 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
       {tab === "Practice" && <SongPractice songId={song.id} title={song.title} slug={song.slug} musicalKey={song.musical_key || ""} capoFret={song.capo_fret} chordShape={song.chord_shape || ""} initialLyrics={song.lyrics || lyrics} initialNotes={song.practice_notes || ""} onSaveSetup={savePracticeSetup} onSaveLyrics={savePracticeLyrics} onSaveNotes={savePracticeNotes} />}
       {tab === "Content" && <SongContent songId={song.id} songTitle={song.title} />}
       {tab === "Music Video" && profile.musicVideo && <MusicVideoSummary songTitle={song.title} project={profile.musicVideo} />}
-      {tab === "Outreach" && <><div className="mb-4 flex flex-wrap items-center gap-3"><h2 className="mr-auto text-base font-bold">Song outreach</h2><Link href={`/admin?view=outreach&section=pitches&song=${encodeURIComponent(song.id)}`} className="text-sm font-semibold text-[#EF43A3]">Full Outreach view ↗</Link></div><OutreachWorkspace initialSection="pitches" initialSongId={song.id} /></>}
+      {tab === "Outreach" && <OutreachWorkspace initialSection="pitches" initialSongId={song.id} />}
       {busy && <p role="status" className="mt-3 text-xs text-white/40">Saving…</p>}
     </div>
   </main>;
@@ -259,7 +256,7 @@ function MusicVideoSummary({ songTitle, project }: { songTitle: string; project:
   const budget = typeof production.budget === "string" ? production.budget : "";
   const assignee = projectVideographer(project);
   return <section className="space-y-4">
-    <header className="flex flex-wrap items-start gap-3 rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5"><div className="mr-auto"><p className="text-[.62rem] font-bold uppercase tracking-[.15em] text-[#EF43A3]">Official music video</p><h2 className="mt-1 text-lg font-bold">{songTitle} — Official Music Video</h2><p className="mt-1 text-xs text-white/45">{assignee} · Next: {project.next_action || "Add a next action"}</p></div><Link href={`/admin/music-videos/${project.id}`} className="rounded-lg bg-[#EF43A3] px-3.5 py-2.5 text-xs font-bold text-[#170d14]">Open production workspace</Link></header>
+    <header className="flex flex-wrap items-start gap-3 rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5"><div className="mr-auto"><p className="text-[.62rem] font-bold uppercase tracking-[.15em] text-[#EF43A3]">Official music video</p><h2 className="mt-1 text-lg font-bold">{songTitle} — Official Music Video</h2><p className="mt-1 text-xs text-white/45">{assignee} · Next: {project.next_action || "Add a next action"}</p></div></header>
     <section className="rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5"><p className="mb-3 text-xs font-semibold text-white/60">Production stage · {active}</p><div className="flex flex-wrap gap-2">{stageList.map((stage, index) => <div key={stage} className={`flex-1 basis-[28%] rounded-md border px-2 py-2 text-center text-[.68rem] ${index === activeIndex ? "border-[#EF43A3]/40 bg-[#EF43A3]/10 text-[#ff9dcd]" : index < activeIndex ? "border-emerald-300/15 text-emerald-200/75" : "border-white/[.06] text-white/35"}`}>{stage}</div>)}</div></section>
     <section className="grid gap-3 sm:grid-cols-3">{[["Shoot date", shootDate], ["Target delivery", deliveryDate], ["Budget", budget]].map(([label, value]) => <div key={label} className="rounded-xl border border-white/[.08] bg-[#111116] p-4"><p className="text-xs text-white/40">{label}</p><p className="mt-1 text-sm text-white/75">{value || "Not set"}</p></div>)}</section>
     <p className="text-xs text-white/40">Creative brief, locations, shot list, proposal, agreement, and deliverables are managed in the linked production workspace.</p>

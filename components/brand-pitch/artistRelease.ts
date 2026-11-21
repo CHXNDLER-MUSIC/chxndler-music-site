@@ -54,7 +54,8 @@ export const releaseAudioId = (slug: string) => `release:${slug}`;
 export function releaseAudioSrc(slug: string): string {
   const norm = slug.toLowerCase().replace(/'/g, "");
   const key = trackKeyFromSlug(norm) as keyof typeof TRACKS | null;
-  return key && TRACKS[key] ? TRACKS[key].mp3 : supabaseTrackUrl(`${norm}.mp3`);
+  const storageFilename = norm === "copycat" ? "COPYCAT.mp3" : `${norm}.mp3`;
+  return key && TRACKS[key] ? TRACKS[key].mp3 : supabaseTrackUrl(storageFilename);
 }
 
 /** Lock-screen / Control Center info for a release. */
