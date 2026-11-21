@@ -67,6 +67,12 @@ export async function PATCH(request: Request) {
   if (typeof body.public_concept === "string") update.public_concept = body.public_concept.slice(0, 1000);
   if (typeof body.public_status === "string") update.public_status = body.public_status.slice(0, 80);
   if (typeof body.next_action === "string") update.next_action = body.next_action.slice(0, 240);
+  if (body.readiness && typeof body.readiness === "object" && !Array.isArray(body.readiness)) {
+    const keys = ["story", "actors", "locations", "outfits", "videographer"];
+    const valid = keys.every(key => ["not_started", "in_progress", "ready"].includes(body.readiness[key]));
+    if (!valid) return NextResponse.json({ error: "Set all five readiness categories to Not Started, In Progress, or Ready." }, { status: 400 });
+    update.readiness = Object.fromEntries(keys.map(key => [key, body.readiness[key]]));
+  }
   if (body.workspace && typeof body.workspace === "object" && !Array.isArray(body.workspace)) {
     const encoded = JSON.stringify(body.workspace);
     if (encoded.length > 400_000) return NextResponse.json({ error: "Project notes are too large. Use cloud links for large files." }, { status: 413 });
@@ -78,7 +84,14 @@ export async function PATCH(request: Request) {
     update.workspace = body.workspace;
   }
   if (body.assigned_videographer && typeof body.assigned_videographer === "object" && !Array.isArray(body.assigned_videographer)) update.assigned_videographer = body.assigned_videographer;
-  const { data, error } = await getSupabaseAdmin().from("music_video_projects").update(update).eq("id", id).select("id,updated_at").single();
+  const db = getSupabaseAdmin();
+  let result = await db.from("music_video_projects").update(update).eq("id", id).select("id,updated_at").single();
+  if (result.error && /readiness/i.test(result.error.message) && update.readiness) {
+    const legacyUpdate = { ...update };
+    delete legacyUpdate.readiness;
+    result = await db.from("music_video_projects").update(legacyUpdate).eq("id", id).select("id,updated_at").single();
+  }
+  const { data, error } = result;
   if (error) return NextResponse.json({ error: "Unable to save project." }, { status: 500 });
   return NextResponse.json({ project: data });
 }

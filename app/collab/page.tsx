@@ -230,7 +230,7 @@ export default async function CollabPage() {
   const permittedCatalog = inviteSession.scope === "song"
     ? allCatalogSongs.filter(song => song.databaseId === inviteSession.song_id && song.readyForCollab === true)
     : inviteSession.scope === "catalog"
-      ? allCatalogSongs.filter(song => song.readyForCollab === true || song.isReleased === true || song.audioStatus === "Final" || song.audioStatus === "Released")
+      ? allCatalogSongs
       : [];
   const released = permittedCatalog.filter(song => song.audioStatus === "Released" || song.audioStatus === "Final");
   const unreleased = permittedCatalog.filter(song => song.audioStatus !== "Released" && song.audioStatus !== "Final");

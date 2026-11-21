@@ -62,7 +62,6 @@ const practiceCatalog: SongInfo[] = catalog.map(song => {
 function titleKey(title: string) { return title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
 function metadataForTitle(title: string) { return catalogInfoByTitle.get(titleKey(title)) || practiceCatalog.find(info => titleKey(info.title) === titleKey(title)) || null; }
 export function practiceInfoFor(title: string) { return metadataForTitle(title); }
-const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const storageKey = "chxndler-admin-practice-v1";
 function slugify(title: string) { return title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
 function keyColor(key: string) {
@@ -70,12 +69,14 @@ function keyColor(key: string) {
   return colors[key] || "#d4d4dc";
 }
 
-export default function PracticeTab({ campaignSong = "" }: { campaignSong?: string }) {
-  const [date, setDate] = useState(today), [entries, setEntries] = useState<PracticeEntry[]>([]), [selected, setSelected] = useState("");
+export default function PracticeTab({ campaignSong = "", date }: { campaignSong?: string; date: string }) {
+  const [entries, setEntries] = useState<PracticeEntry[]>([]), [selected, setSelected] = useState("");
   const [catalogSongs, setCatalogSongs] = useState<SongInfo[]>(practiceCatalog);
   const [collapsedLyrics, setCollapsedLyrics] = useState<Set<string>>(() => new Set());
   const [songSearch, setSongSearch] = useState("");
   const [songPickerOpen, setSongPickerOpen] = useState(false);
+  const songPickerButton = useRef<HTMLButtonElement>(null);
+  const [songPickerPosition, setSongPickerPosition] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   const [saved, setSaved] = useState(false);
   const lyricsRequests = useRef(new Set<string>());
   const activeDate = useRef(date);
@@ -130,6 +131,22 @@ export default function PracticeTab({ campaignSong = "" }: { campaignSong?: stri
   }, [entries, date, catalogSongs]);
   const choices = catalogSongs;
   const filteredChoices = useMemo(() => choices.filter(song => song.title.toLowerCase().includes(songSearch.toLowerCase())), [choices, songSearch]);
+  useEffect(() => {
+    if (!songPickerOpen) { setSongPickerPosition(null); return; }
+    const updatePosition = () => {
+      const rect = songPickerButton.current?.getBoundingClientRect();
+      if (!rect) return;
+      const maxHeight = Math.min(window.innerHeight * 0.72, window.innerHeight - 32);
+      const availableBelow = window.innerHeight - rect.bottom - 16;
+      const height = Math.min(maxHeight, Math.max(180, availableBelow));
+      const top = availableBelow < 360 && rect.top > height + 16 ? rect.top - height - 8 : rect.bottom + 8;
+      setSongPickerPosition({ top, left: rect.left, width: rect.width, height });
+    };
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => { window.removeEventListener("resize", updatePosition); window.removeEventListener("scroll", updatePosition, true); };
+  }, [songPickerOpen]);
   function persist(next: PracticeEntry[]) {
     setEntries(next); setSaved(false);
     try { const all = JSON.parse(localStorage.getItem(storageKey) || "{}"); all[date] = next; localStorage.setItem(storageKey, JSON.stringify(all)); setSaved(true); }
@@ -141,16 +158,12 @@ export default function PracticeTab({ campaignSong = "" }: { campaignSong?: stri
   }
   const trackFor = (title: string) => catalogSongs.find(song => titleKey(song.title) === titleKey(title)) || catalog.find(song => slugify(song.title) === slugify(title) || (slugify(title) === "mr-brightside" && song.slug === "mr-brightside-killers-cover"));
   return <section>
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-white/10 bg-white/[.03] p-5">
-      <div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#ff66b4]">Practice session</p><h2 className="mt-1 text-2xl font-black">Song practice</h2></div>
-      <label className="grid gap-1 text-xs text-white/50">Practice date<input type="date" value={date} onChange={event => setDate(event.target.value)} className="rounded-lg border border-white/10 bg-[#111116] px-3 py-2 text-sm text-white" /></label>
-    </div>
     <div className="mb-5 flex flex-wrap gap-2">
       <div className="relative min-w-0 flex-1">
-        <button type="button" aria-haspopup="listbox" aria-expanded={songPickerOpen} onClick={() => setSongPickerOpen(open => !open)} className="flex h-14 w-full items-center justify-between gap-3 rounded-lg border border-white/15 bg-[#111116] px-4 text-left text-sm focus:border-[#ff66b4] focus:outline-none"><span style={{ color: selected ? keyColor(practiceInfoFor(selected)?.key || "") : undefined }}>{selected || `Choose a song to practice · ${choices.length} available`}</span><span className="text-[#ff66b4]">⌄</span></button>
-        {songPickerOpen && <div className="absolute inset-x-0 top-full z-30 mt-2 max-h-[75vh] overflow-hidden rounded-xl border border-white/15 bg-[#17171c] shadow-2xl">
+        <button ref={songPickerButton} type="button" aria-haspopup="listbox" aria-expanded={songPickerOpen} onClick={() => setSongPickerOpen(open => !open)} className="flex h-14 w-full items-center justify-between gap-3 rounded-lg border border-white/15 bg-[#111116] px-4 text-left text-sm focus:border-[#ff66b4] focus:outline-none"><span style={{ color: selected ? keyColor(practiceInfoFor(selected)?.key || "") : undefined }}>{selected || `Choose a song to practice · ${choices.length} available`}</span><span className="text-[#ff66b4]">⌄</span></button>
+        {songPickerOpen && songPickerPosition && <div style={{ position: "fixed", top: songPickerPosition.top, left: songPickerPosition.left, width: songPickerPosition.width, height: songPickerPosition.height }} className="z-[150] flex flex-col overflow-hidden rounded-xl border border-white/15 bg-[#17171c] shadow-2xl">
           <input autoFocus type="search" value={songSearch} onChange={event => setSongSearch(event.target.value)} placeholder="Search songs…" aria-label="Search songs to practice" className="w-full border-b border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"/>
-          <div role="listbox" aria-label="Songs to practice" className="max-h-[65vh] overflow-y-auto p-1.5">{filteredChoices.map(song => <button key={song.title} type="button" role="option" aria-selected={selected === song.title} onClick={() => { setSelected(song.title); setSongPickerOpen(false); }} className="flex w-full flex-col items-start gap-1.5 rounded-lg px-3 py-2.5 text-left transition hover:bg-white/[.07]"><span className="flex flex-wrap items-center gap-2"><span className="text-sm font-bold" style={{ color: keyColor(song.key) }}>{song.title}</span>{song.readyForCollab && <span className="rounded-full border border-[#FD52AF]/25 bg-[#FD52AF]/[.08] px-2 py-0.5 text-[.58rem] font-bold uppercase tracking-wide text-[#ff9dcd]">Open to collaborate</span>}</span><span className="flex flex-wrap gap-1.5 text-[.65rem]"><span className="rounded border border-violet-300/20 bg-violet-300/[.08] px-1.5 py-0.5 text-violet-200">Key: {song.key || "—"}</span><span className="rounded border border-sky-300/20 bg-sky-300/[.08] px-1.5 py-0.5 text-sky-200">Capo: {song.capo || "—"}</span><span className="rounded border border-amber-300/20 bg-amber-300/[.08] px-1.5 py-0.5 text-amber-200">Shape: {song.shape || "—"}</span></span></button>)}{!filteredChoices.length && <p className="px-3 py-5 text-center text-sm text-white/40">No songs found.</p>}</div>
+          <div role="listbox" aria-label="Songs to practice" className="min-h-0 flex-1 overflow-y-auto p-1.5">{filteredChoices.map(song => <button key={song.title} type="button" role="option" aria-selected={selected === song.title} onClick={() => { setSelected(song.title); setSongPickerOpen(false); }} className="flex w-full flex-col items-start gap-1.5 rounded-lg px-3 py-2.5 text-left transition hover:bg-white/[.07]"><span className="flex flex-wrap items-center gap-2"><span className="text-sm font-bold" style={{ color: keyColor(song.key) }}>{song.title}</span>{song.readyForCollab && <span className="rounded-full border border-[#FD52AF]/25 bg-[#FD52AF]/[.08] px-2 py-0.5 text-[.58rem] font-bold uppercase tracking-wide text-[#ff9dcd]">Open to collaborate</span>}</span><span className="flex flex-wrap gap-1.5 text-[.65rem]"><span className="rounded border border-violet-300/20 bg-violet-300/[.08] px-1.5 py-0.5 text-violet-200">Key: {song.key || "—"}</span><span className="rounded border border-sky-300/20 bg-sky-300/[.08] px-1.5 py-0.5 text-sky-200">Capo: {song.capo || "—"}</span><span className="rounded border border-amber-300/20 bg-amber-300/[.08] px-1.5 py-0.5 text-amber-200">Shape: {song.shape || "—"}</span></span></button>)}{!filteredChoices.length && <p className="px-3 py-5 text-center text-sm text-white/40">No songs found.</p>}</div>
         </div>}
       </div>
       <button type="button" onClick={addSong} disabled={!selected} aria-label="Add song to practice" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[#ff3ea5] text-4xl font-semibold text-black shadow-[0_0_22px_rgba(255,62,165,0.35)] transition hover:bg-[#ff66b4] hover:shadow-[0_0_30px_rgba(255,62,165,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff9dce] disabled:opacity-40">+</button>

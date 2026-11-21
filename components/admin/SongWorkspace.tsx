@@ -50,6 +50,10 @@ function projectStage(project: MusicVideoProject) {
 function projectVideographer(project: MusicVideoProject) {
   return String(project.assigned_videographer?.name || project.assigned_videographer?.email || "Not assigned");
 }
+function projectReadiness(project: MusicVideoProject) {
+  const readiness = (project.workspace?.readiness || {}) as Record<string, string>;
+  return Object.values(readiness).filter(value => value === "ready").length;
+}
 export default function SongWorkspace({ id, embedded = false, onBack }: { id: string; embedded?: boolean; onBack?: () => void }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [lyrics, setLyrics] = useState("");
@@ -218,7 +222,7 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
 
         {profile.musicVideo ? <section className="rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5" aria-labelledby="song-music-video">
           <div className="flex flex-wrap items-start gap-3"><div className="mr-auto"><h2 id="song-music-video" className="text-sm font-bold uppercase tracking-[.08em]">MUSIC VIDEO</h2></div><button type="button" onClick={() => selectTab("Music Video")} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition hover:border-[#EF43A3]/40 hover:text-white">Open Project</button></div>
-          <div className="mt-3 grid gap-3 text-sm sm:grid-cols-3"><div><p className="text-[.65rem] text-white/38">Current stage</p><p className="mt-1 font-semibold text-white/80">{projectStage(profile.musicVideo)}</p></div><div><p className="text-[.65rem] text-white/38">Videographer</p><p className="mt-1 font-semibold text-white/80">{projectVideographer(profile.musicVideo)}</p></div><div><p className="text-[.65rem] text-white/38">Next action</p><p className="mt-1 font-semibold text-white/80">{profile.musicVideo.next_action || "Add a next action"}</p></div></div>
+          <div className="mt-3 grid gap-3 text-sm sm:grid-cols-3"><div><p className="text-[.65rem] text-white/38">Production stage · Readiness</p><p className="mt-1 font-semibold text-white/80">{projectStage(profile.musicVideo)} · {projectReadiness(profile.musicVideo)}/5 Ready</p></div><div><p className="text-[.65rem] text-white/38">Videographer</p><p className="mt-1 font-semibold text-white/80">{projectVideographer(profile.musicVideo)}</p></div><div><p className="text-[.65rem] text-white/38">Next action</p><p className="mt-1 font-semibold text-white/80">{profile.musicVideo.next_action || "Add a next action"}</p></div></div>
         </section> : <section className="flex flex-wrap items-center gap-3 rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:px-5"><div className="mr-auto"><h2 className="text-sm font-bold">Music Video</h2><p className="mt-1 text-xs text-white/45">No project started.</p></div><button type="button" disabled={busy} onClick={() => void createVideo()} className="rounded-lg bg-[#EF43A3] px-3.5 py-2.5 text-xs font-bold text-[#170d14] transition hover:brightness-110 disabled:opacity-50">{busy ? "Planning…" : "+ Plan Music Video"}</button></section>}
 
         <details className="rounded-xl border border-white/[.08] bg-[#111116]">

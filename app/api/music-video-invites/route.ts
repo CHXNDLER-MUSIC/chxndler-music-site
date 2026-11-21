@@ -57,7 +57,19 @@ export async function GET(request: Request) {
   const { data: project } = await db.from("music_video_projects").select("id,status,public_concept,workspace,songs(title,slug)").eq("id", invite.project_id).maybeSingle();
   if (!project) return NextResponse.json({ error: "Project not found." }, { status: 404 });
   const workspace = project.workspace || {};
-  return NextResponse.json({ project: { id: project.id, status: project.status, public_concept: project.public_concept, songs: project.songs, workspace: { creative: workspace.creative || {}, production: { deliverables: (workspace.production?.deliverables || []).map((item: Record<string, unknown>) => ({ title: item.title, description: item.description, format: item.format, dueDate: item.dueDate, status: item.status, deliveryLink: item.deliveryLink, revisionFeedback: item.revisionFeedback })), shootDate: workspace.production?.shootDate || "", requirements: workspace.production?.requirements || [] }, collaboration: { proposal: workspace.collaboration?.proposal || {}, discussion: workspace.collaboration?.discussion || [] } } }, recipientEmail: invite.recipient_email });
+  const creative = workspace.creative || {}, concepts = Array.isArray(creative.concepts) ? creative.concepts : [];
+  const selectedConcept = concepts.find((item: Record<string, unknown>) => item.id === creative.selectedConceptId) || concepts[0] || null;
+  const people = workspace.people || {};
+  const safeCreative = {
+    concept: selectedConcept ? { title: selectedConcept.title || "", story: selectedConcept.story || "", theme: selectedConcept.theme || "", aesthetic: selectedConcept.aesthetic || "", references: selectedConcept.references || "" } : {
+      title: creative.overallConcept || "", story: creative.story || "", theme: creative.themes || "", aesthetic: creative.aesthetic || "", references: creative.visualReferences || "",
+    },
+    characters: (Array.isArray(people.actors) ? people.actors : []).map((row: Record<string, unknown>) => ({ character: row.character, actor: row.actor, status: row.status })),
+    locations: (Array.isArray(people.locations) ? people.locations : []).map((row: Record<string, unknown>) => ({ name: row.name, address: row.address, url: row.url, scenes: row.scenes, status: row.status })),
+    scenes: Array.isArray(creative.scenes) ? creative.scenes : [],
+    shots: Array.isArray(creative.shotList) ? creative.shotList : [],
+  };
+  return NextResponse.json({ project: { id: project.id, status: project.status, public_concept: project.public_concept, songs: project.songs, workspace: { creative: safeCreative, production: { deliverables: (workspace.production?.deliverables || []).map((item: Record<string, unknown>) => ({ title: item.title, description: item.description, format: item.format, dueDate: item.dueDate, status: item.status })), shootDate: workspace.production?.shootDate || "", requirements: workspace.production?.requirements || [] }, collaboration: { proposal: workspace.collaboration?.proposal || {}, discussion: workspace.collaboration?.discussion || [] } } }, recipientEmail: invite.recipient_email });
 }
 
 export async function PATCH(request: Request) {

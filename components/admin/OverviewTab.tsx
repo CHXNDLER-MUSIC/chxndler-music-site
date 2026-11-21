@@ -52,6 +52,7 @@ export default function OverviewTab() {
   const [error, setError] = useState("");
   const [taskError, setTaskError] = useState("");
   const [practiceOpen, setPracticeOpen] = useState(false);
+  const [practiceDate, setPracticeDate] = useState(localToday);
 
   useEffect(() => {
     let active = true;
@@ -140,9 +141,9 @@ export default function OverviewTab() {
     </button>
 
     {practiceOpen && <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 p-3 backdrop-blur-sm sm:p-6" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setPracticeOpen(false); }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="practice-dialog-title" className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0d0d11] shadow-2xl">
-        <header className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6"><div><p className="text-[.62rem] font-bold uppercase tracking-[.17em] text-[#FD52AF]">Practice</p><h2 id="practice-dialog-title" className="text-lg font-bold text-white">Choose a song</h2></div><button type="button" autoFocus onClick={() => setPracticeOpen(false)} aria-label="Close practice" className="grid h-9 w-9 place-items-center rounded-lg text-xl text-white/55 transition hover:bg-white/[.08] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FD52AF]">×</button></header>
-        <div className="overflow-y-auto p-4 sm:p-6"><PracticeTab/></div>
+      <section role="dialog" aria-modal="true" aria-label="Practice session" className="flex h-[95vh] max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0d0d11] shadow-2xl">
+        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-white/10 px-4 py-3 sm:px-6"><label className="inline-flex flex-wrap items-center gap-3 text-xs font-bold uppercase tracking-[.12em] text-[#ff66b4]">Practice date<input type="date" value={practiceDate} onChange={event => setPracticeDate(event.target.value)} className="rounded-lg border border-white/10 bg-[#111116] px-3 py-2 text-sm font-medium normal-case tracking-normal text-white" /></label><button type="button" autoFocus onClick={() => setPracticeOpen(false)} className="rounded-lg bg-[#FD52AF] px-4 py-2 text-sm font-bold text-black transition hover:bg-[#ff79c3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FD52AF]">Finish</button></header>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6"><PracticeTab date={practiceDate}/></div>
       </section>
     </div>}
 

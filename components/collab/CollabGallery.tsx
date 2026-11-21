@@ -93,7 +93,7 @@ function CollabGalleryContent({
     const filteredCatalog = filterCollabCatalog(catalog, tab).filter(song => {
       if (tab !== "video") return true;
       const released = song.isReleased === true || song.audioStatus === "Final" || song.audioStatus === "Released";
-      return videoReleaseTab === "released" ? released : !released;
+      return videoReleaseTab === "released" ? released : !released && song.readyForCollab !== true;
     });
     const songs = filteredCatalog.sort((a, b) =>
       a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true }) || a.slug.localeCompare(b.slug),
@@ -235,7 +235,7 @@ function CollabGalleryContent({
       ) : (
         <div className="collab-empty">
           <p>NO SONGS IN THIS VIEW YET.</p>
-        <span>{tab === "collabs" ? "No songs are currently marked Ready for Collab." : tab === "video" ? "No collaboration-ready songs currently need a music video." : "No final or released songs yet."}</span>
+        <span>{tab === "collabs" ? "No songs are currently marked Ready for Collab." : tab === "video" ? videoReleaseTab === "unreleased" ? "No unreleased songs outside Open for Collab currently need a music video." : "No released songs currently need a music video." : "No final or released songs yet."}</span>
         </div>
       ))}
 
