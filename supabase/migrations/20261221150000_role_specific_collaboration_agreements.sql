@@ -29,7 +29,7 @@ create table if not exists public.collaboration_agreement_versions (
   request_id uuid not null references public.collaboration_requests(id) on delete restrict,
   song_id uuid references public.songs(id) on delete set null,
   invite_id uuid references public.collaboration_invites(id) on delete set null,
-  authorized_person_id uuid references public.collaboration_authorized_people(id) on delete set null,
+  authorized_person_id uuid references public.collab_authorized_people(id) on delete set null,
   agreement_type text not null check (agreement_type in ('singer_feature','remix','producer','videographer')),
   version integer not null check (version > 0),
   agreement_status text not null,

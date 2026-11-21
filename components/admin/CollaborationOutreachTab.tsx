@@ -2,13 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { agreementFields, agreementText, agreementTypeForContribution, agreementTypes, createAgreementDraft, type AgreementType } from "@/lib/collaborationAgreements";
 
 type RequestRow = { id: string; song_id: string | null; artist_name: string; contribution_type: string; status: string; submitted_at: string; message: string | null; profile_link?: string | null; agreement_status?: string; project_status?: string; songs?: { title?: string } | null };
 type Song = { id: string; title: string };
 type Contact = { id:string; first_name:string|null; last_name:string|null; email:string|null; phone?:string|null; venue:string|null };
-const agreementFields = ["admin_legal_name", "artist_credit", "master_royalty", "publishing_royalty", "flat_fee", "agreed_ownership_terms", "agreed_distribution_permissions", "agreed_release_restrictions", "agreed_credit_requirements"] as const;
-const agreementLabels: Record<string, string> = { admin_legal_name: "Artist legal name", artist_credit: "Artist / stage credit", master_royalty: "Master royalty (%)", publishing_royalty: "Composition / publishing (%)", flat_fee: "Flat fee", agreed_ownership_terms: "Ownership / license terms", agreed_distribution_permissions: "Distribution permissions", agreed_release_restrictions: "Release restrictions", agreed_credit_requirements: "Credit requirements" };
-
 export default function CollaborationOutreachTab({ songId = "" }: { songId?: string }) {
   const [rows, setRows] = useState<RequestRow[]>([]);
   const [songs, setSongs] = useState<Song[]>([]);
@@ -22,6 +20,7 @@ export default function CollaborationOutreachTab({ songId = "" }: { songId?: str
   const [requestLoading, setRequestLoading] = useState(false);
   const [agreementOpen, setAgreementOpen] = useState(false);
   const [agreementDraft, setAgreementDraft] = useState<Record<string, any>>({});
+  const [agreementType, setAgreementType] = useState<AgreementType>("singer_feature");
   const [agreementBusy, setAgreementBusy] = useState(false);
   const [agreementNotice, setAgreementNotice] = useState("");
 
@@ -29,8 +28,13 @@ export default function CollaborationOutreachTab({ songId = "" }: { songId?: str
     setSelectedRequest(null); setRequestLoading(true);
     const response = await fetch(`/api/admin/collaboration-requests?id=${encodeURIComponent(id)}`, { cache: "no-store" });
     const result = await response.json();
-    setSelectedRequest(response.ok ? result.request : { error: result.error || "Unable to load request." });
-    if (response.ok) setAgreementDraft(Object.fromEntries(agreementFields.map(field => [field, result.request[field] ?? ""])));
+    if (response.ok) {
+      const request = { ...result.request, agreementVersions: result.agreementVersions || [] };
+      const inferredType = request.agreement_type || agreementTypeForContribution(request.collaboration_invites?.contribution_type || request.contribution_type);
+      setSelectedRequest(request);
+      setAgreementType(inferredType);
+      setAgreementDraft(request.agreement_terms && Object.keys(request.agreement_terms).length ? request.agreement_terms : createAgreementDraft({ type: inferredType, request, invite: request.collaboration_invites }));
+    } else setSelectedRequest({ error: result.error || "Unable to load request." });
     setRequestLoading(false);
   }
 
@@ -62,6 +66,48 @@ export default function CollaborationOutreachTab({ songId = "" }: { songId?: str
     } catch (error) {
       setAgreementNotice(error instanceof Error ? error.message : "Unable to upload agreement.");
     } finally { setAgreementBusy(false); }
+  }
+
+  function previewAgreement() {
+    const preview = window.open("", "_blank");
+    if (!preview) { setAgreementNotice("Allow pop-ups to preview and print the agreement."); return; }
+    const text = agreementText(agreementType, agreementDraft);
+    const safeText = text.replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!);
+    preview.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>CHXNDLER Agreement Preview</title><style>body{font:16px/1.6 Arial,sans-serif;color:#17171c;max-width:850px;margin:48px auto;padding:0 24px}h1{color:#d92989}pre{white-space:pre-wrap;font:inherit}.notice{padding:12px;border:1px solid #d92989;border-radius:8px}@media print{body{margin:16mm auto}.notice{border-color:#aaa}}</style></head><body><h1>CHXNDLER Collaboration Agreement</h1><p class="notice"><b>Draft for legal review.</b> This generated template is not signed or binding until executed by all parties.</p><pre>${safeText}</pre><button onclick="window.print()">Print / Save as PDF</button></body></html>`);
+    preview.document.close();
+  }
+
+  async function sendAgreement() {
+    if (!selectedRequest?.id) return;
+    setAgreementBusy(true); setAgreementNotice("Sending agreement…");
+    try {
+      const response = await fetch(`/api/admin/collaboration-requests/${selectedRequest.id}/send-agreement`, { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Unable to send agreement.");
+      await openRequest(selectedRequest.id); setAgreementNotice("Agreement email sent. Awaiting a manually signed PDF.");
+    } catch (error) { setAgreementNotice(error instanceof Error ? error.message : "Unable to send agreement."); }
+    finally { setAgreementBusy(false); }
+  }
+
+  function previewAgreement() {
+    const preview = window.open("", "_blank");
+    if (!preview) { setAgreementNotice("Allow pop-ups to preview and print the agreement."); return; }
+    const text = agreementText(agreementType, agreementDraft);
+    const safeText = text.replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!);
+    preview.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>CHXNDLER Agreement Preview</title><style>body{font:16px/1.6 Arial,sans-serif;color:#17171c;max-width:850px;margin:48px auto;padding:0 24px}h1{color:#d92989}pre{white-space:pre-wrap;font:inherit}.notice{padding:12px;border:1px solid #d92989;border-radius:8px}@media print{body{margin:16mm auto}.notice{border-color:#aaa}}</style></head><body><h1>CHXNDLER Collaboration Agreement</h1><p class="notice"><b>Draft for legal review.</b> This generated template is not signed or binding until executed by all parties.</p><pre>${safeText}</pre><button onclick="window.print()">Print / Save as PDF</button></body></html>`);
+    preview.document.close();
+  }
+
+  async function sendAgreement() {
+    if (!selectedRequest?.id) return;
+    setAgreementBusy(true); setAgreementNotice("Sending agreement…");
+    try {
+      const response = await fetch(`/api/admin/collaboration-requests/${selectedRequest.id}/send-agreement`, { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Unable to send agreement.");
+      await openRequest(selectedRequest.id); setAgreementNotice("Agreement email sent. Awaiting a manually signed PDF.");
+    } catch (error) { setAgreementNotice(error instanceof Error ? error.message : "Unable to send agreement."); }
+    finally { setAgreementBusy(false); }
   }
 
   async function load() {
