@@ -42,6 +42,8 @@ export async function POST(request: Request) {
     title: body.title.trim().slice(0, 180),
     description: typeof body.description === "string" ? body.description.trim().slice(0, 5000) : "",
     priority: priorities.includes(body.priority) ? body.priority : "normal",
+    task_category: ["music", "editing", "admin"].includes(body.task_category) ? body.task_category : (body.business_area === "unreleased_song" ? "music" : "admin"),
+    parent_task_id: typeof body.parent_task_id === "string" && /^[0-9a-f-]{36}$/i.test(body.parent_task_id) ? body.parent_task_id : null,
     due_at: typeof body.due_at === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.due_at) ? body.due_at : null,
     song_id: null,
   };
@@ -64,13 +66,15 @@ export async function PATCH(request: Request) {
   if (typeof body.id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.id)) return NextResponse.json({ error: "Invalid task." }, { status: 400 });
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (typeof body.status === "string" && taskStatuses.includes(body.status)) update.status = body.status;
+  if (["music", "editing", "admin"].includes(body.task_category)) update.task_category = body.task_category;
+  if (body.parent_task_id === null || body.parent_task_id === "") update.parent_task_id = null;
+  else if (typeof body.parent_task_id === "string" && /^[0-9a-f-]{36}$/i.test(body.parent_task_id)) update.parent_task_id = body.parent_task_id;
   if (typeof body.priority === "string" && priorities.includes(body.priority)) update.priority = body.priority;
   if (typeof body.title === "string" && body.title.trim()) update.title = body.title.trim().slice(0, 180);
   if (typeof body.description === "string") update.description = body.description.trim().slice(0, 5000);
   if (body.due_at === null || body.due_at === "") update.due_at = null;
   else if (typeof body.due_at === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.due_at)) {
     update.due_at = body.due_at;
-    if (body.status === undefined) update.status = "todo";
   }
   if (Object.keys(update).length === 1) return NextResponse.json({ error: "No valid changes provided." }, { status: 400 });
   const { data, error } = await getSupabaseAdmin().from("admin_tasks").update(update).eq("id", body.id).select("id").maybeSingle();

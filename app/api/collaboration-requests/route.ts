@@ -74,14 +74,25 @@ export async function POST(request: Request) {
     const { data: existing } = await duplicateQuery.maybeSingle();
     if (existing) return NextResponse.json({ ok: true, id: existing.id, duplicate: true });
     const submittedAt = new Date().toISOString();
-    const { data: row, error } = await db.from("collaboration_requests").insert({
+    const requestValues = {
       submission_key: submissionKey, submission_ip_hash: ipHash,
       invite_id: invite?.source === "invite" ? invite.id : null,
-      authorized_person_id: invite?.source === "authorized_person" ? invite.id : null,
       song_id: songId || null, music_video_project_id: isVideoApplication && /^[0-9a-f-]{36}$/i.test(videoProjectId) ? videoProjectId : null, portfolio_url: portfolio || profile || null, estimated_rate: estimatedRate || null, artist_name: artistName, email, profile_link: profile || null, phone: phone || null,
       contribution_type: contribution, message: message || null, terms_version: terms.version,
       acknowledged_at: null, submitted_at: submittedAt,
-    }).select("id").single();
+    };
+    const linkedRequestValues = invite?.source === "authorized_person"
+      ? { ...requestValues, authorized_person_id: invite.id }
+      : requestValues;
+    let { data: row, error } = await db.from("collaboration_requests").insert(linkedRequestValues).select("id").single();
+    // The authorized-person association is an additive migration. If an older
+    // database has not received it yet, preserve the request and its artist
+    // identity while omitting only that optional relationship.
+    if (error && invite?.source === "authorized_person" &&
+      (error.code === "42703" || error.code === "PGRST204") && error.message?.includes("authorized_person_id")) {
+      console.warn("[collab] authorized_person_id is not available; saving request without the optional person link until its migration is applied.");
+      ({ data: row, error } = await db.from("collaboration_requests").insert(requestValues).select("id").single());
+    }
     if (error?.code === "23505") {
       const { data: prior } = await db.from("collaboration_requests").select("id").eq("submission_key", submissionKey).maybeSingle();
       if (prior) return NextResponse.json({ ok: true, id: prior.id, duplicate: true });
