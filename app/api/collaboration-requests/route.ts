@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     const requestValues = {
       submission_key: submissionKey, submission_ip_hash: ipHash,
       invite_id: invite?.source === "invite" ? invite.id : null,
-      song_id: songId || null, music_video_project_id: isVideoApplication && /^[0-9a-f-]{36}$/i.test(videoProjectId) ? videoProjectId : null, portfolio_url: portfolio || profile || null, estimated_rate: estimatedRate || null, artist_name: artistName, email, profile_link: profile || null, phone: phone || null,
+      song_id: songId || null, music_video_project_id: isVideoApplication && /^[0-9a-f-]{36}$/i.test(videoProjectId) ? videoProjectId : null, agreement_type: invite?.agreement_type || null, portfolio_url: portfolio || profile || null, estimated_rate: estimatedRate || null, artist_name: artistName, email, profile_link: profile || null, phone: phone || null,
       contribution_type: contribution, message: message || null, terms_version: terms.version,
       acknowledged_at: null, submitted_at: submittedAt,
     };

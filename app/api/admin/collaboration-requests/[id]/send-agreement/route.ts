@@ -24,7 +24,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!host || !fromAddress || !replyTo || !process.env.SMTP_USER || !process.env.SMTP_PASS) return NextResponse.json({ error: "Agreement email is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM, and COLLAB_REPLY_TO (or SMTP_FROM)." }, { status: 503 });
   const { data: fileLink, error: linkError } = await db.storage.from(BUCKET).createSignedUrl(row.agreement_path, 60 * 60 * 24 * 7);
   if (linkError || !fileLink?.signedUrl) return NextResponse.json({ error: "Could not create a secure agreement link." }, { status: 500 });
-  const title = row.songs?.title || "Collaboration project";
+  const songRelation = Array.isArray(row.songs) ? row.songs[0] : row.songs;
+  const title = songRelation?.title || "Collaboration project";
   const role = agreementTypes.find(type => type.value === row.agreement_type)?.label || "Collaboration";
   const html = `<div style="background:#09090c;color:#fff;padding:28px;font:15px Arial;line-height:1.6"><h1 style="color:#ff3ea5">CHXNDLER</h1><p>Hi ${escapeHtml(row.artist_name)},</p><p>Your ${escapeHtml(role)} agreement for <b>${escapeHtml(title)}</b> is ready for review.</p><p><a href="${escapeHtml(fileLink.signedUrl)}" style="display:inline-block;padding:12px 18px;background:#ff3ea5;color:#09090c;text-decoration:none;font-weight:bold">Review agreement PDF</a></p><p>This link expires in seven days. Please sign the reviewed document outside this website and reply with the fully executed PDF. This email does not create an electronic signature.</p><p>CHXNDLER</p></div>`;
   let transport: import("nodemailer").Transporter;

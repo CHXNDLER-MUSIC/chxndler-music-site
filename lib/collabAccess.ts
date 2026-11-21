@@ -43,11 +43,11 @@ export async function getCollabInviteSession() {
   if (session.personId) {
     const { data, error } = await getSupabaseAdmin().from("collab_authorized_people")
       .select("id,full_name").eq("id", session.personId).maybeSingle();
-    return error || !data ? null : { id: data.id, display_name: data.full_name, email: "", song_id: null, scope: "catalog" as const, source: "authorized_person" as const };
+    return error || !data ? null : { id: data.id, display_name: data.full_name, email: "", song_id: null, agreement_type: null, scope: "catalog" as const, source: "authorized_person" as const };
   }
   if (!session.inviteId) return null;
   const { data, error } = await getSupabaseAdmin().from("collaboration_invites")
-    .select("id,display_name,song_id,invite_scope,invitee_email,revoked_at,expires_at")
+    .select("id,display_name,song_id,invite_scope,invitee_email,agreement_type,revoked_at,expires_at")
     .eq("id", session.inviteId).is("revoked_at", null)
     .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`).maybeSingle();
   return error || !data ? null : { ...data, scope: data.invite_scope || (data.song_id ? "song" : "catalog"), email: data.invitee_email || "", source: "invite" as const };

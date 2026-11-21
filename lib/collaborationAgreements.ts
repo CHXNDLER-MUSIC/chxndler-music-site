@@ -11,6 +11,7 @@ export const agreementTypes: { value: AgreementType; label: string }[] = [
 const sharedFields: AgreementField[] = [
   { key: "collaborator_legal_name", label: "Collaborator legal name" },
   { key: "collaborator_artist_name", label: "Artist / professional name" },
+  { key: "song_title", label: "Song / project" },
   { key: "contribution_description", label: "Contribution description", kind: "textarea" },
   { key: "fee_option", label: "Compensation", kind: "select", options: ["No fee", "Custom fee"] },
   { key: "flat_fee", label: "Flat fee ($)", kind: "number" },
@@ -61,6 +62,7 @@ export const agreementFields: Record<AgreementType, AgreementField[]> = {
   videographer: [
     { key: "collaborator_legal_name", label: "Videographer legal name" },
     { key: "collaborator_artist_name", label: "Professional / company credit" },
+    { key: "song_title", label: "Song and linked music video project" },
     { key: "production_scope", label: "Production scope", kind: "textarea" },
     { key: "shoot_dates", label: "Shoot date(s)", kind: "textarea" },
     { key: "shoot_locations", label: "Shoot location(s)", kind: "textarea" },
@@ -95,6 +97,8 @@ export function createAgreementDraft(input: { type: AgreementType; request: Reco
   const terms: Record<string, string> = {
     admin_legal_name: "Chandler Pierce",
     admin_artist_name: "CHXNDLER",
+    collaboration_request_id: request.id || "",
+    music_video_project_id: request.music_video_project_id || "",
     collaborator_legal_name: legalName,
     collaborator_artist_name: artistName,
     song_title: request.songs?.title || "Original song idea",
@@ -104,31 +108,55 @@ export function createAgreementDraft(input: { type: AgreementType; request: Reco
     master_royalty: "",
     publishing_split: "",
   };
-  for (const field of agreementFields[type]) if (field.defaultValue && !terms[field.key]) terms[field.key] = field.defaultValue;
+  for (const field of agreementFields[type]) if (field.defaultValue && !terms[field.key]) terms[field.key] = field.defaultValue.replaceAll("[collaborator artist name]", artistName || "collaborator");
   terms.fee_option = terms.fee_option || "No fee";
   return terms;
 }
 
 export function agreementText(type: AgreementType, terms: Record<string, string>) {
   const role = agreementTypes.find(item => item.value === type)?.label || type;
+  const roleClauses: Record<AgreementType, string[]> = {
+    singer_feature: [
+      "The collaborator grants no master or composition ownership by default. CHXNDLER retains the existing master and underlying song.",
+      "Any master royalty is a separate, expressly negotiated term. Publishing is based on actual songwriting contribution and a separately agreed split. A flat fee alone does not eliminate songwriting rights.",
+      "Official release and distribution remain subject to CHXNDLER's approval and the permissions stated in the final signed agreement.",
+    ],
+    remix: [
+      "CHXNDLER retains the original song and original master. Use of stems is limited to the authorized remix project.",
+      "The remixer may not independently release the remix. CHXNDLER controls official remix approval and distribution, subject to the final signed agreement.",
+      "Any new remix-master ownership, royalty, or composition contribution must be expressly agreed. Remixing alone does not create an automatic publishing split. Delivery includes final WAV and agreed stems.",
+    ],
+    producer: [
+      "CHXNDLER retains existing material. Rights in new production require express ownership or license language in the signed agreement.",
+      "Producer master royalties and publishing are negotiated separately. Publishing applies only where there is an agreed songwriting contribution.",
+      "Third-party samples must be disclosed and cleared. Deliverables are limited to the agreed masters, stems, and project files.",
+    ],
+    videographer: [
+      "No music-master or publishing royalty is offered for this video engagement.",
+      "CHXNDLER retains final creative and release approval. Video ownership or assignment transfers only as expressly stated in the signed agreement. Work-made-for-hire applies only where legally valid; otherwise an express assignment is required if transfer is intended.",
+      "Pre-existing third-party materials must be disclosed and properly licensed. Unreleased footage may not be published without approval.",
+    ],
+  };
   const lines = [
     "CHXNDLER COLLABORATION AGREEMENT — DRAFT FOR REVIEW",
     "This generated template requires legal review and approval before use. It is not signed or binding until executed by all parties.",
     `Agreement type: ${role}`,
+    `Collaboration request: ${terms.collaboration_request_id || "Not specified"}${type === "videographer" && terms.music_video_project_id ? ` · Music video project: ${terms.music_video_project_id}` : ""}`,
     `Song / project: ${terms.song_title || "Not specified"}`,
     `CHXNDLER: ${terms.admin_legal_name || "Chandler Pierce"} professionally known as ${terms.admin_artist_name || "CHXNDLER"}`,
     `Collaborator: ${terms.collaborator_legal_name || "Not specified"}${terms.collaborator_artist_name ? ` professionally known as ${terms.collaborator_artist_name}` : ""}`,
     "",
     "SCOPE AND TERMS",
+    ...roleClauses[type],
   ];
   for (const field of agreementFields[type]) {
     if (["collaborator_legal_name", "collaborator_artist_name", "fee_option"].includes(field.key)) continue;
     const value = terms[field.key]?.trim();
     if (value) lines.push(`${field.label}: ${value}`);
   }
+  if (type !== "videographer") lines.push("Master royalties and composition/publishing interests are separate. Blank percentages are unnegotiated and do not grant rights.");
   lines.push(
     `Compensation: ${terms.fee_option === "Custom fee" && terms.flat_fee ? `$${terms.flat_fee}` : "No fee proposed"}.`,
-    "Master royalties and composition/publishing interests are separate. Blank percentages are unnegotiated and do not grant rights.",
     "No ownership transfer, distribution permission, or release authorization is effective unless expressly stated in the final agreement signed by both parties.",
     "Unreleased music and footage must remain confidential. Third-party materials must be disclosed and appropriately licensed.",
     "",

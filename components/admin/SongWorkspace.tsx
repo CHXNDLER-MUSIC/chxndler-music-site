@@ -179,12 +179,12 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
     setSaved(true);
   }
 
-  async function createVideo() {
+  async function createVideo(destination: Tab = "Music Video") {
     setBusy(true); setError("");
     const response = await fetch("/api/music-video-projects", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ songId: id }) });
     const data = await response.json(); setBusy(false);
     if (!response.ok || !data.id) { setError(data.error || "Unable to create the video workspace."); return; }
-    await load(); selectTab("Music Video");
+    await load(); selectTab(destination);
   }
 
   if (loading) return <main style={{ background: "#0b0b0f" }} className={`admin-dashboard flex ${embedded ? "min-h-full" : "min-h-screen"} items-center justify-center !bg-[#0b0b0f] p-6 text-sm text-white/55`}><span className="inline-flex items-center gap-3"><span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-white/15 border-t-[#EF43A3]"/>Loading song workspace…</span></main>;
@@ -242,7 +242,7 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
       </div>}
 
       {tab === "Practice" && <SongPractice songId={song.id} title={song.title} slug={song.slug} musicalKey={song.musical_key || ""} capoFret={song.capo_fret} chordShape={song.chord_shape || ""} initialLyrics={song.lyrics || lyrics} initialNotes={song.practice_notes || ""} onSaveSetup={savePracticeSetup} onSaveLyrics={savePracticeLyrics} onSaveNotes={savePracticeNotes} />}
-      {tab === "Content" && <SongContent songId={song.id} songTitle={song.title} />}
+      {tab === "Content" && <SongContent songId={song.id} songTitle={song.title} musicVideo={profile.musicVideo} onCreateMusicVideo={() => void createVideo("Content")} />}
       {tab === "Music Video" && profile.musicVideo && <MusicVideoSummary songTitle={song.title} project={profile.musicVideo} />}
       {tab === "Outreach" && <OutreachWorkspace initialSection="pitches" initialSongId={song.id} />}
       {busy && <p role="status" className="mt-3 text-xs text-white/40">Saving…</p>}
@@ -260,7 +260,7 @@ function MusicVideoSummary({ songTitle, project }: { songTitle: string; project:
   const budget = typeof production.budget === "string" ? production.budget : "";
   const assignee = projectVideographer(project);
   return <section className="space-y-4">
-    <header className="flex flex-wrap items-start gap-3 rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5"><div className="mr-auto"><p className="text-[.62rem] font-bold uppercase tracking-[.15em] text-[#EF43A3]">Official music video</p><h2 className="mt-1 text-lg font-bold">{songTitle} — Official Music Video</h2><p className="mt-1 text-xs text-white/45">{assignee} · Next: {project.next_action || "Add a next action"}</p></div></header>
+    <header className="flex flex-wrap items-start gap-3 rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5"><div className="mr-auto"><p className="text-[.62rem] font-bold uppercase tracking-[.15em] text-[#EF43A3]">Official music video</p><h2 className="mt-1 text-lg font-bold">{songTitle} — Official Music Video</h2><p className="mt-1 text-xs text-white/45">{assignee} · Next: {project.next_action || "Add a next action"}</p></div><Link href={`/admin/music-videos/${project.id}`} className="rounded-lg border border-[#EF43A3]/30 bg-[#EF43A3]/[.06] px-3.5 py-2.5 text-xs font-semibold text-[#ff9dcd] transition hover:bg-[#EF43A3]/[.12]">Open full production workspace ↗</Link></header>
     <section className="rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5"><p className="mb-3 text-xs font-semibold text-white/60">Production stage · {active}</p><div className="flex flex-wrap gap-2">{stageList.map((stage, index) => <div key={stage} className={`flex-1 basis-[28%] rounded-md border px-2 py-2 text-center text-[.68rem] ${index === activeIndex ? "border-[#EF43A3]/40 bg-[#EF43A3]/10 text-[#ff9dcd]" : index < activeIndex ? "border-emerald-300/15 text-emerald-200/75" : "border-white/[.06] text-white/35"}`}>{stage}</div>)}</div></section>
     <section className="grid gap-3 sm:grid-cols-3">{[["Shoot date", shootDate], ["Target delivery", deliveryDate], ["Budget", budget]].map(([label, value]) => <div key={label} className="rounded-xl border border-white/[.08] bg-[#111116] p-4"><p className="text-xs text-white/40">{label}</p><p className="mt-1 text-sm text-white/75">{value || "Not set"}</p></div>)}</section>
     <p className="text-xs text-white/40">Creative brief, locations, shot list, proposal, agreement, and deliverables are managed in the linked production workspace.</p>

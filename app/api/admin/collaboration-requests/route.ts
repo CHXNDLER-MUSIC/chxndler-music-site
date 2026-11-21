@@ -8,7 +8,7 @@ const AGREEMENT_BUCKET = "collaboration-agreements";
 export async function GET(request: Request) {
   const auth = await getApiUser(); if (!auth) return unauthorized(); if (!isAdminUser(auth.user)) return forbidden();
   const db = getSupabaseAdmin(), id = new URL(request.url).searchParams.get("id");
-  let query = db.from("collaboration_requests").select("*, songs(title,slug), collaboration_invites(display_name,first_name,last_name,artist_name,contribution_type)").order("submitted_at", { ascending: false });
+  let query = db.from("collaboration_requests").select("*, songs(title,slug), collaboration_invites(display_name,first_name,last_name,artist_name,contribution_type,agreement_type)").order("submitted_at", { ascending: false });
   if (id) query = query.eq("id", id);
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: "Unable to load requests." }, { status: 500 });
@@ -39,7 +39,7 @@ export async function PATCH(request: Request) {
   const { data: current, error: currentError } = await db.from("collaboration_requests").select("status,agreement_status,agreement_path,signed_agreement_path,agreement_type,agreement_terms,agreement_version,agreement_approved_at,song_id,music_video_project_id,invite_id,authorized_person_id,contribution_type,artist_name,email,profile_link,portfolio_url,estimated_rate").eq("id", id).maybeSingle();
   if (currentError || !current) return NextResponse.json({ error: "Request not found." }, { status: 404 });
   const agreementChanged = body.agreement !== undefined || body.agreement_type !== undefined;
-  if (current.agreement_status === "signed" && (agreementChanged || body.agreement_status !== undefined || body.approve_agreement !== undefined)) {
+  if (current.agreement_status === "signed" && (agreementChanged || body.approve_agreement !== undefined || (body.agreement_status !== undefined && body.agreement_status !== "completed"))) {
     return NextResponse.json({ error: "This agreement is signed and immutable. Use a new amendment version for any changes." }, { status: 409 });
   }
   const allowed = ["new","reviewing","approved","declined","agreement_pending","signed","in_progress","completed","canceled","archived"];
@@ -50,10 +50,27 @@ export async function PATCH(request: Request) {
   }
   if (body.agreement !== undefined) {
     if (!body.agreement || typeof body.agreement !== "object" || Array.isArray(body.agreement)) return NextResponse.json({ error: "Agreement terms must be an object." }, { status: 400 });
+    if (Object.values(body.agreement as Record<string, unknown>).some(value => !(typeof value === "string" || typeof value === "number" || value === null) || (typeof value === "string" && value.length > 12000))) return NextResponse.json({ error: "Agreement fields must be text or numbers under 12,000 characters." }, { status: 400 });
     update.agreement_terms = body.agreement;
   }
-  if (agreementChanged) update.agreement_approved_at = null;
+  if (agreementChanged) { update.agreement_approved_at = null; update.agreement_path = null; }
   if (body.approve_agreement === true) {
+    const type = (body.agreement_type || current.agreement_type) as string;
+    const terms = (body.agreement || current.agreement_terms || {}) as Record<string, unknown>;
+    const required: Record<string, string[]> = {
+      singer_feature: ["collaborator_legal_name", "song_title", "vocal_deliverables", "artist_credit"],
+      remix: ["collaborator_legal_name", "song_title", "remix_title", "remixer_credit", "remix_deliverables"],
+      producer: ["collaborator_legal_name", "song_title", "production_scope", "deliverables"],
+      videographer: ["collaborator_legal_name", "song_title", "production_scope", "delivery_deadline", "video_deliverables"],
+    };
+    const missing = (required[type] || []).filter(key => !String(terms[key] || "").trim());
+    if (terms.fee_option === "Custom fee" && !(Number(terms.flat_fee) > 0)) missing.push("flat_fee");
+    for (const key of ["master_royalty", "publishing_split"]) {
+      if (terms[key] === "" || terms[key] === null || terms[key] === undefined) continue;
+      const amount = Number(terms[key]);
+      if (!Number.isFinite(amount) || amount < 0 || amount > 100) return NextResponse.json({ error: `${key} must be a number between 0 and 100, or left blank.` }, { status: 400 });
+    }
+    if (missing.length) return NextResponse.json({ error: `Complete these essential terms before approval: ${missing.join(", ")}.` }, { status: 400 });
     update.agreement_approved_at = new Date().toISOString();
     update.agreement_approved_by = auth.user.email || "admin";
   }
@@ -93,6 +110,7 @@ export async function PATCH(request: Request) {
   }
   if (typeof body.agreement_status === "string" && ["draft","offer_sent","negotiating","awaiting_signature","declined","cancelled","completed","not_started","pending","sent"].includes(body.agreement_status)) {
     if (body.agreement_status === "signed") return NextResponse.json({ error: "Mark the request Signed only after uploading and verifying the executed agreement." }, { status: 409 });
+    if (["awaiting_signature", "sent"].includes(body.agreement_status)) return NextResponse.json({ error: "Use the Send for Signature action to email the approved reviewed PDF and record delivery." }, { status: 409 });
     if (["offer_sent", "awaiting_signature", "sent"].includes(body.agreement_status)) {
       if (!current.agreement_path) return NextResponse.json({ error: "Upload the reviewed agreement PDF before marking it sent." }, { status: 409 });
       if (!body.approve_agreement && !current.agreement_approved_at) return NextResponse.json({ error: "Approve the saved agreement terms before sending." }, { status: 409 });
@@ -105,7 +123,7 @@ export async function PATCH(request: Request) {
       update.agreement_status = body.agreement_status === "not_started" || body.agreement_status === "pending" ? "draft" : body.agreement_status;
     }
   }
-  const saveAgreementSnapshot = agreementChanged || body.agreement_status !== undefined || body.approve_agreement !== undefined;
+  const saveAgreementSnapshot = agreementChanged || body.approve_agreement !== undefined || (body.agreement_status !== undefined && current.agreement_status !== "signed") || body.status === "signed";
   if (saveAgreementSnapshot) update.agreement_version = (current.agreement_version || 0) + 1;
   const { data, error } = await db.from("collaboration_requests").update(update).eq("id", id).select("id,status,agreement_status,agreement_type,agreement_version,agreement_approved_at").single();
   if (error) return NextResponse.json({ error: "Unable to update request." }, { status: 500 });
@@ -113,8 +131,8 @@ export async function PATCH(request: Request) {
     const snapshot = await db.from("collaboration_agreement_versions").insert({
       request_id: id, song_id: current.song_id, invite_id: current.invite_id, authorized_person_id: current.authorized_person_id,
       agreement_type: (update.agreement_type || current.agreement_type || "singer_feature"), version: update.agreement_version,
-      agreement_status: update.agreement_status || current.agreement_status || "draft",
-      structured_terms: update.agreement_terms || current.agreement_terms || {}, document_path: current.agreement_path,
+      agreement_status: update.agreement_status || (body.status === "signed" ? "signed" : current.agreement_status) || "draft",
+      structured_terms: update.agreement_terms || current.agreement_terms || {}, document_path: update.agreement_path !== undefined ? update.agreement_path : current.agreement_path,
       signed_document_path: current.signed_agreement_path, created_by: auth.user.email || null,
     });
     if (snapshot.error) return NextResponse.json({ error: "The request was updated, but its version snapshot could not be saved. Do not retry until the history is reviewed." }, { status: 500 });

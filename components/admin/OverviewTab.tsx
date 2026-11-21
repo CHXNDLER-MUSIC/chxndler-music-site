@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { songCoverPath } from "@/lib/songCover";
 import { songProductionLabel, trackedProductionMilestones } from "@/lib/songWorkflow";
@@ -12,7 +12,7 @@ type Song = {
   production_stages?: Record<string, boolean> | null; production_progress_verified?: boolean; next_action?: string | null; next_action_manual?: boolean;
   linkedTask?: Task | null;
 };
-type Task = { id: string; title: string; status: string; priority: string; due_at: string | null; business_area?: string; song_id?: string | null; song?: { id: string; title: string } | null; content?: { id: string; song_id: string } | null };
+type Task = { id: string; title: string; status: string; priority: string; due_at: string | null; task_category?: "music" | "editing" | "admin"; business_area?: string; song_id?: string | null; song?: { id: string; title: string } | null; content?: { id: string; song_id: string } | null };
 type OutreachRecord = { id: string; status?: string | null };
 type SyncRecord = { id: string; status?: string | null };
 type CollaborationRequest = { id: string; artist_name: string; contribution_type: string; status: string; submitted_at: string; songs?: { title?: string } | null };
@@ -25,6 +25,13 @@ function songColor(name: string) {
   let hash = 0;
   for (const char of name.toUpperCase()) hash = (hash * 31 + char.charCodeAt(0)) | 0;
   return songColors[Math.abs(hash) % songColors.length];
+}
+
+function TaskCategoryIcon({ category = "admin" }: { category?: Task["task_category"] }) {
+  const color = category === "music" ? "#38B6FF" : category === "editing" ? "#B99AFF" : "#F2B84B";
+  return <span title={`${category || "admin"} task`} aria-label={`${category || "admin"} task`} className="grid h-6 w-6 shrink-0 place-items-center rounded-md" style={{ color, backgroundColor: `${color}18` }}>
+    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">{category === "music" ? <><path d="M12.5 4v9.2a2.3 2.3 0 1 1-1.4-2.1V6l6-1.3v7.5a2.3 2.3 0 1 1-1.4-2.1V3.5L12.5 4Z"/></> : category === "editing" ? <><path d="m13.8 3.5 2.7 2.7M4 16l1-.2 9.8-9.8-2.5-2.5-9.8 9.8L2 16h2Z"/><path d="M11 17h7"/></> : <><rect x="3.5" y="3" width="13" height="14" rx="2"/><path d="M7 7h6M7 10h6M7 13h3"/></>}</svg>
+  </span>;
 }
 
 function localToday() {
@@ -53,6 +60,8 @@ export default function OverviewTab() {
   const [taskError, setTaskError] = useState("");
   const [practiceOpen, setPracticeOpen] = useState(false);
   const [practiceDate, setPracticeDate] = useState(localToday);
+  const [songMenuOpen, setSongMenuOpen] = useState(false);
+  const songChooserRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -84,6 +93,17 @@ export default function OverviewTab() {
     document.addEventListener("keydown", closeOnEscape);
     return () => document.removeEventListener("keydown", closeOnEscape);
   }, [practiceOpen]);
+
+  useEffect(() => {
+    if (!songMenuOpen) return;
+    const closeOnOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !songChooserRef.current?.contains(event.target)) setSongMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setSongMenuOpen(false); };
+    document.addEventListener("pointerdown", closeOnOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => { document.removeEventListener("pointerdown", closeOnOutside); document.removeEventListener("keydown", closeOnEscape); };
+  }, [songMenuOpen]);
 
   useEffect(() => {
     const handleProgressUpdate = (event: Event) => {
@@ -120,11 +140,16 @@ export default function OverviewTab() {
     setTasks(rows => rows.map(row => row.id === task.id ? { ...row, status: "done" } : row));
   }
 
-  const chooser = <label className="inline-flex items-center gap-2 rounded-full border border-white/[.12] bg-black/20 px-3 py-2 text-xs font-semibold text-white/70 transition hover:border-[#FD52AF]/40 hover:text-white">
-    <span className="sr-only">Choose the song you are currently working on</span>
-    <select aria-label="Choose the song you are currently working on" value="" disabled={savingSong || loading || !songs.length} onChange={event => { if (event.target.value === "__clear") void chooseSong(""); else if (event.target.value) void chooseSong(event.target.value); }} className="max-w-40 cursor-pointer appearance-none bg-transparent text-xs font-semibold text-white/75 outline-none"><option value="" disabled>{savingSong ? "Saving…" : "Change Song"}</option>{selectedSongId && <option value="__clear">Clear featured song</option>}{songs.map(song => <option key={song.id} value={song.id}>{song.title}</option>)}</select>
-    <span aria-hidden="true" className="text-[#FD52AF]">⌄</span>
-  </label>;
+  const chooser = <div ref={songChooserRef} className="relative">
+    <button type="button" aria-label="Choose the song you are currently working on" aria-haspopup="listbox" aria-expanded={songMenuOpen} disabled={savingSong || loading || !songs.length} onClick={() => setSongMenuOpen(open => !open)} className="inline-flex items-center gap-2 rounded-full border border-white/[.12] bg-black/20 px-3 py-2 text-xs font-semibold text-white/70 transition hover:border-[#FD52AF]/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-50">
+      {savingSong ? "Saving…" : "Change Song"}<span aria-hidden="true" className={`text-[#FD52AF] transition-transform ${songMenuOpen ? "rotate-180" : ""}`}>⌄</span>
+    </button>
+    {songMenuOpen && <div role="listbox" aria-label="Choose a featured song" className="absolute bottom-full right-0 z-50 mb-2 max-h-[min(70vh,30rem)] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-[#FD52AF]/25 bg-[#111116] p-1.5 shadow-[0_18px_60px_rgba(0,0,0,.7)] ring-1 ring-black/50">
+      <p className="px-3 pb-1.5 pt-2 text-[.6rem] font-bold uppercase tracking-[.16em] text-white/35">Featured song</p>
+      {selectedSongId && <button type="button" role="option" aria-selected={false} onClick={() => { setSongMenuOpen(false); void chooseSong(""); }} className="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-semibold text-white/55 transition hover:bg-[#FD52AF]/10 hover:text-[#ff8bc4]"><span className="grid h-5 w-5 place-items-center rounded-full border border-white/15 text-[.65rem]">×</span>Clear featured song</button>}
+      {songs.map(song => { const color = songColor(song.title); const selected = song.id === selectedSongId; return <button key={song.id} type="button" role="option" aria-selected={selected} onClick={() => { setSongMenuOpen(false); if (!selected) void chooseSong(song.id); }} className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition ${selected ? "border-white/10 bg-white/[.07]" : "border-transparent hover:bg-white/[.055]"}`}><span className="h-2.5 w-2.5 shrink-0 rounded-full shadow-[0_0_12px_currentColor]" style={{ color, backgroundColor: color }}/><span className="min-w-0 flex-1 truncate text-xs font-bold" style={{ color }}>{song.title}</span>{selected && <span className="text-[.6rem] font-semibold uppercase tracking-wider text-white/35">Selected</span>}</button>; })}
+    </div>}
+  </div>;
 
   return <div className="space-y-4 sm:space-y-5">
     <section aria-labelledby="portfolio-snapshot-title" className="grid gap-2 sm:grid-cols-3 sm:gap-3">
@@ -165,7 +190,7 @@ export default function OverviewTab() {
     </section>
 
     <section aria-labelledby="up-next-title" className="rounded-2xl border border-white/[.08] bg-[#101014] p-4 sm:p-5">
-      <header className="mb-3 flex items-center justify-between gap-3"><div><p className="text-[.62rem] font-bold uppercase tracking-[.18em] text-white/35">Your task list</p><h2 id="up-next-title" className="mt-0.5 text-base font-bold">Up Next</h2></div><Link href="/admin?view=tasks" className="shrink-0 text-xs font-semibold text-[#FD52AF] transition hover:text-[#ffabd4]">View All Tasks →</Link></header>
+      <header className="mb-3 flex items-center gap-3"><div><p className="text-[.62rem] font-bold uppercase tracking-[.18em] text-white/35">Your task list</p><h2 id="up-next-title" className="mt-0.5 text-base font-bold">Up Next</h2></div></header>
       {taskError && <p role="alert" className="mb-3 rounded-lg border border-red-300/10 bg-red-300/[.04] px-3 py-2 text-xs text-red-200">{taskError}</p>}
       {loading ? <p className="py-5 text-center text-sm text-white/40">Loading tasks…</p> : actionableTasks.length || collaborationRequests.length ? <>
         {!!actionableTasks.length && <div className="hidden grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_2rem] gap-3 border-b border-white/[.06] pb-2 text-[.6rem] font-bold uppercase tracking-[.14em] text-white/30 sm:grid"><span/><span>Task</span><span>Song</span><span/></div>}
@@ -180,7 +205,7 @@ export default function OverviewTab() {
         const taskHref = task.content ? `/admin/songs/${task.content.song_id}?tab=content&content=${task.content.id}` : `/admin?view=tasks&task=${task.id}`;
         return <li key={task.id} className="grid grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_2rem] items-center gap-3 py-3 first:pt-1 last:pb-1">
           <button type="button" disabled={taskSaving === task.id} onClick={() => void completeTask(task)} aria-label={`Mark ${task.title} complete`} className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-white/20 text-transparent transition hover:border-[#FD52AF] hover:bg-[#FD52AF]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FD52AF] disabled:opacity-40"><span aria-hidden="true">✓</span></button>
-          <div className="min-w-0"><Link href={taskHref} className="block truncate text-sm font-semibold text-white/85 transition hover:text-[#ff9dcd]">{task.title}</Link><div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[.66rem] text-white/40">{task.due_at && <span className={isOverdue ? "font-semibold text-amber-200" : ""}>{isOverdue ? "Overdue · " : "Due "}{task.due_at}</span>}{task.priority === "high" && <span className="rounded-full bg-amber-200/[.08] px-1.5 py-0.5 font-semibold text-amber-100">High priority</span>}</div></div>
+          <div className="flex min-w-0 items-start gap-2"><TaskCategoryIcon category={task.task_category}/><div className="min-w-0 flex-1"><Link href={taskHref} className="block truncate text-sm font-semibold text-white/85 transition hover:text-[#ff9dcd]">{task.title}</Link><div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[.66rem] text-white/40">{task.due_at && <span className={isOverdue ? "font-semibold text-amber-200" : ""}>{isOverdue ? "Overdue · " : "Due "}{task.due_at}</span>}{task.priority === "high" && <span className="rounded-full bg-amber-200/[.08] px-1.5 py-0.5 font-semibold text-amber-100">High priority</span>}</div></div></div>
           <span className="min-w-0 truncate text-xs font-semibold" style={{ color: task.song ? songColor(task.song.title) : "rgba(255,255,255,.35)" }} title={task.song?.title || "No song"}>{task.song?.title || "—"}</span>
           <Link href={taskHref} aria-label={`Open ${task.title}`} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-white/25 transition hover:bg-white/[.05] hover:text-white/75">↗</Link>
         </li>;

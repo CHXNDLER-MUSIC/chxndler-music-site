@@ -20,16 +20,23 @@ export async function GET() {
   const { data: songs, error: songError } = await db.from("songs").select("id,title,slug").not("slug", "is", null);
   if (songError) return NextResponse.json({ error: "Unable to load unreleased songs." }, { status: 500 });
   const songRows = songs || [];
-  const { data: tasks, error } = await db.from("admin_tasks").select("*").order("due_at", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false });
+  const pageSize = 1000;
+  const { data: firstPage, count, error } = await db.from("admin_tasks").select("*", { count: "exact" }).order("due_at", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false }).range(0, pageSize - 1);
   if (error) return NextResponse.json({ error: "Unable to load tasks. Apply the task tracker migration first." }, { status: 500 });
+  const tasks = firstPage || [];
+  for (let offset = pageSize; offset < (count || 0); offset += pageSize) {
+    const { data: page, error: pageError } = await db.from("admin_tasks").select("*").order("due_at", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false }).range(offset, offset + pageSize - 1);
+    if (pageError) return NextResponse.json({ error: "Unable to load all task pages." }, { status: 500 });
+    tasks.push(...(page || []));
+  }
   const songById = new Map(songRows.map(song => [song.id, song]));
-  const allSongIds = [...new Set((tasks || []).map(task => task.song_id).filter(Boolean))];
+  const allSongIds = [...new Set(tasks.map(task => task.song_id).filter(Boolean))];
   const { data: linkedSongs } = allSongIds.length ? await db.from("songs").select("id,title,slug").in("id", allSongIds) : { data: [] as Array<{id:string;title:string;slug:string}> };
   const songMap = new Map([...(linkedSongs || []), ...songById.values()].map(song => [song.id, song]));
-  const contentIds = [...new Set((tasks || []).map(task => task.content_item_id).filter(Boolean))];
+  const contentIds = [...new Set(tasks.map(task => task.content_item_id).filter(Boolean))];
   const { data: content } = contentIds.length ? await db.from("song_content_items").select("id,song_id,title").in("id", contentIds) : { data: [] as Array<{id:string;song_id:string;title:string}> };
   const contentMap = new Map((content || []).map(item => [item.id, item]));
-  return NextResponse.json({ tasks: (tasks || []).map(task => ({ ...task, song: task.song_id ? songMap.get(task.song_id) || null : null, content: task.content_item_id ? contentMap.get(task.content_item_id) || null : null })) });
+  return NextResponse.json({ tasks: tasks.map(task => ({ ...task, song: task.song_id ? songMap.get(task.song_id) || null : null, content: task.content_item_id ? contentMap.get(task.content_item_id) || null : null })) });
 }
 
 export async function POST(request: Request) {

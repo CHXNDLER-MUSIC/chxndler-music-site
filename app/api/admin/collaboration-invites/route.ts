@@ -9,7 +9,7 @@ export async function GET() {
   const auth = await getApiUser(); if (!auth) return unauthorized(); if (!isAdminUser(auth.user)) return forbidden();
   const db = getSupabaseAdmin();
   const { data, error } = await db.from("collaboration_invites")
-    .select("id,display_name,first_name,last_name,artist_name,phone,song_id,invite_scope,invitee_email,revoked_at,expires_at,last_accessed_at,created_at,songs(title)")
+    .select("id,display_name,first_name,last_name,artist_name,phone,song_id,invite_scope,invitee_email,agreement_type,revoked_at,expires_at,last_accessed_at,created_at,songs(title)")
     .order("created_at", { ascending: false });
   if (error) return NextResponse.json({ error: "Unable to load invitations. Apply the personalized invitations migration first." }, { status: 503 });
   const ids = (data || []).map(row => row.id);
@@ -38,6 +38,7 @@ export async function POST(request: Request) {
   const inviteeEmail = typeof body.inviteeEmail === "string" ? body.inviteeEmail.trim().slice(0, 320).toLowerCase() : "";
   const personalMessage = typeof body.personalMessage === "string" ? body.personalMessage.trim().slice(0, 1200) : "";
   const contributionType = ["Feature / Vocals", "Remix", "Other"].includes(body.contributionType) ? body.contributionType : "Other";
+  const agreementType = ["singer_feature", "remix", "producer", "videographer"].includes(body.agreementType) ? body.agreementType : null;
   const contactId = typeof body.contactId === "string" && /^[0-9a-f-]{36}$/i.test(body.contactId) ? body.contactId : null;
   const expiryDays = body.expiryDays === "never" ? null : Number(body.expiryDays ?? 30);
   if (!displayName) return NextResponse.json({ error: "Enter a display name for this invitation." }, { status: 400 });
@@ -58,10 +59,10 @@ export async function POST(request: Request) {
   const normalizedName = normalize(displayName);
   const expiresAt = expiryDays === null ? null : new Date(Date.now() + expiryDays * 86400000).toISOString();
   const { data, error } = await db.from("collaboration_invites")
-    .insert({ display_name: displayName, normalized_display_name: normalizedName, invite_scope: scope, invitee_email: inviteeEmail || null, contact_id: contactId, personal_message: personalMessage, contribution_type: contributionType, song_id: scope === "song" ? songId : null,
+    .insert({ display_name: displayName, normalized_display_name: normalizedName, invite_scope: scope, invitee_email: inviteeEmail || null, contact_id: contactId, personal_message: personalMessage, contribution_type: contributionType, agreement_type: agreementType, song_id: scope === "song" ? songId : null,
       first_name: firstName || null, last_name: lastName || null, artist_name: artistName || null, phone: phone || null,
       token_hash: tokenHash, expires_at: expiresAt, revoked_at: null, last_accessed_at: null })
-    .select("id,display_name,first_name,last_name,artist_name,phone,expires_at,created_at").single();
+    .select("id,display_name,first_name,last_name,artist_name,phone,agreement_type,expires_at,created_at").single();
   if (error || !data) {
     console.error("[admin/collaboration-invites] create failed", error);
     return NextResponse.json({ error: "Could not create the invitation. Apply the personalized invitations migration first." }, { status: 503 });
