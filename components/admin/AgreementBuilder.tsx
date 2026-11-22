@@ -19,7 +19,7 @@ const ownershipSummaries: Record<AgreementType, string> = {
   singer_feature: "CHXNDLER retains ownership of the existing master recording and underlying composition, including all rights owned before this collaboration. The collaborator receives a default 0% master royalty unless otherwise expressly agreed in writing. Any songwriting or publishing shares are determined by actual authorship and a separate written split agreement. A flat fee alone does not transfer copyright ownership or waive songwriting rights. CHXNDLER controls official release and distribution, subject to the rights and permissions granted in the signed agreement.",
   producer: "Each party keeps pre-existing materials. The producer retains rights in new production, performances, and compositions except for the project license expressly granted here. Master royalties and songwriting shares are separate negotiated terms; a fee alone does not transfer copyright. Release and distribution are subject to the signed project license.",
   remix: "CHXNDLER retains rights to the original master and composition. The remixer retains rights in new material except for the limited source-material permission and project license stated in the signed agreement. A remix does not itself set songwriting shares or authorize an independent release.",
-  videographer: "Each party keeps pre-existing materials. The videographer retains rights in new footage and video materials unless a separate signed assignment says otherwise, and grants a project-specific license for the approved final video. Payment does not transfer copyright. Release and promotional use follow the permissions in the signed agreement.",
+  videographer: "CHXNDLER owns the song, master recording, and materials CHXNDLER provides. The videographer owns the footage and video they create, while giving CHXNDLER permission to use the final video to release and promote this song. That permission does not transfer ownership. Any ownership transfer must be signed by both parties.",
 };
 
 export default function AgreementBuilder({ request, close, onUpdated }: { request: RequestRecord; close: () => void; onUpdated: () => void }) {
@@ -151,14 +151,14 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
     } finally { setBusy(false); }
   }
 
-  async function sendForSignature() {
+  async function generateContractLink() {
     if (!sendEnabled) return;
-    setBusy(true); setError(""); setNotice("Sending the approved agreement…");
+    setBusy(true); setError(""); setNotice("Generating a private contract link…");
     try {
-      const result = await readResponse(await fetch(`/api/admin/collaboration-requests/${request.id}/send-agreement`, { method: "POST" }));
+      const result = await readResponse(await fetch(`/api/admin/collaboration-requests/${request.id}/generate-link`, { method: "POST" }));
       setAgreementStatus(result.agreement_status || "awaiting_signature"); setApprovedVersion(Number(result.version || savedVersion)); setPrivateAgreementUrl(String(result.reviewUrl || ""));
-      setNotice("Private agreement link emailed. The collaborator can sign online, and a signed copy will be emailed to them."); setReviewConfirmed(false); onUpdated();
-    } catch (sendError) { setError(sendError instanceof Error ? sendError.message : "The agreement could not be sent."); setNotice(""); }
+      setNotice("Private contract link generated. Open it in Collab or copy it to share with the collaborator."); setReviewConfirmed(false); onUpdated();
+    } catch (sendError) { setError(sendError instanceof Error ? sendError.message : "The contract link could not be generated."); setNotice(""); }
     finally { setBusy(false); }
   }
 
@@ -256,9 +256,9 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
           {missing.length > 0 && <div className="mt-3 rounded-lg border border-amber-200/20 bg-amber-100/[.04] px-3 py-2 text-xs leading-5 text-amber-100/80"><span className="font-semibold">Complete before approval:</span> {missing.join(" · ")}</div>}
           {!requestApprovalOkay && <p className="mt-3 text-xs text-amber-100/75">Approve this collaboration request in its request review before sending an agreement.</p>}
           {savedVersion > 0 && <label className={`mt-3 flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-xs leading-5 ${reviewConfirmed ? "border-[#FD52AF]/40 bg-[#FD52AF]/[.06]" : "border-white/10 bg-black/15"}`}><input type="checkbox" checked={reviewConfirmed} disabled={!previewIsCurrent || !ready || busy || signed || sent} onChange={event => void confirmReview(event.target.checked)} className="mt-0.5 accent-[#FD52AF]"/><span>I reviewed the exact preview for v{savedVersion} and approve this version for sending.</span></label>}
-          <p className="mt-3 text-[11px] leading-5 text-white/40">Sending emails a unique private agreement page. The collaborator can review and sign online; a signed copy is emailed to them.</p>
+          <p className="mt-3 text-[11px] leading-5 text-white/40">Generate a private link to open this contract in Collab. The collaborator can review and sign there.</p>
           {request.collaborator_signed_at && <p className="mt-3 rounded-lg border border-emerald-300/20 bg-emerald-300/[.05] px-3 py-2 text-xs text-emerald-100/80">Signed online by <strong>{request.collaborator_printed_name || [request.collaborator_first_name, request.collaborator_last_name].filter(Boolean).join(" ")}</strong> on {new Date(request.collaborator_signed_at).toLocaleString()}.{request.collaborator_signature_email_sent_at ? " Signed copy emailed." : " Signed copy email has not been confirmed."}</p>}
-          {privateAgreementUrl && <a href={privateAgreementUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex rounded-lg border border-[#FD52AF]/30 px-3 py-2 text-xs font-semibold text-[#ff9bcd] hover:bg-[#FD52AF]/[.06]">Open private agreement link ↗</a>}
+          {privateAgreementUrl && <div className="mt-3 flex flex-wrap items-center gap-2"><a href={privateAgreementUrl} target="_blank" rel="noreferrer" className="inline-flex rounded-lg border border-[#FD52AF]/30 px-3 py-2 text-xs font-semibold text-[#ff9bcd] hover:bg-[#FD52AF]/[.06]">Open contract in Collab ↗</a><button type="button" onClick={() => void navigator.clipboard.writeText(privateAgreementUrl).then(() => setNotice("Private contract link copied."))} className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-white/70 hover:bg-white/[.05]">Copy link</button></div>}
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <label className={`cursor-pointer rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-white/70 hover:border-[#FD52AF]/50 ${busy || signed || sent ? "pointer-events-none opacity-40" : ""}`}>Use Reviewed PDF<input type="file" accept="application/pdf" disabled={busy || signed || sent} onChange={event => void uploadAgreement(event.target.files?.[0], "draft")} className="sr-only" /></label>
             {agreementPath && <span className="text-xs text-emerald-200/75">Reviewed PDF attached to v{savedVersion}</span>}
@@ -276,7 +276,7 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
         <div className="mr-auto min-w-0 flex-1 text-xs" role="status">{error ? <span className="text-rose-300">{error}</span> : <span className="text-white/45">{notice || (dirty ? "Unsaved changes" : savedVersion ? `Version ${savedVersion}${currentApproval ? " · approved" : " · draft"}` : "Save a draft to begin version history")}</span>}</div>
         <button type="button" onClick={() => void saveDraft()} disabled={busy || signed || sent || !dirty && savedVersion > 0} className="rounded-lg border border-white/15 px-3 py-2.5 text-xs font-bold text-white/75 hover:bg-white/[.05] disabled:opacity-35">Save Draft</button>
         <button type="button" onClick={() => void previewAgreement()} disabled={busy || signed || !previewReady} className="rounded-lg border border-white/15 px-3 py-2.5 text-xs font-bold text-white/75 hover:bg-white/[.05] disabled:opacity-35">Preview Agreement</button>
-        <button type="button" onClick={() => void sendForSignature()} disabled={!sendEnabled} className="rounded-lg bg-[#FD52AF] px-4 py-2.5 text-xs font-extrabold text-[#170d14] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35">{busy ? "Working…" : "Send for Signature"}</button>
+        <button type="button" onClick={() => void generateContractLink()} disabled={!sendEnabled} className="rounded-lg bg-[#FD52AF] px-4 py-2.5 text-xs font-extrabold text-[#170d14] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35">{busy ? "Working…" : "Generate Link"}</button>
       </footer>
     </section>
   </div>;

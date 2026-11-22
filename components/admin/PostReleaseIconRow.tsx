@@ -28,7 +28,7 @@ export default function PostReleaseIconRow({ state, onToggle, compact = false }:
   if (compact) return <div className="flex flex-wrap items-center gap-3" aria-label={`Release and promotion progress: ${items.map(item => `${item.label} ${state?.[item.key] ? "complete" : "not set"}`).join(", ")}`}>
     {items.map(item => {
       const done = state?.[item.key] === true;
-      return <button key={item.key} type="button" title={`${item.label} · ${done ? "Done" : "Not yet"}`} aria-label={`${item.label}: ${done ? "complete" : "incomplete"}. Click to toggle.`} aria-pressed={done} onClick={() => onToggle(item.key, !done)} className="grid h-12 w-12 place-items-center rounded-lg transition hover:bg-white/[.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white" style={{ color: item.color, opacity: done ? 1 : .42 }}><Icon kind={item.kind} className="h-9 w-9"/></button>;
+      return <button key={item.key} type="button" title={item.label} aria-label={`${item.label}: ${done ? "complete" : "incomplete"}. Click to toggle.`} aria-pressed={done} onClick={() => onToggle(item.key, !done)} className="grid h-12 w-12 place-items-center rounded-lg transition hover:bg-white/[.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white" style={{ color: item.color, opacity: done ? 1 : .42 }}><Icon kind={item.kind} className="h-9 w-9"/></button>;
     })}
   </div>;
   return <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" aria-label={`Release and promotion progress: ${items.map(item => `${item.label} ${state?.[item.key] ? "complete" : "not set"}`).join(", ")}`}>

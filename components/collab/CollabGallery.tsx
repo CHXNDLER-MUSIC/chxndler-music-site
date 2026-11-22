@@ -245,8 +245,9 @@ function CollabGalleryContent({
                   {item.audioUrl && <span className="collab-cover-mark" aria-hidden="true">▶</span>}
                 </>
               )}
-              {!item.release.readyForCollab && item.release.releaseDate && <span className="collab-release-date">Release date · {new Date(`${item.release.releaseDate}T00:00:00`).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>}
-              {(item.release.readyForCollab || !!item.release.collaborationOpportunities?.length) && <span className="collab-opportunity-badges">{item.release.readyForCollab && <span data-opportunity="collab">Open for Collab</span>}{item.release.collaborationOpportunities?.map(value => <span key={value} data-opportunity={value}>{value === "feature" ? "Open for Feature" : value === "video" ? "Video Needed" : "Open for Remix"}</span>)}</span>}
+              {tab === "video" && videoReleaseTab === "unreleased" && item.release.releaseDate && <span data-release-status="expected" className="collab-release-date">{new Date(`${item.release.releaseDate}T00:00:00`).toLocaleDateString("en-US", { year: "numeric", month: "numeric", day: "numeric" })}</span>}
+              {item.release.readyForCollab && <span className="collab-card-badge collab-collab-badge">Open for Collab</span>}
+              {!!item.release.collaborationOpportunities?.some(value => value !== "remix") && <span className="collab-opportunity-badges">{item.release.collaborationOpportunities?.filter(value => value !== "remix").map(value => <span key={value} data-opportunity={value}>{value === "feature" ? "Open for Feature" : "Video Needed"}</span>)}</span>}
             </button>
           ))}
         </section>
@@ -316,14 +317,15 @@ function CollabGalleryContent({
         .collab-category-tabs button[aria-selected="true"]{background:rgba(255,62,165,.14);color:#ff62b0;box-shadow:inset 0 0 0 1px rgba(255,62,165,.38)}
         .collab-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:900px;margin:0 auto 1.5rem;padding:.25rem;border-radius:999px;background:rgba(255,255,255,.055)}
         .collab-tabs button{border:0;border-radius:999px;background:transparent;color:var(--tab-color);opacity:.7;padding:.75rem .5rem;font-size:.7rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s,opacity .2s}
-        .collab-tabs button[data-tab="collabs"]{--tab-color:#ff3ea5}
-        .collab-tabs button[data-tab="video"]{--tab-color:#69e0c0}
-        .collab-tabs button[data-tab="complete"]{--tab-color:#83c9ff}
+        .collab-tabs button[data-tab="collabs"]{--tab-color:#fcd34d}
+        .collab-tabs button[data-tab="video"]{--tab-color:#ff3ea5}
+        .collab-tabs button[data-tab="complete"]{--tab-color:#69e0c0}
         .collab-tabs button[aria-selected="true"]{background:color-mix(in srgb,var(--tab-color) 23%,#17171a);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tab-color) 38%,transparent);color:var(--tab-color);opacity:1}
         .collab-tabs button:hover:not([aria-selected="true"]){opacity:1}
         .collab-release-tabs{display:flex;justify-content:center;gap:.5rem;max-width:900px;margin:-.75rem auto 1.5rem}
         .collab-release-tabs button{border:1px solid rgba(105,224,192,.3);border-radius:999px;background:rgba(255,255,255,.035);color:rgba(255,255,255,.62);padding:.55rem 1rem;font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s,border-color .2s}
-        .collab-release-tabs button[aria-selected="true"]{border-color:rgba(105,224,192,.65);background:rgba(105,224,192,.14);color:#69e0c0}
+        .collab-release-tabs button[aria-selected="true"]:first-child{border-color:rgba(105,224,192,.65);background:rgba(105,224,192,.14);color:#69e0c0}
+        .collab-release-tabs button[aria-selected="true"]:last-child{border-color:rgba(131,201,255,.65);background:rgba(131,201,255,.14);color:#83c9ff}
         .collab-release-tabs button:focus-visible{outline:2px solid #69e0c0;outline-offset:2px}
         .collab-video-opportunities{max-width:1600px;margin:0 auto 2rem;padding:1.2rem;border:1px solid rgba(255,62,165,.22);background:linear-gradient(120deg,rgba(255,62,165,.08),rgba(255,255,255,.02))}
         .collab-video-kicker{margin:0;color:#ff3ea5;font-size:.62rem;font-weight:900;letter-spacing:.22em}.collab-video-opportunities h2{margin:.35rem 0 1rem;font-size:1.35rem;font-weight:900}
@@ -331,8 +333,10 @@ function CollabGalleryContent({
         .collab-tabs button:focus-visible,.collab-back:focus-visible{outline:2px solid #ff3ea5;outline-offset:2px}
         .collab-grid{max-width:1600px;margin:0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(.55rem,1vw,1rem)}
         .collab-cover{position:relative;display:block;width:100%;margin:0;padding:0;border:1px solid rgba(255,255,255,.12);border-radius:3px;overflow:hidden;background:#121216;cursor:pointer;text-align:left}
-        .collab-release-date{position:absolute;right:.65rem;top:.65rem;padding:.45rem .6rem;border:1px solid rgba(255,62,165,.35);border-radius:999px;background:rgba(8,8,11,.82);color:#ff9bcc;font-size:.62rem;font-weight:800;letter-spacing:.04em;backdrop-filter:blur(8px)}
-        .collab-opportunity-badges{position:absolute;left:.6rem;right:.6rem;bottom:.6rem;display:flex;flex-wrap:wrap;gap:.3rem;pointer-events:none}.collab-opportunity-badges span{border-radius:999px;padding:.3rem .5rem;background:rgba(8,8,11,.78);font-size:.56rem;font-weight:800;letter-spacing:.025em;backdrop-filter:blur(6px)}.collab-opportunity-badges [data-opportunity="feature"]{color:#ff78bd}.collab-opportunity-badges [data-opportunity="video"]{color:#69e0c0}.collab-opportunity-badges [data-opportunity="remix"]{color:#83c9ff}
+        .collab-release-date{position:absolute;right:.65rem;bottom:.65rem;padding:.35rem .55rem;border:1px solid rgba(255,62,165,.35);border-radius:999px;background:rgba(8,8,11,.88);color:#ff9bcc;font-size:.62rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;backdrop-filter:blur(8px)}
+        .collab-release-date[data-release-status="released"]{border-color:rgba(105,224,192,.48);color:#69e0c0}
+        .collab-card-badge{position:absolute;bottom:.6rem;z-index:2;border-radius:999px;padding:.3rem .5rem;background:rgba(8,8,11,.88);font-size:.56rem;font-weight:800;letter-spacing:.025em;backdrop-filter:blur(6px);pointer-events:none}.collab-collab-badge{right:.6rem;background:#fcd34d;color:#111116}
+        .collab-opportunity-badges{position:absolute;left:.6rem;bottom:.6rem;display:flex;flex-wrap:wrap;gap:.3rem;pointer-events:none}.collab-opportunity-badges span{border-radius:999px;padding:.3rem .5rem;background:rgba(8,8,11,.88);font-size:.56rem;font-weight:800;letter-spacing:.025em;backdrop-filter:blur(6px)}.collab-opportunity-badges [data-opportunity="feature"]{color:#ff78bd}.collab-opportunity-badges [data-opportunity="video"]{background:#ff3ea5;color:#111116}
         .collab-cover img{display:block;width:100%;height:auto;transition:transform .5s cubic-bezier(.2,.7,.2,1),filter .3s}
         .collab-cover-placeholder{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.25rem;padding:1.5rem;background:radial-gradient(circle at 50% 42%,rgba(255,62,165,.13),transparent 52%),linear-gradient(145deg,#20111d,#09090c);color:#fff;text-align:center}
         .collab-cover-placeholder strong{max-width:90%;font-size:clamp(1rem,2vw,1.75rem);line-height:1.08;text-transform:uppercase;letter-spacing:.08em}

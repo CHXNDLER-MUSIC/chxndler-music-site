@@ -193,7 +193,7 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
   const needsAttention = contentSummary ? Math.max(0, contentSummary.total - contentSummary.posted) : 0;
   const contentPercent = contentSummary?.total ? Math.round(contentSummary.posted / contentSummary.total * 100) : 0;
 
-  return <main style={{ background: "#0b0b0f" }} className={`admin-dashboard relative isolate ${embedded ? "min-h-full" : "min-h-screen"} !bg-[#0b0b0f] p-4 text-white sm:p-6`}>
+  return <main style={{ background: "#0b0b0f", minWidth: embedded ? 0 : "100vw", width: embedded ? "100%" : undefined }} className={`admin-dashboard relative isolate ${embedded ? "min-h-full" : "min-h-screen"} !bg-[#0b0b0f] p-4 text-white sm:p-6`}>
     <div className="relative z-10 mx-auto max-w-6xl">
       {embedded && onBack ? <button type="button" onClick={onBack} className="mb-4 inline-flex min-h-10 items-center rounded-lg border border-white/10 px-3.5 text-sm font-semibold text-white/65 transition hover:border-[#EF43A3]/40 hover:text-white">← Back to Songs</button> : !embedded && <Link href="/admin?view=songs" className="mb-4 inline-flex min-h-10 items-center rounded-lg border border-white/10 px-3.5 text-sm font-semibold text-white/65 transition hover:border-[#EF43A3]/40 hover:text-white">← Back to Songs</Link>}
 
@@ -206,22 +206,23 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
       {error && <p role="alert" className="mb-4 rounded-lg border border-red-300/20 bg-red-300/[.06] px-3 py-2.5 text-sm text-red-200">{error}</p>}
 
       {tab === "Overview" && <div className="space-y-4">
-        <SongProductionProgress song={song} onSaved={updated => setProfile(current => current ? { ...current, song: { ...current.song, ...updated } } : current)} />
-
-        <section className="rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5" aria-labelledby="song-post-release-progress">
-          <div className="mb-2"><h2 id="song-post-release-progress" className="text-sm font-bold uppercase tracking-[.08em]">POST RELEASE</h2></div>
-          <PostReleaseIconRow compact state={profile.postRelease} onToggle={(key, value) => void patchSong({ stage: postReleaseStage[key], complete: value })} />
-        </section>
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(18rem,.8fr)]">
+          <SongProductionProgress song={song} onSaved={updated => setProfile(current => current ? { ...current, song: { ...current.song, ...updated } } : current)} />
+          <section className="rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5" aria-labelledby="song-post-release-progress">
+            <div className="mb-2"><h2 id="song-post-release-progress" className="text-sm font-bold uppercase tracking-[.08em]">POST RELEASE</h2></div>
+            <PostReleaseIconRow compact state={profile.postRelease} onToggle={(key, value) => void patchSong({ stage: postReleaseStage[key], complete: value })} />
+          </section>
+        </div>
 
         <section className="rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5" aria-labelledby="song-content-progress">
           <div className="flex flex-wrap items-center gap-3"><div className="mr-auto"><h2 id="song-content-progress" className="text-sm font-bold uppercase tracking-[.08em]">CONTENT <span className="ml-1 font-semibold normal-case tracking-normal text-white/55">— {contentSummary ? `${contentSummary.posted} of ${contentSummary.total} posted` : "Loading totals…"}</span></h2></div><button type="button" onClick={() => selectTab("Content")} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition hover:border-[#EF43A3]/40 hover:text-white">View Content</button></div>
           {contentSummary && <><div className="mt-3 h-1 overflow-hidden rounded-full bg-white/[.08]"><div className="h-full rounded-full bg-[#EF43A3] transition-[width]" style={{ width: `${contentPercent}%` }} /></div><p className="mt-2 text-xs text-white/45">{needsAttention} {needsAttention === 1 ? "item" : "items"} remaining <span className="mx-1.5 text-white/20">·</span>{contentPercent}% complete</p></>}
         </section>
 
-        {profile.musicVideo ? <section className="rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5" aria-labelledby="song-music-video">
-          <div className="flex flex-wrap items-start gap-3"><div className="mr-auto"><h2 id="song-music-video" className="text-sm font-bold uppercase tracking-[.08em]">MUSIC VIDEO</h2></div><button type="button" onClick={() => selectTab("Music Video")} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition hover:border-[#EF43A3]/40 hover:text-white">Open Project</button></div>
-          <div className="mt-3 grid gap-3 text-sm sm:grid-cols-3"><div><p className="text-[.65rem] text-white/38">Production stage · Readiness</p><p className="mt-1 font-semibold text-white/80">{projectStage(profile.musicVideo)} · {projectReadiness(profile.musicVideo)}/5 Ready</p></div><div><p className="text-[.65rem] text-white/38">Videographer</p><p className="mt-1 font-semibold text-white/80">{projectVideographer(profile.musicVideo)}</p></div><div><p className="text-[.65rem] text-white/38">Next action</p><p className="mt-1 font-semibold text-white/80">{profile.musicVideo.next_action || "Add a next action"}</p></div></div>
-        </section> : <section className="flex flex-wrap items-center gap-3 rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:px-5"><div className="mr-auto"><h2 className="text-sm font-bold">Music Video</h2><p className="mt-1 text-xs text-white/45">No project started.</p></div><button type="button" disabled={busy} onClick={() => void createVideo()} className="rounded-lg bg-[#EF43A3] px-3.5 py-2.5 text-xs font-bold text-[#170d14] transition hover:brightness-110 disabled:opacity-50">{busy ? "Planning…" : "+ Plan Music Video"}</button></section>}
+        <section className="rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5" aria-labelledby="song-music-video">
+          <div className="flex flex-wrap items-start gap-3"><div className="mr-auto"><h2 id="song-music-video" className="text-sm font-bold uppercase tracking-[.08em]">MUSIC VIDEO</h2><p className={`mt-1 text-xs ${profile.postRelease.musicVideo ? "text-emerald-300" : "text-white/45"}`}>{profile.postRelease.musicVideo ? "Completed" : profile.musicVideo ? "Project in progress" : "No project started."}</p></div>{profile.musicVideo && <button type="button" onClick={() => selectTab("Music Video")} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition hover:border-[#EF43A3]/40 hover:text-white">Open Project</button>}</div>
+          {profile.musicVideo && <div className="mt-3 grid gap-3 text-sm sm:grid-cols-3"><div><p className="text-[.65rem] text-white/38">Production stage · Readiness</p><p className="mt-1 font-semibold text-white/80">{projectStage(profile.musicVideo)} · {projectReadiness(profile.musicVideo)}/5 Ready</p></div><div><p className="text-[.65rem] text-white/38">Videographer</p><p className="mt-1 font-semibold text-white/80">{projectVideographer(profile.musicVideo)}</p></div><div><p className="text-[.65rem] text-white/38">Next action</p><p className="mt-1 font-semibold text-white/80">{profile.musicVideo.next_action || "Add a next action"}</p></div></div>}
+        </section>
 
         <details className="rounded-xl border border-white/[.08] bg-[#111116]">
           <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 text-sm font-semibold text-white/75 marker:hidden sm:px-5"><span className="mr-auto">Song Details</span><span className="text-[.65rem] font-normal text-white/35">Metadata, release links &amp; promotion</span><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4"><path strokeLinecap="round" strokeLinejoin="round" d="m5 7.5 5 5 5-5"/></svg></summary>
@@ -240,7 +241,7 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
       </div>}
 
       {tab === "Practice" && <SongPractice songId={song.id} title={song.title} slug={song.slug} bpm={song.bpm} musicalKey={song.musical_key || ""} capoFret={song.capo_fret} chordShape={song.chord_shape || ""} initialLyrics={song.lyrics || lyrics} initialNotes={song.practice_notes || ""} onSaveSetup={savePracticeSetup} onSaveLyrics={savePracticeLyrics} onSaveNotes={savePracticeNotes} />}
-      {tab === "Content" && <SongContent songId={song.id} songTitle={song.title} musicVideo={profile.musicVideo} onCreateMusicVideo={() => void createVideo("Content")} />}
+      {tab === "Content" && <SongContent songId={song.id} songTitle={song.title} artworkUrl={profile.coverUrl} musicVideo={profile.musicVideo} onCreateMusicVideo={() => void createVideo("Content")} />}
       {tab === "Music Video" && profile.musicVideo && <MusicVideoWorkspace id={profile.musicVideo.id} embedded />}
       {tab === "Outreach" && <OutreachWorkspace initialSection="pitches" initialSongId={song.id} />}
       {busy && <p role="status" className="mt-3 text-xs text-white/40">Saving…</p>}
