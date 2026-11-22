@@ -105,6 +105,19 @@ function CollabGalleryContent({
       release,
     }));
   }, [tab, videoReleaseTab, artistReleases, unreleasedSongs, canViewFeatures, category]);
+  const videoSongs = useMemo(() => {
+    const catalog = [...artistReleases, ...unreleasedSongs]
+      .filter((song, index, rows) => rows.findIndex(other => other.databaseId === song.databaseId || other.slug === song.slug) === index)
+      .sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true }));
+    return catalog.map(release => {
+      const project = musicVideos.find(item => item.song_id === release.databaseId || item.songs?.slug === release.slug);
+      return {
+        release,
+        status: release.videoEmbedUrl ? "Video released" : project?.public_status?.trim() || "Visual treatment open",
+        concept: project?.public_concept?.trim() || release.videoConcept?.trim() || "",
+      };
+    });
+  }, [artistReleases, unreleasedSongs, musicVideos]);
 
   useEffect(() => {
     if (!invitedSongSlug) return;

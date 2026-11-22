@@ -231,7 +231,9 @@ export default async function CollabPage() {
     ? allCatalogSongs.filter(song => song.databaseId === inviteSession.song_id && song.readyForCollab === true)
     : inviteSession.scope === "catalog"
       ? allCatalogSongs
-      : [];
+      : inviteSession.scope === "video"
+        ? allCatalogSongs
+        : [];
   const released = permittedCatalog.filter(song => song.audioStatus === "Released" || song.audioStatus === "Final");
   const unreleased = permittedCatalog.filter(song => song.audioStatus !== "Released" && song.audioStatus !== "Final");
   return <CollabGallery artistReleases={released} unreleasedSongs={unreleased} invitedSongSlug={inviteSession.scope === "song" ? invitedSong?.slug || null : null} defaultView={inviteSession.scope === "video" ? "video" : "collabs"} invitedDisplayName={inviteSession.display_name} invitedEmail={inviteSession.email || ""} musicVideos={musicVideos} canViewFeatures />;
