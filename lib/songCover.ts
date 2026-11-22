@@ -9,6 +9,7 @@ const COVER_OVERRIDES: Record<string, string> = {
   "am-i-pretty-when-i-cry-acoustic": "/covers/AM I PRETTY WHEN I CRY_ (ACOUSTIC).webp",
   "were-just-friends-acoustic": "/covers/WE'RE JUST FRIENDS (Acoustic).webp",
   "make-believe": "/covers/MAKE BELIEVE.webp",
+  "play-house": "/covers/PLAY HOUSE.png",
   "sugar-were-going-down": "/covers/SUGAR, WE'RE GOING DOWN.webp",
   "whats-my-age-again": "/covers/WHAT'S MY AGE AGAIN.webp",
   cheerleader: "/covers/cheerleader.webp",

@@ -29,11 +29,12 @@ function songColor(name: string) {
 export default function ContentLibrary({ songId: scopedSongId }: { songId?: string }) {
   const [items, setItems] = useState<ContentItem[]>([]), [songs, setSongs] = useState<CatalogSong[]>([]), [metrics, setMetrics] = useState<Metrics>(blankMetrics);
   const [total, setTotal] = useState(0), [page, setPage] = useState(1), [pageSize] = useState(50), [type, setType] = useState(""), [category, setCategory] = useState(""), [filter, setFilter] = useState("All"), [query, setQuery] = useState("");
+  const [metricFilter, setMetricFilter] = useState<"" | "recorded" | "edited" | "posted">("");
   const [view, setView] = useState<"List" | "Board">("List"), [loading, setLoading] = useState(true), [busyId, setBusyId] = useState<string | null>(null), [error, setError] = useState(""), [panelItem, setPanelItem] = useState<ContentItem | null | undefined>(undefined);
   const [types, setTypes] = useState<string[]>([]), [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => { if (!scopedSongId) { const params = new URLSearchParams(window.location.search); setQuery(params.get("q") || ""); } }, [scopedSongId]);
-  useEffect(() => { setPage(1); }, [scopedSongId, type, category, filter, query]);
+  useEffect(() => { setPage(1); }, [scopedSongId, type, category, filter, query, metricFilter]);
   const load = useCallback(async (requestedPage = page) => {
     setLoading(true); setError("");
     const params = new URLSearchParams({ page: String(requestedPage), pageSize: String(pageSize), sort: scopedSongId ? "workflow_priority" : "canonical_song_title", direction: "asc" });
@@ -42,10 +43,12 @@ export default function ContentLibrary({ songId: scopedSongId }: { songId?: stri
     if (category) params.set("category", category);
     if (query.trim()) params.set("q", query.trim());
     if (filter !== "All") params.set("workflow", filter);
+    if (metricFilter === "recorded" || metricFilter === "edited") params.set(metricFilter, "true");
+    if (metricFilter === "posted") params.set("published", "true");
     const response = await fetch(`/api/admin/content-items?${params}`, { cache: "no-store" }), body = await response.json();
     if (!response.ok) { setError(body.error || "Unable to load content."); setLoading(false); return; }
     const result = body as Payload; setItems(result.items || []); setTotal(result.total || 0); setMetrics(result.metrics || blankMetrics); setSongs(result.songs || []); setTypes(result.types || []); setCategories(result.categories || []); setLoading(false);
-  }, [page, pageSize, scopedSongId, type, category, filter, query]);
+  }, [page, pageSize, scopedSongId, type, category, filter, query, metricFilter]);
   useEffect(() => { void load(page); }, [load, page]);
 
   async function toggleStatus(item: ContentItem, key: "recorded" | "edited" | "post_ready" | "published") {

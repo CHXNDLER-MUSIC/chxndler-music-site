@@ -9,7 +9,7 @@ type SongProgress = {
 };
 
 export function ProductionStageIcon({ stage, complete = true, className }: { stage: ProductionStage | null; complete?: boolean; className?: string }) {
-  const color = stage === "Idea" ? "#EF43A3" : stage === "Writing" ? "#A78BFA" : stage === "Recording" ? "#42B8E8" : stage === "Mixing" ? "#F2B84B" : stage === "Mastering" ? "#55D6A4" : "#8b8b96";
+  const color = stage === "Idea" ? "#EF43A3" : stage === "Writing" ? "#A78BFA" : stage === "Recording" ? "#42B8E8" : stage === "Mixing" || stage === "Mastering" ? "#55D6A4" : "#8b8b96";
   return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={`${className || "h-4 w-4"} shrink-0 ${complete ? "opacity-100" : "opacity-30"}`}>
     {stage === "Idea" ? <><path d="M9 18h6M10 22h4M8.2 14.5a7 7 0 1 1 7.6 0c-.9.6-1.3 1.4-1.4 2.5h-4.8c-.1-1.1-.5-1.9-1.4-2.5Z"/><path d="M12 4v2M5.6 6.6 7 8M18.4 6.6 17 8"/></>
       : stage === "Writing" ? <><path d="m14 5 5 5M4 20l4.2-.9L19 8.3a2.1 2.1 0 0 0-3-3L5.2 16.1 4 20Z"/><path d="m13 6 5 5"/></>
@@ -99,8 +99,8 @@ export default function SongProductionProgress({ song, onSaved, compact = false 
   }
 
   if (compact) return <div>
-    <div className="flex items-center gap-2.5" aria-label={`Music production: ${completed} of 3 milestones complete`}>
-      {DISPLAY_MILESTONES.map(key => <button key={key} type="button" disabled={savingMilestone !== null} aria-pressed={visibleMilestones[key]} aria-label={`${PRODUCTION_MILESTONE_LABELS[key]} ${visibleMilestones[key] ? "complete" : "incomplete"} for ${song.title}. Click to toggle.`} title={`${PRODUCTION_MILESTONE_LABELS[key]} · ${visibleMilestones[key] ? "Complete" : "Incomplete"} · Click to toggle`} onClick={() => void toggleMilestone(key)} className="rounded-md transition hover:bg-white/[.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white disabled:opacity-50"><ProductionStageIcon stage={milestoneStage[key]} complete={visibleMilestones[key]} className="h-7 w-7" /></button>)}
+    <div className="flex items-center gap-1 sm:gap-2" aria-label={`Music production: ${completed} of 3 milestones complete`}>
+      {DISPLAY_MILESTONES.map(key => <button key={key} type="button" disabled={savingMilestone !== null} aria-pressed={visibleMilestones[key]} aria-label={`${PRODUCTION_MILESTONE_LABELS[key]} ${visibleMilestones[key] ? "complete" : "incomplete"} for ${song.title}. Click to toggle.`} title={`${PRODUCTION_MILESTONE_LABELS[key]} · ${visibleMilestones[key] ? "Complete" : "Incomplete"} · Click to toggle`} onClick={() => void toggleMilestone(key)} className="rounded-md transition hover:bg-white/[.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white disabled:opacity-50"><ProductionStageIcon stage={milestoneStage[key]} complete={visibleMilestones[key]} className="h-5 w-5 sm:h-6 sm:w-6" /></button>)}
     </div>
     {error && <p role="alert" className="mt-1 max-w-52 text-[.62rem] leading-tight text-rose-200">{error}</p>}
   </div>;
@@ -108,12 +108,12 @@ export default function SongProductionProgress({ song, onSaved, compact = false 
   return <section className="relative rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5" aria-labelledby="music-production-heading">
     <div className="flex flex-wrap items-center gap-3"><div className="mr-auto"><h2 id="music-production-heading" className="text-sm font-bold uppercase tracking-[.08em]">MUSIC PRODUCTION</h2></div></div>
     <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/[.08]"><div className="h-full rounded-full bg-[#EF43A3] transition-[width]" style={{ width: `${percent}%` }} /></div>
-    <div className="mt-4 flex flex-wrap gap-2">{[...DISPLAY_MILESTONES, "instrumental" as const].map(key => {
+    <div className="mt-4 flex flex-wrap gap-2">{["instrumental" as const, ...DISPLAY_MILESTONES].map(key => {
       const isInstrumental = key === "instrumental";
       const complete = isInstrumental ? instrumental : visibleMilestones[key];
       const label = isInstrumental ? "Instrumental" : PRODUCTION_MILESTONE_LABELS[key];
-      return <button key={key} type="button" disabled={savingMilestone !== null} aria-pressed={complete} aria-label={`${label} ${complete ? "complete" : "incomplete"} for ${song.title}. Click to toggle.`} title={`${label} · ${complete ? "Complete" : "Incomplete"} · Click to toggle`} onClick={() => isInstrumental ? void toggleInstrumental() : void toggleMilestone(key)} className={`inline-flex min-h-11 items-center gap-3 rounded-lg border px-4 py-2 text-sm font-semibold transition hover:bg-white/[.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white disabled:opacity-50 ${complete ? "border-white/15 bg-white/[.05] text-white/85" : "border-white/[.08] text-white/50"}`}>
-        {!isInstrumental && <ProductionStageIcon stage={milestoneStage[key]} complete={complete} className="h-6 w-6"/>}
+      return <button key={key} type="button" disabled={savingMilestone !== null} aria-pressed={complete} aria-label={`${label} ${complete ? "complete" : "incomplete"} for ${song.title}. Click to toggle.`} title={`${label} · ${complete ? "Complete" : "Incomplete"} · Click to toggle`} onClick={() => isInstrumental ? void toggleInstrumental() : void toggleMilestone(key)} className={`flex min-h-[5.25rem] min-w-28 flex-col items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold transition hover:bg-white/[.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white disabled:opacity-50 ${complete ? "border-white/15 bg-white/[.05] text-white/85" : "border-white/[.08] text-white/50"}`}>
+        {isInstrumental ? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#8b8b96" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={`h-7 w-7 ${complete ? "opacity-100" : "opacity-35"}`}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> : <ProductionStageIcon stage={milestoneStage[key]} complete={complete} className="h-7 w-7"/>}
         <span>{label}</span>
       </button>;
     })}</div>

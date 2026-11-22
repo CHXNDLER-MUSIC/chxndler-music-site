@@ -96,12 +96,9 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
   useEffect(() => {
     void load().then(data => {
       if (!data) return;
-      const params = new URLSearchParams(window.location.search);
-      const requested = (params.get("tab") || "").replaceAll("-", " ").toLowerCase();
-      const remembered = window.localStorage.getItem(`song-workspace-tab:${id}`)?.toLowerCase();
+      const requested = (new URLSearchParams(window.location.search).get("tab") || "").replaceAll("-", " ").toLowerCase();
       const available: Tab[] = data.musicVideo && !data.song.youtube_music_video_url ? [...baseTabs, "Music Video"] : baseTabs;
-      const selected = available.find(item => item.toLowerCase() === requested) || available.find(item => item.toLowerCase() === remembered);
-      if (selected) setTab(selected);
+      setTab(available.find(item => item.toLowerCase() === requested) || "Overview");
     });
   // The song id identifies the workspace loaded above.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -109,7 +106,6 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
 
   function selectTab(next: Tab) {
     setTab(next);
-    window.localStorage.setItem(`song-workspace-tab:${id}`, next);
     if (!embedded) {
       const params = new URLSearchParams(window.location.search);
       params.set("tab", next.toLowerCase().replace(" ", "-"));
@@ -148,7 +144,7 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
     setMeaning(String(body.meaning || "")); setSaved(true);
   }
 
-  async function savePracticeSetup(values: { musical_key: string; capo_fret: number | null; chord_shape: string }) {
+  async function savePracticeSetup(values: { bpm: number | null; musical_key: string; capo_fret: number | null; chord_shape: string }) {
     const response = await fetch("/api/admin/song-profile", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ songId: id, ...values }) });
     const data = await response.json();
     if (!response.ok) { setError(data.error || "Unable to save song setup."); return false; }
@@ -243,7 +239,7 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
         </details>
       </div>}
 
-      {tab === "Practice" && <SongPractice songId={song.id} title={song.title} slug={song.slug} musicalKey={song.musical_key || ""} capoFret={song.capo_fret} chordShape={song.chord_shape || ""} initialLyrics={song.lyrics || lyrics} initialNotes={song.practice_notes || ""} onSaveSetup={savePracticeSetup} onSaveLyrics={savePracticeLyrics} onSaveNotes={savePracticeNotes} />}
+      {tab === "Practice" && <SongPractice songId={song.id} title={song.title} slug={song.slug} bpm={song.bpm} musicalKey={song.musical_key || ""} capoFret={song.capo_fret} chordShape={song.chord_shape || ""} initialLyrics={song.lyrics || lyrics} initialNotes={song.practice_notes || ""} onSaveSetup={savePracticeSetup} onSaveLyrics={savePracticeLyrics} onSaveNotes={savePracticeNotes} />}
       {tab === "Content" && <SongContent songId={song.id} songTitle={song.title} musicVideo={profile.musicVideo} onCreateMusicVideo={() => void createVideo("Content")} />}
       {tab === "Music Video" && profile.musicVideo && <MusicVideoWorkspace id={profile.musicVideo.id} embedded />}
       {tab === "Outreach" && <OutreachWorkspace initialSection="pitches" initialSongId={song.id} />}

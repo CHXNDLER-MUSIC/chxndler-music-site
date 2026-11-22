@@ -28,6 +28,7 @@ function applyFilters(query: any, params: URLSearchParams) {
   const workflow = params.get("workflow");
   const recorded = params.get("recorded");
   const edited = params.get("edited");
+  const published = params.get("published");
   const postReady = params.get("post_ready");
   const search = sanitizeSearch(params.get("q") || "");
   if (songId && validId(songId)) query = query.eq("song_id", songId);
@@ -42,6 +43,7 @@ function applyFilters(query: any, params: URLSearchParams) {
   else if (["Idea", "To Record", "To Edit", "Ready", "Scheduled", "Posted", "Music Video"].includes(workflow || "")) query = query.eq("workflow_status", workflow);
   if (recorded === "true" || recorded === "false") query = query.eq("recorded", recorded === "true");
   if (edited === "true" || edited === "false") query = query.eq("edited", edited === "true");
+  if (published === "true" || published === "false") query = query.eq("published", published === "true");
   if (postReady === "true" || postReady === "false") query = query.eq("post_ready", postReady === "true");
   if (search) {
     const term = `%${search}%`;

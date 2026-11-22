@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { songCoverPath } from "@/lib/songCover";
+import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 import { songProductionLabel, trackedProductionMilestones } from "@/lib/songWorkflow";
 import PracticeTab from "@/components/admin/PracticeTab";
 
 type Song = {
-  id: string; title: string; slug: string; is_released: boolean; workflow_stage?: string | null;
+  id: string; title: string; slug: string; is_released: boolean; release_date?: string | null; workflow_stage?: string | null;
   audio_status?: string | null; production_tracking_started?: boolean;
   production_stages?: Record<string, boolean> | null; production_progress_verified?: boolean; next_action?: string | null; next_action_manual?: boolean;
   linkedTask?: Task | null;
@@ -27,11 +28,28 @@ function songColor(name: string) {
   return songColors[Math.abs(hash) % songColors.length];
 }
 
-function TaskCategoryIcon({ category = "admin" }: { category?: Task["task_category"] }) {
+function TaskCategoryIcon({ category = "admin", title = "" }: { category?: Task["task_category"]; title?: string }) {
+  const name = title.toLowerCase();
+  if (name.includes("spotify canvas")) return <span title="Spotify Canvas" aria-label="Spotify Canvas" className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-[#1ED760]/10"><img src="/elements/spotify.webp" alt="" className="h-4 w-4 object-contain" /></span>;
+  if (name.includes("sky")) return <span title="Sky" aria-label="Sky" className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-[#42B8E8]/10 text-[#42B8E8]"><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M5 16h9a3 3 0 0 0 .4-6 5 5 0 0 0-9.6 1.3A2.4 2.4 0 0 0 5 16Z"/><path d="M5 5V3M2.5 7 1 6M9 5l1.5-1"/></svg></span>;
+  if (name.includes("chxndler card")) return <span title="CHXNDLER Card" aria-label="CHXNDLER Card" className="grid h-6 w-6 shrink-0 place-items-center overflow-hidden rounded-md bg-[#A78BFA]/10"><img src={getCardImageUrl("BACK")} alt="" className="h-5 w-4 rounded-[2px] object-cover" /></span>;
   const color = category === "music" ? "#38B6FF" : category === "editing" ? "#B99AFF" : "#F2B84B";
   return <span title={`${category || "admin"} task`} aria-label={`${category || "admin"} task`} className="grid h-6 w-6 shrink-0 place-items-center rounded-md" style={{ color, backgroundColor: `${color}18` }}>
     <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">{category === "music" ? <><path d="M12.5 4v9.2a2.3 2.3 0 1 1-1.4-2.1V6l6-1.3v7.5a2.3 2.3 0 1 1-1.4-2.1V3.5L12.5 4Z"/></> : category === "editing" ? <><path d="m13.8 3.5 2.7 2.7M4 16l1-.2 9.8-9.8-2.5-2.5-9.8 9.8L2 16h2Z"/><path d="M11 17h7"/></> : <><rect x="3.5" y="3" width="13" height="14" rx="2"/><path d="M7 7h6M7 10h6M7 13h3"/></>}</svg>
   </span>;
+}
+
+function coverArtStep(title: string) {
+  const name = title.toLowerCase();
+  if (/^(make|create) cover art/.test(name)) return 0;
+  if (name.includes("create horizontal cover art")) return 1;
+  if (name.includes("animate horizontal cover art")) return 2;
+  if (name.includes("create vertical cover art")) return 3;
+  if (name.includes("spotify canvas")) return 4;
+  return null;
+}
+function displayTaskTitle(title: string) {
+  return title.replace(/^Make cover art\b/i, "Create cover art");
 }
 
 function localToday() {
@@ -42,6 +60,12 @@ function localToday() {
 
 function taskOrder(today: string) {
   return (a: Task, b: Task) => {
+    const aCoverStep = coverArtStep(a.title), bCoverStep = coverArtStep(b.title);
+    if (aCoverStep !== null || bCoverStep !== null) {
+      if (aCoverStep === null) return 1;
+      if (bCoverStep === null) return -1;
+      if (aCoverStep !== bCoverStep) return aCoverStep - bCoverStep;
+    }
     const bucket = (task: Task) => task.due_at && task.due_at < today ? 0 : task.due_at === today ? 1 : task.priority === "high" ? 2 : task.due_at ? 3 : 4;
     return bucket(a) - bucket(b) || (a.due_at || "9999-99-99").localeCompare(b.due_at || "9999-99-99") || a.title.localeCompare(b.title);
   };
@@ -120,9 +144,21 @@ export default function OverviewTab() {
     .filter(task => task.status !== "done" && !generatedProfileTask(task.title))
     .sort(taskOrder(today)), [tasks, today]);
   const featuredSong = songs.find(song => song.id === selectedSongId) || null;
+  const focusTasks = featuredSong ? actionableTasks.filter(task => task.song_id === featuredSong.id) : [];
   const releasedCount = songs.filter(song => song.is_released).length;
   const milestoneCount = featuredSong ? trackedProductionMilestones(featuredSong) : null;
-  const nextStep = featuredSong?.next_action?.trim() || (featuredSong ? actionableTasks.find(task => task.song_id === featuredSong.id)?.title : "") || "";
+  const nextStep = featuredSong?.next_action?.trim() || focusTasks[0]?.title || "";
+  const [contentRemaining, setContentRemaining] = useState<number | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    if (!selectedSongId) { setContentRemaining(null); return; }
+    fetch(`/api/admin/content-items?songId=${encodeURIComponent(selectedSongId)}&pageSize=100`, { cache: "no-store" })
+      .then(async response => response.ok ? response.json() : null)
+      .then(data => { if (active) setContentRemaining(data?.songSummary ? Math.max(0, data.songSummary.total - data.songSummary.posted) : null); })
+      .catch(() => { if (active) setContentRemaining(null); });
+    return () => { active = false; };
+  }, [selectedSongId]);
 
   async function chooseSong(songId: string) {
     setSavingSong(true); setError("");
@@ -174,17 +210,19 @@ export default function OverviewTab() {
 
     <section aria-labelledby="currently-working-title" className="relative overflow-hidden rounded-2xl border border-white/[.08] bg-[#101014] shadow-[0_20px_65px_rgba(0,0,0,.25)]">
       <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-[#FD52AF]/[.07] blur-3xl" />
-      <div className="relative flex flex-wrap items-center justify-between gap-3 border-b border-white/[.06] px-4 py-3.5 sm:px-6"><div><p className="text-[.62rem] font-bold uppercase tracking-[.18em] text-[#FD52AF]">Your focus</p><h2 id="currently-working-title" className="mt-0.5 text-sm font-bold text-white/90">Currently Working On</h2></div></div>
+      <div className="relative flex flex-wrap items-center justify-between gap-3 border-b border-white/[.06] px-4 py-3.5 sm:px-6"><p id="currently-working-title" className="text-[.62rem] font-bold uppercase tracking-[.18em] text-[#FD52AF]">Your focus</p>{chooser}</div>
       {loading ? <div className="relative grid min-h-48 place-items-center p-8 text-sm text-white/40">Loading your workspace…</div> : featuredSong ? <div className="relative grid gap-5 p-4 sm:grid-cols-[160px_minmax(0,1fr)] sm:items-center sm:gap-7 sm:p-6 lg:grid-cols-[180px_minmax(0,1fr)_auto]">
         <Link href={`/admin/songs/${featuredSong.id}`} aria-label={`Open ${featuredSong.title} artwork and workspace`} className="group relative mx-auto block h-40 w-40 sm:h-40 sm:w-40 lg:h-44 lg:w-44">
           <span className="absolute -inset-5 rounded-full bg-[#FD52AF]/20 blur-2xl transition duration-500 group-hover:bg-[#FD52AF]/30" />
           <span className="relative block h-full w-full overflow-hidden rounded-2xl border border-white/[.11] bg-gradient-to-br from-[#291321] to-[#101014] shadow-[0_16px_45px_rgba(0,0,0,.4)]"><span className="absolute inset-0 grid place-items-center text-[.62rem] font-black tracking-[.16em] text-[#FD52AF]/60">CHXNDLER</span><img src={songCoverPath(featuredSong.slug, featuredSong.title)} alt={`${featuredSong.title} cover art`} onError={event => { event.currentTarget.style.display = "none"; }} className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.035]" /></span>
         </Link>
-        <div className="min-w-0 text-center sm:text-left"><div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start"><span className="rounded-full border border-white/[.08] bg-white/[.035] px-2.5 py-1 text-[.62rem] font-semibold text-white/65">{featuredSong.is_released ? "Released" : "Unreleased"}</span><span className="text-[.68rem] text-white/40">{songProductionLabel(featuredSong)}</span></div><h3 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">{featuredSong.title}</h3>
+        <div className="min-w-0 text-center sm:text-left"><div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start"><span className="inline-flex items-center gap-1.5 rounded-full border border-white/[.08] bg-white/[.035] px-2.5 py-1 text-[.62rem] font-semibold text-white/65"><svg aria-hidden="true" viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M3 10h14M10 3l7 7-7 7"/></svg>{featuredSong.is_released ? "Released" : "Unreleased"}</span><span className="inline-flex items-center gap-1.5 text-[.68rem] text-white/50"><svg aria-hidden="true" viewBox="0 0 20 20" className="h-3.5 w-3.5 text-[#FD52AF]" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M3 15.5V4.5M3 15.5h14M6 12l3-3 2 2 4-5"/></svg>{songProductionLabel(featuredSong)}</span></div><h3 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">{featuredSong.title}</h3>
+          {featuredSong.release_date && <p className="mt-1 text-xs text-white/45">Release date · <span className="text-white/75">{featuredSong.release_date}</span></p>}
+          <p className="mt-2 text-xs text-white/50">Content left to release · <strong className="text-white/80">{contentRemaining === null ? "—" : contentRemaining}</strong></p>
           {milestoneCount !== null && <div className="mx-auto mt-3 max-w-sm sm:mx-0"><div className="flex items-center justify-between text-[.65rem] text-white/40"><span>Reviewed production progress</span><span>{milestoneCount}/5</span></div><div className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/[.08]"><div className="h-full rounded-full bg-gradient-to-r from-[#FD52AF] to-[#f8a2ce] transition-[width] duration-500" style={{ width: `${milestoneCount / 5 * 100}%` }} /></div></div>}
           <div className="mt-4"><p className="text-[.62rem] font-bold uppercase tracking-[.15em] text-white/35">Next step</p>{nextStep ? <p className="mt-1 text-sm font-medium text-white/80">{nextStep}</p> : <p className="mt-1 text-sm text-white/40">No next step saved yet.</p>}</div>
         </div>
-        <div className="flex flex-col items-center gap-2 sm:col-span-2 sm:flex-row sm:justify-center lg:col-span-1 lg:flex-col lg:items-stretch"><Link href={`/admin/songs/${featuredSong.id}`} className="inline-flex min-w-48 items-center justify-center rounded-xl bg-[#FD52AF] px-5 py-3 text-sm font-extrabold text-[#170d14] shadow-[0_8px_28px_rgba(253,82,175,.16)] transition hover:-translate-y-px hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Continue Working <span className="ml-2" aria-hidden="true">→</span></Link>{chooser}</div>
+        <div className="flex flex-col items-center gap-2 sm:col-span-2 sm:flex-row sm:justify-center lg:col-span-1 lg:flex-col lg:items-stretch"><Link href={`/admin/songs/${featuredSong.id}`} className="inline-flex min-w-48 items-center justify-center rounded-xl bg-[#FD52AF] px-5 py-3 text-sm font-extrabold text-[#170d14] shadow-[0_8px_28px_rgba(253,82,175,.16)] transition hover:-translate-y-px hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Continue Working <span className="ml-2" aria-hidden="true">→</span></Link></div>
       </div> : <div className="relative flex flex-col items-center px-5 py-9 text-center sm:py-11"><div className="grid h-12 w-12 place-items-center rounded-2xl border border-[#FD52AF]/20 bg-[#FD52AF]/[.06] text-xl text-[#FD52AF]" aria-hidden="true">♪</div><h3 className="mt-3 text-lg font-bold text-white">Choose your focus song</h3><p className="mt-1 max-w-sm text-sm leading-5 text-white/45">Your selected song will stay here between visits. Nothing is picked for you.</p><label className="mt-4"><span className="sr-only">Choose a song to feature</span><select value="" disabled={savingSong || !songs.length} onChange={event => { if (event.target.value) void chooseSong(event.target.value); }} className="min-w-48 rounded-xl border border-white/[.12] bg-[#17171c] px-4 py-3 text-sm font-semibold text-white outline-none focus:border-[#FD52AF]/50"><option value="" disabled>{songs.length ? "Choose a song…" : "No songs available"}</option>{songs.map(song => <option key={song.id} value={song.id}>{song.title}</option>)}</select></label></div>}
       {error && <p role="alert" className="relative border-t border-red-300/10 bg-red-300/[.035] px-4 py-2.5 text-sm text-red-200 sm:px-6">{error}</p>}
     </section>
@@ -192,20 +230,21 @@ export default function OverviewTab() {
     <section aria-labelledby="up-next-title" className="rounded-2xl border border-white/[.08] bg-[#101014] p-4 sm:p-5">
       <header className="mb-3 flex items-center gap-3"><div><p className="text-[.62rem] font-bold uppercase tracking-[.18em] text-white/35">Your task list</p><h2 id="up-next-title" className="mt-0.5 text-base font-bold">Up Next</h2></div></header>
       {taskError && <p role="alert" className="mb-3 rounded-lg border border-red-300/10 bg-red-300/[.04] px-3 py-2 text-xs text-red-200">{taskError}</p>}
-      {loading ? <p className="py-5 text-center text-sm text-white/40">Loading tasks…</p> : actionableTasks.length || collaborationRequests.length ? <>
-        {!!actionableTasks.length && <div className="hidden grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_2rem] gap-3 border-b border-white/[.06] pb-2 text-[.6rem] font-bold uppercase tracking-[.14em] text-white/30 sm:grid"><span/><span>Task</span><span>Song</span><span/></div>}
+      {loading ? <p className="py-5 text-center text-sm text-white/40">Loading tasks…</p> : focusTasks.length || collaborationRequests.length ? <>
+        {!!focusTasks.length && <div className="hidden grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_2rem] gap-3 border-b border-white/[.06] pb-2 text-[.6rem] font-bold uppercase tracking-[.14em] text-white/30 sm:grid"><span/><span>Task</span><span>Song</span><span/></div>}
         <ul className="divide-y divide-white/[.06]">
-        {collaborationRequests.map(request => <li key={`collab-${request.id}`} className="flex items-center gap-3 border-b border-[#FD52AF]/15 py-3 first:pt-1">
+        {collaborationRequests.map(request => <li key={`collab-${request.id}`} className="grid grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_2rem] items-center gap-3 border-b border-[#FD52AF]/15 py-3 first:pt-1">
           <span aria-label="Collaboration request" title="Collaboration request" className="grid h-5 w-5 shrink-0 place-items-center text-[#FD52AF]">★</span>
-          <Link href={`/admin/collaborations?request=${encodeURIComponent(request.id)}`} className="min-w-0 flex-1 truncate text-sm font-semibold text-white/90 transition hover:text-[#ff9dcd]">New collaboration request · {request.artist_name} <span className="font-normal text-white/50">· {request.contribution_type}</span></Link>
+          <Link href={`/admin/collaborations?request=${encodeURIComponent(request.id)}`} className="min-w-0 truncate text-sm font-semibold text-white/90 transition hover:text-[#ff9dcd]">New collaboration request · {request.artist_name} <span className="font-normal text-white/50">· {request.contribution_type}</span></Link>
+          <Link href={`/admin/collaborations?request=${encodeURIComponent(request.id)}`} className="min-w-0 truncate text-xs font-semibold text-[#FD52AF]" title={request.songs?.title || "No song selected"}>{request.songs?.title || "—"}</Link>
           <Link href={`/admin/collaborations?request=${encodeURIComponent(request.id)}`} aria-label={`Review collaboration request from ${request.artist_name}`} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[#FD52AF]/65 transition hover:bg-white/[.05] hover:text-[#FD52AF]">↗</Link>
         </li>)}
-        {actionableTasks.slice(0, 5).map(task => {
+        {focusTasks.slice(0, 5).map(task => {
         const isOverdue = !!task.due_at && task.due_at < today;
         const taskHref = task.content ? `/admin/songs/${task.content.song_id}?tab=content&content=${task.content.id}` : `/admin?view=tasks&task=${task.id}`;
         return <li key={task.id} className="grid grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_2rem] items-center gap-3 py-3 first:pt-1 last:pb-1">
           <button type="button" disabled={taskSaving === task.id} onClick={() => void completeTask(task)} aria-label={`Mark ${task.title} complete`} className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-white/20 text-transparent transition hover:border-[#FD52AF] hover:bg-[#FD52AF]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FD52AF] disabled:opacity-40"><span aria-hidden="true">✓</span></button>
-          <div className="flex min-w-0 items-start gap-2"><TaskCategoryIcon category={task.task_category}/><div className="min-w-0 flex-1"><Link href={taskHref} className="block truncate text-sm font-semibold text-white/85 transition hover:text-[#ff9dcd]">{task.title}</Link><div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[.66rem] text-white/40">{task.due_at && <span className={isOverdue ? "font-semibold text-amber-200" : ""}>{isOverdue ? "Overdue · " : "Due "}{task.due_at}</span>}{task.priority === "high" && <span className="rounded-full bg-amber-200/[.08] px-1.5 py-0.5 font-semibold text-amber-100">High priority</span>}</div></div></div>
+          <div className="flex min-w-0 items-start gap-2"><TaskCategoryIcon category={task.task_category} title={task.title}/><div className="min-w-0 flex-1"><Link href={taskHref} className="block truncate text-sm font-semibold text-white/85 transition hover:text-[#ff9dcd]">{displayTaskTitle(task.title)}</Link><div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[.66rem] text-white/40">{task.due_at && <span className={isOverdue ? "font-semibold text-amber-200" : ""}>{isOverdue ? "Overdue · " : "Due "}{task.due_at}</span>}{task.priority === "high" && <span className="rounded-full bg-amber-200/[.08] px-1.5 py-0.5 font-semibold text-amber-100">High priority</span>}</div></div></div>
           <span className="min-w-0 truncate text-xs font-semibold" style={{ color: task.song ? songColor(task.song.title) : "rgba(255,255,255,.35)" }} title={task.song?.title || "No song"}>{task.song?.title || "—"}</span>
           <Link href={taskHref} aria-label={`Open ${task.title}`} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-white/25 transition hover:bg-white/[.05] hover:text-white/75">↗</Link>
         </li>;
