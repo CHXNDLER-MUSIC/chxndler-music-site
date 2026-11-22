@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   const id = new URL(request.url).searchParams.get("id") || "";
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid song." }, { status: 400 });
   const db = getSupabaseAdmin();
-  const songFields = "id,title,slug,is_released,created_at,spotify_url,apple_music_url,youtube_music_video_url,karaoke_url,sky_video_url,production_stages,production_tracking_started,production_progress_verified,audio_status,workflow_stage,ready_for_collab,collab_interests,collaboration_description,practice_notes,next_action,meaning,category,submit_hub,genre,sub_genre,sub_genre_2,lyrics,bpm,musical_key,capo_fret,chord_shape";
+  const songFields = "id,title,slug,is_released,created_at,spotify_url,apple_music_url,youtube_music_video_url,karaoke_url,sky_video_url,production_stages,production_tracking_started,production_progress_verified,audio_status,workflow_stage,ready_for_collab,collab_interests,collaboration_description,practice_notes,next_action,meaning,category,submit_hub,genre,sub_genre,sub_genre_2,lyrics,bpm,musical_key,capo_fret,chord_shape,metadata_provenance";
   const practiceBaseFields = songFields.replace(",capo_fret,chord_shape", "");
   const coreSongFields = "id,title,slug,is_released,created_at,spotify_url,apple_music_url,youtube_music_video_url,karaoke_url,sky_video_url,production_stages,production_tracking_started,production_progress_verified,audio_status,workflow_stage,ready_for_collab,collab_interests,collaboration_description,practice_notes,next_action";
   let releaseDateAvailable = true;
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
       songResult = await db.from("songs").select(selectedFields).eq("id", id).maybeSingle();
     }
   }
-  if (songResult.error && /meaning|category|submit_hub|sub_genre|\bgenre\b|\blyrics\b|\bbpm\b|musical_key|capo_fret|chord_shape/i.test(songResult.error.message)) {
+  if (songResult.error && /meaning|category|submit_hub|sub_genre|\bgenre\b|\blyrics\b|\bbpm\b|musical_key|capo_fret|chord_shape|metadata_provenance/i.test(songResult.error.message)) {
     selectedFields = productionProgressVerifiedAvailable ? coreSongFields : coreSongFields.replace(",production_progress_verified", "");
     songResult = await db.from("songs").select(`${selectedFields}${releaseDateAvailable ? ",release_date" : ""}`).eq("id", id).maybeSingle();
     if (songResult.error && /release_date/i.test(songResult.error.message)) {
@@ -72,7 +72,7 @@ export async function GET(request: Request) {
     playlistPitched: savedOrDerived("playlist_pitch", (outreach || []).some(item => /playlist/i.test(item.category || "") && ["Contacted", "Sent", "Follow-up", "Interested", "Won", "Accepted"].includes(item.status || ""))),
     syncPlacement: savedOrDerived("sync_placement", (placements || []).length > 0),
   };
-  return NextResponse.json({ song: { ...song, production_progress_verified: productionProgressVerifiedAvailable && song.production_progress_verified === true, release_date: song.release_date ?? null, meaning: song.meaning ?? "", category: song.category ?? "", submit_hub: song.submit_hub ?? "", genre: song.genre ?? "", sub_genre: song.sub_genre ?? "", sub_genre_2: song.sub_genre_2 ?? "", lyrics: song.lyrics ?? "", bpm: song.bpm ?? null, musical_key: song.musical_key ?? "", capo_fret: song.capo_fret ?? null, chord_shape: song.chord_shape ?? "" }, postRelease, releaseDateAvailable, meaning, musicVideo: video || null, requests: requests || [], coverUrl: songCoverPath(song.slug, song.title), lyricUrl: `/api/lyrics/${encodeURIComponent(song.slug)}` });
+  return NextResponse.json({ song: { ...song, metadata_provenance: song.metadata_provenance || {}, production_progress_verified: productionProgressVerifiedAvailable && song.production_progress_verified === true, release_date: song.release_date ?? null, meaning: song.meaning ?? "", category: song.category ?? "", submit_hub: song.submit_hub ?? "", genre: song.genre ?? "", sub_genre: song.sub_genre ?? "", sub_genre_2: song.sub_genre_2 ?? "", lyrics: song.lyrics ?? "", bpm: song.bpm ?? null, musical_key: song.musical_key ?? "", capo_fret: song.capo_fret ?? null, chord_shape: song.chord_shape ?? "" }, postRelease, releaseDateAvailable, meaning, musicVideo: video || null, requests: requests || [], coverUrl: songCoverPath(song.slug, song.title), lyricUrl: `/api/lyrics/${encodeURIComponent(song.slug)}` });
 }
 
 export async function PATCH(request: Request) {
@@ -81,7 +81,7 @@ export async function PATCH(request: Request) {
   const body = await request.json();
   if (typeof body.songId !== "string" || !/^[0-9a-f-]{36}$/i.test(body.songId) || (body.meaning !== undefined && typeof body.meaning !== "string") || (body.links !== undefined && (!body.links || typeof body.links !== "object"))) return NextResponse.json({ error: "A song profile update is required." }, { status: 400 });
   const db = getSupabaseAdmin();
-  const { data: song } = await db.from("songs").select("id,title").eq("id", body.songId).single();
+  const { data: song } = await db.from("songs").select("id,title,metadata_provenance").eq("id", body.songId).single();
   if (!song) return NextResponse.json({ error: "Song not found." }, { status: 404 });
   const metadataKeys = ["meaning", "category", "submit_hub", "genre", "sub_genre", "sub_genre_2", "lyrics", "musical_key", "practice_notes"] as const;
   const metadata: Record<string, string | number | null> = {};
@@ -105,6 +105,11 @@ export async function PATCH(request: Request) {
   if (body.release_date !== undefined) {
     if (body.release_date !== null && (typeof body.release_date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(body.release_date) || Number.isNaN(Date.parse(`${body.release_date}T00:00:00Z`)))) return NextResponse.json({ error: "Release date must use YYYY-MM-DD." }, { status: 400 });
     metadata.release_date = body.release_date;
+  }
+  if (Object.keys(metadata).length) {
+    const provenance = { ...((song.metadata_provenance || {}) as Record<string, string>) };
+    for (const key of Object.keys(metadata)) delete provenance[key];
+    metadata.metadata_provenance = provenance;
   }
   if (Object.keys(metadata).length) {
     const { error } = await db.from("songs").update(metadata).eq("id", song.id);

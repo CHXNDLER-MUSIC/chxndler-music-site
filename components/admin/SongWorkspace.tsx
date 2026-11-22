@@ -19,6 +19,7 @@ type SongProfile = {
   collaboration_description: string; practice_notes: string; next_action: string | null;
   category: string; submit_hub: string; genre: string; sub_genre: string; sub_genre_2: string;
   lyrics: string; bpm: number | null; musical_key: string; capo_fret: number | null; chord_shape: string;
+  metadata_provenance?: Record<string, string>;
 };
 type MusicVideoProject = {
   id: string; status: string; visibility: string; public_concept: string; workspace: Record<string, unknown>;
@@ -143,7 +144,7 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
     const response = await fetch("/api/admin/song-profile", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const result = await response.json();
     if (!response.ok) { setError(result.error || "Unable to save song details."); return; }
-    setProfile(current => current ? { ...current, song: { ...current.song, ...body } as SongProfile, meaning: String(body.meaning || "") } : current);
+    setProfile(current => current ? { ...current, song: { ...current.song, ...body, metadata_provenance: Object.fromEntries(Object.entries(current.song.metadata_provenance || {}).filter(([key]) => !(key in body))) } as SongProfile, meaning: String(body.meaning || "") } : current);
     setMeaning(String(body.meaning || "")); setSaved(true);
   }
 
@@ -230,9 +231,9 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
           <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 text-sm font-semibold text-white/75 marker:hidden sm:px-5"><span className="mr-auto">Song Details</span><span className="text-[.65rem] font-normal text-white/35">Metadata, release links &amp; promotion</span><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4"><path strokeLinecap="round" strokeLinejoin="round" d="m5 7.5 5 5 5-5"/></svg></summary>
           <div className="space-y-5 border-t border-white/[.07] px-4 py-4 sm:px-5">
             <form onSubmit={saveCatalog} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {([ ["Meaning", "meaning", meaning], ["Category", "category", song.category], ["Genre", "genre", song.genre], ["Sub-genre", "sub_genre", song.sub_genre], ["Sub-genre 2", "sub_genre_2", song.sub_genre_2] ] as const).map(([label, name, value]) => <label key={name} className="text-xs font-medium text-white/45">{label}{name === "meaning" ? <textarea name={name} defaultValue={value || ""} rows={4} className="mt-1.5 w-full resize-y rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EF43A3]/45" /> : <input name={name} defaultValue={value || ""} className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EF43A3]/45" />}</label>)}
-              <label className="text-xs font-medium text-white/45">BPM<input name="bpm" type="number" min="1" max="400" defaultValue={song.bpm ?? ""} className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EF43A3]/45" /></label>
-              <label className="text-xs font-medium text-white/45">Release date<input name="release_date" type="date" defaultValue={song.release_date || ""} className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EF43A3]/45" /></label>
+              {([ ["Meaning", "meaning", meaning], ["Category", "category", song.category], ["Genre", "genre", song.genre], ["Sub-genre", "sub_genre", song.sub_genre], ["Sub-genre 2", "sub_genre_2", song.sub_genre_2] ] as const).map(([label, name, value]) => <label key={name} className="text-xs font-medium text-white/45">{label}{song.metadata_provenance?.[name] === "inferred" && <span className="ml-2 rounded-full border border-amber-300/30 bg-amber-300/10 px-1.5 py-0.5 text-[.58rem] font-bold tracking-wide text-amber-200">INFERRED</span>}{name === "meaning" ? <textarea name={name} defaultValue={value || ""} rows={4} className="mt-1.5 w-full resize-y rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EF43A3]/45" /> : <input name={name} defaultValue={value || ""} className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EF43A3]/45" />}</label>)}
+              <label className="text-xs font-medium text-white/45">BPM{song.metadata_provenance?.bpm === "inferred" && <span className="ml-2 rounded-full border border-amber-300/30 bg-amber-300/10 px-1.5 py-0.5 text-[.58rem] font-bold tracking-wide text-amber-200">INFERRED</span>}<input name="bpm" type="number" min="1" max="400" defaultValue={song.bpm ?? ""} className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EF43A3]/45" /></label>
+              <label className="text-xs font-medium text-white/45">Release date{song.metadata_provenance?.release_date === "inferred" && <span className="ml-2 rounded-full border border-amber-300/30 bg-amber-300/10 px-1.5 py-0.5 text-[.58rem] font-bold tracking-wide text-amber-200">INFERRED</span>}<input name="release_date" type="date" defaultValue={song.release_date || ""} className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EF43A3]/45" /></label>
               <button type="submit" className="self-end justify-self-start rounded-lg bg-[#EF43A3] px-4 py-2.5 text-xs font-bold text-[#170d14] transition hover:brightness-110">Save song details</button>{saved && <span role="status" className="self-center text-xs text-emerald-300">Saved</span>}
             </form>
 

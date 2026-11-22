@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getApiUser, isAdminUser, unauthorized, forbidden } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { canMarkAgreementSigned, canTransitionCollaborationStatus } from "@/lib/collaborationRules.mjs";
+import { agreementHtml, agreementTemplates, validateAgreement, type AgreementType } from "@/lib/collaborationAgreements";
 
 const AGREEMENT_BUCKET = "collaboration-agreements";
 
@@ -36,45 +37,58 @@ export async function PATCH(request: Request) {
   const auth = await getApiUser(); if (!auth) return unauthorized(); if (!isAdminUser(auth.user)) return forbidden();
   const body = await request.json(), id = String(body.id || ""), db = getSupabaseAdmin();
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
-  const { data: current, error: currentError } = await db.from("collaboration_requests").select("status,agreement_status,agreement_path,signed_agreement_path,agreement_type,agreement_terms,agreement_version,agreement_approved_at,song_id,music_video_project_id,invite_id,authorized_person_id,contribution_type,artist_name,email,profile_link,portfolio_url,estimated_rate").eq("id", id).maybeSingle();
+  const { data: current, error: currentError } = await db.from("collaboration_requests").select("status,agreement_status,agreement_path,signed_agreement_path,signed_agreement_version,agreement_type,agreement_terms,agreement_version,agreement_approved_at,agreement_approved_by,agreement_approved_version,agreement_template_id,agreement_template_version,song_id,music_video_project_id,invite_id,authorized_person_id,contribution_type,artist_name,email,profile_link,portfolio_url,estimated_rate,first_name,last_name,songs(title)").eq("id", id).maybeSingle();
   if (currentError || !current) return NextResponse.json({ error: "Request not found." }, { status: 404 });
-  const agreementChanged = body.agreement !== undefined || body.agreement_type !== undefined;
+  const stable = (value: unknown): string => {
+    if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
+    if (value && typeof value === "object") return `{${Object.entries(value as Record<string, unknown>).filter(([key]) => key !== "contract_html").sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => `${JSON.stringify(key)}:${stable(item)}`).join(",")}}`;
+    return JSON.stringify(value);
+  };
+  const requestedType = body.agreement_type ?? current.agreement_type ?? "singer_feature";
+  const agreementChanged = body.agreement_type !== undefined && body.agreement_type !== current.agreement_type ||
+    body.agreement !== undefined && stable(body.agreement) !== stable(current.agreement_terms || {}) ||
+    body.agreement !== undefined && !current.agreement_version;
   if (current.agreement_status === "signed" && (agreementChanged || body.approve_agreement !== undefined || (body.agreement_status !== undefined && body.agreement_status !== "completed"))) {
     return NextResponse.json({ error: "This agreement is signed and immutable. Use a new amendment version for any changes." }, { status: 409 });
   }
   const allowed = ["new","reviewing","approved","declined","agreement_pending","signed","in_progress","completed","canceled","archived"];
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (body.agreement_type !== undefined) {
-    if (!["singer_feature", "remix", "producer", "videographer"].includes(body.agreement_type)) return NextResponse.json({ error: "Choose a valid agreement type." }, { status: 400 });
-    update.agreement_type = body.agreement_type;
-  }
+  if (body.agreement_type !== undefined && !agreementTemplates[requestedType as AgreementType]) return NextResponse.json({ error: "Choose a valid agreement type." }, { status: 400 });
+  if (body.agreement_type !== undefined) update.agreement_type = requestedType;
   if (body.agreement !== undefined) {
     if (!body.agreement || typeof body.agreement !== "object" || Array.isArray(body.agreement)) return NextResponse.json({ error: "Agreement terms must be an object." }, { status: 400 });
     if (Object.values(body.agreement as Record<string, unknown>).some(value => !(typeof value === "string" || typeof value === "number" || value === null) || (typeof value === "string" && value.length > 12000))) return NextResponse.json({ error: "Agreement fields must be text or numbers under 12,000 characters." }, { status: 400 });
-    update.agreement_terms = body.agreement;
+    if (!agreementTemplates[requestedType as AgreementType]) return NextResponse.json({ error: "Choose a valid agreement type." }, { status: 400 });
+    const version = agreementChanged ? (current.agreement_version || 0) + 1 : (current.agreement_version || 1);
+    const template = agreementTemplates[requestedType as AgreementType];
+    const savedTerms = (current.agreement_terms || {}) as Record<string, any>;
+    const changingType = requestedType !== current.agreement_type;
+    const templateId = !changingType ? savedTerms.template_id || current.agreement_template_id || body.agreement.template_id || template.id : template.id;
+    const templateVersion = !changingType ? savedTerms.template_version || current.agreement_template_version || body.agreement.template_version || template.version : template.version;
+    const terms = { ...body.agreement, agreement_type: requestedType, agreement_version: version, template_id: templateId, template_version: templateVersion } as Record<string, any>;
+    terms.contract_html = agreementHtml(requestedType as AgreementType, terms);
+    update.agreement_terms = terms;
+    update.agreement_template_id = templateId;
+    update.agreement_template_version = templateVersion;
+    update.agreement_version = version;
+    update.flat_fee = Number(terms.flat_fee ?? 0);
+    update.master_royalty = Number(terms.master_royalty ?? 0);
+    update.publishing_royalty = terms.songwriting_status === "negotiated" && terms.publishing_split !== "" ? Number(terms.publishing_split) : null;
   }
-  if (agreementChanged) { update.agreement_approved_at = null; update.agreement_path = null; }
+  if (agreementChanged) {
+    update.agreement_approved_at = null; update.agreement_approved_by = null; update.agreement_approved_version = null;
+    update.agreement_path = null; update.agreement_status = "draft"; update.agreement_sent_at = null;
+  }
   if (body.approve_agreement === true) {
-    const type = (body.agreement_type || current.agreement_type) as string;
-    const terms = (body.agreement || current.agreement_terms || {}) as Record<string, unknown>;
-    const required: Record<string, string[]> = {
-      singer_feature: ["collaborator_legal_name", "song_title", "vocal_deliverables", "artist_credit"],
-      remix: ["collaborator_legal_name", "song_title", "remix_title", "remixer_credit", "remix_deliverables"],
-      producer: ["collaborator_legal_name", "song_title", "production_scope", "deliverables"],
-      videographer: ["collaborator_legal_name", "song_title", "production_scope", "delivery_deadline", "video_deliverables"],
-    };
-    const missing = (required[type] || []).filter(key => !String(terms[key] || "").trim());
-    if (terms.fee_option === "Custom fee" && !(Number(terms.flat_fee) > 0)) missing.push("flat_fee");
-    for (const key of ["master_royalty", "publishing_split"]) {
-      if (terms[key] === "" || terms[key] === null || terms[key] === undefined) continue;
-      const amount = Number(terms[key]);
-      if (!Number.isFinite(amount) || amount < 0 || amount > 100) return NextResponse.json({ error: `${key} must be a number between 0 and 100, or left blank.` }, { status: 400 });
-    }
+    const type = requestedType as AgreementType;
+    const terms = (update.agreement_terms || current.agreement_terms || {}) as Record<string, any>;
+    const missing = validateAgreement(type, terms);
     if (missing.length) return NextResponse.json({ error: `Complete these essential terms before approval: ${missing.join(", ")}.` }, { status: 400 });
     update.agreement_approved_at = new Date().toISOString();
     update.agreement_approved_by = auth.user.email || "admin";
+    update.agreement_approved_version = update.agreement_version as number || current.agreement_version || 1;
   }
-  if (body.approve_agreement === false) update.agreement_approved_at = null;
+  if (body.approve_agreement === false) { update.agreement_approved_at = null; update.agreement_approved_by = null; update.agreement_approved_version = null; }
   if (typeof body.status === "string" && allowed.includes(body.status)) {
     if (!canTransitionCollaborationStatus(current.status, body.status)) return NextResponse.json({ error: `Cannot move a request from ${current.status} to ${body.status}.` }, { status: 409 });
     update.status = body.status;
@@ -87,7 +101,7 @@ export async function PATCH(request: Request) {
   }
   if (body.status === "signed") {
     const signedPath = current.signed_agreement_path;
-    if (typeof signedPath !== "string" || !signedPath) return NextResponse.json({ error: "Upload the signed agreement before recording signature verification." }, { status: 409 });
+    if (typeof signedPath !== "string" || !signedPath || current.signed_agreement_version !== current.agreement_approved_version || current.agreement_approved_version !== current.agreement_version) return NextResponse.json({ error: "Upload executed signature evidence for the exact approved agreement version before verification." }, { status: 409 });
     const folder = signedPath.slice(0, signedPath.lastIndexOf("/")), filename = signedPath.split("/").pop();
     const { data: files, error: storageError } = await db.storage.from(AGREEMENT_BUCKET).list(folder, { search: filename, limit: 50 });
     const exists = !storageError && !!files?.some((file) => file.name === filename);
@@ -119,20 +133,21 @@ export async function PATCH(request: Request) {
       if (!body.status) update.status = "agreement_pending";
       if (body.agreement_status === "sent") update.agreement_status = "awaiting_signature";
       else update.agreement_status = body.agreement_status;
-    } else {
+    } else if (body.agreement_status !== "draft" || agreementChanged || !current.agreement_version) {
       update.agreement_status = body.agreement_status === "not_started" || body.agreement_status === "pending" ? "draft" : body.agreement_status;
     }
   }
-  const saveAgreementSnapshot = agreementChanged || body.approve_agreement !== undefined || (body.agreement_status !== undefined && current.agreement_status !== "signed") || body.status === "signed";
-  if (saveAgreementSnapshot) update.agreement_version = (current.agreement_version || 0) + 1;
-  const { data, error } = await db.from("collaboration_requests").update(update).eq("id", id).select("id,status,agreement_status,agreement_type,agreement_version,agreement_approved_at").single();
+  const saveAgreementSnapshot = agreementChanged;
+  const { data, error } = await db.from("collaboration_requests").update(update).eq("id", id).select("id,status,agreement_status,agreement_type,agreement_version,agreement_terms,agreement_template_id,agreement_template_version,agreement_approved_at,agreement_approved_by,agreement_approved_version").single();
   if (error) return NextResponse.json({ error: "Unable to update request." }, { status: 500 });
   if (saveAgreementSnapshot) {
     const snapshot = await db.from("collaboration_agreement_versions").insert({
       request_id: id, song_id: current.song_id, invite_id: current.invite_id, authorized_person_id: current.authorized_person_id,
       agreement_type: (update.agreement_type || current.agreement_type || "singer_feature"), version: update.agreement_version,
-      agreement_status: update.agreement_status || (body.status === "signed" ? "signed" : current.agreement_status) || "draft",
-      structured_terms: update.agreement_terms || current.agreement_terms || {}, document_path: update.agreement_path !== undefined ? update.agreement_path : current.agreement_path,
+      agreement_status: "draft", structured_terms: update.agreement_terms || current.agreement_terms || {},
+      agreement_template_id: update.agreement_template_id || current.agreement_template_id,
+      agreement_template_version: update.agreement_template_version || current.agreement_template_version,
+      document_path: update.agreement_path !== undefined ? update.agreement_path : current.agreement_path,
       signed_document_path: current.signed_agreement_path, created_by: auth.user.email || null,
     });
     if (snapshot.error) return NextResponse.json({ error: "The request was updated, but its version snapshot could not be saved. Do not retry until the history is reviewed." }, { status: 500 });
@@ -149,7 +164,7 @@ export async function PATCH(request: Request) {
     }
   }
   if (body.status || body.agreement_status || body.internal_notes || agreementChanged || body.approve_agreement !== undefined || Object.keys(update).length > 1) {
-    await db.from("collaboration_request_events").insert({ request_id: id, event: body.status === "signed" ? "signed" : body.approve_agreement ? "agreement_approved" : body.agreement_status || (agreementChanged ? "agreement_draft_saved" : "request_updated"), details: { actor: auth.user.email, updates: Object.keys(update).filter((key) => key !== "updated_at") } });
+    await db.from("collaboration_request_events").insert({ request_id: id, event: body.status === "signed" ? "signed" : body.approve_agreement ? "agreement_approved" : body.agreement_status || (agreementChanged ? "agreement_draft_saved" : "request_updated"), details: { actor: auth.user.email, version: data.agreement_version, updates: Object.keys(update).filter((key) => key !== "updated_at") } });
   }
   return NextResponse.json({ request: data });
 }
