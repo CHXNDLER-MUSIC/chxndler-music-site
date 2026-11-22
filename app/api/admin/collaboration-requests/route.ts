@@ -79,6 +79,7 @@ export async function PATCH(request: Request) {
   if (agreementChanged) {
     update.agreement_approved_at = null; update.agreement_approved_by = null; update.agreement_approved_version = null;
     update.agreement_path = null; update.agreement_status = "draft"; update.agreement_sent_at = null;
+    update.agreement_access_token_hash = null; update.agreement_access_expires_at = null; update.agreement_access_version = null;
   }
   if (body.approve_agreement === true) {
     const type = requestedType as AgreementType;
@@ -89,7 +90,10 @@ export async function PATCH(request: Request) {
     update.agreement_approved_by = auth.user.email || "admin";
     update.agreement_approved_version = update.agreement_version as number || current.agreement_version || 1;
   }
-  if (body.approve_agreement === false) { update.agreement_approved_at = null; update.agreement_approved_by = null; update.agreement_approved_version = null; }
+  if (body.approve_agreement === false) {
+    update.agreement_approved_at = null; update.agreement_approved_by = null; update.agreement_approved_version = null;
+    update.agreement_access_token_hash = null; update.agreement_access_expires_at = null; update.agreement_access_version = null;
+  }
   if (typeof body.status === "string" && allowed.includes(body.status)) {
     if (!canTransitionCollaborationStatus(current.status, body.status)) return NextResponse.json({ error: `Cannot move a request from ${current.status} to ${body.status}.` }, { status: 409 });
     update.status = body.status;

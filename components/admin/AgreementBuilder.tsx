@@ -34,6 +34,7 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
   const [reviewedUrl, setReviewedUrl] = useState<string | null>(request.agreement_url || null);
   const [signedPath, setSignedPath] = useState<string | null>(request.signed_agreement_path || null);
   const [signedVersion, setSignedVersion] = useState(Number(request.signed_agreement_version || 0));
+  const [privateAgreementUrl, setPrivateAgreementUrl] = useState("");
   const [dirty, setDirty] = useState(false);
   const [previewedVersion, setPreviewedVersion] = useState(0);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
@@ -155,8 +156,8 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
     setBusy(true); setError(""); setNotice("Sending the approved agreement…");
     try {
       const result = await readResponse(await fetch(`/api/admin/collaboration-requests/${request.id}/send-agreement`, { method: "POST" }));
-      setAgreementStatus(result.agreement_status || "awaiting_signature"); setApprovedVersion(Number(result.version || savedVersion));
-      setNotice("Agreement sent. The collaborator will sign externally and return the executed PDF."); setReviewConfirmed(false); onUpdated();
+      setAgreementStatus(result.agreement_status || "awaiting_signature"); setApprovedVersion(Number(result.version || savedVersion)); setPrivateAgreementUrl(String(result.reviewUrl || ""));
+      setNotice("Private agreement link emailed. The collaborator can sign online, and a signed copy will be emailed to them."); setReviewConfirmed(false); onUpdated();
     } catch (sendError) { setError(sendError instanceof Error ? sendError.message : "The agreement could not be sent."); setNotice(""); }
     finally { setBusy(false); }
   }
@@ -255,7 +256,9 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
           {missing.length > 0 && <div className="mt-3 rounded-lg border border-amber-200/20 bg-amber-100/[.04] px-3 py-2 text-xs leading-5 text-amber-100/80"><span className="font-semibold">Complete before approval:</span> {missing.join(" · ")}</div>}
           {!requestApprovalOkay && <p className="mt-3 text-xs text-amber-100/75">Approve this collaboration request in its request review before sending an agreement.</p>}
           {savedVersion > 0 && <label className={`mt-3 flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-xs leading-5 ${reviewConfirmed ? "border-[#FD52AF]/40 bg-[#FD52AF]/[.06]" : "border-white/10 bg-black/15"}`}><input type="checkbox" checked={reviewConfirmed} disabled={!previewIsCurrent || !ready || busy || signed || sent} onChange={event => void confirmReview(event.target.checked)} className="mt-0.5 accent-[#FD52AF]"/><span>I reviewed the exact preview for v{savedVersion} and approve this version for sending.</span></label>}
-          <p className="mt-3 text-[11px] leading-5 text-white/40">Signature workflow: the email shares a private agreement document. The collaborator signs externally and returns an executed PDF; this workspace verifies the uploaded signature evidence. No electronic-signature provider is connected.</p>
+          <p className="mt-3 text-[11px] leading-5 text-white/40">Sending emails a unique private agreement page. The collaborator can review and sign online; a signed copy is emailed to them.</p>
+          {request.collaborator_signed_at && <p className="mt-3 rounded-lg border border-emerald-300/20 bg-emerald-300/[.05] px-3 py-2 text-xs text-emerald-100/80">Signed online by <strong>{request.collaborator_printed_name || [request.collaborator_first_name, request.collaborator_last_name].filter(Boolean).join(" ")}</strong> on {new Date(request.collaborator_signed_at).toLocaleString()}.{request.collaborator_signature_email_sent_at ? " Signed copy emailed." : " Signed copy email has not been confirmed."}</p>}
+          {privateAgreementUrl && <a href={privateAgreementUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex rounded-lg border border-[#FD52AF]/30 px-3 py-2 text-xs font-semibold text-[#ff9bcd] hover:bg-[#FD52AF]/[.06]">Open private agreement link ↗</a>}
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <label className={`cursor-pointer rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-white/70 hover:border-[#FD52AF]/50 ${busy || signed || sent ? "pointer-events-none opacity-40" : ""}`}>Use Reviewed PDF<input type="file" accept="application/pdf" disabled={busy || signed || sent} onChange={event => void uploadAgreement(event.target.files?.[0], "draft")} className="sr-only" /></label>
             {agreementPath && <span className="text-xs text-emerald-200/75">Reviewed PDF attached to v{savedVersion}</span>}
