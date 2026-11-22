@@ -99,7 +99,7 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
       const params = new URLSearchParams(window.location.search);
       const requested = (params.get("tab") || "").replaceAll("-", " ").toLowerCase();
       const remembered = window.localStorage.getItem(`song-workspace-tab:${id}`)?.toLowerCase();
-      const available: Tab[] = data.musicVideo ? [...baseTabs, "Music Video"] : baseTabs;
+      const available: Tab[] = data.musicVideo && !data.song.youtube_music_video_url ? [...baseTabs, "Music Video"] : baseTabs;
       const selected = available.find(item => item.toLowerCase() === requested) || available.find(item => item.toLowerCase() === remembered);
       if (selected) setTab(selected);
     });
@@ -193,7 +193,7 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
   if (!profile) return <main className={`${embedded ? "min-h-full" : "min-h-screen"} bg-[#0b0b0f] p-6 text-sm text-rose-200`}>{error || "Song unavailable."}</main>;
 
   const song = profile.song;
-  const tabs: Tab[] = profile.musicVideo ? [...baseTabs, "Music Video"] : baseTabs;
+  const tabs: Tab[] = profile.musicVideo && !profile.song.youtube_music_video_url ? [...baseTabs, "Music Video"] : baseTabs;
   const needsAttention = contentSummary ? Math.max(0, contentSummary.total - contentSummary.posted) : 0;
   const contentPercent = contentSummary?.total ? Math.round(contentSummary.posted / contentSummary.total * 100) : 0;
 
