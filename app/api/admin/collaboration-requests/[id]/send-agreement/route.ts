@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getApiUser, isAdminUser, unauthorized, forbidden } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
@@ -41,8 +42,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const songRelation = Array.isArray(row.songs) ? row.songs[0] : row.songs;
   const title = songRelation?.title || "Collaboration project";
   const role = agreementTypes.find(type => type.value === row.agreement_type)?.label || "Collaboration";
-  const contract = agreementHtml(row.agreement_type as AgreementType, terms);
-  const html = `<div style="background:#09090c;color:#fff;padding:28px;font:15px Arial;line-height:1.6"><h1 style="color:#ff3ea5">CHXNDLER</h1><p>Hi ${escapeHtml(row.artist_name)},</p><p>Your ${escapeHtml(role)} agreement for <b>${escapeHtml(title)}</b> (version ${row.agreement_version}) is ready for review.</p>${fileLink?.data?.signedUrl ? `<p><a href="${escapeHtml(fileLink.data.signedUrl)}" style="display:inline-block;padding:12px 18px;background:#ff3ea5;color:#09090c;text-decoration:none;font-weight:bold">Review agreement PDF</a></p>` : `<p>The complete agreement is attached as an HTML document. Open it in a browser to review or print it.</p>`}<p>Please sign the reviewed agreement outside this website and reply with the fully executed PDF. This email does not create an electronic signature.</p><p>CHXNDLER</p></div>`;
+  const accessToken = randomBytes(32).toString("base64url");
+  const accessTokenHash = createHash("sha256").update(accessToken).digest("hex");
+  const accessExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const base = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
+  const reviewUrl = `${base}/collab/agreement/${accessToken}`;
+  const tokenUpdate = await db.from("collaboration_requests").update({ agreement_access_token_hash: accessTokenHash, agreement_access_expires_at: accessExpiresAt, agreement_access_version: row.agreement_version }).eq("id", id).eq("agreement_version", row.agreement_version).eq("agreement_approved_version", row.agreement_version).select("id").maybeSingle();
+  if (tokenUpdate.error || !tokenUpdate.data) return NextResponse.json({ error: "Could not create a private link for the approved agreement." }, { status: 500 });
+  const html = `<div style="background:#09090c;color:#fff;padding:28px;font:15px Arial;line-height:1.6"><h1 style="color:#ff3ea5">CHXNDLER</h1><p>Hi ${escapeHtml(row.artist_name)},</p><p>Your ${escapeHtml(role)} agreement for <b>${escapeHtml(title)}</b> (version ${row.agreement_version}) is ready for review.</p><p><a href="${escapeHtml(reviewUrl)}" style="display:inline-block;padding:12px 18px;background:#ff3ea5;color:#09090c;text-decoration:none;font-weight:bold">Review and sign agreement</a></p><p>This private link expires in 30 days. ${fileLink?.data?.signedUrl ? `<a href="${escapeHtml(fileLink.data.signedUrl)}" style="color:#ff80c4">Download the reviewed PDF</a>` : "You can print or save a PDF from the agreement page."}</p><p>Need help? Reply to this email.</p><p>CHXNDLER</p></div>`;
   let transport: import("nodemailer").Transporter;
   try {
     const nodemailer = await import("nodemailer");
@@ -51,16 +58,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   } catch { return NextResponse.json({ error: "Unable to initialize agreement email." }, { status: 503 }); }
   let messageId: string;
   try {
-    const sent = await transport.sendMail({ from: `CHXNDLER <${fromAddress}>`, to: row.email, replyTo, subject: `Collaboration agreement · ${title}`, text: `Hi ${row.artist_name},\n\nYour ${role} agreement for ${title} (version ${row.agreement_version}) is ready for review.${fileLink?.data?.signedUrl ? ` Review the PDF here: ${fileLink.data.signedUrl}` : ` The complete agreement is attached as an HTML document.`}\n\nPlease sign the reviewed document outside this website and reply with the fully executed PDF. This email does not create an electronic signature.\n\nCHXNDLER`, html, attachments: fileLink?.data?.signedUrl ? [] : [{ filename: `CHXNDLER-${row.agreement_version}-Agreement.html`, content: contract, contentType: "text/html; charset=utf-8" }] });
+    const sent = await transport.sendMail({ from: `CHXNDLER <${fromAddress}>`, to: row.email, replyTo, subject: `Collaboration agreement · ${title}`, text: `Hi ${row.artist_name},\n\nYour ${role} agreement for ${title} (version ${row.agreement_version}) is ready for review and signature.\n\nOpen your private agreement page: ${reviewUrl}\nThis link expires in 30 days.${fileLink?.data?.signedUrl ? `\nDownload the reviewed PDF: ${fileLink.data.signedUrl}` : " You can print or save a PDF from the agreement page."}\n\nNeed help? Reply to this email.\n\nCHXNDLER`, html });
     messageId = sent.messageId || "accepted";
   } catch (sendError) {
     try { transport.close(); } catch {}
+    await db.from("collaboration_requests").update({ agreement_access_token_hash: null, agreement_access_expires_at: null, agreement_access_version: null }).eq("id", id).eq("agreement_access_token_hash", accessTokenHash);
     const detail = sendError instanceof Error ? sendError.message.slice(0, 300) : "Mail server rejected the message.";
     return NextResponse.json({ error: `Agreement email failed: ${detail}` }, { status: 502 });
   }
   try { transport.close(); } catch {}
   const version = row.agreement_version || 1;
-  const update = await db.from("collaboration_requests").update({ agreement_status: "awaiting_signature", agreement_sent_at: new Date().toISOString(), status: "agreement_pending", updated_at: new Date().toISOString() }).eq("id", id).eq("agreement_version", version).eq("agreement_approved_version", version).select("id").maybeSingle();
+  const update = await db.from("collaboration_requests").update({ agreement_status: "awaiting_signature", agreement_sent_at: new Date().toISOString(), status: "agreement_pending", updated_at: new Date().toISOString() }).eq("id", id).eq("agreement_version", version).eq("agreement_approved_version", version).eq("agreement_access_token_hash", accessTokenHash).select("id").maybeSingle();
   if (update.error || !update.data) return NextResponse.json({ error: `Email ${messageId} was accepted, but the request status could not be saved for version ${version}. Review the request before retrying.` }, { status: 500 });
   await db.from("collaboration_request_events").insert({ request_id: id, event: "agreement_awaiting_signature", details: { actor: auth.user.email, messageId, version } });
   return NextResponse.json({ ok: true, messageId, agreement_status: "awaiting_signature", version });

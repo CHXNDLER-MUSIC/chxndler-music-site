@@ -97,17 +97,32 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
   }
 
   async function previewAgreement() {
-    const saved = sent ? { terms, version: savedVersion } : await saveDraft({ quiet: true });
-    if (!saved) return;
+    // Open synchronously from the click so Safari does not treat this as a popup.
     const preview = window.open("", "_blank");
     if (!preview) { setError("Allow pop-ups to preview the agreement."); return; }
-    if (agreementPath && reviewedUrl) {
+    preview.document.open();
+    preview.document.write("<!doctype html><title>Preparing agreement preview…</title><body style=\"background:#09090c;color:#fff;font:16px Arial;padding:2rem\">Preparing agreement preview…</body>");
+    preview.document.close();
+
+    const wasDirty = dirty;
+    const saved = sent ? { terms, version: savedVersion } : await saveDraft({ quiet: true });
+    const version = saved?.version || savedVersion + 1 || 1;
+    const previewTerms = saved?.terms || terms;
+    if (saved && !wasDirty && agreementPath && reviewedUrl) {
       preview.location.href = reviewedUrl;
     } else {
-      const html = saved.terms.contract_html || agreementHtml(agreementType, { ...saved.terms, agreement_version: saved.version });
+      const html = previewTerms.contract_html || agreementHtml(agreementType, { ...previewTerms, agreement_version: version });
       preview.document.open(); preview.document.write(html); preview.document.close();
     }
-    setPreviewedVersion(saved.version); setReviewConfirmed(false); setNotice(`Previewing saved agreement v${saved.version}.`);
+    if (saved) {
+      setPreviewedVersion(saved.version);
+      setReviewConfirmed(false);
+      setNotice(`Previewing saved agreement v${saved.version}.`);
+    } else {
+      setPreviewedVersion(0);
+      setReviewConfirmed(false);
+      setNotice("Previewing the current draft. Save it successfully before approval.");
+    }
   }
 
   async function approveCurrentVersion() {
