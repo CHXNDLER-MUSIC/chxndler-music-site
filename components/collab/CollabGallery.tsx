@@ -78,7 +78,7 @@ function CollabGalleryContent({
   invitedDisplayName: string;
   canViewFeatures: boolean;
 }) {
-  const [category, setCategory] = useState<"features" | "videos">(canViewFeatures && defaultView !== "video" ? "features" : "videos");
+  const [category, setCategory] = useState<"features" | "videos">(canViewFeatures && (defaultView !== "video" || musicVideos.length === 0) ? "features" : "videos");
   const [tab, setTab] = useState<Tab>(defaultView);
   const [videoReleaseTab, setVideoReleaseTab] = useState<VideoReleaseTab>("released");
   const [selected, setSelected] = useState<SelectedItem | null>(null);
@@ -180,7 +180,7 @@ function CollabGalleryContent({
         {([ ["released", "Released"], ["unreleased", "Unreleased"] ] as const).map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={videoReleaseTab === value} onClick={() => setVideoReleaseTab(value)}>{label}</button>)}
       </div>}
 
-      {category === "videos" && (musicVideos.length > 0 ? <section className="collab-video-opportunities" aria-label="Music video opportunities">
+      {category === "videos" && musicVideos.length > 0 && <section className="collab-video-opportunities" aria-label="Music video opportunities">
         <div><p className="collab-video-kicker">MUSIC VIDEOS</p><h2>Bring a song to life.</h2></div>
         <div className="collab-video-grid">{musicVideos.map(project => {
           const song = [...artistReleases, ...unreleasedSongs].find(item => item.slug === project.songs?.slug);
@@ -192,7 +192,7 @@ function CollabGalleryContent({
             </div>
           </article>;
         })}</div>
-      </section> : <div className="collab-empty"><p>NO MUSIC VIDEO PROJECTS YET.</p><span>Check back soon for new video opportunities.</span></div>)}
+      </section>}
 
       {category === "features" && (items.length ? (
         <section className="collab-grid" aria-label={TAB_LABELS[tab]}>
