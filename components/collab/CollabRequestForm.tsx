@@ -146,28 +146,28 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
         <form onSubmit={submit} className="space-y-4">
           <input name="website" tabIndex={-1} autoComplete="off" className="absolute -left-[10000px] h-px w-px opacity-0" aria-hidden="true" />
           <div className="grid gap-4 sm:grid-cols-2">
-            <label htmlFor="collab-first-name" className="block text-xs font-semibold text-white/75">First name <span className="text-[#FD52AF]">*</span>
-              <input id="collab-first-name" name="firstName" type="text" required autoComplete="given-name" maxLength={80} placeholder="First name" className={fieldClass}/>
+            <label htmlFor="collab-first-name" className="block text-xs font-semibold uppercase text-white/75">FIRST NAME <span className="text-[#FD52AF]">*</span>
+              <input id="collab-first-name" name="firstName" type="text" required autoComplete="given-name" maxLength={80} placeholder="FIRST NAME" className={fieldClass}/>
             </label>
-            <label htmlFor="collab-last-name" className="block text-xs font-semibold text-white/75">Last name <span className="text-[#FD52AF]">*</span>
-              <input id="collab-last-name" name="lastName" type="text" required autoComplete="family-name" maxLength={80} placeholder="Last name" className={fieldClass}/>
+            <label htmlFor="collab-last-name" className="block text-xs font-semibold uppercase text-white/75">LAST NAME <span className="text-[#FD52AF]">*</span>
+              <input id="collab-last-name" name="lastName" type="text" required autoComplete="family-name" maxLength={80} placeholder="LAST NAME" className={fieldClass}/>
             </label>
-            <label htmlFor="collab-artist-name" className="block text-xs font-semibold text-white/75">Artist name <span className="font-normal text-white/40">Optional</span>
-              <input id="collab-artist-name" name="artistName" type="text" autoComplete="nickname" maxLength={120} placeholder="Artist or project name" className={fieldClass}/>
+            <label htmlFor="collab-artist-name" className="block text-xs font-semibold uppercase text-white/75">ARTIST NAME <span className="text-[#FD52AF]">*</span>
+              <input id="collab-artist-name" name="artistName" type="text" required autoComplete="nickname" maxLength={120} placeholder="ARTIST OR PROJECT NAME" className={fieldClass}/>
             </label>
-            <label htmlFor="collab-email" className="block text-xs font-semibold text-white/75">Email address <span className="text-[#FD52AF]">*</span>
-              <input ref={emailRef} id="collab-email" name="email" type="email" required autoComplete="email" maxLength={320} value={email} onChange={event => setEmail(event.target.value)} placeholder="you@example.com" className={fieldClass}/>
+            <label htmlFor="collab-email" className="block text-xs font-semibold uppercase text-white/75">EMAIL ADDRESS <span className="text-[#FD52AF]">*</span>
+              <input ref={emailRef} id="collab-email" name="email" type="email" required autoComplete="email" maxLength={320} value={email} onChange={event => setEmail(event.target.value)} placeholder="YOU@EXAMPLE.COM" className={fieldClass}/>
             </label>
-            <label htmlFor="collab-profile" className="block text-xs font-semibold text-white/75">Instagram / Music profile <span className="font-normal text-white/40">Optional</span>
-              <input id="collab-profile" name="profileLink" type="text" autoComplete="url" maxLength={500} placeholder="@yourhandle or profile URL" className={fieldClass}/>
+            <label htmlFor="collab-profile" className="block text-xs font-semibold uppercase text-white/75">INSTAGRAM / MUSIC PROFILE <span className="font-normal text-white/40">OPTIONAL</span>
+              <input id="collab-profile" name="profileLink" type="text" autoComplete="url" maxLength={500} placeholder="@YOURHANDLE OR PROFILE URL" className={fieldClass}/>
             </label>
-            <label htmlFor="collab-phone" className="block text-xs font-semibold text-white/75">Phone number <span className="font-normal text-white/40">Optional</span>
+            <label htmlFor="collab-phone" className="block text-xs font-semibold uppercase text-white/75">PHONE NUMBER <span className="font-normal text-white/40">OPTIONAL</span>
               <input id="collab-phone" name="phone" type="tel" autoComplete="tel" maxLength={40} placeholder="(555) 555-0123" className={fieldClass}/>
             </label>
           </div>
 
           <fieldset>
-            <legend className="mb-3 text-xs font-semibold text-white/75">How would you like to collaborate? <span className="text-[#FD52AF]">*</span></legend>
+            <legend className="mb-3 text-xs font-semibold uppercase text-white/75">HOW WOULD YOU LIKE TO COLLABORATE? <span className="text-[#FD52AF]">*</span></legend>
             <div role="radiogroup" aria-label="How would you like to collaborate?" className="grid gap-2 sm:grid-cols-2">
               {visibleContributionOptions.map(option => {
                 const selected = contributionType === option.value;
@@ -182,8 +182,8 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
             {isPublicVideoApplication && <p className="mt-2 text-[.68rem] text-white/40">This public project is accepting music video ideas.</p>}
           </fieldset>
 
-          <label htmlFor="collab-message" className="block text-sm font-semibold text-white/85">Your idea <span className="text-xs font-normal text-white/40">Optional</span>
-            <textarea id="collab-message" name="message" maxLength={1200} rows={3} defaultValue={initialMessage} placeholder="What are you imagining?" className="mt-2 block min-h-24 w-full resize-y rounded-xl border border-white/[.12] bg-black/30 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/30 focus:border-[#FD52AF]/65 focus:ring-2 focus:ring-[#FD52AF]/15"/>
+          <label htmlFor="collab-message" className="block text-sm font-semibold uppercase text-white/85">YOUR IDEA <span className="text-xs font-normal text-white/40">OPTIONAL</span>
+            <textarea id="collab-message" name="message" maxLength={1200} rows={3} defaultValue={initialMessage} placeholder="WHAT ARE YOU IMAGINING?" className="mt-2 block min-h-24 w-full resize-y rounded-xl border border-white/[.12] bg-black/30 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/30 focus:border-[#FD52AF]/65 focus:ring-2 focus:ring-[#FD52AF]/15"/>
           </label>
 
           <section aria-labelledby="collab-note-heading" className="space-y-1.5 py-0.5">

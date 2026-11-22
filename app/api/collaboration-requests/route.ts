@@ -30,6 +30,7 @@ export async function POST(request: Request) {
     const firstName = clean(body.firstName, 80), lastName = clean(body.lastName, 80), submittedArtistName = clean(body.artistName, 120);
     const rawProfile = clean(body.profileLink, 500), profile = normalizeProfileLink(rawProfile), portfolio = clean(body.portfolioUrl, 500), estimatedRate = clean(body.estimatedRate, 120), phone = clean(body.phone, 40), contribution = clean(body.contributionType, 40), message = clean(body.message, 1200), videoProjectId = clean(body.videoProjectId, 80);
     if (!firstName || !lastName) return NextResponse.json({ error: "First and last name are required." }, { status: 400 });
+    if (!submittedArtistName) return NextResponse.json({ error: "Artist name is required." }, { status: 400 });
     if (rawProfile && !profile) return NextResponse.json({ error: "Enter an Instagram handle or a valid http(s) profile URL." }, { status: 400 });
     const invite = await getCollabInviteSession();
     const isVideoApplication = contribution === "Music Video";
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
     const publicVideoApplication = !invite && isVideoApplication;
     if (!invite && !publicVideoApplication) return NextResponse.json({ error: "Enter with your approved name or open your active personal invitation before submitting a collaboration request." }, { status: 403 });
     const email = submittedEmail || invite?.email || "";
-    const artistName = submittedArtistName || `${firstName} ${lastName}`;
+    const artistName = submittedArtistName;
     if (!validateCollaborationSubmission({ songId, inviteId: invite?.id, allowPublicApplication: publicVideoApplication, allowSonglessIdea, submissionKey, termsVersion, artistName, email, contributionType: contribution })) {
       return NextResponse.json({ error: "Check the required fields and try again." }, { status: 400 });
     }
