@@ -23,8 +23,8 @@ export default function CollaborationOutreachTab({ songId = "" }: { songId?: str
   const [agreementBusy, setAgreementBusy] = useState(false);
   const [agreementNotice, setAgreementNotice] = useState("");
 
-  async function openRequest(id: string) {
-    setSelectedRequest(null); setRequestLoading(true);
+  async function openRequest(id: string, preserve = false) {
+    if (!preserve) { setSelectedRequest(null); setRequestLoading(true); }
     const response = await fetch(`/api/admin/collaboration-requests?id=${encodeURIComponent(id)}`, { cache: "no-store" });
     const result = await response.json();
     if (response.ok) {
@@ -111,6 +111,6 @@ export default function CollaborationOutreachTab({ songId = "" }: { songId?: str
       {agreementNotice && <p role="status" className="mt-3 text-xs text-white/65">{agreementNotice}</p>}
       {selectedRequest.error && <p role="alert" className="mt-4 text-sm text-rose-300">{selectedRequest.error}</p>}
       </>}</div></section></div>}
-    {selectedRequest && agreementOpen && !requestLoading && !selectedRequest.error && <AgreementBuilder request={selectedRequest} close={() => setAgreementOpen(false)} onUpdated={() => void openRequest(selectedRequest.id)} />}
+    {selectedRequest && agreementOpen && !requestLoading && !selectedRequest.error && <AgreementBuilder request={selectedRequest} close={() => { setAgreementOpen(false); void openRequest(selectedRequest.id, true); }} onUpdated={() => void openRequest(selectedRequest.id, true)} />}
   </section>;
 }

@@ -245,7 +245,7 @@ function CollabGalleryContent({
                   {item.audioUrl && <span className="collab-cover-mark" aria-hidden="true">▶</span>}
                 </>
               )}
-              {item.release.releaseDate && <span className="collab-release-date">Release date · {new Date(`${item.release.releaseDate}T00:00:00`).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>}
+              {!item.release.readyForCollab && item.release.releaseDate && <span className="collab-release-date">Release date · {new Date(`${item.release.releaseDate}T00:00:00`).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>}
               {(item.release.readyForCollab || !!item.release.collaborationOpportunities?.length) && <span className="collab-opportunity-badges">{item.release.readyForCollab && <span data-opportunity="collab">Open for Collab</span>}{item.release.collaborationOpportunities?.map(value => <span key={value} data-opportunity={value}>{value === "feature" ? "Open for Feature" : value === "video" ? "Video Needed" : "Open for Remix"}</span>)}</span>}
             </button>
           ))}

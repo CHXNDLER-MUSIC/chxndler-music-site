@@ -141,7 +141,7 @@ export function createAgreementDraft(input: { type: AgreementType; request: Reco
     terms[key] = value;
   }
   if (existing && typeof existing === "object") {
-    const fields = new Set(["template_id", "template_version", ...agreementFields[type].map(field => field.key), "flat_fee", "master_royalty", "songwriting_status", "songwriting_split", "publishing_split", "payment_terms", "legal_terms", "additional_terms", "effective_date", "fee_option", "fee_currency"]);
+    const fields = new Set(["template_id", "template_version", "agreement_version", "contract_html", "reviewed_pdf", ...agreementFields[type].map(field => field.key), "flat_fee", "master_royalty", "songwriting_status", "songwriting_split", "publishing_split", "payment_terms", "legal_terms", "additional_terms", "effective_date", "fee_option", "fee_currency"]);
     for (const key of fields) if (own(existing, key)) terms[key] = existing[key] as string | number | null;
   }
   terms.template_id = terms.template_id || template.id;

@@ -44,11 +44,12 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
 
   const missing = useMemo(() => validateAgreement(agreementType, terms), [agreementType, terms]);
   const ready = missing.length === 0;
+  const previewReady = useMemo(() => validateAgreement(agreementType, agreementType !== "videographer" && terms.songwriting_status === "unresolved" ? { ...terms, songwriting_status: "separate_agreement" } : terms).length === 0, [agreementType, terms]);
   const currentApproval = approvedVersion > 0 && approvedVersion === savedVersion;
   const sent = ["awaiting_signature", "offer_sent"].includes(agreementStatus) || (request.status === "agreement_pending" && agreementStatus !== "draft");
   const signed = agreementStatus === "signed" || request.status === "signed";
   const previewIsCurrent = previewedVersion > 0 && previewedVersion === savedVersion && !dirty;
-  const sendEnabled = !busy && !dirty && ready && previewIsCurrent && reviewConfirmed && (request.status === "approved" || request.status === "agreement_pending") && !sent && !signed;
+  const sendEnabled = !busy && !dirty && ready && previewIsCurrent && reviewConfirmed && currentApproval && (request.status === "approved" || request.status === "agreement_pending") && !sent && !signed;
   const template = agreementTemplates[agreementType];
 
   function change(key: string, value: string | number) {
@@ -120,11 +121,24 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
     setAgreementStatus(saved.agreement_status || "draft");
   }
 
+  async function confirmReview(checked: boolean) {
+    setReviewConfirmed(checked);
+    if (!checked) return;
+    setBusy(true); setError(""); setNotice("Recording approval for this exact version…");
+    try {
+      await approveCurrentVersion();
+      setReviewConfirmed(true); setNotice(`Version v${savedVersion} approved for sending.`);
+    } catch (approvalError) {
+      setReviewConfirmed(false);
+      setError(approvalError instanceof Error ? approvalError.message : "This version could not be approved.");
+      setNotice("");
+    } finally { setBusy(false); }
+  }
+
   async function sendForSignature() {
     if (!sendEnabled) return;
-    setBusy(true); setError(""); setNotice("Approving this preview and sending the agreement…");
+    setBusy(true); setError(""); setNotice("Sending the approved agreement…");
     try {
-      if (!currentApproval) await approveCurrentVersion();
       const result = await readResponse(await fetch(`/api/admin/collaboration-requests/${request.id}/send-agreement`, { method: "POST" }));
       setAgreementStatus(result.agreement_status || "awaiting_signature"); setApprovedVersion(Number(result.version || savedVersion));
       setNotice("Agreement sent. The collaborator will sign externally and return the executed PDF."); setReviewConfirmed(false); onUpdated();
@@ -225,7 +239,7 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">{steps.map((step, index) => <div key={step} className={`rounded-lg border px-2.5 py-2 text-center text-[11px] font-semibold ${index <= activeStep ? "border-[#FD52AF]/40 bg-[#FD52AF]/[.08] text-[#ff9acb]" : "border-white/[.07] text-white/35"}`}><span className="mr-1.5">{index < activeStep ? "✓" : index + 1}</span>{step}</div>)}</div>
           {missing.length > 0 && <div className="mt-3 rounded-lg border border-amber-200/20 bg-amber-100/[.04] px-3 py-2 text-xs leading-5 text-amber-100/80"><span className="font-semibold">Complete before approval:</span> {missing.join(" · ")}</div>}
           {!requestApprovalOkay && <p className="mt-3 text-xs text-amber-100/75">Approve this collaboration request in its request review before sending an agreement.</p>}
-          {savedVersion > 0 && <label className={`mt-3 flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-xs leading-5 ${reviewConfirmed ? "border-[#FD52AF]/40 bg-[#FD52AF]/[.06]" : "border-white/10 bg-black/15"}`}><input type="checkbox" checked={reviewConfirmed} disabled={!previewIsCurrent || !ready || busy || signed} onChange={event => setReviewConfirmed(event.target.checked)} className="mt-0.5 accent-[#FD52AF]"/><span>I reviewed the exact preview for v{savedVersion} and approve this version for sending.</span></label>}
+          {savedVersion > 0 && <label className={`mt-3 flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-xs leading-5 ${reviewConfirmed ? "border-[#FD52AF]/40 bg-[#FD52AF]/[.06]" : "border-white/10 bg-black/15"}`}><input type="checkbox" checked={reviewConfirmed} disabled={!previewIsCurrent || !ready || busy || signed || sent} onChange={event => void confirmReview(event.target.checked)} className="mt-0.5 accent-[#FD52AF]"/><span>I reviewed the exact preview for v{savedVersion} and approve this version for sending.</span></label>}
           <p className="mt-3 text-[11px] leading-5 text-white/40">Signature workflow: the email shares a private agreement document. The collaborator signs externally and returns an executed PDF; this workspace verifies the uploaded signature evidence. No electronic-signature provider is connected.</p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <label className={`cursor-pointer rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-white/70 hover:border-[#FD52AF]/50 ${busy || signed || sent ? "pointer-events-none opacity-40" : ""}`}>Use Reviewed PDF<input type="file" accept="application/pdf" disabled={busy || signed || sent} onChange={event => void uploadAgreement(event.target.files?.[0], "draft")} className="sr-only" /></label>
@@ -243,7 +257,7 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
       <footer className="sticky bottom-0 flex shrink-0 flex-wrap items-center gap-2 border-t border-white/10 bg-[#101014]/95 px-4 py-3 backdrop-blur sm:justify-end sm:px-7">
         <div className="mr-auto min-w-0 flex-1 text-xs" role="status">{error ? <span className="text-rose-300">{error}</span> : <span className="text-white/45">{notice || (dirty ? "Unsaved changes" : savedVersion ? `Version ${savedVersion}${currentApproval ? " · approved" : " · draft"}` : "Save a draft to begin version history")}</span>}</div>
         <button type="button" onClick={() => void saveDraft()} disabled={busy || signed || sent || !dirty && savedVersion > 0} className="rounded-lg border border-white/15 px-3 py-2.5 text-xs font-bold text-white/75 hover:bg-white/[.05] disabled:opacity-35">Save Draft</button>
-        <button type="button" onClick={() => void previewAgreement()} disabled={busy || signed || !ready} className="rounded-lg border border-white/15 px-3 py-2.5 text-xs font-bold text-white/75 hover:bg-white/[.05] disabled:opacity-35">Preview Agreement</button>
+        <button type="button" onClick={() => void previewAgreement()} disabled={busy || signed || !previewReady} className="rounded-lg border border-white/15 px-3 py-2.5 text-xs font-bold text-white/75 hover:bg-white/[.05] disabled:opacity-35">Preview Agreement</button>
         <button type="button" onClick={() => void sendForSignature()} disabled={!sendEnabled} className="rounded-lg bg-[#FD52AF] px-4 py-2.5 text-xs font-extrabold text-[#170d14] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35">{busy ? "Working…" : "Send for Signature"}</button>
       </footer>
     </section>

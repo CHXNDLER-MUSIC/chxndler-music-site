@@ -19,6 +19,7 @@ import GlobalKeyboardHandler from "@/components/GlobalKeyboardHandler";
 // Defer heavy, non-critical UI to improve LCP/INP
 import DeferredAppChrome from "@/components/DeferredAppChrome";
 import { PlanetRewardsProvider } from "@/components/PlanetRewardsProvider";
+import AdminGlobalNavigation from "@/components/admin/AdminGlobalNavigation";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chxndler.world"),
@@ -107,6 +108,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <TourProvider>
                   <PlanetRewardsProvider>
             <LazyLoadEnhancer />
+            <AdminGlobalNavigation />
             <OnboardingEntryGate />
             <StoreProvider />
             {/* Opens the name prompt when returning from auth with completeProfile=1 */}

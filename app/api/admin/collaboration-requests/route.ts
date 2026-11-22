@@ -66,6 +66,7 @@ export async function PATCH(request: Request) {
     const templateId = !changingType ? savedTerms.template_id || current.agreement_template_id || body.agreement.template_id || template.id : template.id;
     const templateVersion = !changingType ? savedTerms.template_version || current.agreement_template_version || body.agreement.template_version || template.version : template.version;
     const terms = { ...body.agreement, agreement_type: requestedType, agreement_version: version, template_id: templateId, template_version: templateVersion } as Record<string, any>;
+    if (agreementChanged) terms.reviewed_pdf = "false";
     terms.contract_html = agreementHtml(requestedType as AgreementType, terms);
     update.agreement_terms = terms;
     update.agreement_template_id = templateId;

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 const destinations = [
+  { label: "ADMIN DASHBOARD", href: "/admin", logo: "/icons/chxndler-192.webp", alt: "CHXNDLER admin icon" },
   { label: "HEARTVERSE", href: "/", logo: "/elements/logo.webp", alt: "CHXNDLER Heartverse logo" },
   { label: "COLLAB", href: "/collab", logo: "/elements/alien.webp", alt: "CHXNDLER alien logo" },
   { label: "CHXNDLER STUDIO", href: "/studio", logo: "/elements/chxndler-studio.png", alt: "CHXNDLER Studio logo" },

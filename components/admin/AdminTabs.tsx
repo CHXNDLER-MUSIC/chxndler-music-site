@@ -7,6 +7,7 @@ import TasksTab from "@/components/admin/TasksTab";
 import OverviewTab from "@/components/admin/OverviewTab";
 import OutreachWorkspace from "@/components/admin/OutreachWorkspace";
 import ContentTab from "@/components/admin/ContentTab";
+import { sfx } from "@/lib/sfx";
 
 type Tab = "overview" | "songs" | "content" | "outreach" | "tasks" | "finance";
 type IconName = "overview" | "songs" | "content" | "outreach" | "tasks" | "finance" | "more";
@@ -55,6 +56,7 @@ export default function AdminTabs() {
     return () => { document.removeEventListener("pointerdown", closeOutside); document.removeEventListener("keydown", closeOnEscape); };
   }, [moreOpen]);
   const choose = (value: Tab) => {
+    if (value !== tab) { try { sfx.play("change-channel", 0.3); } catch {} }
     setTab(value); setMoreOpen(false);
     const params = new URLSearchParams(window.location.search); params.set("view", value);
     if (value === "outreach") params.set("section", outreachSection); else params.delete("section");

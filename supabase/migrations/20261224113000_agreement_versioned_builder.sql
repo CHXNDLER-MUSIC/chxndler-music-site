@@ -1,5 +1,6 @@
 -- Add version-bound approval, reusable template metadata, and signature evidence
 -- without changing existing collaboration statuses or signed records.
+begin;
 alter table public.collaboration_requests
   add column if not exists agreement_approved_version integer,
   add column if not exists agreement_template_id text,
@@ -54,3 +55,5 @@ where r.id = v.request_id
 create index if not exists collaboration_requests_approved_version_idx
   on public.collaboration_requests(id, agreement_approved_version)
   where agreement_approved_version is not null;
+
+commit;

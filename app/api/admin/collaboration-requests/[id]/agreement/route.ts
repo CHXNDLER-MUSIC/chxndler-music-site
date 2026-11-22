@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getApiUser, isAdminUser, unauthorized, forbidden } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { agreementTypeForContribution } from "@/lib/collaborationAgreements";
+import { agreementHtml, agreementTypeForContribution } from "@/lib/collaborationAgreements";
 
 export const runtime = "nodejs";
 const BUCKET = "collaboration-agreements";
@@ -28,20 +28,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (uploadError) return NextResponse.json({ error: "Could not upload the private agreement. Confirm the storage migration is applied." }, { status: 500 });
   const agreementType = row.agreement_type || agreementTypeForContribution(row.contribution_type);
   const version = type === "draft" ? (row.agreement_version || 0) + 1 : row.agreement_approved_version;
+  const legacyTerms = row.agreement_terms && Object.keys(row.agreement_terms).length ? row.agreement_terms : {
+    admin_legal_name: row.admin_legal_name || "Chandler Pierce", admin_artist_name: "CHXNDLER", artist_credit: row.artist_credit || "",
+    master_royalty: row.master_royalty, publishing_split: row.publishing_royalty, flat_fee: row.flat_fee,
+  };
+  const snapshotTerms = type === "draft" ? { ...legacyTerms, agreement_version: version, reviewed_pdf: "true" } : legacyTerms;
+  if (type === "draft") snapshotTerms.contract_html = agreementHtml(agreementType, snapshotTerms);
   const update = type === "signed"
     ? { signed_agreement_path: path, signed_agreement_version: version }
-    : { agreement_path: path, agreement_version: version, agreement_status: "draft", agreement_approved_at: null, agreement_approved_by: null, agreement_approved_version: null };
+    : { agreement_path: path, agreement_version: version, agreement_terms: snapshotTerms, agreement_status: "draft", agreement_approved_at: null, agreement_approved_by: null, agreement_approved_version: null };
   const { error: updateError } = await db.from("collaboration_requests").update(update).eq("id", id);
   if (updateError) {
     await db.storage.from(BUCKET).remove([path]);
     return NextResponse.json({ error: "The file uploaded but its request record could not be updated." }, { status: 500 });
   }
-  const legacyTerms = row.agreement_terms && Object.keys(row.agreement_terms).length ? row.agreement_terms : {
-    admin_legal_name: row.admin_legal_name || "Chandler Pierce", admin_artist_name: "CHXNDLER", artist_credit: row.artist_credit || "",
-    master_royalty: row.master_royalty, publishing_split: row.publishing_royalty, flat_fee: row.flat_fee,
-  };
   if (type === "draft") {
-    const snapshotTerms = { ...legacyTerms, agreement_version: version, reviewed_pdf: true };
     const { error: versionError } = await db.from("collaboration_agreement_versions").insert({ request_id: id, song_id: row.song_id, invite_id: row.invite_id, authorized_person_id: row.authorized_person_id, agreement_type: agreementType, version, agreement_status: "draft", structured_terms: snapshotTerms, agreement_template_id: row.agreement_template_id, agreement_template_version: row.agreement_template_version, document_path: path, created_by: auth.user.email || null });
     if (versionError) return NextResponse.json({ error: "The reviewed PDF was uploaded, but its immutable version record could not be saved. Review the request before retrying." }, { status: 500 });
   }

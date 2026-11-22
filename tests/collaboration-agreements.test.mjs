@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { agreementFields, agreementText, agreementTypeForContribution, createAgreementDraft } from "../lib/collaborationAgreements.ts";
+import { agreementFields, agreementTemplates, agreementText, agreementTypeForContribution, createAgreementDraft, validateAgreement } from "../lib/collaborationAgreements.ts";
 
 const request = {
   id: "request-123",
@@ -34,7 +34,7 @@ for (const type of ["singer_feature", "remix", "producer", "videographer"]) {
     assert.equal(terms.master_royalty, 0);
     assert.equal(terms.publishing_split, "");
     assert.equal(terms.songwriting_status, "unresolved");
-    assert.match(text, /draft for review/i);
+    assert.match(text, /preview for review/i);
     assert.match(text, /not signed or binding/i);
     assert.ok(agreementFields[type].length > 0);
   });
@@ -53,10 +53,25 @@ test("remix and producer defaults preserve originals and do not invent percentag
   const producer = agreementText("producer", createAgreementDraft({ type: "producer", request, invite }));
   assert.match(remix, /retains the original song and original master/i);
   assert.match(remix, /may not independently release/i);
-  assert.match(producer, /retains existing material/i);
-  assert.match(producer, /Third-party samples must be disclosed/i);
+  assert.match(producer, /retains (?:its )?pre-existing materials/i);
+  assert.match(producer, /Third-party samples .* must be disclosed/i);
   assert.match(remix, /Master royalty: 0%/);
   assert.match(producer, /Master royalty: 0%/);
   assert.match(remix, /not yet agreed/i);
   assert.match(producer, /not yet agreed/i);
+});
+
+test("saved zeros remain deliberate and unresolved songwriting blocks approval", () => {
+  const draft = createAgreementDraft({ type: "singer_feature", request, invite, existing: { flat_fee: 0, master_royalty: 0, songwriting_status: "unresolved", publishing_split: "" } });
+  assert.equal(draft.flat_fee, 0);
+  assert.equal(draft.master_royalty, 0);
+  assert.ok(validateAgreement("singer_feature", draft).some(value => value.includes("Songwriting / publishing status")));
+  draft.songwriting_status = "separate_agreement";
+  assert.equal(validateAgreement("singer_feature", draft).length, 0);
+});
+
+test("each collaboration role loads its own reusable contract language", () => {
+  assert.notEqual(agreementTemplates.singer_feature.id, agreementTemplates.videographer.id);
+  assert.match(agreementTemplates.videographer.legalTerms, /videographer retains rights/i);
+  assert.doesNotMatch(agreementTemplates.videographer.legalTerms, /vocal deliverables/i);
 });
