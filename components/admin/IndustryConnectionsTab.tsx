@@ -62,7 +62,75 @@ export default function IndustryConnectionsTab() {
         <button onClick={() => void update(contact, { last_contacted_at: new Date().toISOString(), connection_status: contact.connection_status === "not_contacted" ? "connected" : contact.connection_status })} className="justify-self-start rounded-lg border border-[#ff3ea5]/35 px-3 py-2 text-xs text-[#ff9dce] hover:bg-[#ff3ea5]/10">Log contact</button>
       </div>
     </article>)}{visible.length === 0 && <p className="rounded-xl border border-dashed border-white/15 p-8 text-center text-sm text-white/45">{contacts.length ? "No matching connections." : "No contacts found. Apply the industry contacts migration to load the imported list."}</p>}</div>}
-    {profile && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) { setProfile(null); setEditingId(null); } }}><section role="dialog" aria-modal="true" aria-labelledby="contact-profile-title" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-white/10 bg-[#111116] p-5 shadow-2xl sm:p-6"><div className="flex items-start justify-between gap-4"><div className="min-w-0"><p className="text-[.65rem] font-bold uppercase tracking-[.16em] text-[#ff62b2]">Contact profile</p><h2 id="contact-profile-title" className="mt-1 break-words text-2xl font-bold">{editingId === profile.id ? "Edit contact" : [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Unnamed contact"}</h2><p className="mt-1 text-sm text-white/50">{profile.relationship || profile.industry_category}</p></div><button type="button" aria-label="Close contact profile" onClick={() => { setProfile(null); setEditingId(null); }} className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-white/65 hover:text-white">Close</button></div>{editingId === profile.id && !profile.outreachRecordId ? <form onSubmit={event => void saveDetails(event, profile)} className="mt-5 grid gap-3 sm:grid-cols-2">{(["first_name","last_name","email","phone","venue","industry_category","relationship","referred_by"] as const).map(field => <label key={field} className="text-xs capitalize text-white/55">{field.replaceAll("_", " ")}<input type={field === "email" ? "email" : "text"} value={editDraft[field]} onChange={event => setEditDraft(current => ({ ...current, [field]: event.target.value }))} className="mt-1 block w-full rounded-lg border border-white/10 bg-black/40 p-2 text-sm text-white"/></label>)}<label className="text-xs text-white/55 sm:col-span-2">Notes<textarea rows={3} value={editDraft.note} onChange={event => setEditDraft(current => ({ ...current, note: event.target.value }))} className="mt-1 block w-full rounded-lg border border-white/10 bg-black/40 p-2 text-sm text-white"/></label><button className="justify-self-start rounded-lg bg-[#ff3ea5] px-4 py-2 text-sm font-bold text-black sm:col-span-2">Save details</button></form> : <><div className="mt-5 grid gap-3 sm:grid-cols-2">{[["Email", profile.email], ["Phone", profile.phone], ["Organization", profile.venue], ["Category", profile.industry_category], ["Song", profile.song_title], ["Referred by", profile.referred_by], ["Last contacted", profile.last_contacted_at ? dateValue(profile.last_contacted_at) : null]].filter(([, value]) => value).map(([label, value]) => <div key={label} className="rounded-lg border border-white/[.07] bg-white/[.025] p-3"><p className="text-[.62rem] font-bold uppercase tracking-wider text-white/35">{label}</p><p className="mt-1 break-words text-sm text-white/80">{value}</p></div>)}</div><div className="mt-4"><p className="text-[.62rem] font-bold uppercase tracking-wider text-white/35">Notes & follow-up</p>{profile.note ? <p className="mt-2 whitespace-pre-wrap rounded-lg border border-white/[.07] bg-white/[.025] p-3 text-sm leading-6 text-white/75">{profile.note}</p> : <p className="mt-2 text-sm text-white/40">No notes yet.</p>}<label className="mt-4 block text-xs text-white/45">Follow-up date<input aria-label={`Follow up date for ${profile.first_name || "contact"}`} type="date" value={dateValue(profile.follow_up_at)} onChange={event => { const value = event.target.value || null; setProfile(current => current ? { ...current, follow_up_at: value } : null); void update(profile, { follow_up_at: value }); }} className="mt-1.5 block rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"/></label><div className="mt-5 flex justify-end">{!profile.outreachRecordId && <button type="button" onClick={() => { setEditingId(profile.id); setEditDraft({ first_name: profile.first_name || "", last_name: profile.last_name || "", email: profile.email || "", phone: profile.phone || "", venue: profile.venue || "", industry_category: profile.industry_category || "Other", relationship: profile.relationship || "", referred_by: profile.referred_by || "", note: profile.note || "" }); }} className="rounded-lg border border-white/15 px-4 py-2 text-sm text-white/70 hover:text-white">Edit profile</button>}</div></>}</section></div>}
+    {profile && (
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+        role="presentation"
+        onMouseDown={event => {
+          if (event.target === event.currentTarget) {
+            setProfile(null);
+            setEditingId(null);
+          }
+        }}
+      >
+        <section role="dialog" aria-modal="true" aria-labelledby="contact-profile-title" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-white/10 bg-[#111116] p-5 shadow-2xl sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[.65rem] font-bold uppercase tracking-[.16em] text-[#ff62b2]">Contact profile</p>
+              <h2 id="contact-profile-title" className="mt-1 break-words text-2xl font-bold">{editingId === profile.id ? "Edit contact" : [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Unnamed contact"}</h2>
+              <p className="mt-1 text-sm text-white/50">{profile.relationship || profile.industry_category}</p>
+            </div>
+            <button type="button" aria-label="Close contact profile" onClick={() => { setProfile(null); setEditingId(null); }} className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-white/65 hover:text-white">Close</button>
+          </div>
+          {editingId === profile.id && !profile.outreachRecordId ? (
+            <form onSubmit={event => void saveDetails(event, profile)} className="mt-5 grid gap-3 sm:grid-cols-2">
+              {(["first_name", "last_name", "email", "phone", "venue", "industry_category", "relationship", "referred_by"] as const).map(field => (
+                <label key={field} className="text-xs capitalize text-white/55">
+                  {field.replaceAll("_", " ")}
+                  <input type={field === "email" ? "email" : "text"} value={editDraft[field]} onChange={event => setEditDraft(current => ({ ...current, [field]: event.target.value }))} className="mt-1 block w-full rounded-lg border border-white/10 bg-black/40 p-2 text-sm text-white" />
+                </label>
+              ))}
+              <label className="text-xs text-white/55 sm:col-span-2">Notes<textarea rows={3} value={editDraft.note} onChange={event => setEditDraft(current => ({ ...current, note: event.target.value }))} className="mt-1 block w-full rounded-lg border border-white/10 bg-black/40 p-2 text-sm text-white" /></label>
+              <button className="justify-self-start rounded-lg bg-[#ff3ea5] px-4 py-2 text-sm font-bold text-black sm:col-span-2">Save details</button>
+            </form>
+          ) : (
+            <div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                {[
+                  { label: "Email", value: profile.email },
+                  { label: "Phone", value: profile.phone },
+                  { label: "Organization", value: profile.venue },
+                  { label: "Category", value: profile.industry_category },
+                  { label: "Song", value: profile.song_title },
+                  { label: "Referred by", value: profile.referred_by },
+                  { label: "Last contacted", value: profile.last_contacted_at ? dateValue(profile.last_contacted_at) : null },
+                ].filter(field => field.value).map(field => (
+                  <div key={field.label} className="rounded-lg border border-white/[.07] bg-white/[.025] p-3">
+                    <p className="text-[.62rem] font-bold uppercase tracking-wider text-white/35">{field.label}</p>
+                    <p className="mt-1 break-words text-sm text-white/80">{field.value}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4">
+                <p className="text-[.62rem] font-bold uppercase tracking-wider text-white/35">Notes &amp; follow-up</p>
+                {profile.note ? <p className="mt-2 whitespace-pre-wrap rounded-lg border border-white/[.07] bg-white/[.025] p-3 text-sm leading-6 text-white/75">{profile.note}</p> : <p className="mt-2 text-sm text-white/40">No notes yet.</p>}
+                <label className="mt-4 block text-xs text-white/45">Follow-up date
+                  <input aria-label={`Follow up date for ${profile.first_name || "contact"}`} type="date" value={dateValue(profile.follow_up_at)} onChange={event => {
+                    const value = event.target.value || null;
+                    setProfile(current => current ? { ...current, follow_up_at: value } : null);
+                    void update(profile, { follow_up_at: value });
+                  }} className="mt-1.5 block rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white" />
+                </label>
+              </div>
+              {!profile.outreachRecordId && <div className="mt-5 flex justify-end"><button type="button" onClick={() => {
+                setEditingId(profile.id);
+                setEditDraft({ first_name: profile.first_name || "", last_name: profile.last_name || "", email: profile.email || "", phone: profile.phone || "", venue: profile.venue || "", industry_category: profile.industry_category || "Other", relationship: profile.relationship || "", referred_by: profile.referred_by || "", note: profile.note || "" });
+              }} className="rounded-lg border border-white/15 px-4 py-2 text-sm text-white/70 hover:text-white">Edit profile</button></div>}
+            </div>
+          )}
+        </section>
+      </div>
+    )}
     <p className="mt-4 text-xs text-white/35">Private admin data · {visible.length} of {contacts.length} connections</p>
   </section>;
 }

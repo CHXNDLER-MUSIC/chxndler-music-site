@@ -10,8 +10,8 @@ import ContentTab from "@/components/admin/ContentTab";
 
 type Tab = "overview" | "songs" | "content" | "outreach" | "tasks" | "finance";
 type IconName = "overview" | "songs" | "content" | "outreach" | "tasks" | "finance" | "more";
-const primary: Array<[Tab, string, IconName]> = [["overview", "Overview", "overview"], ["songs", "Songs", "songs"], ["content", "Content", "content"], ["outreach", "Outreach", "outreach"]];
-const more: Array<[Tab, string, IconName]> = [["tasks", "Tasks", "tasks"], ["finance", "Finance", "finance"]];
+const primary: Array<[Tab, string, IconName]> = [["overview", "Overview", "overview"], ["songs", "Songs", "songs"], ["content", "Content", "content"], ["tasks", "Tasks", "tasks"], ["outreach", "Outreach", "outreach"]];
+const more: Array<[Tab, string, IconName]> = [["finance", "Finance", "finance"]];
 
 function TabIcon({ name }: { name: IconName }) {
   const paths: Record<IconName, ReactNode> = {
