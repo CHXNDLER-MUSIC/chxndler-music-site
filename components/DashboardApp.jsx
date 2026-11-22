@@ -1264,6 +1264,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Always close ALL displays first, then open the target display
     const closeAllDisplays = (skipYellowClose = false, keepBlueDisplay = false) => {
       if (!keepBlueDisplay) {
+        try { audioManager.pause(); } catch {}
         setShowHUD(false);
       }
       setJoinAlienOpen(false);
@@ -1493,7 +1494,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         setBeamTransitioning(false);
       }, BEAM_SWITCH_DELAY_MS);
     }
-  }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose, uiPhase, uiRevealLocked]);
+  }, [audioManager, beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose, uiPhase, uiRevealLocked]);
 
   // Ensure beam is pink whenever the live stream display is open
   React.useEffect(() => {
@@ -2754,7 +2755,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           onCodeClick={() => {}}
           onDigitalBinderClick={() => {}}
           onBadgesClick={() => {}}
-          onCloseBlueDisplay={() => { setShowHUD(false); setBeamEnabled(false); }}
+          onCloseBlueDisplay={() => { try { audioManager.pause(); } catch {} setShowHUD(false); setBeamEnabled(false); }}
           onOpenBlueDisplay={() => {
             // Prefer pink during live mode; otherwise open blue
             if (preferPinkNow()) { try { handleBeamToggle('pink'); } catch {}; return; }
@@ -2809,7 +2810,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         onCodeClick={handleCodeClick}
         onDigitalBinderClick={handleDigitalBinderClick}
         onBadgesClick={handleBadgesClick}
-        onCloseBlueDisplay={() => { setShowHUD(false); setBeamEnabled(false); }}
+        onCloseBlueDisplay={() => { try { audioManager.pause(); } catch {} setShowHUD(false); setBeamEnabled(false); }}
         onOpenBlueDisplay={() => {
             // Prefer pink during live mode; otherwise open blue
             if (preferPinkNow()) { try { handleBeamToggle('pink'); } catch {}; return; }
@@ -3628,7 +3629,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   joinAlienOpen={joinAlienOpen}
                   onNameSaved={setSavedProfileName}
                   onElementSaved={setSavedProfileElement}
-                  onCloseBlueDisplay={() => { setShowHUD(false); setBeamEnabled(false); }}
+                  onCloseBlueDisplay={() => { try { audioManager.pause(); } catch {} setShowHUD(false); setBeamEnabled(false); }}
                   onOpenBlueDisplay={() => handleBeamToggle('blue')}
                   showHUD={showHUD}
                   beamColor={beamColor}
