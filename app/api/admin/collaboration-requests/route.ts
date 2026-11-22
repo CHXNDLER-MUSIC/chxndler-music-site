@@ -93,6 +93,7 @@ export async function PATCH(request: Request) {
   if (body.approve_agreement === false) {
     update.agreement_approved_at = null; update.agreement_approved_by = null; update.agreement_approved_version = null;
     update.agreement_access_token_hash = null; update.agreement_access_expires_at = null; update.agreement_access_version = null;
+    update.agreement_status = "draft"; update.agreement_sent_at = null;
   }
   if (typeof body.status === "string" && allowed.includes(body.status)) {
     if (!canTransitionCollaborationStatus(current.status, body.status)) return NextResponse.json({ error: `Cannot move a request from ${current.status} to ${body.status}.` }, { status: 409 });

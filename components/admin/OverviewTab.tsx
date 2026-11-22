@@ -19,7 +19,7 @@ type Song = {
 type Task = { id: string; title: string; status: string; priority: string; due_at: string | null; task_category?: "music" | "editing" | "admin"; business_area?: string; song_id?: string | null; song?: { id: string; title: string } | null; content?: { id: string; song_id: string } | null };
 type OutreachRecord = { id: string; status?: string | null };
 type SyncRecord = { id: string; status?: string | null };
-type CollaborationRequest = { id: string; artist_name: string; contribution_type: string; status: string; submitted_at: string; songs?: { title?: string } | null };
+type CollaborationRequest = { id: string; song_id?: string | null; artist_name: string; contribution_type: string; status: string; submitted_at: string; songs?: { title?: string } | null };
 
 const generatedProfileTask = (title: string) => title.trim().toLowerCase() === "complete song profile";
 const activePitchStatuses = new Set(["Planned", "Sent", "Follow-up"]);
@@ -68,6 +68,14 @@ function localToday() {
   const date = new Date();
   date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
   return date.toISOString().slice(0, 10);
+}
+
+function displayDate(value?: string | null) {
+  if (!value) return "—";
+  const dateOnly = value.slice(0, 10);
+  const [year, month, day] = dateOnly.split("-").map(Number);
+  if (!year || !month || !day) return dateOnly;
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 function taskOrder(today: string) {
@@ -156,7 +164,9 @@ export default function OverviewTab() {
     .filter(task => task.status !== "done" && !generatedProfileTask(task.title))
     .sort(taskOrder(today)), [tasks, today]);
   const featuredSong = songs.find(song => song.id === selectedSongId) || null;
-  const focusTasks = featuredSong ? actionableTasks.filter(task => task.song_id === featuredSong.id) : [];
+  const taskBelongsToSong = (task: Task, songId: string) => task.song_id === songId || task.song?.id === songId || task.content?.song_id === songId;
+  const focusTasks = featuredSong ? actionableTasks.filter(task => taskBelongsToSong(task, featuredSong.id)) : [];
+  const focusCollaborationRequests = featuredSong ? collaborationRequests.filter(request => request.song_id === featuredSong.id) : [];
   const releasedCount = songs.filter(song => song.is_released).length;
   const milestoneCount = featuredSong ? trackedProductionMilestones(featuredSong) : null;
   const nextStep = featuredSong?.next_action?.trim() || focusTasks[0]?.title || "";
@@ -246,22 +256,24 @@ export default function OverviewTab() {
     <section aria-labelledby="up-next-title" className="rounded-2xl border border-white/[.08] bg-[#101014] p-4 sm:p-5">
       <header className="mb-3 flex items-center gap-3"><div><p className="text-[.62rem] font-bold uppercase tracking-[.18em] text-white/35">Your task list</p><h2 id="up-next-title" className="mt-0.5 text-base font-bold">Up Next</h2></div></header>
       {taskError && <p role="alert" className="mb-3 rounded-lg border border-red-300/10 bg-red-300/[.04] px-3 py-2 text-xs text-red-200">{taskError}</p>}
-      {loading ? <p className="py-5 text-center text-sm text-white/40">Loading tasks…</p> : focusTasks.length || collaborationRequests.length ? <>
-        {!!focusTasks.length && <div className="hidden grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_2rem] gap-3 border-b border-white/[.06] pb-2 text-[.6rem] font-bold uppercase tracking-[.14em] text-white/30 sm:grid"><span/><span>Task</span><span>Song</span><span/></div>}
+      {loading ? <p className="py-5 text-center text-sm text-white/40">Loading tasks…</p> : focusTasks.length || focusCollaborationRequests.length ? <>
+        <div className="hidden grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_6rem_2rem] gap-3 border-b border-white/[.06] pb-2 text-[.6rem] font-bold uppercase tracking-[.14em] text-white/30 sm:grid"><span/><span>Task</span><span>Song</span><span>Date</span><span/></div>
         <ul className="divide-y divide-white/[.06]">
-        {collaborationRequests.map(request => <li key={`collab-${request.id}`} className="grid grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_2rem] items-center gap-3 border-b border-[#FD52AF]/15 py-3 first:pt-1">
+        {focusCollaborationRequests.map(request => <li key={`collab-${request.id}`} className="grid grid-cols-[1.25rem_minmax(0,1fr)_5rem_2rem] items-center gap-3 border-b border-[#FD52AF]/15 py-3 first:pt-1 sm:grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_6rem_2rem]">
           <span aria-label="Collaboration request" title="Collaboration request" className="grid h-6 w-6 shrink-0 place-items-center"><img src="/elements/alien.webp" alt="" className="h-6 w-6 object-contain" /></span>
           <a href={`/admin?view=outreach&section=collabs&request=${encodeURIComponent(request.id)}`} onClick={event => { if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); openCollaborationRequest(request.id); }} className="min-w-0 truncate text-sm font-semibold text-white/90 transition hover:text-[#ff9dcd]">New collaboration request · {request.artist_name} <span className="font-normal text-white/50">· {request.contribution_type}</span></a>
-          <a href={`/admin?view=outreach&section=collabs&request=${encodeURIComponent(request.id)}`} onClick={event => { if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); openCollaborationRequest(request.id); }} className="min-w-0 truncate text-xs font-semibold" style={{ color: request.songs?.title ? songColor(request.songs.title) : "rgba(255,255,255,.45)" }} title={request.songs?.title || "No song selected"}>{request.songs?.title || "—"}</a>
+          <a href={`/admin?view=outreach&section=collabs&request=${encodeURIComponent(request.id)}`} onClick={event => { if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); openCollaborationRequest(request.id); }} className="hidden min-w-0 truncate text-xs font-semibold sm:block" style={{ color: request.songs?.title ? songColor(request.songs.title) : "rgba(255,255,255,.45)" }} title={request.songs?.title || "No song selected"}>{request.songs?.title || "—"}</a>
+          <span className="whitespace-nowrap text-xs text-white/45" title={request.submitted_at}>{displayDate(request.submitted_at)}</span>
           <a href={`/admin?view=outreach&section=collabs&request=${encodeURIComponent(request.id)}`} onClick={event => { if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); openCollaborationRequest(request.id); }} aria-label={`Review collaboration request from ${request.artist_name}`} className="grid h-8 w-8 shrink-0 translate-x-2 place-items-center rounded-lg text-[#FF4FB3] drop-shadow-[0_0_8px_rgba(253,82,175,.8)] transition hover:scale-110 hover:text-[#FF8BC4] hover:drop-shadow-[0_0_12px_rgba(253,82,175,1)]">↗</a>
         </li>)}
         {focusTasks.slice(0, 5).map(task => {
         const isOverdue = !!task.due_at && task.due_at < today;
         const taskHref = task.content ? `/admin/songs/${task.content.song_id}?tab=content&content=${task.content.id}` : `/admin?view=tasks&task=${task.id}`;
-        return <li key={task.id} className="grid grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_2rem] items-center gap-3 py-3 first:pt-1 last:pb-1">
+        return <li key={task.id} className="grid grid-cols-[1.25rem_minmax(0,1fr)_5rem_2rem] items-center gap-3 py-3 first:pt-1 last:pb-1 sm:grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_6rem_2rem]">
           <button type="button" disabled={taskSaving === task.id} onClick={() => void completeTask(task)} aria-label={`Mark ${task.title} complete`} className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-white/20 text-transparent transition hover:border-[#FD52AF] hover:bg-[#FD52AF]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FD52AF] disabled:opacity-40"><span aria-hidden="true">✓</span></button>
-          <div className="flex min-w-0 items-start gap-2"><TaskCategoryIcon category={task.task_category} title={task.title}/><div className="min-w-0 flex-1"><Link href={taskHref} className="block truncate text-sm font-semibold text-white/85 transition hover:text-[#ff9dcd]">{displayTaskTitle(task.title)}</Link><div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[.66rem] text-white/40">{task.due_at && <span className={isOverdue ? "font-semibold text-amber-200" : ""}>{isOverdue ? "Overdue · " : "Due "}{task.due_at}</span>}{task.priority === "high" && <span className="rounded-full bg-amber-200/[.08] px-1.5 py-0.5 font-semibold text-amber-100">High priority</span>}</div></div></div>
-          <span className="min-w-0 truncate text-xs font-semibold" style={{ color: task.song ? songColor(task.song.title) : "rgba(255,255,255,.35)" }} title={task.song?.title || "No song"}>{task.song?.title || "—"}</span>
+          <div className="flex min-w-0 items-start gap-2"><TaskCategoryIcon category={task.task_category} title={task.title}/><div className="min-w-0 flex-1"><Link href={taskHref} className="block truncate text-sm font-semibold text-white/85 transition hover:text-[#ff9dcd]">{displayTaskTitle(task.title)}</Link><div className="mt-1">{task.priority === "high" && <span className="rounded-full bg-amber-200/[.08] px-1.5 py-0.5 text-[.66rem] font-semibold text-amber-100">High priority</span>}</div></div></div>
+          <span className="hidden min-w-0 truncate text-xs font-semibold sm:block" style={{ color: songColor(task.song?.title || featuredSong?.title || "") }} title={task.song?.title || featuredSong?.title || "No song"}>{task.song?.title || featuredSong?.title || "—"}</span>
+          <span className={`whitespace-nowrap text-xs ${isOverdue ? "font-semibold text-amber-200" : "text-white/45"}`} title={task.due_at ? `${isOverdue ? "Overdue · " : "Due "}${task.due_at}` : "No date set"}>{task.due_at ? displayDate(task.due_at) : "—"}</span>
           <Link href={taskHref} aria-label={`Open ${task.title}`} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-white/25 transition hover:bg-white/[.05] hover:text-white/75">↗</Link>
         </li>;
       })}</ul></> : <div className="rounded-xl border border-dashed border-white/[.09] px-4 py-5 text-center"><p className="text-sm font-semibold text-white/65">You’re clear for now.</p><p className="mt-1 text-xs text-white/35">When something needs follow-up, it’ll appear here.</p></div>}

@@ -12,6 +12,7 @@ const escapeHtml = (value: string) => value.replace(/[&<>"']/g, character => ({ 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await getApiUser(); if (!auth) return unauthorized(); if (!isAdminUser(auth.user)) return forbidden();
   const { id } = await params;
+  const body = await request.json().catch(() => ({}));
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   const db = getSupabaseAdmin();
   const { data: row, error } = await db.from("collaboration_requests").select("id,song_id,invite_id,authorized_person_id,artist_name,email,status,agreement_status,agreement_type,agreement_terms,agreement_version,agreement_approved_at,agreement_approved_version,agreement_template_id,agreement_template_version,agreement_path,songs(title)").eq("id", id).maybeSingle();
@@ -42,30 +43,37 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const songRelation = Array.isArray(row.songs) ? row.songs[0] : row.songs;
   const title = songRelation?.title || "Collaboration project";
   const role = agreementTypes.find(type => type.value === row.agreement_type)?.label || "Collaboration";
-  const accessToken = randomBytes(32).toString("base64url");
-  const accessTokenHash = createHash("sha256").update(accessToken).digest("hex");
+  const suppliedToken = typeof body.token === "string" ? body.token : "";
+  const suppliedHash = suppliedToken ? createHash("sha256").update(suppliedToken).digest("hex") : "";
+  const useExistingLink = !!suppliedToken && /^[A-Za-z0-9_-]{40,60}$/.test(suppliedToken);
+  const accessToken = useExistingLink ? suppliedToken : randomBytes(32).toString("base64url");
+  const accessTokenHash = useExistingLink ? suppliedHash : createHash("sha256").update(accessToken).digest("hex");
   const accessExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
   const base = (process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin).replace(/\/+$/, "");
   const reviewUrl = `${base}/collab/agreement/${accessToken}`;
-  const tokenUpdate = await db.from("collaboration_requests").update({ agreement_access_token_hash: accessTokenHash, agreement_access_expires_at: accessExpiresAt, agreement_access_version: row.agreement_version }).eq("id", id).eq("agreement_version", row.agreement_version).eq("agreement_approved_version", row.agreement_version).select("id").maybeSingle();
+  const tokenUpdate = useExistingLink
+    ? await db.from("collaboration_requests").select("id").eq("id", id).eq("agreement_access_token_hash", suppliedHash).eq("agreement_access_version", row.agreement_version).gt("agreement_access_expires_at", new Date().toISOString()).maybeSingle()
+    : await db.from("collaboration_requests").update({ agreement_access_token_hash: accessTokenHash, agreement_access_expires_at: accessExpiresAt, agreement_access_version: row.agreement_version }).eq("id", id).eq("agreement_version", row.agreement_version).eq("agreement_approved_version", row.agreement_version).select("id").maybeSingle();
   if (tokenUpdate.error || !tokenUpdate.data) return NextResponse.json({ error: "Could not create a private link for the approved agreement." }, { status: 500 });
-  const html = `<div style="background:#09090c;color:#fff;padding:28px;font:15px Arial;line-height:1.6"><h1 style="color:#ff3ea5">CHXNDLER</h1><p>Hi ${escapeHtml(row.artist_name)},</p><p>Your ${escapeHtml(role)} agreement for <b>${escapeHtml(title)}</b> (version ${row.agreement_version}) is ready for review.</p><p><a href="${escapeHtml(reviewUrl)}" style="display:inline-block;padding:12px 18px;background:#ff3ea5;color:#09090c;text-decoration:none;font-weight:bold">Review and sign agreement</a></p><p>This private link expires in 30 days. ${fileLink?.data?.signedUrl ? `<a href="${escapeHtml(fileLink.data.signedUrl)}" style="color:#ff80c4">Download the reviewed PDF</a>` : "You can print or save a PDF from the agreement page."}</p><p>Need help? Reply to this email.</p><p>CHXNDLER</p></div>`;
+  const firstName = row.artist_name?.trim().split(/\s+/)[0] || "there";
+  const html = `<div style="background:#f7f5f6;color:#18171b;padding:32px;font:16px/1.6 Arial,sans-serif"><div style="max-width:560px;margin:auto;background:#fff;padding:32px;border-radius:16px"><img src="${(process.env.NEXT_PUBLIC_SITE_URL || "https://chxndler.world").replace(/\/$/, "")}/elements/logo.webp" alt="CHXNDLER" width="150" style="display:block;margin-bottom:28px"><p>Hi ${escapeHtml(firstName)},</p><p>Your collaboration agreement for <b>${escapeHtml(title)}</b> is ready to review.</p><p>You can view and sign it securely using the link below.</p><p><a href="${escapeHtml(reviewUrl)}" style="display:inline-block;padding:13px 20px;background:#FD52AF;color:#171018;text-decoration:none;font-weight:bold;border-radius:999px">Review &amp; Sign Agreement</a></p><p>CHXNDLER</p></div></div>`;
   let transport: import("nodemailer").Transporter;
   try {
     const nodemailer = await import("nodemailer");
     const port = Number(process.env.SMTP_PORT || 587);
     transport = nodemailer.default.createTransport({ host, port, secure: port === 465, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
   } catch {
-    await db.from("collaboration_requests").update({ agreement_access_token_hash: null, agreement_access_expires_at: null, agreement_access_version: null }).eq("id", id).eq("agreement_access_token_hash", accessTokenHash);
+    if (!useExistingLink) await db.from("collaboration_requests").update({ agreement_access_token_hash: null, agreement_access_expires_at: null, agreement_access_version: null }).eq("id", id).eq("agreement_access_token_hash", accessTokenHash);
     return NextResponse.json({ error: "Unable to initialize agreement email." }, { status: 503 });
   }
   let messageId: string;
   try {
-    const sent = await transport.sendMail({ from: `CHXNDLER <${fromAddress}>`, to: row.email, replyTo, subject: `Collaboration agreement · ${title}`, text: `Hi ${row.artist_name},\n\nYour ${role} agreement for ${title} (version ${row.agreement_version}) is ready for review and signature.\n\nOpen your private agreement page: ${reviewUrl}\nThis link expires in 30 days.${fileLink?.data?.signedUrl ? `\nDownload the reviewed PDF: ${fileLink.data.signedUrl}` : " You can print or save a PDF from the agreement page."}\n\nNeed help? Reply to this email.\n\nCHXNDLER`, html });
+    const sent = await transport.sendMail({ from: `CHXNDLER <${fromAddress}>`, to: row.email, replyTo, subject: `Collaboration Agreement — ${title} | CHXNDLER`, text: `Hi ${firstName},\n\nYour collaboration agreement for ${title} is ready to review.\n\nYou can view and sign it securely using the link below.\n\n${reviewUrl}\n\nCHXNDLER`, html });
     messageId = sent.messageId || "accepted";
   } catch (sendError) {
     try { transport.close(); } catch {}
-    await db.from("collaboration_requests").update({ agreement_access_token_hash: null, agreement_access_expires_at: null, agreement_access_version: null }).eq("id", id).eq("agreement_access_token_hash", accessTokenHash);
+    await db.from("collaboration_request_events").insert({ request_id: id, event: "agreement_email_failed", details: { actor: auth.user.email, version: row.agreement_version, error: sendError instanceof Error ? sendError.message.slice(0, 240) : "SMTP delivery failed" } });
+    if (!useExistingLink) await db.from("collaboration_requests").update({ agreement_access_token_hash: null, agreement_access_expires_at: null, agreement_access_version: null }).eq("id", id).eq("agreement_access_token_hash", accessTokenHash);
     const detail = sendError instanceof Error ? sendError.message.slice(0, 300) : "Mail server rejected the message.";
     return NextResponse.json({ error: `Agreement email failed: ${detail}` }, { status: 502 });
   }
