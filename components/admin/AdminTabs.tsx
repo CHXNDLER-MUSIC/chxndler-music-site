@@ -31,6 +31,7 @@ export default function AdminTabs() {
   const [tab, setTab] = useState<Tab>("overview");
   const [outreachSection, setOutreachSection] = useState<"pitches" | "templates" | "sync" | "collabs" | "gigs" | "contacts">("pitches");
   const [outreachSongId, setOutreachSongId] = useState("");
+  const [outreachRequestId, setOutreachRequestId] = useState("");
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRoot = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -43,6 +44,7 @@ export default function AdminTabs() {
       const section = legacySubtab || requestedSubtab;
       if (["pitches", "templates", "gigs", "sync", "collabs", "contacts"].includes(section || "")) setOutreachSection(section as "pitches" | "templates" | "sync" | "collabs" | "gigs" | "contacts");
       setOutreachSongId(params.get("song") || "");
+      setOutreachRequestId(params.get("request") || "");
       if (legacySubtab) { params.set("view", "outreach"); params.set("section", legacySubtab); window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`); }
     };
     readLocation(); window.addEventListener("popstate", readLocation);
@@ -70,7 +72,7 @@ export default function AdminTabs() {
         {moreOpen && <div role="menu" className="absolute right-0 top-full z-30 mt-2 min-w-52 rounded-xl border border-white/10 bg-[#15151b] p-1.5 shadow-2xl">{more.map(([id, label, icon]) => <button key={id} type="button" role="menuitem" data-tab={id} onClick={() => choose(id)} className={`admin-menu-item ${tab === id ? "is-active" : ""}`}><TabIcon name={icon}/><span>{label}</span></button>)}</div>}
       </div>
     </nav>
-    {tab === "overview" ? <OverviewTab /> : tab === "songs" ? <SongTracker /> : tab === "content" ? <ContentTab /> : tab === "tasks" ? <TasksTab /> : tab === "outreach" ? <OutreachWorkspace initialSection={outreachSection} onSectionChange={section => { setOutreachSection(section); const params = new URLSearchParams(window.location.search); params.set("view", "outreach"); params.set("section", section); window.history.pushState(null, "", `${window.location.pathname}?${params.toString()}`); }} initialSongId={outreachSongId} /> : <FinanceTab />}
+    {tab === "overview" ? <OverviewTab /> : tab === "songs" ? <SongTracker /> : tab === "content" ? <ContentTab /> : tab === "tasks" ? <TasksTab /> : tab === "outreach" ? <OutreachWorkspace initialSection={outreachSection} onSectionChange={section => { setOutreachSection(section); const params = new URLSearchParams(window.location.search); params.set("view", "outreach"); params.set("section", section); window.history.pushState(null, "", `${window.location.pathname}?${params.toString()}`); }} initialSongId={outreachSongId} requestId={outreachRequestId} /> : <FinanceTab />}
     <style jsx>{`
       .admin-tab-icon{width:1.25rem;height:1.25rem;flex:none}
       .admin-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;color:rgba(255,255,255,.56);white-space:nowrap}
