@@ -29,6 +29,7 @@ const milestoneStage: Record<ProductionMilestone, ProductionStage> = { concept: 
 export default function SongProductionProgress({ song, onSaved, compact = false }: { song: SongProgress; onSaved?: (song: Partial<SongProgress>) => void; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [milestones, setMilestones] = useState<Record<ProductionMilestone, boolean>>(() => milestonesForSong(song));
+  const [instrumental, setInstrumental] = useState(song.production_stages?.instrumental === true);
   const [nextAction, setNextAction] = useState(song.next_action || "");
   const [saving, setSaving] = useState(false);
   const [savingMilestone, setSavingMilestone] = useState<ProductionMilestone | null>(null);
@@ -37,6 +38,7 @@ export default function SongProductionProgress({ song, onSaved, compact = false 
   useEffect(() => {
     if (open) return;
     setMilestones(milestonesForSong(song));
+    setInstrumental(song.production_stages?.instrumental === true);
     setNextAction(song.next_action || "");
   }, [song, open]);
 
@@ -77,6 +79,25 @@ export default function SongProductionProgress({ song, onSaved, compact = false 
     window.dispatchEvent(new CustomEvent("song-production-updated", { detail: savedSong }));
   }
 
+  async function toggleInstrumental() {
+    if (savingMilestone) return;
+    const next = !instrumental;
+    setSavingMilestone("mixed");
+    setError("");
+    const response = await fetch("/api/admin/song-tracker", {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ songId: song.id, stage: "instrumental", complete: next }),
+    });
+    const body = await response.json();
+    setSavingMilestone(null);
+    if (!response.ok) { setError(body.error || "Unable to update instrumental status."); return; }
+    const updatedStages = { ...(song.production_stages || {}), instrumental: next };
+    setInstrumental(next);
+    const savedSong = { ...song, ...body.song, production_stages: body.song?.production_stages || updatedStages };
+    onSaved?.(savedSong);
+    window.dispatchEvent(new CustomEvent("song-production-updated", { detail: savedSong }));
+  }
+
   if (compact) return <div>
     <div className="flex items-center gap-2.5" aria-label={`Music production: ${completed} of 3 milestones complete`}>
       {DISPLAY_MILESTONES.map(key => <button key={key} type="button" disabled={savingMilestone !== null} aria-pressed={visibleMilestones[key]} aria-label={`${PRODUCTION_MILESTONE_LABELS[key]} ${visibleMilestones[key] ? "complete" : "incomplete"} for ${song.title}. Click to toggle.`} title={`${PRODUCTION_MILESTONE_LABELS[key]} · ${visibleMilestones[key] ? "Complete" : "Incomplete"} · Click to toggle`} onClick={() => void toggleMilestone(key)} className="rounded-md transition hover:bg-white/[.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white disabled:opacity-50"><ProductionStageIcon stage={milestoneStage[key]} complete={visibleMilestones[key]} className="h-7 w-7" /></button>)}
@@ -87,7 +108,15 @@ export default function SongProductionProgress({ song, onSaved, compact = false 
   return <section className="relative rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5" aria-labelledby="music-production-heading">
     <div className="flex flex-wrap items-center gap-3"><div className="mr-auto"><h2 id="music-production-heading" className="text-sm font-bold uppercase tracking-[.08em]">MUSIC PRODUCTION</h2></div></div>
     <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/[.08]"><div className="h-full rounded-full bg-[#EF43A3] transition-[width]" style={{ width: `${percent}%` }} /></div>
-    <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">{DISPLAY_MILESTONES.map(key => <button key={key} type="button" disabled={savingMilestone !== null} aria-pressed={visibleMilestones[key]} aria-label={`${PRODUCTION_MILESTONE_LABELS[key]} ${visibleMilestones[key] ? "complete" : "incomplete"} for ${song.title}. Click to toggle.`} title={`${PRODUCTION_MILESTONE_LABELS[key]} · ${visibleMilestones[key] ? "Complete" : "Incomplete"} · Click to toggle`} onClick={() => void toggleMilestone(key)} className="inline-flex items-center gap-2 rounded-md px-1 py-1 text-xs transition hover:bg-white/[.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white disabled:opacity-50"><ProductionStageIcon stage={milestoneStage[key]} complete={visibleMilestones[key]} className="h-5 w-5"/><span aria-hidden="true" className={`grid h-4 w-4 place-items-center rounded-full border ${visibleMilestones[key] ? "border-emerald-300/50 bg-emerald-300/10 text-emerald-200" : "border-white/15 text-transparent"}`}>{visibleMilestones[key] ? "✓" : "·"}</span><span className={visibleMilestones[key] ? "text-white/75" : "text-white/40"}>{PRODUCTION_MILESTONE_LABELS[key]}</span></button>)}</div>
+    <div className="mt-4 flex flex-wrap gap-2">{[...DISPLAY_MILESTONES, "instrumental" as const].map(key => {
+      const isInstrumental = key === "instrumental";
+      const complete = isInstrumental ? instrumental : visibleMilestones[key];
+      const label = isInstrumental ? "Instrumental" : PRODUCTION_MILESTONE_LABELS[key];
+      return <button key={key} type="button" disabled={savingMilestone !== null} aria-pressed={complete} aria-label={`${label} ${complete ? "complete" : "incomplete"} for ${song.title}. Click to toggle.`} title={`${label} · ${complete ? "Complete" : "Incomplete"} · Click to toggle`} onClick={() => isInstrumental ? void toggleInstrumental() : void toggleMilestone(key)} className={`inline-flex min-h-11 items-center gap-3 rounded-lg border px-4 py-2 text-sm font-semibold transition hover:bg-white/[.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white disabled:opacity-50 ${complete ? "border-white/15 bg-white/[.05] text-white/85" : "border-white/[.08] text-white/50"}`}>
+        {!isInstrumental && <ProductionStageIcon stage={milestoneStage[key]} complete={complete} className="h-6 w-6"/>}
+        <span>{label}</span>
+      </button>;
+    })}</div>
     {song.next_action && <p className="mt-3 text-xs text-white/45"><span className="font-semibold text-white/60">Next production action:</span> {song.next_action}</p>}
     {open && <div role="dialog" aria-label={`Edit production progress for ${song.title}`} className="absolute right-3 top-14 z-[80] w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-white/10 bg-[#17171c] p-4 text-left shadow-2xl sm:right-4">
       <div className="mb-3"><p className="text-[.58rem] font-bold uppercase tracking-[.16em] text-[#EF43A3]">Music Production</p><h3 className="mt-0.5 text-sm font-bold text-white">Milestones &amp; next step</h3></div>

@@ -198,7 +198,7 @@ export async function PATCH(request: Request) {
   }
   if (typeof body.next_action === "string") { update.next_action = body.next_action.trim().slice(0, 240); update.next_action_manual = Boolean(update.next_action); }
   if (body.release_date === null || (typeof body.release_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.release_date))) update.release_date = body.release_date;
-  const stageKeys = ["write", "record", "mix", "cover_art", "spotify_canvas", "sky", "chxndler_card", "karaoke", "music_video", "music_video_released", "content_released", "concept", "lyrics", "recorded", "mastered", "ready", "playlist_pitch", "sync_placement"] as const;
+  const stageKeys = ["write", "record", "mix", "cover_art", "spotify_canvas", "sky", "chxndler_card", "karaoke", "music_video", "music_video_released", "content_released", "concept", "lyrics", "recorded", "mastered", "ready", "playlist_pitch", "sync_placement", "instrumental"] as const;
   if (body.stage !== undefined) {
     if (!stageKeys.includes(body.stage) || typeof body.complete !== "boolean") return NextResponse.json({ error: "Invalid production stage." }, { status: 400 });
     const { data: song, error: readError } = await db.from("songs").select("production_stages").eq("id", body.songId).single();
