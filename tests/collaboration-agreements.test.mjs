@@ -30,9 +30,10 @@ for (const type of ["singer_feature", "remix", "producer", "videographer"]) {
     assert.equal(terms.collaborator_artist_name, "ARINES");
     assert.equal(terms.song_title, "COPYCAT");
     assert.equal(terms.fee_option, "No fee");
-    assert.equal(terms.flat_fee, "");
-    assert.equal(terms.master_royalty, "");
+    assert.equal(terms.flat_fee, 0);
+    assert.equal(terms.master_royalty, 0);
     assert.equal(terms.publishing_split, "");
+    assert.equal(terms.songwriting_status, "unresolved");
     assert.match(text, /draft for review/i);
     assert.match(text, /not signed or binding/i);
     assert.ok(agreementFields[type].length > 0);
@@ -54,6 +55,8 @@ test("remix and producer defaults preserve originals and do not invent percentag
   assert.match(remix, /may not independently release/i);
   assert.match(producer, /retains existing material/i);
   assert.match(producer, /Third-party samples must be disclosed/i);
-  assert.doesNotMatch(remix, /Master royalty[^\n]*: \d/);
-  assert.doesNotMatch(producer, /Publishing split[^\n]*: \d/);
+  assert.match(remix, /Master royalty: 0%/);
+  assert.match(producer, /Master royalty: 0%/);
+  assert.match(remix, /not yet agreed/i);
+  assert.match(producer, /not yet agreed/i);
 });

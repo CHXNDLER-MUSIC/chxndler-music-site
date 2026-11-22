@@ -54,7 +54,10 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
   function change(key: string, value: string | number) {
     setTerms(current => {
       const next = { ...current, [key]: value };
-      if (key === "flat_fee") next.fee_option = Number(value) > 0 ? "Custom fee" : "No fee";
+      if (key === "flat_fee") {
+        next.fee_option = Number(value) > 0 ? "Custom fee" : "No fee";
+        if (Number(value) > 0 && (!next.payment_terms || next.payment_terms === "No flat fee is proposed. This does not waive songwriting or publishing rights.")) next.payment_terms = "Payment is due within 30 days after receipt of an invoice and acceptance of the listed deliverables.";
+      }
       if (key === "songwriting_status" && value === "separate_agreement") next.publishing_split = "";
       return next;
     });
@@ -160,7 +163,11 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
 
   function chooseType(value: string) {
     const nextType = value as AgreementType;
-    setTerms(createAgreementDraft({ type: nextType, request, invite: request.collaboration_invites, existing: terms }));
+    const nextTerms = createAgreementDraft({ type: nextType, request, invite: request.collaboration_invites, existing: terms });
+    nextTerms.template_id = agreementTemplates[nextType].id;
+    nextTerms.template_version = agreementTemplates[nextType].version;
+    nextTerms.legal_terms = agreementTemplates[nextType].legalTerms;
+    setTerms(nextTerms);
     setAgreementType(nextType); setDirty(true); setPreviewedVersion(0); setReviewConfirmed(false); setError("");
   }
 
@@ -199,7 +206,7 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
               {terms.songwriting_status === "negotiated" && <label htmlFor="agreement-publishing-split" className="block text-xs font-medium text-white/65">Songwriting / publishing share<div className="relative"><input id="agreement-publishing-split" type="number" min="0" max="100" step="0.01" disabled={signed || sent} value={terms.publishing_split ?? ""} onChange={event => change("publishing_split", event.target.value === "" ? "" : Number(event.target.value))} className={`${inputClass} pr-8`} placeholder="Enter negotiated share" /><span className="pointer-events-none absolute right-3 top-3 text-sm text-white/40">%</span></div></label>}
             </>}
           </div>
-          {Number(terms.flat_fee) > 0 && <label htmlFor="agreement-payment-terms" className="mt-3 block text-xs font-medium text-white/65">Payment terms<textarea id="agreement-payment-terms" rows={2} disabled={signed || sent} value={terms.payment_terms ?? ""} onChange={event => change("payment_terms", event.target.value)} className={`${inputClass} resize-y`} /></label>}
+          {(agreementType === "videographer" || Number(terms.flat_fee) > 0) && <label htmlFor="agreement-payment-terms" className="mt-3 block text-xs font-medium text-white/65">{agreementType === "videographer" ? "Payment schedule & terms" : "Payment terms"}<textarea id="agreement-payment-terms" rows={2} disabled={signed || sent} value={terms.payment_terms ?? ""} onChange={event => change("payment_terms", event.target.value)} className={`${inputClass} resize-y`} /></label>}
           {agreementType !== "videographer" && terms.songwriting_status === "separate_agreement" && <p className="mt-3 rounded-lg border border-amber-200/15 bg-amber-100/[.04] px-3 py-2 text-xs leading-5 text-amber-100/75">No songwriting share is being set to zero. Any applicable publishing split will be documented in a separate signed agreement before release.</p>}
           <p className="mt-2 text-[11px] text-white/35">Zero flat fee or master royalty does not waive composition or publishing rights.</p>
         </section>
