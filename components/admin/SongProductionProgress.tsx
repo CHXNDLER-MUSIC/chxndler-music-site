@@ -43,8 +43,9 @@ export default function SongProductionProgress({ song, onSaved, compact = false 
   }, [song, open]);
 
   const visibleMilestones = song.is_released ? milestonesForSong(song) : milestones;
-  const completed = DISPLAY_MILESTONES.filter(key => visibleMilestones[key]).length;
-  const percent = Math.round(completed / DISPLAY_MILESTONES.length * 100);
+  const completedStages = DISPLAY_MILESTONES.filter(key => visibleMilestones[key]).length;
+  const completed = completedStages + (instrumental ? 1 : 0);
+  const percent = Math.round(completed / 4 * 100);
 
   async function save() {
     setSaving(true); setError("");
@@ -99,7 +100,7 @@ export default function SongProductionProgress({ song, onSaved, compact = false 
   }
 
   if (compact) return <div>
-    <div className="flex items-center gap-1 sm:gap-2" aria-label={`Music production: ${completed} of 3 milestones complete`}>
+    <div className="flex items-center gap-1 sm:gap-2" aria-label={`Music production: ${completedStages} of 3 milestones complete`}>
       {DISPLAY_MILESTONES.map(key => <button key={key} type="button" disabled={savingMilestone !== null} aria-pressed={visibleMilestones[key]} aria-label={`${PRODUCTION_MILESTONE_LABELS[key]} ${visibleMilestones[key] ? "complete" : "incomplete"} for ${song.title}. Click to toggle.`} title={`${PRODUCTION_MILESTONE_LABELS[key]} · ${visibleMilestones[key] ? "Complete" : "Incomplete"} · Click to toggle`} onClick={() => void toggleMilestone(key)} className="rounded-md transition hover:bg-white/[.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white disabled:opacity-50"><ProductionStageIcon stage={milestoneStage[key]} complete={visibleMilestones[key]} className="h-5 w-5 sm:h-6 sm:w-6" /></button>)}
     </div>
     {error && <p role="alert" className="mt-1 max-w-52 text-[.62rem] leading-tight text-rose-200">{error}</p>}
@@ -123,7 +124,7 @@ export default function SongProductionProgress({ song, onSaved, compact = false 
             <span>{item.label}</span>
           </button>)}
           <div aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 z-20 flex h-[34%] w-[34%] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border border-white/10 bg-[#111116] text-center shadow-inner">
-            <span className="text-xl font-black text-white">{completed}<span className="text-sm text-white/40">/3</span></span>
+            <span className="text-xl font-black text-white">{completed}<span className="text-sm text-white/40">/4</span></span>
             <span className="text-[.5rem] font-bold uppercase tracking-wider text-white/45">In progress</span>
           </div>
         </div>
