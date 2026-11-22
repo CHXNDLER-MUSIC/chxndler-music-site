@@ -20,6 +20,7 @@ with supplied_dates(title, release_date) as (
     ('SUGAR WE''RE GOING DOWN', date '2026-06-26'),
     ('SUGAR, WE''RE GOING DOWN', date '2026-06-26'),
     ('WHAT''S MY AGE AGAIN', date '2026-06-12'),
+    ('WHAT''S MY AGE AGAIN?', date '2026-06-12'),
     ('LETTING GO', date '2026-05-29'),
     ('MAKE BELIEVE', date '2026-05-15'),
     ('ALONE (ACOUSTIC)', date '2026-05-01'),
