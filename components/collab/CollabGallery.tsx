@@ -194,18 +194,17 @@ function CollabGalleryContent({
         {([ ["released", "Released"], ["unreleased", "Unreleased"] ] as const).map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={videoReleaseTab === value} onClick={() => setVideoReleaseTab(value)}>{label}</button>)}
       </div>}
 
-      {category === "videos" && musicVideos.length > 0 && <section className="collab-video-opportunities" aria-label="Music video opportunities">
-        <div><p className="collab-video-kicker">MUSIC VIDEOS</p><h2>Bring a song to life.</h2></div>
-        <div className="collab-video-grid">{musicVideos.map(project => {
-          const song = [...artistReleases, ...unreleasedSongs].find(item => item.slug === project.songs?.slug);
-          return <article className="collab-video-card" key={project.id}>
-            <img src={song?.coverArt || placeholderCover(project.songs?.title || "Music video")} alt={`${project.songs?.title || "Song"} artwork`} />
-            <div><span className="collab-video-status">{project.public_status}</span><h3>{project.songs?.title || "CHXNDLER song"}</h3><p>{project.public_concept}</p>
-              {song?.audioUrl && <audio controls preload="none" src={song.audioUrl} aria-label={`Preview ${song.title}`} />}
-              {song && <button type="button" onClick={() => setRequestProject(project.id)}>Request to collaborate ↗</button>}
-            </div>
-          </article>;
-        })}</div>
+      {category === "videos" && <section className="collab-video-opportunities" aria-label="Music video ideas for every song">
+        <div><p className="collab-video-kicker">MUSIC VIDEOS</p><h2>Bring any song to life.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">Explore the songs, their visual concepts, and the kind of feeling each video could bring to life.</p></div>
+        <div className="collab-video-grid">{videoSongs.map(({ release, status, concept }) => <article className="collab-video-card" key={release.slug}>
+          <img src={release.coverArt || placeholderCover(release.title)} alt={`${release.title} artwork`} />
+          <div><span className="collab-video-status">{status}</span><h3>{release.title}</h3>
+            <p className="collab-video-kicker !mb-1 !text-[.58rem]">SONG CONTEXT</p><p>{release.oneLiner || `${release.title} is ready for a visual interpretation.`}</p>
+            <p className="collab-video-kicker !mb-1 !mt-4 !text-[.58rem]">VIDEO CONCEPT</p><p>{concept || `The visual direction is open. Pitch a story, mood, or visual world that fits ${release.title}.`}</p>
+            <div className="mt-4 flex flex-wrap gap-2 text-[.62rem] font-bold uppercase tracking-wider text-white/55"><span className="rounded-full border border-white/10 px-2.5 py-1">{release.isReleased ? "Released song" : "Unreleased song"}</span>{release.releaseDate && <span className="rounded-full border border-white/10 px-2.5 py-1">Release · {new Date(`${release.releaseDate}T00:00:00`).toLocaleDateString(undefined, { month: "short", year: "numeric" })}</span>}</div>
+            {release.audioUrl && <audio className="mt-4 w-full" controls preload="none" src={release.audioUrl} aria-label={`Preview ${release.title}`} />}
+          </div>
+        </article>)}</div>
       </section>}
 
       {category === "features" && (items.length ? (
@@ -232,6 +231,11 @@ function CollabGalleryContent({
                       if (item.release.cardArt && image.dataset.cardFallback !== "true") {
                         image.dataset.cardFallback = "true";
                         image.src = item.release.cardArt;
+                        return;
+                      }
+                      if (image.dataset.genericFallback !== "true") {
+                        image.dataset.genericFallback = "true";
+                        image.src = "/covers/CHXNDLER.webp";
                         return;
                       }
                       image.onerror = null;
