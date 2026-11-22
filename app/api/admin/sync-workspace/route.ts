@@ -50,10 +50,12 @@ export async function PATCH(request: Request) {
   const body = await request.json();
   if (body.kind === "idea") {
     if (typeof body.id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.id)) return NextResponse.json({ error: "Choose a valid sync idea." }, { status: 400 });
-    const allowed = ["song_id", "song_title", "core_emotion", "big_category", "movies", "tv_cartoons", "anime", "text_hooks", "scenes_to_search", "notes"];
+    const allowed = ["song_id", "song_title", "core_emotion", "big_category", "movies", "tv_cartoons", "anime", "playlists", "text_hooks", "scenes_to_search", "notes", "status", "is_favorite"];
     const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
     for (const field of allowed) if (field in body) update[field] = body[field] === "" && field === "song_id" ? null : body[field];
     if (typeof update.song_title === "string" && !update.song_title.trim()) return NextResponse.json({ error: "Song title is required." }, { status: 400 });
+    if ("status" in update && !["IDEA", "REACHED OUT", "FOLLOWED UP", "ACCEPTED"].includes(String(update.status))) return NextResponse.json({ error: "Choose a valid sync idea status." }, { status: 400 });
+    if ("is_favorite" in update && typeof update.is_favorite !== "boolean") return NextResponse.json({ error: "Favorite must be true or false." }, { status: 400 });
     const { error } = await getSupabaseAdmin().from("sync_ideas").update(update).eq("id", body.id);
     if (error) return NextResponse.json({ error: "Unable to update this sync idea." }, { status: 500 });
     return NextResponse.json({ ok: true });

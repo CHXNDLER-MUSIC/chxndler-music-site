@@ -166,7 +166,7 @@ export default function SongPractice({songId,title,slug,musicalKey,capoFret,chor
           <label className="text-xs font-medium text-white/50">Chord shape<input value={shape} onChange={event => setShape(event.target.value)} placeholder="e.g. G" className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/25 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EF43A3]/60" /></label>
         </div>
         <div className="mt-4 flex gap-2"><button type="button" disabled={savingSetup} onClick={() => void saveSetup()} className="rounded-lg bg-[#EF43A3] px-4 py-2.5 text-sm font-bold text-[#170d14] transition hover:brightness-110 disabled:opacity-50">{savingSetup ? "Saving…" : "Save setup"}</button><button type="button" onClick={() => { setKey(musicalKey || catalogTrack?.key || ""); setCapo(capoFret === null ? (catalogTrack?.capo || "") : String(capoFret)); setShape(chordShape || catalogTrack?.shape || ""); setEditingSetup(false); }} className="rounded-lg border border-white/10 px-3 py-2.5 text-xs font-semibold text-white/55">Cancel</button></div>
-      </div> : <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-lg font-bold sm:text-xl"><span className="text-[#FD52AF]">Key: <strong className="text-white">{key || "Not set"}</strong></span><span className="text-[#42B8E8]">Capo: <strong className="text-white">{capo || "Not set"}</strong></span><span className="text-[#F2B84B]">Chord Shape: <strong className="text-white">{shape || "Not set"}</strong></span></div>}
+      </div> : <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-lg font-bold sm:text-xl"><span className="text-white">Key: <strong className="text-2xl sm:text-3xl text-[#FD52AF]">{key || "Not set"}</strong></span><span className="text-white">Capo: <strong className="text-2xl sm:text-3xl text-[#42B8E8]">{capo || "Not set"}</strong></span><span className="text-white">Chord Shape: <strong className="text-2xl sm:text-3xl text-[#F2B84B]">{shape || "Not set"}</strong></span></div>}
       {saved === "setup" && <p role="status" className="mt-2 text-xs text-emerald-300">Setup saved.</p>}
     </section>
 
@@ -183,7 +183,7 @@ export default function SongPractice({songId,title,slug,musicalKey,capoFret,chor
           {lyricsOpen && <div id="practice-lyrics-panel" className="mt-4 max-h-[65vh] overflow-auto rounded-xl border border-white/[.07] bg-black/20 p-4 sm:p-5">
             <textarea value={lyrics} onChange={event => { setLyrics(event.target.value); setSaved(""); }} placeholder="Add song lyrics…" rows={Math.max(12, lyrics.split(/\r?\n/).length)} className="min-h-64 w-full resize-y whitespace-pre-wrap bg-transparent font-mono text-sm leading-7 text-white/80 outline-none placeholder:text-white/30" />
           </div>}
-          {lyricsOpen && <p role="status" className="mt-2 text-xs text-white/40">{savingLyrics ? "Saving lyrics…" : saved === "lyrics" ? "Lyrics saved." : "Changes save automatically."}</p>}
+          {lyricsOpen && (savingLyrics || saved === "lyrics") && <p role="status" className="mt-2 text-xs text-white/40">{savingLyrics ? "Saving lyrics…" : "Lyrics saved."}</p>}
       </section>
     </section>
 
