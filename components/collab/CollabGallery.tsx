@@ -191,7 +191,7 @@ function CollabGalleryContent({
       </div>}
 
       {category === "features" && tab === "video" && <div className="collab-release-tabs" role="tablist" aria-label="Video needed release status">
-        {([ ["released", "Released"], ["unreleased", "Unreleased"] ] as const).map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={videoReleaseTab === value} onClick={() => setVideoReleaseTab(value)}>{label}</button>)}
+        {([ ["released", "Released"], ["unreleased", "Unreleased"] ] as const).map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={videoReleaseTab === value} onClick={() => { playCollabClickSound(); setVideoReleaseTab(value); }}>{label}</button>)}
       </div>}
 
       {category === "videos" && <section className="collab-video-opportunities" aria-label="Music video ideas for every song">

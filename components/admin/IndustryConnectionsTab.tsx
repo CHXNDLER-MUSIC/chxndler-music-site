@@ -5,7 +5,16 @@ type Contact = { id: string; outreachRecordId?: string; song_title?: string | nu
 const statuses = ["not_contacted", "connected", "follow_up", "active", "do_not_contact"];
 const statusLabel: Record<string, string> = { not_contacted: "Not contacted", connected: "Connected", follow_up: "Follow up", active: "Active connection", do_not_contact: "Do not contact" };
 const statusColor: Record<string, string> = { not_contacted: "border-white/15 bg-white/[.04] text-white/65", connected: "border-sky-400/30 bg-sky-400/10 text-sky-200", follow_up: "border-amber-400/30 bg-amber-400/10 text-amber-200", active: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200", do_not_contact: "border-rose-400/30 bg-rose-400/10 text-rose-200" };
-const categoryColor = (category: string) => category.toLowerCase().includes("producer") || category.toLowerCase().includes("artist") || category.toLowerCase().includes("musician") || category.toLowerCase().includes("influencer") ? "border-fuchsia-400/25 bg-fuchsia-400/10 text-fuchsia-200" : category.toLowerCase().includes("management") || category.toLowerCase().includes("label") ? "border-violet-400/25 bg-violet-400/10 text-violet-200" : category.toLowerCase().includes("press") || category.toLowerCase().includes("media") ? "border-sky-400/25 bg-sky-400/10 text-sky-200" : "border-white/10 bg-white/[.04] text-white/65";
+const categoryTone = (category: string) => {
+  const value = category.toLowerCase();
+  if (["producer", "artist", "musician", "influencer"].some(term => value.includes(term))) return { color: "#f9a8d4", background: "rgba(236,72,153,.14)", borderColor: "rgba(236,72,153,.38)" };
+  if (value.includes("management") || value.includes("label")) return { color: "#c4b5fd", background: "rgba(139,92,246,.14)", borderColor: "rgba(139,92,246,.38)" };
+  if (value.includes("press") || value.includes("media") || value.includes("playlist")) return { color: "#7dd3fc", background: "rgba(56,189,248,.14)", borderColor: "rgba(56,189,248,.38)" };
+  if (value.includes("radio")) return { color: "#fcd34d", background: "rgba(245,158,11,.14)", borderColor: "rgba(245,158,11,.38)" };
+  if (value.includes("brand") || value.includes("business")) return { color: "#86efac", background: "rgba(34,197,94,.14)", borderColor: "rgba(34,197,94,.38)" };
+  if (value.includes("sync")) return { color: "#a5b4fc", background: "rgba(99,102,241,.14)", borderColor: "rgba(99,102,241,.38)" };
+  return { color: "#d4d4d8", background: "rgba(255,255,255,.05)", borderColor: "rgba(255,255,255,.12)" };
+};
 const blank = { first_name: "", last_name: "", email: "", phone: "", venue: "", industry_category: "Other", relationship: "", referred_by: "", note: "" };
 const dateValue = (value: string | null) => value ? value.slice(0, 10) : "";
 
@@ -55,7 +64,7 @@ export default function IndustryConnectionsTab() {
       <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.05fr)_minmax(8rem,.8fr)_minmax(7rem,.8fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_minmax(8rem,.8fr)_auto] lg:items-center">
         <div className="min-w-0"><button type="button" onClick={() => setProfile(contact)} className="block max-w-full truncate text-left text-sm font-semibold text-white hover:text-[#ff9dce] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff3ea5]">{[contact.first_name, contact.last_name].filter(Boolean).join(" ") || "Unnamed contact"}</button><p className="truncate text-[.68rem] text-white/40">{contact.email || contact.phone || "No contact details"}</p></div>
         <span className="truncate text-xs font-semibold text-cyan-200" title={contact.song_title || ""}>{contact.song_title || "—"}</span>
-        <span><span className={`inline-flex rounded-full border px-2.5 py-1 text-[.68rem] font-semibold ${categoryColor(contact.industry_category || "Other")}`}>{contact.industry_category || "Other"}</span></span>
+        <span><span className="inline-flex rounded-full border px-2.5 py-1 text-[.68rem] font-semibold" style={categoryTone(contact.industry_category || "Other")}>{contact.industry_category || "Other"}</span></span>
         <span className="min-w-0 truncate text-xs text-white/55">{[contact.venue, contact.relationship].filter(Boolean).join(" · ") || "—"}</span>
         <div><select aria-label={`Connection status for ${contact.first_name || "contact"}`} value={contact.connection_status} onChange={event => void update(contact, { connection_status: event.target.value })} className={`max-w-full rounded-full border px-3 py-2 text-xs font-semibold ${statusColor[contact.connection_status] || statusColor.not_contacted} bg-[#111116]`}>{statuses.map(status => <option key={status} value={status}>{statusLabel[status]}</option>)}</select></div>
         <span className={`text-xs ${contact.follow_up_at && dateValue(contact.follow_up_at) < dateValue(new Date().toISOString()) ? "text-amber-200" : "text-white/45"}`}>{contact.follow_up_at ? dateValue(contact.follow_up_at) : "No follow-up set"}</span>

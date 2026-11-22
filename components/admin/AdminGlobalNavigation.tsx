@@ -23,7 +23,7 @@ export default function AdminGlobalNavigation() {
 
   if (loading || !isAdmin) return null;
 
-  return <div className="fixed left-3 top-3 z-[100] sm:left-5 sm:top-5">
+  return <div className="fixed left-1/2 top-3 z-[100] -translate-x-1/2 sm:top-5">
     <BrandNavigation />
   </div>;
 }
