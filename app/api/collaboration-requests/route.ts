@@ -27,7 +27,9 @@ export async function POST(request: Request) {
     if (clean(body.website, 100)) return NextResponse.json({ ok: true }); // honeypot
     const songId = clean(body.songId, 80), submissionKey = clean(body.submissionKey, 80), termsVersion = clean(body.termsVersion, 80);
     const submittedEmail = clean(body.email, 320).toLowerCase();
+    const firstName = clean(body.firstName, 80), lastName = clean(body.lastName, 80), submittedArtistName = clean(body.artistName, 120);
     const rawProfile = clean(body.profileLink, 500), profile = normalizeProfileLink(rawProfile), portfolio = clean(body.portfolioUrl, 500), estimatedRate = clean(body.estimatedRate, 120), phone = clean(body.phone, 40), contribution = clean(body.contributionType, 40), message = clean(body.message, 1200), videoProjectId = clean(body.videoProjectId, 80);
+    if (!firstName || !lastName) return NextResponse.json({ error: "First and last name are required." }, { status: 400 });
     if (rawProfile && !profile) return NextResponse.json({ error: "Enter an Instagram handle or a valid http(s) profile URL." }, { status: 400 });
     const invite = await getCollabInviteSession();
     const isVideoApplication = contribution === "Music Video";
@@ -36,12 +38,7 @@ export async function POST(request: Request) {
     const publicVideoApplication = !invite && isVideoApplication;
     if (!invite && !publicVideoApplication) return NextResponse.json({ error: "Enter with your approved name or open your active personal invitation before submitting a collaboration request." }, { status: 403 });
     const email = submittedEmail || invite?.email || "";
-    // Invitation identity comes from the signed server session. Public music
-    // video applications have no invitation identity, so use the email's
-    // local part as the existing required admin-facing name value.
-    const artistName = invite
-      ? invite.display_name
-      : publicVideoApplication ? submittedEmail.split("@")[0] : "";
+    const artistName = submittedArtistName || `${firstName} ${lastName}`;
     if (!validateCollaborationSubmission({ songId, inviteId: invite?.id, allowPublicApplication: publicVideoApplication, allowSonglessIdea, submissionKey, termsVersion, artistName, email, contributionType: contribution })) {
       return NextResponse.json({ error: "Check the required fields and try again." }, { status: 400 });
     }
@@ -77,7 +74,7 @@ export async function POST(request: Request) {
     const requestValues = {
       submission_key: submissionKey, submission_ip_hash: ipHash,
       invite_id: invite?.source === "invite" ? invite.id : null,
-      song_id: songId || null, music_video_project_id: isVideoApplication && /^[0-9a-f-]{36}$/i.test(videoProjectId) ? videoProjectId : null, agreement_type: invite?.agreement_type || null, portfolio_url: portfolio || profile || null, estimated_rate: estimatedRate || null, artist_name: artistName, email, profile_link: profile || null, phone: phone || null,
+      song_id: songId || null, music_video_project_id: isVideoApplication && /^[0-9a-f-]{36}$/i.test(videoProjectId) ? videoProjectId : null, agreement_type: invite?.agreement_type || null, portfolio_url: portfolio || profile || null, estimated_rate: estimatedRate || null, artist_name: artistName, first_name: firstName, last_name: lastName, email, profile_link: profile || null, phone: phone || null,
       contribution_type: contribution, message: message || null, terms_version: terms.version,
       acknowledged_at: null, submitted_at: submittedAt,
     };

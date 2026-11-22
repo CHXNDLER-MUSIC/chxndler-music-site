@@ -108,6 +108,9 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
           termsVersion,
           songId,
           videoProjectId,
+          firstName: data.get("firstName"),
+          lastName: data.get("lastName"),
+          artistName: data.get("artistName"),
           email: email.trim(),
           profileLink: data.get("profileLink"),
           phone: data.get("phone"),
@@ -144,6 +147,15 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
         <form onSubmit={submit} className="space-y-4">
           <input name="website" tabIndex={-1} autoComplete="off" className="absolute -left-[10000px] h-px w-px opacity-0" aria-hidden="true" />
           <div className="grid gap-4 sm:grid-cols-2">
+            <label htmlFor="collab-first-name" className="block text-xs font-semibold text-white/75">First name <span className="text-[#FD52AF]">*</span>
+              <input id="collab-first-name" name="firstName" type="text" required autoComplete="given-name" maxLength={80} placeholder="First name" className={fieldClass}/>
+            </label>
+            <label htmlFor="collab-last-name" className="block text-xs font-semibold text-white/75">Last name <span className="text-[#FD52AF]">*</span>
+              <input id="collab-last-name" name="lastName" type="text" required autoComplete="family-name" maxLength={80} placeholder="Last name" className={fieldClass}/>
+            </label>
+            <label htmlFor="collab-artist-name" className="block text-xs font-semibold text-white/75">Artist name <span className="font-normal text-white/40">Optional</span>
+              <input id="collab-artist-name" name="artistName" type="text" autoComplete="nickname" maxLength={120} placeholder="Artist or project name" className={fieldClass}/>
+            </label>
             <label htmlFor="collab-email" className="block text-xs font-semibold text-white/75">Email address <span className="text-[#FD52AF]">*</span>
               <input ref={emailRef} id="collab-email" name="email" type="email" required autoComplete="email" maxLength={320} value={email} onChange={event => setEmail(event.target.value)} placeholder="you@example.com" className={fieldClass}/>
             </label>

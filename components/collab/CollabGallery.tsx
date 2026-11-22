@@ -153,8 +153,9 @@ function CollabGalleryContent({
 
   return (
     <main className="collab-page">
-      <header className="collab-heading">
+      <header className="collab-heading" style={{ justifyContent: "space-between", letterSpacing: "normal" }}>
         <a className="collab-wordmark" href="/">CHXNDLER</a>
+        <button type="button" onClick={async () => { await fetch("/api/collab/logout", { method: "POST" }); window.location.assign("/collab"); }} className="rounded-full border border-white/15 px-3 py-2 text-xs font-semibold tracking-normal text-white/65 transition hover:border-[#FD52AF]/50 hover:text-white">Switch artist</button>
       </header>
 
       {category === "features" && <div className="collab-tabs" role="tablist" aria-label="Music feature filters">

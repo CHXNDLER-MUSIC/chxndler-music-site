@@ -7,11 +7,7 @@ import { releaseAudioId, releaseAudioSrc, releaseNowPlaying, type ArtistRelease 
 import CollectibleViewer from "./CollectibleViewer";
 import CollabRequestForm from "@/components/collab/CollabRequestForm";
 import { getCardImageUrl } from "@/lib/supabaseCardUrl";
-import { Space_Grotesk } from "next/font/google";
 import { CHXNDLER_APPLE_MUSIC_ARTIST_URL, CHXNDLER_SPOTIFY_ARTIST_URL } from "@/lib/chxndlerLinks";
-
-// Lyrics typeface — self-hosted by next/font, loaded only with this view.
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "500", "700"], display: "swap" });
 
 // Same fixed CHXNDLER pink the rest of the studio launcher uses.
 const PINK = "#ff3ea5";
@@ -254,7 +250,7 @@ export default function ArtistReleaseDetail({
           <p className="text-[0.6875rem] font-bold tracking-[0.35em] uppercase" style={{ color: PINK }}>
             CHXNDLER
           </p>
-          <h3 className={`${spaceGrotesk.className} mt-[0.25rem] text-[1.5rem] sm:text-[2.25rem] font-bold uppercase leading-tight tracking-[0.015em] text-white break-words`} style={{ textShadow: "0 0 22px rgba(255,62,165,.22)" }}>
+          <h3 className={`font-sans mt-[0.25rem] text-[1.5rem] sm:text-[2.25rem] font-bold uppercase leading-tight tracking-[0.015em] text-white break-words`} style={{ textShadow: "0 0 22px rgba(255,62,165,.22)" }}>
             {release.title}
           </h3>
           <p className="mt-2 max-w-prose text-sm leading-6 text-white/75">{release.oneLiner || `${release.title} is ready for its next visual chapter.`}</p>
@@ -331,7 +327,7 @@ export default function ArtistReleaseDetail({
               >
                 <div className="min-h-0 overflow-hidden">
                   <div
-                    className={`${spaceGrotesk.className} mt-[0.625rem] rounded-[1.25rem] border border-white/[0.12] shadow-[inset_0_1px_0_rgba(255,255,255,0.035),0_12px_36px_rgba(0,0,0,0.18)]`}
+                    className={`font-sans mt-[0.625rem] rounded-[1.25rem] border border-white/[0.12] shadow-[inset_0_1px_0_rgba(255,255,255,0.035),0_12px_36px_rgba(0,0,0,0.18)]`}
                     style={{
                       background: "rgba(5,5,9,.78)",
                       backdropFilter: "blur(12px)",
