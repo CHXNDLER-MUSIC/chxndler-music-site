@@ -15,34 +15,36 @@ export async function createSignedAgreementPdf(input: { id: string; version: num
     doc.image(await sharp(logo).png().toBuffer(), 62, 42, { fit: [150, 42] });
     doc.y = 98;
   } catch { line("CHXNDLER", { bold: true, size: 17, color: pink, gap: 0.25 }); }
-  line("COLLABORATION AGREEMENT", { bold: true, size: 9, color: "#77717a", gap: 0.2 });
-  line(input.song, { bold: true, size: 24, color: "#17151a", gap: 0.3 });
-  line(`Version ${input.version} · Effective ${input.terms.effective_date || "upon signature by all parties"} · Sent ${input.terms.sent_at ? new Date(input.terms.sent_at).toLocaleDateString() : "—"}`, { size: 9, color: "#77717a" });
   const agreementType = input.type || input.terms.agreement_type || "singer_feature";
-  const fullAgreement = agreementText(agreementType, input.terms).split("\nSIGNATURES\n")[0];
+  const completeText = agreementText(agreementType, input.terms);
+  const header = completeText.split("\n").slice(0, 3);
+  line("COLLABORATION AGREEMENT", { bold: true, size: 9, color: "#77717a", gap: 0.2 });
+  line(header[0], { bold: true, size: 14, color: "#17151a", gap: 0.2 });
+  line(header[1] || input.song, { bold: true, size: 22, color: "#17151a", gap: 0.2 });
+  line(`${header[2] || `Issue date: ${input.terms.agreement_issue_date || "—"}`} · Sent ${input.terms.sent_at ? new Date(input.terms.sent_at).toLocaleDateString() : "—"}`, { size: 9, color: "#77717a" });
+  const fullAgreement = completeText.split("\nSIGNATURES\n")[0].split("\n").slice(4).join("\n");
   for (const block of fullAgreement.split(/\n\n+/).filter(Boolean)) {
     const [firstLine, ...remaining] = block.split("\n");
-    const isHeading = /^\d+\./.test(firstLine);
+    const isHeading = /^\d{2}\s*·/.test(firstLine);
     if (isHeading) line(firstLine, { bold: true, size: 10, color: pink, gap: 0.25 });
     else if (/^CHXNDLER COLLABORATION AGREEMENT|^PREVIEW FOR REVIEW|^Agreement version|^Effective date:/.test(firstLine)) line(firstLine, { bold: firstLine.startsWith("CHXNDLER"), size: 8, color: "#77717a", gap: 0.2 });
     const body = [...(isHeading ? [] : [firstLine]), ...remaining].join("\n");
     if (body) line(body, { size: 9, color: "#353139", gap: 0.45 });
   }
   if (doc.y > 620) doc.addPage();
-  try { const signature = await readFile(`${process.cwd()}/public/elements/PINK SIGNATURE.png`); doc.image(signature, 62, doc.y, { fit: [115, 36] }); doc.y += 38; } catch { /* Keep the signature section readable without the image asset. */ }
   line("SIGNATURES", { bold: true, size: 11, color: pink, gap: 0.6 });
   const startY = doc.y;
-  doc.font("Helvetica-Bold").fontSize(8).fillColor("#77717a").text("CHXNDLER", 62, startY);
-  doc.font("Helvetica-Oblique").fontSize(20).fillColor(pink).text("Chandler Pierce", 62, startY + 20);
-  doc.moveTo(62, startY + 54).lineTo(270, startY + 54).strokeColor("#c9c3c8").stroke();
-  doc.font("Helvetica").fontSize(9).fillColor("#29262d").text(input.terms.admin_legal_name || "Chandler Pierce", 62, startY + 61);
-  doc.fontSize(8).fillColor("#77717a").text(`Signed ${new Date(input.adminSignedAt).toLocaleString()}`, 62, startY + 75);
-  doc.font("Helvetica-Bold").fontSize(8).fillColor("#77717a").text("COLLABORATOR", 315, startY);
-  doc.font("Helvetica-Oblique").fontSize(20).fillColor(pink).text(input.collaboratorSignature, 315, startY + 20, { width: 230 });
-  doc.moveTo(315, startY + 54).lineTo(530, startY + 54).strokeColor("#c9c3c8").stroke();
-  doc.font("Helvetica").fontSize(9).fillColor("#29262d").text(input.terms.collaborator_legal_name || input.collaboratorSignature, 315, startY + 61);
-  doc.fontSize(8).fillColor("#77717a").text(`Signed ${new Date(input.collaboratorSignedAt).toLocaleString()}`, 315, startY + 75);
-  doc.y = startY + 110;
+  try { const signature = await readFile(`${process.cwd()}/public/elements/PINK SIGNATURE.png`); doc.image(signature, 62, startY - 3, { fit: [145, 42] }); } catch { doc.font("Helvetica-Oblique").fontSize(22).fillColor(pink).text("CHXNDLER", 62, startY + 2); }
+  doc.moveTo(62, startY + 42).lineTo(270, startY + 42).strokeColor("#c9c3c8").stroke();
+  doc.font("Helvetica").fontSize(9).fillColor("#29262d").text(input.terms.admin_legal_name || "Chandler Pierce", 62, startY + 49);
+  doc.fontSize(8).fillColor("#77717a").text("CHXNDLER", 62, startY + 62);
+  doc.fontSize(8).fillColor("#77717a").text(`Date: ${new Date(input.adminSignedAt).toLocaleDateString()}`, 62, startY + 75);
+  doc.font("Helvetica-Oblique").fontSize(20).fillColor(pink).text(input.collaboratorSignature, 315, startY + 8, { width: 215 });
+  doc.moveTo(315, startY + 42).lineTo(530, startY + 42).strokeColor("#c9c3c8").stroke();
+  doc.font("Helvetica").fontSize(9).fillColor("#29262d").text(input.terms.collaborator_printed_name || input.terms.collaborator_legal_name || input.collaboratorSignature, 315, startY + 49);
+  doc.fontSize(8).fillColor("#77717a").text(input.terms.collaborator_artist_name || "Collaborator", 315, startY + 62);
+  doc.fontSize(8).fillColor("#77717a").text(`Date: ${new Date(input.collaboratorSignedAt).toLocaleDateString()}`, 315, startY + 75);
+  doc.y = startY + 105;
   doc.moveDown(1);
   line(`Electronic signature audit · Snapshot SHA-256: ${input.snapshotHash}`, { size: 7, color: "#77717a", gap: 0.2 });
   line(`Agreement ID ${input.id} · v${input.version} · CHXNDLER site signing record`, { size: 7, color: "#77717a", gap: 0 });

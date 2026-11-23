@@ -19,7 +19,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { data: row, error } = await db.from("collaboration_requests")
     .select("id,song_id,invite_id,authorized_person_id,status,agreement_status,agreement_type,agreement_terms,agreement_version,agreement_approved_at,agreement_approved_version,agreement_template_id,agreement_template_version,agreement_path")
     .eq("id", id).maybeSingle();
-  if (error || !row) return NextResponse.json({ error: "Request not found." }, { status: 404 });
+  if (error) { console.error("[admin/collaboration-generate-link] lookup failed", { id, code: error.code, message: error.message }); return NextResponse.json({ error: "Unable to look up this collaboration request. Refresh the request and try again." }, { status: 500 }); }
+  if (!row) return NextResponse.json({ error: `Request ${id} was not found in collaboration_requests. Refresh the list to confirm it is still available.` }, { status: 404 });
   if (row.agreement_status === "signed" || row.status === "signed") return NextResponse.json({ error: "This request already has a signed agreement." }, { status: 409 });
   if (!row.agreement_approved_at || row.agreement_approved_version !== row.agreement_version) return NextResponse.json({ error: "Approve the current agreement version before generating a link." }, { status: 409 });
   if (!row.agreement_type || !agreementTypes.some(type => type.value === row.agreement_type)) return NextResponse.json({ error: "Choose an agreement type and save the draft first." }, { status: 409 });

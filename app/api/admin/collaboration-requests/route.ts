@@ -46,7 +46,11 @@ export async function PATCH(request: Request) {
   const body = await request.json(), id = String(body.id || ""), db = getSupabaseAdmin();
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   const { data: current, error: currentError } = await db.from("collaboration_requests").select("status,agreement_status,agreement_path,signed_agreement_path,signed_agreement_version,agreement_type,agreement_terms,agreement_version,agreement_approved_at,agreement_approved_by,agreement_approved_version,agreement_template_id,agreement_template_version,song_id,music_video_project_id,invite_id,authorized_person_id,contribution_type,artist_name,email,profile_link,portfolio_url,estimated_rate,first_name,last_name,songs(title)").eq("id", id).maybeSingle();
-  if (currentError || !current) return NextResponse.json({ error: "Request not found." }, { status: 404 });
+  if (currentError) {
+    console.error("[admin/collaboration-requests] lookup failed", { id, code: currentError.code, message: currentError.message });
+    return NextResponse.json({ error: "Unable to look up this collaboration request. Refresh the request and try again." }, { status: 500 });
+  }
+  if (!current) return NextResponse.json({ error: `Request ${id} was not found in collaboration_requests. Refresh the list to confirm it is still available.` }, { status: 404 });
   const stable = (value: unknown): string => {
     if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
     if (value && typeof value === "object") return `{${Object.entries(value as Record<string, unknown>).filter(([key]) => key !== "contract_html").sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => `${JSON.stringify(key)}:${stable(item)}`).join(",")}}`;

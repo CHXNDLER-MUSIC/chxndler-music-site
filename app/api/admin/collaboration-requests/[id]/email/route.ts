@@ -11,7 +11,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const body = await request.json().catch(() => ({}));
   const db = getSupabaseAdmin();
   const { data: row, error } = await db.from("collaboration_requests").select("*, songs(title,slug)").eq("id", id).maybeSingle();
-  if (error || !row) return NextResponse.json({ error: "Request not found." }, { status: 404 });
+  if (error) { console.error("[admin/collaboration-email] lookup failed", { id, code: error.code, message: error.message }); return NextResponse.json({ error: "Unable to look up this collaboration request. Refresh the request and try again." }, { status: 500 }); }
+  if (!row) return NextResponse.json({ error: `Request ${id} was not found in collaboration_requests. Refresh the list to confirm it is still available.` }, { status: 404 });
   const requested = body.recipient === "admin" || body.recipient === "artist" ? [body.recipient] as EmailRecipient[] : ["admin", "artist"] as EmailRecipient[];
   const retryable = requested.filter((recipient) => row[recipient === "admin" ? "email_admin_status" : "email_artist_status"] !== "sent");
   if (!retryable.length) return NextResponse.json({ error: "These notifications have already been accepted by the mail server." }, { status: 409 });

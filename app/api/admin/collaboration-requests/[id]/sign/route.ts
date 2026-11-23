@@ -12,7 +12,8 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid agreement." }, { status: 400 });
   const db = getSupabaseAdmin();
   const { data: row, error } = await db.from("collaboration_requests").select("id,song_id,email,status,agreement_status,agreement_type,agreement_terms,agreement_version,agreement_approved_version,agreement_access_version,agreement_access_expires_at,admin_signed_at,collaborator_signed_at,collaborator_signed_version,collaborator_signature,collaborator_printed_name,collaborator_signed_snapshot_hash,signed_agreement_path,songs(title)").eq("id", id).maybeSingle();
-  if (error || !row) return NextResponse.json({ error: "Agreement not found." }, { status: 404 });
+  if (error) { console.error("[admin/collaboration-sign] lookup failed", { id, code: error.code, message: error.message }); return NextResponse.json({ error: "Unable to look up this agreement. Refresh the request and try again." }, { status: 500 }); }
+  if (!row) return NextResponse.json({ error: `Agreement ${id} was not found in collaboration_requests.` }, { status: 404 });
   if (row.agreement_status === "signed") return NextResponse.json({ error: "This agreement is already executed and immutable." }, { status: 409 });
   if (!row.agreement_approved_version || row.agreement_version !== row.agreement_approved_version || row.agreement_access_version !== row.agreement_version || !row.agreement_access_expires_at || Date.parse(row.agreement_access_expires_at) < Date.now()) return NextResponse.json({ error: "Send and approve this exact agreement version before signing." }, { status: 409 });
   if (row.admin_signed_at) return NextResponse.json({ ok: true, alreadySigned: true, executed: row.agreement_status === "signed" }, { status: 200 });
