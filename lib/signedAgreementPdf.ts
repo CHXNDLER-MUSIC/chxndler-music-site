@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
+import { agreementText, type AgreementType } from "@/lib/collaborationAgreements";
 
-export async function createSignedAgreementPdf(input: { id: string; version: number; song: string; terms: Record<string, any>; collaboratorSignature: string; collaboratorSignedAt: string; adminSignedAt: string; snapshotHash: string }) {
+export async function createSignedAgreementPdf(input: { id: string; version: number; song: string; type?: AgreementType; terms: Record<string, any>; collaboratorSignature: string; collaboratorSignedAt: string; adminSignedAt: string; snapshotHash: string }) {
   const { default: PDFDocument } = await import("pdfkit");
   const { default: sharp } = await import("sharp");
   const doc = new PDFDocument({ size: "LETTER", margins: { top: 58, bottom: 58, left: 62, right: 62 }, info: { Title: `CHXNDLER Collaboration Agreement — ${input.song}`, Author: "CHXNDLER", Subject: `Agreement ${input.id} version ${input.version}` } });
@@ -17,11 +18,18 @@ export async function createSignedAgreementPdf(input: { id: string; version: num
   line("COLLABORATION AGREEMENT", { bold: true, size: 9, color: "#77717a", gap: 0.2 });
   line(input.song, { bold: true, size: 24, color: "#17151a", gap: 0.3 });
   line(`Agreement ${input.id} · Version ${input.version} · Effective ${new Date(Math.max(Date.parse(input.adminSignedAt), Date.parse(input.collaboratorSignedAt))).toLocaleDateString()}`, { size: 9, color: "#77717a" });
-  section("Parties", `Artist: ${input.terms.admin_legal_name || "Chandler Pierce"} (CHXNDLER)\nCollaborator: ${input.terms.collaborator_legal_name || input.collaboratorSignature} (${input.terms.collaborator_artist_name || ""})`);
-  section("Payment & Rights", `Flat fee: $${Number(input.terms.flat_fee || 0).toLocaleString()}\nMaster royalty: ${Number(input.terms.master_royalty || 0)}%\nMaster owner: ${input.terms.master_owner || "CHXNDLER"}\nSongwriting: ${input.terms.songwriting_split || input.terms.publishing_split || input.terms.songwriting_status || "Undetermined"}\nEligible SoundExchange performer royalties, if any, are separate.`);
-  section("Contribution", `${input.terms.contribution_description || input.terms.production_scope || "As agreed"}\n\nDeliverables: ${input.terms.vocal_deliverables || input.terms.deliverables || input.terms.remix_deliverables || input.terms.video_deliverables || "As agreed"}${input.terms.delivery_deadline ? `\nDue date: ${input.terms.delivery_deadline}` : ""}`);
-  section("Agreement Terms", String(input.terms.legal_terms || "") + (input.terms.additional_terms ? `\n\nADDITIONAL TERMS\n${input.terms.additional_terms}` : ""));
+  const agreementType = input.type || input.terms.agreement_type || "singer_feature";
+  const fullAgreement = agreementText(agreementType, input.terms).split("\nSIGNATURES\n")[0];
+  for (const block of fullAgreement.split(/\n\n+/).filter(Boolean)) {
+    const [firstLine, ...remaining] = block.split("\n");
+    const isHeading = /^\d+\./.test(firstLine);
+    if (isHeading) line(firstLine, { bold: true, size: 10, color: pink, gap: 0.25 });
+    else if (/^CHXNDLER COLLABORATION AGREEMENT|^PREVIEW FOR REVIEW|^Agreement version|^Effective date:/.test(firstLine)) line(firstLine, { bold: firstLine.startsWith("CHXNDLER"), size: 8, color: "#77717a", gap: 0.2 });
+    const body = [...(isHeading ? [] : [firstLine]), ...remaining].join("\n");
+    if (body) line(body, { size: 9, color: "#353139", gap: 0.45 });
+  }
   if (doc.y > 620) doc.addPage();
+  try { const signature = await readFile(`${process.cwd()}/public/elements/PINK SIGNATURE.png`); doc.image(signature, 62, doc.y, { fit: [115, 36] }); doc.y += 38; } catch { /* Keep the signature section readable without the image asset. */ }
   line("SIGNATURES", { bold: true, size: 11, color: pink, gap: 0.6 });
   const startY = doc.y;
   doc.font("Helvetica-Bold").fontSize(8).fillColor("#77717a").text("CHXNDLER", 62, startY);
@@ -35,7 +43,6 @@ export async function createSignedAgreementPdf(input: { id: string; version: num
   doc.font("Helvetica").fontSize(9).fillColor("#29262d").text(input.terms.collaborator_legal_name || input.collaboratorSignature, 315, startY + 61);
   doc.fontSize(8).fillColor("#77717a").text(`Signed ${new Date(input.collaboratorSignedAt).toLocaleString()}`, 315, startY + 75);
   doc.y = startY + 110;
-  try { const signature = await readFile(`${process.cwd()}/public/elements/PINK SIGNATURE.png`); doc.image(signature, 62, startY + 12, { fit: [115, 36] }); } catch { /* Signature text remains a readable record if the image asset is unavailable. */ }
   doc.moveDown(1);
   line(`Electronic signature audit · Snapshot SHA-256: ${input.snapshotHash}`, { size: 7, color: "#77717a", gap: 0.2 });
   line(`Agreement ID ${input.id} · v${input.version} · CHXNDLER site signing record`, { size: 7, color: "#77717a", gap: 0 });

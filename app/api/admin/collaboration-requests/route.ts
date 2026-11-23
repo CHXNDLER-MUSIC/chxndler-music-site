@@ -74,7 +74,7 @@ export async function PATCH(request: Request) {
     update.agreement_version = version;
     update.flat_fee = Number(terms.flat_fee ?? 0);
     update.master_royalty = Number(terms.master_royalty ?? 0);
-    update.publishing_royalty = terms.songwriting_status === "negotiated" && terms.publishing_split !== "" ? Number(terms.publishing_split) : null;
+    update.publishing_royalty = ["negotiated", "co_writer"].includes(String(terms.songwriting_status)) && (terms.songwriting_split ?? terms.publishing_split) !== "" ? Number(terms.songwriting_split ?? terms.publishing_split) : null;
   }
   if (agreementChanged) {
     update.agreement_approved_at = null; update.agreement_approved_by = null; update.agreement_approved_version = null;

@@ -8,7 +8,7 @@ import { createSignedAgreementPdf } from "@/lib/signedAgreementPdf";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const privateHeaders = { "Cache-Control": "no-store, private", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex, nofollow" };
-const hash = (value: string) => createHash("sha256").update(value).digest("hex");
+const hash = (value: string | Buffer) => createHash("sha256").update(value).digest("hex");
 type Context = { params: Promise<{ token: string }> };
 
 async function findAgreement(token: string) {
@@ -51,9 +51,11 @@ export async function POST(request: Request, { params }: Context) {
     await db.from("collaboration_request_events").insert({ request_id: row.id, event: "collaborator_signed_online", details: { signer: printedName, signer_email: row.email, version: row.agreement_access_version, signed_at: signedAt, ip, user_agent: userAgent, consent: true, snapshot_hash: snapshotHash } });
 
     let pdfHash: string | null = null;
+    let executedPdf: Buffer | null = null;
     if (fullyExecuted) {
       const songRelation = Array.isArray(row.songs) ? row.songs[0] : row.songs;
-      const pdf = await createSignedAgreementPdf({ id: row.id, version: row.agreement_access_version, song: songRelation?.title || "Collaboration project", terms, collaboratorSignature: signature, collaboratorSignedAt: signedAt, adminSignedAt: row.admin_signed_at!, snapshotHash });
+      const pdf = await createSignedAgreementPdf({ id: row.id, version: row.agreement_access_version, song: songRelation?.title || "Collaboration project", type: found.agreementType, terms, collaboratorSignature: signature, collaboratorSignedAt: signedAt, adminSignedAt: row.admin_signed_at!, snapshotHash });
+      executedPdf = pdf;
       const path = `${row.id}/signed-v${row.agreement_access_version}.pdf`;
       const uploaded = await db.storage.from("collaboration-agreements").upload(path, pdf, { contentType: "application/pdf", upsert: false });
       if (uploaded.error && !String(uploaded.error.message || "").toLowerCase().includes("already exists")) return NextResponse.json({ error: "Your signature is recorded, but PDF finalization failed. Contact CHXNDLER; do not sign again." }, { status: 500, headers: privateHeaders });
@@ -69,7 +71,8 @@ export async function POST(request: Request, { params }: Context) {
         const nodemailer = await import("nodemailer"), port = Number(process.env.SMTP_PORT || 587);
         transport = nodemailer.default.createTransport({ host: process.env.SMTP_HOST, port, secure: port === 465, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
         const title = Array.isArray(row.songs) ? row.songs[0]?.title : (row.songs as any)?.title;
-        await transport.sendMail({ from: `CHXNDLER <${fromAddress}>`, to: row.email, replyTo, subject: `Signed collaboration agreement · ${title || "Collaboration project"}`, text: `Hi ${printedName},\n\nYour collaboration agreement is fully signed. Download your signed PDF from your private CHXNDLER agreement link.\n\nCHXNDLER`, html: `<div style="font:15px/1.6 Arial,sans-serif;color:#17171c"><p>Hi ${printedName},</p><p>Your collaboration agreement is fully signed. Your signed PDF is available securely from your private CHXNDLER agreement link.</p><p>CHXNDLER</p></div>` });
+        if (!executedPdf) throw new Error("Signed PDF content unavailable for the completion email.");
+        await transport.sendMail({ from: `CHXNDLER <${fromAddress}>`, to: row.email, replyTo, subject: `Signed collaboration agreement · ${title || "Collaboration project"}`, text: `Hi ${printedName},\n\nYour collaboration agreement is fully signed. The signed PDF is attached and available from your private CHXNDLER agreement link.\n\nCHXNDLER`, html: `<div style="font:15px/1.6 Arial,sans-serif;color:#17171c"><p>Hi ${printedName},</p><p>Your collaboration agreement is fully signed. The signed PDF is attached and available securely from your private CHXNDLER agreement link.</p><p>CHXNDLER</p></div>`, attachments: [{ filename: `CHXNDLER-Collaboration-Agreement-v${row.agreement_access_version}.pdf`, content: executedPdf, contentType: "application/pdf" }] });
         await db.from("collaboration_requests").update({ collaborator_signature_email_sent_at: new Date().toISOString() }).eq("id", row.id).eq("collaborator_signed_version", row.agreement_access_version);
         emailSent = true;
       } catch (error) { console.error("[collab/agreement] completion email failed", error); }
