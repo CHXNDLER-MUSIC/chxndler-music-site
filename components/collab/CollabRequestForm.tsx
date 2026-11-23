@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Music2 } from "lucide-react";
 
 const defaultVersion = "2026-11-18-v1";
 const defaultTerms = {
@@ -25,6 +26,8 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const [email, setEmail] = useState(invitedEmail);
+  const [hasStreamingProfiles, setHasStreamingProfiles] = useState<"yes" | "no">("no");
+  const [streamingProfiles, setStreamingProfiles] = useState({ spotify: "", appleMusic: "", youtubeMusic: "" });
   const [contributionType, setContributionType] = useState(initialContributionType || "");
   const [termsVersion, setTermsVersion] = useState(defaultVersion);
   const [termsText, setTermsText] = useState(defaultTerms);
@@ -49,6 +52,15 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!invitedEmail) return;
+    void fetch("/api/collaboration-requests/profile", { cache: "no-store" }).then(response => response.ok ? response.json() : null).then(profile => {
+      if (!profile) return;
+      setHasStreamingProfiles(profile.has_streaming_profiles ? "yes" : "no");
+      setStreamingProfiles({ spotify: profile.spotify_artist_uri || "", appleMusic: profile.apple_music_artist_url || "", youtubeMusic: profile.youtube_music_artist_channel_id ? `https://music.youtube.com/channel/${profile.youtube_music_artist_channel_id}` : "" });
+    }).catch(() => {});
+  }, [invitedEmail]);
 
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null;
@@ -114,6 +126,10 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
           email: email.trim(),
           profileLink: data.get("profileLink"),
           phone: data.get("phone"),
+          hasStreamingProfiles: hasStreamingProfiles === "yes",
+          spotifyArtistProfile: streamingProfiles.spotify,
+          appleMusicArtistProfile: streamingProfiles.appleMusic,
+          youtubeMusicArtistProfile: streamingProfiles.youtubeMusic,
           contributionType,
           message: data.get("message"),
           website: data.get("website"),
@@ -165,6 +181,17 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
               <input id="collab-phone" name="phone" type="tel" autoComplete="tel" maxLength={40} placeholder="(555) 555-0123" className={fieldClass}/>
             </label>
           </div>
+
+          <fieldset className="rounded-xl border border-white/[.1] bg-white/[.02] p-4">
+            <legend className="px-1 text-xs font-semibold text-white/80">Do you already have artist profiles on streaming services?</legend>
+            <div className="mt-2 flex gap-5 text-sm text-white/75"><label className="inline-flex items-center gap-2"><input type="radio" name="streamingProfiles" value="yes" checked={hasStreamingProfiles === "yes"} onChange={() => setHasStreamingProfiles("yes")} className="accent-[#FD52AF]"/>Yes</label><label className="inline-flex items-center gap-2"><input type="radio" name="streamingProfiles" value="no" checked={hasStreamingProfiles === "no"} onChange={() => setHasStreamingProfiles("no")} className="accent-[#FD52AF]"/>No / Not yet</label></div>
+            {hasStreamingProfiles === "yes" && <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <label className="text-xs font-semibold text-white/70"><span className="inline-flex items-center gap-1"><Music2 className="h-4 w-4 text-[#1ED760]"/>Spotify <details className="group relative"><summary aria-label="How to find Spotify artist URI" className="cursor-pointer list-none text-[#FD52AF]">ⓘ</summary><span className="absolute left-0 top-5 z-20 hidden w-56 rounded-lg border border-white/10 bg-[#202025] p-3 text-[11px] font-normal leading-5 text-white/75 group-open:block">Open your Spotify artist profile, choose Share, then Copy link. Artist links and Spotify artist URIs are accepted.</span></details></span><input value={streamingProfiles.spotify} onChange={event => setStreamingProfiles(current => ({ ...current, spotify: event.target.value }))} placeholder="Artist URL or spotify:artist:…" className={fieldClass}/></label>
+              <label className="text-xs font-semibold text-white/70"><span className="inline-flex items-center gap-1"><Music2 className="h-4 w-4 text-white"/>Apple Music <details className="group relative"><summary aria-label="How to find Apple Music artist URL" className="cursor-pointer list-none text-[#FD52AF]">ⓘ</summary><span className="absolute left-0 top-5 z-20 hidden w-56 rounded-lg border border-white/10 bg-[#202025] p-3 text-[11px] font-normal leading-5 text-white/75 group-open:block">Open your artist page in Apple Music and copy its link.</span></details></span><input value={streamingProfiles.appleMusic} onChange={event => setStreamingProfiles(current => ({ ...current, appleMusic: event.target.value }))} placeholder="Apple Music artist URL" className={fieldClass}/></label>
+              <label className="text-xs font-semibold text-white/70"><span className="inline-flex items-center gap-1"><Music2 className="h-4 w-4 text-red-400"/>YouTube Music <details className="group relative"><summary aria-label="How to find YouTube Music artist profile" className="cursor-pointer list-none text-[#FD52AF]">ⓘ</summary><span className="absolute left-0 top-5 z-20 hidden w-56 rounded-lg border border-white/10 bg-[#202025] p-3 text-[11px] font-normal leading-5 text-white/75 group-open:block">Use the profile for your official YouTube Music artist page. Ordinary YouTube channels are not accepted.</span></details></span><input value={streamingProfiles.youtubeMusic} onChange={event => setStreamingProfiles(current => ({ ...current, youtubeMusic: event.target.value }))} placeholder="Official artist profile URL" className={fieldClass}/></label>
+              <p className="text-[11px] leading-5 text-white/45 sm:col-span-3">These links are optional. Sharing them helps match your artist profiles during distribution setup.</p>
+            </div>}
+          </fieldset>
 
           <fieldset>
             <legend className="mb-3 text-xs font-semibold uppercase text-white/75">HOW WOULD YOU LIKE TO COLLABORATE? <span className="text-[#FD52AF]">*</span></legend>

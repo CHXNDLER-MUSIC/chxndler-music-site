@@ -15,12 +15,12 @@ async function findAgreement(token: string) {
   if (!/^[A-Za-z0-9_-]{40,60}$/.test(token)) return null;
   const tokenHash = hash(token);
   const db = getSupabaseAdmin();
-  const { data } = await db.from("collaboration_requests").select("id,song_id,invite_id,authorized_person_id,email,status,agreement_status,agreement_type,agreement_terms,agreement_version,agreement_approved_version,agreement_access_expires_at,agreement_access_version,agreement_access_token_hash,collaborator_printed_name,collaborator_signature,collaborator_signed_at,collaborator_signed_version,collaborator_signature_email_sent_at,admin_signed_at,songs(title)").eq("agreement_access_token_hash", tokenHash).maybeSingle();
+  const { data } = await db.from("collaboration_requests").select("id,song_id,invite_id,authorized_person_id,email,status,agreement_status,agreement_type,agreement_terms,agreement_version,agreement_approved_version,agreement_access_expires_at,agreement_access_version,agreement_access_token_hash,agreement_sent_at,collaborator_printed_name,collaborator_signature,collaborator_signed_at,collaborator_signed_version,collaborator_signature_email_sent_at,admin_signed_at,songs(title)").eq("agreement_access_token_hash", tokenHash).maybeSingle();
   if (!data || !data.agreement_access_expires_at || Date.parse(data.agreement_access_expires_at) <= Date.now() || data.agreement_access_version !== data.agreement_approved_version || data.agreement_access_version !== data.agreement_version) return null;
   const { data: snapshot } = await db.from("collaboration_agreement_versions").select("structured_terms,agreement_type,version").eq("request_id", data.id).eq("version", data.agreement_access_version).maybeSingle();
   const agreementType = snapshot?.agreement_type || data.agreement_type;
   if (!agreementType || !agreementTypes.some(item => item.value === agreementType) || snapshot?.version !== undefined && snapshot.version !== data.agreement_access_version) return null;
-  return { db, row: data, agreementType: agreementType as AgreementType, terms: (snapshot?.structured_terms || data.agreement_terms || {}) as Record<string, any> };
+  return { db, row: data, agreementType: agreementType as AgreementType, terms: { ...((snapshot?.structured_terms || data.agreement_terms || {}) as Record<string, any>), sent_at: data.agreement_sent_at } };
 }
 
 export async function POST(request: Request, { params }: Context) {

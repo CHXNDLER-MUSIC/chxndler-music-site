@@ -49,15 +49,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     agreement_access_token_hash: accessTokenHash,
     agreement_access_expires_at: expiresAt,
     agreement_access_version: row.agreement_version,
-    agreement_status: "awaiting_signature",
-    agreement_sent_at: new Date().toISOString(),
-    status: "agreement_pending",
     updated_at: new Date().toISOString(),
   }).eq("id", id).eq("agreement_version", row.agreement_version)
     .eq("agreement_approved_version", row.agreement_version).select("id").maybeSingle();
   if (update.error || !update.data) return NextResponse.json({ error: "Could not generate a private link for the approved contract." }, { status: 500 });
 
-  await db.from("collaboration_request_events").insert({ request_id: id, event: "agreement_link_generated", details: { actor: auth.user.email, version: row.agreement_version, expires_at: expiresAt } });
+  await db.from("collaboration_request_events").insert({ request_id: id, event: "agreement_link_generated", details: { actor: auth.user.email, version: row.agreement_version, expires_at: expiresAt, sent: false } });
   const base = (process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin).replace(/\/+$/, "");
-  return NextResponse.json({ ok: true, version: row.agreement_version, agreement_status: "awaiting_signature", expiresAt, reviewUrl: `${base}/collab/agreement/${accessToken}` });
+  return NextResponse.json({ ok: true, version: row.agreement_version, agreement_status: row.agreement_status, expiresAt, reviewUrl: `${base}/collab/agreement/${accessToken}` });
 }

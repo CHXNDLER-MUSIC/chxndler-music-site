@@ -16,13 +16,13 @@ export default async function CollaborationAgreementPage({ params }: { params: P
     if (/^[A-Za-z0-9_-]{40,60}$/.test(token)) {
       const db = getSupabaseAdmin();
       const tokenHash = createHash("sha256").update(token).digest("hex");
-      const { data: row } = await db.from("collaboration_requests").select("id,email,first_name,last_name,agreement_status,agreement_type,agreement_version,agreement_approved_version,agreement_access_expires_at,agreement_access_version,agreement_terms,collaborator_printed_name,collaborator_signature,collaborator_signed_at,admin_signed_at,signed_agreement_path,songs(title)").eq("agreement_access_token_hash", tokenHash).maybeSingle();
+      const { data: row } = await db.from("collaboration_requests").select("id,email,first_name,last_name,agreement_status,agreement_type,agreement_version,agreement_approved_version,agreement_access_expires_at,agreement_access_version,agreement_terms,agreement_sent_at,collaborator_printed_name,collaborator_signature,collaborator_signed_at,admin_signed_at,signed_agreement_path,songs(title)").eq("agreement_access_token_hash", tokenHash).maybeSingle();
       if (row && row.agreement_access_expires_at && (Date.parse(row.agreement_access_expires_at) > Date.now() || row.agreement_status === "signed") && row.agreement_access_version === row.agreement_approved_version) {
         const { data: snapshot } = await db.from("collaboration_agreement_versions").select("agreement_type,version,structured_terms").eq("request_id", row.id).eq("version", row.agreement_access_version).maybeSingle();
         const type = snapshot?.agreement_type || row.agreement_type;
         if (type && agreementTypes.some(item => item.value === type)) {
           await db.from("collaboration_request_events").insert({ request_id: row.id, event: "agreement_viewed", details: { version: row.agreement_access_version } });
-          const terms = (snapshot?.structured_terms || row.agreement_terms || {}) as Record<string, any>;
+          const terms: Record<string, any> = { ...((snapshot?.structured_terms || row.agreement_terms || {}) as Record<string, any>), sent_at: row.agreement_sent_at };
           agreement = { id: row.id, type: type as AgreementType, terms, title: (Array.isArray(row.songs) ? row.songs[0]?.title : (row.songs as any)?.title) || terms.song_title || "Collaboration project", email: row.email || "", name: row.collaborator_printed_name || terms.collaborator_legal_name || [row.first_name, row.last_name].filter(Boolean).join(" "), version: Number(row.agreement_access_version), status: row.agreement_status || "awaiting_signature", signedAt: row.collaborator_signed_at, signature: row.collaborator_signature, adminSignedAt: row.admin_signed_at, signedPdf: !!row.signed_agreement_path };
         }
       }

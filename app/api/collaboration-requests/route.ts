@@ -8,6 +8,38 @@ import { getCollabInviteSession } from "@/lib/collabAccess";
 export const runtime = "nodejs";
 const clean = (v: unknown, max: number) => typeof v === "string" ? v.trim().slice(0, max) : "";
 
+function normalizeSpotifyArtist(value: string) {
+  if (!value) return null;
+  const uri = value.match(/^spotify:artist:([A-Za-z0-9]{22})$/i);
+  const url = value.match(/^(?:https?:\/\/)?(?:open\.)?spotify\.com\/artist\/([A-Za-z0-9]{22})(?:[/?#].*)?$/i);
+  const id = uri?.[1] || url?.[1];
+  return id ? `spotify:artist:${id}` : null;
+}
+function normalizeAppleArtist(value: string) {
+  if (!value) return null;
+  try {
+    const url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
+    return url.protocol === "https:" && url.hostname.toLowerCase() === "music.apple.com" && /^\/[a-z]{2}(?:-[a-z]{2})?\/artist\/[^/]+\/\d+/.test(url.pathname) ? url.toString() : null;
+  } catch { return null; }
+}
+function normalizeYouTubeMusicArtist(value: string) {
+  if (!value) return null;
+  if (/^UC[A-Za-z0-9_-]{22}$/.test(value)) return value;
+  try {
+    const url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
+    const match = url.protocol === "https:" && url.hostname.toLowerCase() === "music.youtube.com" ? url.pathname.match(/^\/channel\/(UC[A-Za-z0-9_-]{22})\/?$/) : null;
+    return match?.[1] || null;
+  } catch { return null; }
+}
+
+export async function GET() {
+  const invite = await getCollabInviteSession();
+  if (!invite?.email) return NextResponse.json({ profile: null }, { headers: { "Cache-Control": "no-store, private" } });
+  const { data, error } = await getSupabaseAdmin().from("collaborator_artist_profiles").select("legal_name,artist_name,has_streaming_profiles,spotify_artist_uri,apple_music_artist_url,youtube_music_artist_channel_id").eq("email_key", invite.email.trim().toLowerCase()).maybeSingle();
+  if (error) return NextResponse.json({ profile: null }, { headers: { "Cache-Control": "no-store, private" } });
+  return NextResponse.json(data || null, { headers: { "Cache-Control": "no-store, private" } });
+}
+
 function normalizeProfileLink(value: string): string | null {
   if (!value) return null;
   const handle = value.match(/^@?([A-Za-z0-9._]{1,30})$/);
@@ -29,9 +61,14 @@ export async function POST(request: Request) {
     const submittedEmail = clean(body.email, 320).toLowerCase();
     const firstName = clean(body.firstName, 80), lastName = clean(body.lastName, 80), submittedArtistName = clean(body.artistName, 120);
     const rawProfile = clean(body.profileLink, 500), profile = normalizeProfileLink(rawProfile), portfolio = clean(body.portfolioUrl, 500), estimatedRate = clean(body.estimatedRate, 120), phone = clean(body.phone, 40), contribution = clean(body.contributionType, 40), message = clean(body.message, 1200), videoProjectId = clean(body.videoProjectId, 80);
+    const spotifyRaw = clean(body.spotifyArtistProfile, 300), appleRaw = clean(body.appleMusicArtistProfile, 500), youtubeRaw = clean(body.youtubeMusicArtistProfile, 300);
+    const spotifyArtistUri = normalizeSpotifyArtist(spotifyRaw), appleMusicArtistUrl = normalizeAppleArtist(appleRaw), youtubeMusicArtistChannelId = normalizeYouTubeMusicArtist(youtubeRaw);
     if (!firstName || !lastName) return NextResponse.json({ error: "First and last name are required." }, { status: 400 });
     if (!submittedArtistName) return NextResponse.json({ error: "Artist name is required." }, { status: 400 });
     if (rawProfile && !profile) return NextResponse.json({ error: "Enter an Instagram handle or a valid http(s) profile URL." }, { status: 400 });
+    if (spotifyRaw && !spotifyArtistUri) return NextResponse.json({ error: "Enter a Spotify artist URL or spotify:artist: URI." }, { status: 400 });
+    if (appleRaw && !appleMusicArtistUrl) return NextResponse.json({ error: "Enter a valid Apple Music artist URL." }, { status: 400 });
+    if (youtubeRaw && !youtubeMusicArtistChannelId) return NextResponse.json({ error: "Enter an official YouTube Music artist profile URL or channel ID. Ordinary YouTube channel URLs are not accepted." }, { status: 400 });
     const invite = await getCollabInviteSession();
     const isVideoApplication = contribution === "Music Video";
     const isSonglessIdea = !songId && (contribution === "Songwriting" || contribution === "Other");
@@ -57,6 +94,11 @@ export async function POST(request: Request) {
     const songReleased = !!song && (song.is_released === true || song.audio_status === "Released");
     if ((!song && !allowSonglessIdea) || (publicVideoApplication && (!videoProject || videoProject.visibility !== "public")) || (invite && (invite.scope === "video" || songInviteMismatch || (invite.scope === "song" && !isVideoApplication && song?.ready_for_collab !== true))) || (isVideoApplication && !videoProject && !invite) || (!isVideoApplication && !invite) || (!allowSonglessIdea && !publicVideoApplication && !isVideoApplication && song?.ready_for_collab !== true && !remixIsAlwaysOpen) || (songReleased && !remixIsAlwaysOpen && !isVideoApplication)) return NextResponse.json({ error: "This invitation is invalid, expired, or this song is not open for collaboration." }, { status: 403 });
     if (!terms) return NextResponse.json({ error: "Collaboration terms are not configured." }, { status: 503 });
+    const profileSave = await db.from("collaborator_artist_profiles").upsert({ email, email_key: email.toLowerCase(), legal_name: `${firstName} ${lastName}`.trim(), artist_name: artistName, has_streaming_profiles: body.hasStreamingProfiles === true, spotify_artist_uri: spotifyArtistUri, apple_music_artist_url: appleMusicArtistUrl, youtube_music_artist_channel_id: youtubeMusicArtistChannelId, updated_at: new Date().toISOString() }, { onConflict: "email_key" });
+    if (profileSave.error) {
+      console.error("[collab] artist profile save failed", profileSave.error);
+      return NextResponse.json({ error: "Your artist profile could not be saved. Please try again." }, { status: 503 });
+    }
     const ip = request.headers.get("x-real-ip")?.trim() || request.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() || "unknown";
     const ipHash = createHash("sha256").update(`${process.env.SUPABASE_SERVICE_ROLE_KEY}:${ip}`).digest("hex");
     const rate = await db.rpc("consume_collaboration_rate_limit", { p_ip_hash: ipHash });

@@ -17,7 +17,7 @@ export async function createSignedAgreementPdf(input: { id: string; version: num
   } catch { line("CHXNDLER", { bold: true, size: 17, color: pink, gap: 0.25 }); }
   line("COLLABORATION AGREEMENT", { bold: true, size: 9, color: "#77717a", gap: 0.2 });
   line(input.song, { bold: true, size: 24, color: "#17151a", gap: 0.3 });
-  line(`Agreement ${input.id} · Version ${input.version} · Effective ${new Date(Math.max(Date.parse(input.adminSignedAt), Date.parse(input.collaboratorSignedAt))).toLocaleDateString()}`, { size: 9, color: "#77717a" });
+  line(`Version ${input.version} · Effective ${input.terms.effective_date || "upon signature by all parties"} · Sent ${input.terms.sent_at ? new Date(input.terms.sent_at).toLocaleDateString() : "—"}`, { size: 9, color: "#77717a" });
   const agreementType = input.type || input.terms.agreement_type || "singer_feature";
   const fullAgreement = agreementText(agreementType, input.terms).split("\nSIGNATURES\n")[0];
   for (const block of fullAgreement.split(/\n\n+/).filter(Boolean)) {
