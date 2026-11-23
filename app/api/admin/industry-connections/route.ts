@@ -4,7 +4,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
 const allowedStatuses = ["not_contacted", "connected", "follow_up", "active", "do_not_contact"];
-const allowedFields = ["first_name", "last_name", "email", "phone", "venue", "note", "industry_category", "relationship", "referred_by", "connection_status", "last_contacted_at", "follow_up_at"] as const;
+const allowedFields = ["first_name", "last_name", "email", "phone", "venue", "note", "industry_category", "relationship", "referred_by", "connection_status", "last_contacted_at", "follow_up_at", "site_profile_status"] as const;
 const clean = (value: unknown, limit = 300) => typeof value === "string" ? value.trim().slice(0, limit) || null : null;
 
 async function authorize() {
@@ -19,11 +19,12 @@ export async function GET(request: Request) {
   if (access.response) return access.response;
   const query = (new URL(request.url).searchParams.get("q") || "").trim().replace(/[%,()]/g, "");
   const db = getSupabaseAdmin();
-  const pageSize = 1000;
+  // Keep requests bounded and page through the entire personal contact list.
+  const pageSize = 50;
   const contacts: Record<string, unknown>[] = [];
   for (let from = 0; ; from += pageSize) {
-    let builder = db.from("marketing_contacts").select("id,first_name,last_name,email,phone,venue,note,industry_category,relationship,referred_by,connection_status,last_contacted_at,follow_up_at,created_at,updated_at").order("first_name", { ascending: true }).order("id", { ascending: true }).range(from, from + pageSize - 1);
-    if (query) builder = builder.or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%,venue.ilike.%${query}%,industry_category.ilike.%${query}%,relationship.ilike.%${query}%,referred_by.ilike.%${query}%`);
+    let builder = db.from("marketing_contacts").select("id,first_name,last_name,email,phone,venue,note,industry_category,relationship,referred_by,connection_status,last_contacted_at,follow_up_at,site_profile_status,created_at,updated_at").order("first_name", { ascending: true }).order("id", { ascending: true }).range(from, from + pageSize - 1);
+    if (query) builder = builder.or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%,phone.ilike.%${query}%,venue.ilike.%${query}%,industry_category.ilike.%${query}%,relationship.ilike.%${query}%,referred_by.ilike.%${query}%`);
     const { data, error } = await builder;
     if (error) return NextResponse.json({ error: "Unable to load industry connections. Apply the contacts migrations first." }, { status: 500 });
     contacts.push(...(data || []));
@@ -60,6 +61,9 @@ export async function PATCH(request: Request) {
     if (!(field in body)) continue;
     if (field === "connection_status") {
       if (!allowedStatuses.includes(body[field])) return NextResponse.json({ error: "Invalid connection status." }, { status: 400 });
+      update[field] = body[field];
+    } else if (field === "site_profile_status") {
+      if (!["unknown", "has_profile", "no_profile"].includes(body[field])) return NextResponse.json({ error: "Invalid site profile status." }, { status: 400 });
       update[field] = body[field];
     } else if (field === "last_contacted_at" || field === "follow_up_at") {
       const value = body[field];

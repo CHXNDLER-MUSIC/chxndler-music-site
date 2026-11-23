@@ -99,7 +99,6 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
   }
 
   async function previewAgreement() {
-    const wasDirty = dirty;
     const saved = sent ? { terms, version: savedVersion } : await saveDraft({ quiet: true });
     if (saved) {
       setPreviewedVersion(saved.version);
@@ -109,8 +108,10 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
     } else {
       setPreviewedVersion(0);
       setReviewConfirmed(false);
-      if (!wasDirty && savedVersion > 0) setFlowStep(3);
-      setNotice("Save the current draft successfully before approval.");
+      // Preview the current form locally even if persistence fails. The approval
+      // and send controls remain locked until this exact version is saved.
+      setFlowStep(3);
+      setNotice("Showing a local preview. Save the draft before approving or sending it.");
     }
   }
 

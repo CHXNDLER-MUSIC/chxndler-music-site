@@ -118,8 +118,8 @@ export default function TasksTab() {
     return colors;
   }, [timelineRows]);
   const timelinePlot = useMemo(() => {
-    const rowGap = timelineRows.length ? Math.max(34, Math.min(56, 480 / timelineRows.length)) : 0;
-    const height = Math.max(160, timelineRows.length * rowGap + 24);
+    const height = Math.max(400, timelineRows.length * 72 + 24);
+    const rowGap = timelineRows.length ? (height - 24) / timelineRows.length : 0;
     const points = new Map<string, { x: number; y: number }>();
     timelineRows.forEach((row, rowIndex) => {
       const eventsByDate = new Map<string, typeof row.events>();
