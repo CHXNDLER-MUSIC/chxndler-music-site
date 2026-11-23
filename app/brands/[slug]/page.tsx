@@ -125,7 +125,7 @@ async function fetchArtistReleases(): Promise<ArtistRelease[]> {
           title,
           oneLiner: (() => {
             const subtitle = getSongBySlug(slug)?.subtitle;
-            return subtitle && !subtitle.startsWith("Channel ") ? subtitle : `${title} is ready for its next visual chapter.`;
+            return subtitle && !subtitle.startsWith("Channel ") ? subtitle : slug === "play-house" ? "" : `${title} is ready for its next visual chapter.`;
           })(),
           databaseId: String(row.id),
           collaborationEnabled: row.collaboration_enabled === true,

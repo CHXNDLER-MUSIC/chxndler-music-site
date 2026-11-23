@@ -25,6 +25,7 @@ export default function MediaViewerModal({
   open,
   onClose,
   onEscape,
+  onCloseSound,
   label,
   kind,
   accent,
@@ -41,6 +42,8 @@ export default function MediaViewerModal({
    * out of a nested view before a second Escape closes the viewer. The ×
    * button and backdrop click always use onClose. */
   onEscape?: () => void;
+  /** Lets a caller replace the default close sound for this viewer. */
+  onCloseSound?: () => void;
   /** The dynamic, brand-specific value — e.g. the song title. Still used for
    * the dialog's accessible name (`aria-label`) even when `header` overrides
    * the visual rendering below. */
@@ -168,7 +171,7 @@ export default function MediaViewerModal({
                 ref={closeRef}
                 type="button"
                 onClick={() => {
-                  playClose();
+                  (onCloseSound ?? playClose)();
                   onClose();
                 }}
                 aria-label="Close"

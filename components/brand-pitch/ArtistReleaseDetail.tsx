@@ -182,19 +182,19 @@ export default function ArtistReleaseDetail({
           }}
           onMouseEnter={playHover}
           aria-label={audioSrc ? `${isPlaying ? "Pause" : "Play"} ${release.title}` : `${release.title} cover art`}
-          className={`group grid w-full max-w-[22rem] mx-auto overflow-hidden rounded-[0.75rem] border border-white/10 bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem] ${audioSrc ? "cursor-pointer" : "cursor-default"}`}
+          className={`group relative block w-full max-w-[22rem] mx-auto overflow-hidden rounded-[0.75rem] border border-white/10 bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[0.25rem] ${audioSrc ? "cursor-pointer" : "cursor-default"}`}
           style={{ aspectRatio: "1 / 1", boxShadow: `0 0 2.5rem -1rem ${PINK}88`, outlineColor: PINK }}
         >
           <img
             src={release.coverArt}
             alt=""
-            className="[grid-area:1/1] w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
             data-no-lazy=""
           />
           {/* Play/pause glyph — shows on hover, and stays while paused. */}
           {audioSrc && <span
             aria-hidden="true"
-            className={`[grid-area:1/1] flex items-center justify-center bg-black/25 transition-opacity duration-200 ${
+            className={`absolute inset-0 flex items-center justify-center bg-black/25 transition-opacity duration-200 ${
               isPlaying ? "opacity-0 group-hover:opacity-100" : "opacity-100"
             }`}
           >
@@ -218,7 +218,7 @@ export default function ArtistReleaseDetail({
           onClick={() => { setCollabChoiceNotice(""); setCollabChoicesOpen(true); }}
           onMouseEnter={playHover}
           className="mx-auto -mt-[0.5rem] flex min-h-12 w-full max-w-[22rem] items-center justify-center rounded-full bg-[#ff3ea5] px-6 py-3 text-xs font-black uppercase tracking-[0.12em] text-black shadow-[0_0_24px_#ff3ea555] transition hover:bg-[#ff66b4] hover:shadow-[0_0_30px_#ff3ea577] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-        >View Collaboration Options <span aria-hidden="true" className="ml-2">→</span></button>}
+        >Collaborate</button>}
 
         {showStreamingLinks && <div className="mx-auto -mt-1 flex w-full max-w-[22rem] justify-center gap-2" aria-label="Listen on streaming services">
           <a aria-label="Listen on Spotify" title="Spotify" href={release.spotifyUrl || CHXNDLER_SPOTIFY_ARTIST_URL} target="_blank" rel="noreferrer" className="streaming-link streaming-link-spotify"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-8 w-8" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M6.2 9.2c4.3-1.2 8.6-.8 12 1.2M7.2 12.1c3.5-.9 6.8-.5 9.6 1M8.1 14.8c2.5-.6 4.9-.3 7 .7" fill="none" stroke="#09090c" strokeWidth="1.5" strokeLinecap="round"/></svg><span className="sr-only">Spotify</span></a>
@@ -253,7 +253,7 @@ export default function ArtistReleaseDetail({
           <h3 className={`font-sans mt-[0.25rem] text-[1.5rem] sm:text-[2.25rem] font-bold uppercase leading-tight tracking-[0.015em] text-white break-words`} style={{ textShadow: "0 0 22px rgba(255,62,165,.22)" }}>
             {release.title}
           </h3>
-          <p className="mt-2 max-w-prose text-sm leading-6 text-white/75">{release.oneLiner || `${release.title} is ready for its next visual chapter.`}</p>
+          {(release.oneLiner || release.slug !== "play-house") && <p className="mt-2 max-w-prose text-sm leading-6 text-white/75">{release.oneLiner || `${release.title} is ready for its next visual chapter.`}</p>}
 
           {/* Player */}
           <div className="mt-[1.25rem] flex items-center gap-[0.875rem]">
@@ -318,29 +318,19 @@ export default function ArtistReleaseDetail({
       <div role="tabpanel" className="mt-4 min-h-[9rem] rounded-2xl border border-white/10 bg-black/25 p-4 sm:p-6">
           {detailTab === "lyrics" && (showLyricsSection || lyrics.status !== "missing") && (
             <section aria-label="Lyrics" className="min-w-0">
-              <div className="flex items-center justify-center rounded-full py-[0.125rem]">
-                <span className="text-[0.7rem] font-bold tracking-[0.28em] uppercase" style={{ color: PINK, textShadow: `0 0 10px ${PINK}88` }}>Lyrics</span>
-              </div>
               <div
                 id={`lyrics-${release.slug}`}
                 className="mt-2"
               >
                 <div className="min-h-0 overflow-hidden">
                   <div
-                    className={`font-sans mt-[0.625rem] rounded-[1.25rem] border border-white/[0.12] shadow-[inset_0_1px_0_rgba(255,255,255,0.035),0_12px_36px_rgba(0,0,0,0.18)]`}
+                    className="lyrics-scroll max-h-[28rem] overflow-y-auto overscroll-contain px-[1.25rem] pb-[1.75rem] pt-[0.5rem] text-center sm:px-[2rem] sm:pb-[2.125rem] sm:pt-[0.75rem]"
                     style={{
-                      background: "rgba(5,5,9,.78)",
-                      backdropFilter: "blur(12px)",
+                      maskImage: "linear-gradient(to bottom, transparent 0, #000 1.5rem, #000 calc(100% - 2.5rem), transparent 100%)",
+                      WebkitMaskImage:
+                        "linear-gradient(to bottom, transparent 0, #000 1.5rem, #000 calc(100% - 2.5rem), transparent 100%)",
                     }}
                   >
-                    <div
-                      className="lyrics-scroll max-h-[28rem] overflow-y-auto overscroll-contain px-[1.25rem] py-[1.75rem] text-center sm:px-[2rem] sm:py-[2.125rem]"
-                      style={{
-                        maskImage: "linear-gradient(to bottom, transparent 0, #000 1.5rem, #000 calc(100% - 2.5rem), transparent 100%)",
-                        WebkitMaskImage:
-                          "linear-gradient(to bottom, transparent 0, #000 1.5rem, #000 calc(100% - 2.5rem), transparent 100%)",
-                      }}
-                    >
                       {lyrics.status === "loading" ? (
                         <p className="text-[0.9375rem] text-white/40">Loading lyrics…</p>
                       ) : lyrics.status === "missing" ? (
@@ -349,14 +339,13 @@ export default function ArtistReleaseDetail({
                         splitVerses(lyrics.text).map((verse, i) => (
                           <p
                             key={i}
-                            className="mx-auto max-w-[42rem] whitespace-pre-line text-[1rem] text-white/90 sm:text-[1.0625rem] [&:not(:last-child)]:mb-[2.125em]"
-                            style={{ lineHeight: 1.9, letterSpacing: "0.012em" }}
+                            className={`mx-auto max-w-[42rem] whitespace-pre-line text-[1rem] sm:text-[1.0625rem] [&:not(:last-child)]:mb-[2.125em] ${i === 0 && verse.toUpperCase() === release.title.toUpperCase() ? "font-bold text-[#ff3ea5]" : "text-white/90"}`}
+                            style={{ lineHeight: 1.9, letterSpacing: "0.012em", ...(i === 0 && verse.toUpperCase() === release.title.toUpperCase() ? { textShadow: "0 0 10px #ff3ea588" } : {}) }}
                           >
                             {verse.split(/(\[YOUR VERSE\])/gi).map((part, partIndex) => part.toUpperCase() === "[YOUR VERSE]" ? <span key={partIndex} className="font-black tracking-[0.12em] text-[#ff3ea5]" style={{ textShadow: "0 0 7px #ff3ea5, 0 0 18px #ff3ea588" }}>{part}</span> : part)}
                           </p>
                         ))
                       )}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -391,10 +380,9 @@ export default function ArtistReleaseDetail({
               </div>
             </section>
           )}
-          {detailTab === "collectible" && !release.cardArt && <section aria-label={`${release.title} locked collectible`} className="py-5 text-center"><div className="relative mx-auto aspect-[5/7] w-[70%] max-w-[18rem] overflow-hidden rounded-2xl border border-white/15 bg-black/30 shadow-[0_1.5rem_4rem_rgba(0,0,0,.45)]"><img src={getCardImageUrl("BACK")} alt="Back of the CHXNDLER card" className="h-full w-full object-contain"/><div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-black/75 px-4 py-3 text-xs font-black uppercase tracking-[.2em] text-white"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Locked</div></div></section>}
+          {detailTab === "collectible" && !release.cardArt && <section aria-label={`${release.title} locked collectible`} className="py-5 text-center"><div className="relative mx-auto aspect-[5/7] w-[70%] max-w-[18rem] overflow-hidden rounded-2xl border border-white/15 bg-black/30 shadow-[0_1.5rem_4rem_rgba(0,0,.45)]"><img src={getCardImageUrl("BACK")} alt="Back of the CHXNDLER card" className="h-full w-full object-contain"/><div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 items-center justify-center gap-2 bg-black/75 px-4 py-3 text-xs font-black uppercase tracking-[.2em] text-white"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Locked</div></div></section>}
           {detailTab === "video" && <div className="space-y-5">
             {(release.videoConcept?.trim() || release.videoPlan?.concept?.trim()) && <section className="rounded-xl border border-white/10 bg-white/[.03] p-4"><SectionLabel>VIDEO CONCEPT</SectionLabel><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-white/75">{release.videoConcept?.trim() || release.videoPlan?.concept?.trim()}</p></section>}
-            {release.videoPlan?.shotList?.length ? <section className="rounded-xl border border-white/10 bg-white/[.03] p-4"><SectionLabel>Shot List</SectionLabel><div className="mt-3 space-y-3">{release.videoPlan.shotList.map((shot, index) => <article key={`${shot.scene || "scene"}-${index}`} className="rounded-lg bg-black/25 p-3"><p className="text-sm font-bold text-white">{shot.scene || `Scene ${index + 1}`}</p>{shot.description && <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-white/70">{shot.description}</p>}<p className="mt-2 text-xs text-white/45">{[shot.location, shot.lyricSection, shot.status].filter(Boolean).join(" · ")}</p></article>)}</div></section> : null}
             {(release.videoPlan?.locations || release.videoPlan?.performers) && <section className="grid gap-3 sm:grid-cols-2">{release.videoPlan.locations && <div className="rounded-xl border border-white/10 bg-white/[.03] p-4"><SectionLabel>Locations</SectionLabel><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-white/75">{release.videoPlan.locations}</p></div>}{release.videoPlan.performers && <div className="rounded-xl border border-white/10 bg-white/[.03] p-4"><SectionLabel>Actors & Performers</SectionLabel><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-white/75">{release.videoPlan.performers}</p></div>}</section>}
             {release.videoEmbedUrl && <section aria-label="Music video"><SectionLabel>Music Video</SectionLabel><div className="mt-3 w-full overflow-hidden rounded-xl border border-white/10 bg-black" style={{ aspectRatio: "16 / 9" }}><iframe src={`${release.videoEmbedUrl}?rel=0`} title={`${release.title} music video`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen loading="lazy" className="h-full w-full" /></div></section>}
             {!release.videoEmbedUrl && <p className="text-sm font-black uppercase tracking-[0.18em] text-[#ff3ea5] drop-shadow-[0_0_12px_rgba(255,62,165,.75)]">No music video yet</p>}

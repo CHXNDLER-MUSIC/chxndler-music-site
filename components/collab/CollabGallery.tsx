@@ -8,6 +8,7 @@ import SkyVideoBackground from "@/components/brand-pitch/SkyVideoBackground";
 import { releaseAudioSrc, releaseNowPlaying, type ArtistRelease } from "@/components/brand-pitch/artistRelease";
 import { COLLAB_CATALOG_FILTERS, filterCollabCatalog } from "@/lib/collabCatalog.mjs";
 import { playCollabClickSound } from "@/components/collab/playCollabClickSound";
+import { useInteractionSound } from "@/components/brand-pitch/useInteractionSound";
 import CollabRequestForm from "@/components/collab/CollabRequestForm";
 
 type Tab = "collabs" | "video" | "complete";
@@ -86,6 +87,7 @@ function CollabGalleryContent({
   const [showOtherIdeaPicker, setShowOtherIdeaPicker] = useState(false);
   const [otherIdeaType, setOtherIdeaType] = useState<"Songwriting" | "Other" | "">("");
   const audio = useBrandAudio();
+  const { playClick: playCoverOpenSound } = useInteractionSound({ clickKey: "close" });
 
   const items = useMemo<SelectedItem[]>(() => {
     if (!canViewFeatures || category !== "features") return [];
@@ -138,7 +140,7 @@ function CollabGalleryContent({
   }, [selected, audio]);
 
   const openItem = (item: SelectedItem) => {
-    playCollabClickSound();
+    playCoverOpenSound();
     audio.pause();
     setSelected(item);
     const src = item.audioUrl ?? (item.release.audioAvailable === false ? "" : releaseAudioSrc(item.release.slug));
@@ -146,7 +148,6 @@ function CollabGalleryContent({
   };
 
   const closeDetail = () => {
-    playCollabClickSound();
     audio.pause();
     setSelected(null);
   };
@@ -267,6 +268,7 @@ function CollabGalleryContent({
         <MediaViewerModal
           open
           onClose={closeDetail}
+          onCloseSound={playCollabClickSound}
           label={selected.release.title}
           kind={TAB_LABELS[selected.from]}
           accent="#ff3ea5"
@@ -274,7 +276,7 @@ function CollabGalleryContent({
           background={modalBackground}
           header={
             <div className="pr-[3rem] -mt-[0.25rem] sm:-mt-[0.5rem] min-h-[2.5rem] flex items-center">
-              <button type="button" onClick={closeDetail} className="collab-back">
+              <button type="button" onClick={() => { playCollabClickSound(); closeDetail(); }} className="collab-back">
                 <span aria-hidden="true">←</span> Back to {TAB_LABELS[selected.from]}
               </button>
             </div>
