@@ -30,9 +30,14 @@ const COVER_OVERRIDES: Record<string, string> = {
 /** A song's cover art path: overrides, then the static song data, then
  * /covers/<TITLE>.webp with diacritics stripped (POKÉMON -> POKEMON). */
 export function songCoverPath(slug: string, title: string): string {
-  return (
-    COVER_OVERRIDES[slug] ||
-    getSongBySlug(slug)?.cover ||
-    `/covers/${title.normalize("NFD").replace(/[̀-ͯ]/g, "")}.webp`
-  );
+  const staticCover = getSongBySlug(slug)?.cover;
+  if (COVER_OVERRIDES[slug]) return COVER_OVERRIDES[slug];
+  if (staticCover) return staticCover;
+
+  // Supabase song titles are inconsistently cased, while the artwork files
+  // (including the locally synced copies of Supabase covers) use uppercase
+  // filenames. Preserve the exact title punctuation, only normalizing case
+  // and diacritics so titles such as Pokémon resolve to POKEMON.webp.
+  const filename = title.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase();
+  return `/covers/${filename}.webp`;
 }

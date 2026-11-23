@@ -48,7 +48,15 @@ export async function DELETE(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const token = new URL(request.url).searchParams.get("token") || "";
+  const url = new URL(request.url), projectId = url.searchParams.get("projectId");
+  if (projectId) {
+    const auth = await getApiUser(); if (!auth) return unauthorized(); if (!isAdminUser(auth.user)) return forbidden();
+    if (!/^[0-9a-f-]{36}$/i.test(projectId)) return NextResponse.json({ error: "Invalid project." }, { status: 400 });
+    const { data, error } = await getSupabaseAdmin().from("music_video_invites").select("id,recipient_email,expires_at").eq("project_id", projectId).is("revoked_at", null).order("created_at", { ascending: false });
+    if (error) return NextResponse.json({ error: "Unable to load project invites." }, { status: 500 });
+    return NextResponse.json({ invites: (data || []).filter(row => !row.expires_at || new Date(row.expires_at).getTime() >= Date.now()).map(row => ({ id: row.id, email: row.recipient_email, expiresAt: row.expires_at })) });
+  }
+  const token = url.searchParams.get("token") || "";
   if (!/^[A-Za-z0-9_-]{40,60}$/.test(token)) return NextResponse.json({ error: "Invite not found." }, { status: 404 });
   const hash = createHash("sha256").update(token).digest("hex"), db = getSupabaseAdmin();
   const { data: invite } = await db.from("music_video_invites").select("id,recipient_email,project_id,expires_at").eq("token_hash", hash).is("revoked_at", null).maybeSingle();
