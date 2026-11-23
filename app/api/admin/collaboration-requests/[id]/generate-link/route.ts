@@ -24,7 +24,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!row.agreement_approved_at || row.agreement_approved_version !== row.agreement_version) return NextResponse.json({ error: "Approve the current agreement version before generating a link." }, { status: 409 });
   if (!row.agreement_type || !agreementTypes.some(type => type.value === row.agreement_type)) return NextResponse.json({ error: "Choose an agreement type and save the draft first." }, { status: 409 });
   const terms = (row.agreement_terms || {}) as Record<string, unknown>;
-  const missing = validateAgreement(row.agreement_type as AgreementType, terms);
+  const missing = validateAgreement(row.agreement_type as AgreementType, terms, true);
   if (missing.length) return NextResponse.json({ error: `Resolve required agreement terms first: ${missing.join(", ")}.` }, { status: 409 });
   if (row.status !== "agreement_pending" && !canTransitionCollaborationStatus(row.status, "agreement_pending")) return NextResponse.json({ error: "Approve the collaboration request before generating a contract link." }, { status: 409 });
 

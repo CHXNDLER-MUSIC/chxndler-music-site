@@ -1,7 +1,7 @@
 export type AgreementType = "singer_feature" | "producer" | "remix" | "videographer";
 export type AgreementFieldKind = "text" | "textarea" | "number" | "percent" | "date" | "select";
 export type AgreementField = { key: string; label: string; kind?: AgreementFieldKind; options?: { value: string; label: string }[]; required?: boolean };
-export type AgreementTerms = Record<string, string | number | null>;
+export type AgreementTerms = Record<string, any>;
 
 export const agreementTypes: { value: AgreementType; label: string }[] = [
   { value: "singer_feature", label: "Singer / Feature" },
@@ -12,22 +12,22 @@ export const agreementTypes: { value: AgreementType; label: string }[] = [
 
 export const agreementTemplates: Record<AgreementType, { id: string; version: number; label: string; scopeLabel: string; deliverablesKey: string; deliverablesLabel: string; creditKey: string; creditLabel: string; defaults: Record<string, string | number>; legalTerms: string }> = {
   singer_feature: {
-    id: "chxndler-singer-feature", version: 3, label: "Singer / Feature", scopeLabel: "Contribution", deliverablesKey: "vocal_deliverables", deliverablesLabel: "Vocal recording and deliverables", creditKey: "artist_credit", creditLabel: "Artist credit",
+    id: "chxndler-singer-feature", version: 4, label: "Singer / Feature", scopeLabel: "Contribution", deliverablesKey: "vocal_deliverables", deliverablesLabel: "Vocal recording and deliverables", creditKey: "artist_credit", creditLabel: "Artist credit",
     defaults: { contribution_description: "Record and perform the agreed vocal feature.", vocal_deliverables: "Lead vocal takes, agreed doubles and ad-libs, and clean, labeled WAV stems in the agreed key and tempo.", artist_credit: "CHXNDLER feat. [Artist Name]" },
     legalTerms: "MASTER & PERFORMER PERMISSIONS\nCHXNDLER owns or controls only the master rights expressly identified in this agreement. The collaborator keeps ownership of their performance and materials unless a separate, effective written transfer is signed. The collaborator gives CHXNDLER permission to record, edit, reproduce, distribute, and promote the agreed performance as part of this named project and to seek authorized licenses for it. No recording royalty transfers master copyright. Commercial release and sync use require the permissions stated here and any required third-party approvals.\n\nROYALTY CALCULATIONS\nRecording royalties apply only to money actually received by CHXNDLER for exploitation of this master, after third-party platform, distributor, payment-processing, tax, refund, and directly attributable recoupable costs. Statements are issued annually within 90 days after year end; amounts under $25 carry forward. The collaborator may ask for reasonable supporting records once per year. Statutory performer payments collected directly by a society remain separate.\n\nSONGWRITING & PUBLISHING\nComposition ownership follows actual authorship and the writer shares expressly listed in this agreement. CHXNDLER does not own or administer the collaborator's composition share because it distributes the recording. CHXNDLER may administer only its own share and any other share it is expressly authorized to administer in writing.\n\nSYNC LICENSING\nMaster and composition permissions are separate. CHXNDLER coordinates master licensing only for rights it controls and requests collaborator approval where this agreement or law requires it. A zero additional master sync share does not waive composition income or rights. No sync use is authorized beyond the granted permissions and required approvals.\n\nCREDITS, PROMOTION & RELEASE\nCHXNDLER manages production and distribution of applicable CHXNDLER-owned recordings and uses the agreed credits, subject to platform limits. Each party may use approved project excerpts for promotion after public release. No unrelated endorsement is implied.\n\nDELIVERABLES & GENERAL\nThe collaborator will provide the listed deliverables by a mutually agreed date; the parties will confirm acceptance and reasonable revisions in writing. Each party will disclose samples, third-party materials, restrictions, or claims affecting their contribution. Changes must be accepted in writing by both parties. This agreement applies only to the named project; no rights transfer is implied beyond the permissions expressly written above. Electronic signatures and counterparts are permitted where applicable law allows." 
   },
   producer: {
-    id: "chxndler-producer", version: 3, label: "Producer", scopeLabel: "Production scope", deliverablesKey: "deliverables", deliverablesLabel: "Production deliverables", creditKey: "producer_credit", creditLabel: "Producer credit",
+    id: "chxndler-producer", version: 4, label: "Producer", scopeLabel: "Production scope", deliverablesKey: "deliverables", deliverablesLabel: "Production deliverables", creditKey: "producer_credit", creditLabel: "Producer credit",
     defaults: { production_scope: "Produce and arrange the agreed contribution for the named project.", deliverables: "Final stereo WAV, agreed stems, and project files specifically listed by the parties.", producer_credit: "Produced by [Artist Name]" },
     legalTerms: "OWNERSHIP & RIGHTS\nEach party retains its pre-existing materials. The collaborator retains rights in original production, performances, and compositions they create, except for the project-specific license expressly granted here. The collaborator grants CHXNDLER a non-exclusive, worldwide license to incorporate and use the listed deliverables in the named project and its promotion. No assignment of new production, performance, or composition rights is implied. Any ownership transfer or exclusive license must be stated in a separate signed provision.\n\nMASTER ROYALTY\nThe default master royalty is 0% unless a different percentage is expressly entered above and accepted in this agreement. This does not decide songwriting or publishing shares.\n\nSONGWRITING & PUBLISHING\nShares follow actual authorship. Any applicable songwriting split must be agreed in writing; a blank split is not a zero share. If not agreed here, the parties will use a separate signed split agreement before release.\n\nRELEASE, DISTRIBUTION & CREDIT\nCHXNDLER controls official release and distribution, subject to the license above. Credit will follow the credit field above and applicable platform limits. Project-related promotional use is permitted; unrelated endorsement is not.\n\nDELIVERABLES & ACCEPTANCE\nThe collaborator will provide the production deliverables listed above. The parties will agree on dates and reasonable revisions in writing. Third-party samples and materials must be disclosed and cleared by the party supplying them.\n\nREPRESENTATIONS\nEach party confirms authority to enter this agreement and will disclose any restrictions, third-party materials, or claims affecting their contribution.\n\nGENERAL\nChanges must be in a writing accepted by both parties. No exclusivity applies unless described under Additional Terms. If a provision is unenforceable, the remaining provisions continue to apply to the extent permitted by law. The parties may sign counterparts and electronic copies where permitted."
   },
   remix: {
-    id: "chxndler-remix", version: 3, label: "Remix", scopeLabel: "Remix scope", deliverablesKey: "remix_deliverables", deliverablesLabel: "Remix deliverables", creditKey: "remixer_credit", creditLabel: "Remixer credit",
+    id: "chxndler-remix", version: 4, label: "Remix", scopeLabel: "Remix scope", deliverablesKey: "remix_deliverables", deliverablesLabel: "Remix deliverables", creditKey: "remixer_credit", creditLabel: "Remixer credit",
     defaults: { remix_title: "[Song Title] ([Artist Name] Remix)", contribution_description: "Create the agreed remix using only authorized source materials.", remix_deliverables: "Final stereo WAV and the agreed instrumental and stem files.", remixer_credit: "[Artist Name] Remix" },
     legalTerms: "OWNERSHIP & RIGHTS\nCHXNDLER retains the original song and original master recording, including all rights owned before this collaboration. The collaborator retains rights in pre-existing and newly created material they own. CHXNDLER grants a limited, non-exclusive license to use supplied source materials solely to create and deliver the named remix. The collaborator grants CHXNDLER a non-exclusive, worldwide license to use the delivered remix in the named project and its promotion. No ownership transfer of the remix, performance, or composition is implied.\n\nMASTER ROYALTY\nThe default master royalty is 0% unless a different percentage is expressly entered above and accepted in this agreement.\n\nSONGWRITING & PUBLISHING\nRemixing alone does not set a composition share. Shares follow actual authorship. Any applicable split must be agreed in a separate signed writing; a blank split is not a zero share.\n\nRELEASE & DISTRIBUTION\nThe collaborator may not independently release the remix. CHXNDLER controls official release and distribution subject to the license and any expressly agreed royalty above.\n\nDELIVERABLES, CREDIT & ACCEPTANCE\nThe collaborator will provide the remix deliverables listed above and use the remixer credit above. The parties will agree on delivery dates and reasonable revisions in writing. Third-party samples and materials must be disclosed and cleared by the party supplying them.\n\nREPRESENTATIONS\nEach party confirms authority to grant the rights stated here and will disclose restrictions or third-party claims affecting their contribution.\n\nGENERAL\nChanges must be in a writing accepted by both parties. No exclusivity applies unless described under Additional Terms. If a provision is unenforceable, the remaining provisions continue to apply to the extent permitted by law. The parties may sign counterparts and electronic copies where permitted."
   },
   videographer: {
-    id: "chxndler-videographer", version: 3, label: "Videographer", scopeLabel: "Video concept & scope", deliverablesKey: "video_deliverables", deliverablesLabel: "Filming and editing deliverables", creditKey: "credits", creditLabel: "Video credit",
+    id: "chxndler-videographer", version: 4, label: "Videographer", scopeLabel: "Video concept & scope", deliverablesKey: "video_deliverables", deliverablesLabel: "Filming and editing deliverables", creditKey: "credits", creditLabel: "Video credit",
     defaults: { production_scope: "Develop and produce the agreed visual concept for the named song or project.", video_deliverables: "Final approved master video and the short-form edits listed below.", short_form_edits: "As agreed in writing.", revision_rounds: "2", credits: "Video by [Artist Name]", copyright_terms: "CHXNDLER owns the song, master recording, and materials CHXNDLER provides. The videographer owns the footage and video they create. The videographer gives CHXNDLER permission to use the final delivered video worldwide to release and promote this song. This permission does not transfer ownership. Any ownership transfer must be agreed in a separate document signed by both parties.", release_restrictions: "No unreleased footage or project materials may be published before CHXNDLER's written approval. Third-party materials must be disclosed and properly licensed." },
     legalTerms: "OWNERSHIP\nCHXNDLER owns the song, master recording, and materials CHXNDLER provides. The videographer owns the footage and video they create.\n\nPERMISSION TO USE THE VIDEO\nThe videographer gives CHXNDLER permission to use the final delivered video worldwide to release and promote this song. This permission does not transfer ownership of the footage or video. Any ownership transfer must be in a separate document signed by both parties. Each party keeps ownership of materials they owned before this project.\n\nFILMING & DELIVERABLES\nThe parties will use the agreed concept and scope above. The videographer will provide the listed deliverables, revisions, and deadline. Shoot dates, locations, and responsibilities will be confirmed in writing before filming.\n\nFEE & PAYMENT\nThe fee and payment terms above apply. A fee, including no fee, does not change who owns the work. Any additional expenses or work must be agreed in writing first.\n\nCREDIT & RELEASE\nCredit will follow the field above. The videographer must get CHXNDLER's written approval before publishing unreleased footage. Third-party materials must be disclosed and properly licensed.\n\nCHANGES\nChanges to this agreement must be accepted in writing by both parties."
   },
@@ -128,7 +128,7 @@ export function createAgreementDraft(input: { type: AgreementType; request: Reco
   };
   // Request facts take precedence over reusable wording; saved values are
   // applied below and therefore always win over both.
-  terms.contribution_description = request.message || request.contribution_type || template.defaults.contribution_description || "";
+    terms.contribution_description = request.agreed_contribution_description || request.contribution_type || template.defaults.contribution_description || "";
   if (request.songs?.title || request.song_title) terms.song_title = request.songs?.title || request.song_title;
   if (request.artist_credit) terms[template.creditKey] = request.artist_credit;
   for (const [key, value] of Object.entries(template.defaults)) if (!own(terms, key) || terms[key] === "") terms[key] = value;
@@ -138,18 +138,24 @@ export function createAgreementDraft(input: { type: AgreementType; request: Reco
   Object.assign(terms, {
     payment_direction: "none",
     master_royalty: Number(request.master_royalty || 0),
-    other_master_participants: "",
+    master_participants: Array.isArray(existing?.master_participants) ? existing.master_participants : String(existing?.other_master_participants || "").split("\n").map((line: string) => line.trim()).filter(Boolean).map((line: string) => { const [name, share] = line.split(/[|,\t]/); return { name: name?.trim() || "", share: Number(share?.replace(/%/g, "").trim()) || "" }; }),
     songwriting_status: "unresolved",
     songwriting_split: request.publishing_royalty === null || request.publishing_royalty === undefined ? "" : Number(request.publishing_royalty),
-    songwriting_splits: "",
+    writer_splits: Array.isArray(existing?.writer_splits) ? existing.writer_splits : ["co_writer", "negotiated"].includes(String(existing?.songwriting_status)) && Number(existing?.songwriting_split ?? existing?.publishing_split) >= 0 ? [
+      { name: "CHXNDLER", stage_name: "CHXNDLER", share: 100 - Number(existing?.songwriting_split ?? existing?.publishing_split), pro: "", publisher: "", chxndler: true },
+      { name: identity.legalName || "Collaborator", stage_name: identity.artistName || "", share: Number(existing?.songwriting_split ?? existing?.publishing_split), pro: "", publisher: "", collaborator: true },
+    ] : [
+      { name: "CHXNDLER", stage_name: "CHXNDLER", share: "", pro: "", publisher: "", chxndler: true },
+      { name: identity.legalName || "Collaborator", stage_name: identity.artistName || "", share: "", pro: "", publisher: "", collaborator: true },
+    ],
     master_sync_mode: "none",
     master_sync_share: 0,
-    primary_artist: "CHXNDLER",
-    producer: "CHXNDLER",
-    master_owner: "CHXNDLER",
-    distribution_responsibility: "Managed by CHXNDLER",
-    publishing_administration: "CHXNDLER manages its own share, plus any other shares it is expressly authorized to administer",
-    sync_coordination: "CHXNDLER, subject to required permissions",
+    primary_artist: request.primary_artist || request.songs?.primary_artist || "CHXNDLER",
+    producer: request.producer || request.songs?.producer || "CHXNDLER",
+    master_owner: request.master_owner || request.songs?.master_owner || "CHXNDLER",
+    distribution_responsibility: request.distribution_responsibility || request.songs?.distribution_responsibility || "CHXNDLER",
+    publishing_administration: request.publishing_administration || request.songs?.publishing_administration || "CHXNDLER",
+    sync_coordination: request.sync_coordination || request.songs?.sync_coordination || "CHXNDLER",
   });
   const substitutions: Record<string, string> = { "[Artist Name]": artist, "[Song Title]": String(terms.song_title || "Song") };
   for (const key of Object.keys(terms)) if (typeof terms[key] === "string") {
@@ -158,7 +164,7 @@ export function createAgreementDraft(input: { type: AgreementType; request: Reco
     terms[key] = value;
   }
   if (existing && typeof existing === "object") {
-    const fields = new Set(["template_id", "template_version", "agreement_version", "contract_html", "reviewed_pdf", ...agreementFields[type].map(field => field.key), "flat_fee", "payment_direction", "master_royalty", "other_master_participants", "master_owner", "songwriting_status", "songwriting_split", "songwriting_splits", "publishing_split", "master_sync_mode", "master_sync_share", "primary_artist", "producer", "distribution_responsibility", "publishing_administration", "sync_coordination", "payment_terms", "revenue_definition", "deductions", "accounting_frequency", "legal_terms", "additional_terms", "effective_date", "fee_option", "fee_currency"]);
+    const fields = new Set(["template_id", "template_version", "admin_template_version", "admin_template_terms", "agreement_version", "contract_html", "reviewed_pdf", ...agreementFields[type].map(field => field.key), "flat_fee", "payment_direction", "master_royalty", "other_master_participants", "master_participants", "master_owner", "songwriting_status", "songwriting_split", "songwriting_splits", "writer_splits", "publishing_split", "master_sync_mode", "master_sync_share", "advanced_master_sync_share", "primary_artist", "producer", "distribution_responsibility", "publishing_administration", "sync_coordination", "payment_terms", "revenue_definition", "deductions", "accounting_frequency", "legal_terms", "additional_terms", "effective_date", "fee_option", "fee_currency"]);
     for (const key of fields) if (own(existing, key)) terms[key] = existing[key] as string | number | null;
     if (!own(existing, "payment_direction") && Number(existing.flat_fee) > 0) terms.payment_direction = "chxndler_pays";
   }
@@ -175,29 +181,30 @@ export function createAgreementDraft(input: { type: AgreementType; request: Reco
   return terms;
 }
 
-export function validateAgreement(type: AgreementType, terms: Record<string, any>) {
+export function validateAgreement(type: AgreementType, terms: Record<string, any>, forExecution = false) {
   const missing = agreementFields[type].filter(field => field.required && (field.kind === "number"
     ? terms[field.key] === "" || terms[field.key] === null || terms[field.key] === undefined || !Number.isFinite(Number(terms[field.key])) || Number(terms[field.key]) < 0
     : !nonempty(terms[field.key]))).map(field => field.label);
   const fee = Number(terms.flat_fee);
   const master = Number(terms.master_royalty);
-  const sync = terms.master_sync_mode === "same" ? master : Number(terms.master_sync_share || 0);
   if (terms.flat_fee === "" || terms.flat_fee === null || terms.flat_fee === undefined || !Number.isFinite(fee) || fee < 0) missing.push("Valid flat fee");
   if (terms.master_royalty === "" || terms.master_royalty === null || terms.master_royalty === undefined || !Number.isFinite(master) || master < 0 || master > 100) missing.push("Master royalty from 0 to 100%");
   if (type !== "videographer") {
-    if (!["co_writer", "performance_only", "negotiated", "separate_agreement"].includes(String(terms.songwriting_status || ""))) missing.push("Songwriting status");
+    if (!["co_writer", "performance_only", "negotiated", "separate_agreement", "unresolved"].includes(String(terms.songwriting_status || ""))) missing.push("Songwriting status");
+    if (forExecution && ["unresolved", "separate_agreement", ""].includes(String(terms.songwriting_status || ""))) missing.push("Resolve songwriting ownership and registration schedule before signing or release clearance");
     if (["co_writer", "negotiated"].includes(String(terms.songwriting_status || ""))) {
-      const rawSplit = terms.songwriting_split ?? terms.publishing_split;
-      const split = Number(rawSplit);
-      if (rawSplit === "" || rawSplit === null || rawSplit === undefined || !Number.isFinite(split) || split <= 0 || split > 100) missing.push("Agreed songwriting ownership from 0 to 100%");
+      const rows = Array.isArray(terms.writer_splits) ? terms.writer_splits : [];
+      const values = rows.map((row: any) => Number(row.share));
+      const total = values.reduce((sum: number, value: number) => sum + (Number.isFinite(value) ? value : 0), 0);
+      if (rows.length < 2 || rows.some((row: any, index: number) => !nonempty(row.name) || row.share === "" || row.share === null || row.share === undefined || !Number.isFinite(values[index]) || values[index] < 0 || values[index] > 100) || Math.abs(total - 100) > 0.001) missing.push("Composition ownership shares totaling exactly 100%");
     }
   }
   if (fee > 0 && !nonempty(terms.payment_terms)) missing.push("Payment terms");
-  const participantRows = String(terms.other_master_participants || "").split(/\n/).map((line: string) => line.trim()).filter(Boolean);
-  const participants = participantRows.map((line: string) => Number(line.split(/[|,\t]/).at(-1)?.replace(/%/g, "").trim()));
+  const participantRows = Array.isArray(terms.master_participants) ? terms.master_participants : [];
+  const participants = participantRows.map((row: any) => Number(row.share));
   const participantTotal = participants.reduce((sum: number, value: number) => sum + (Number.isFinite(value) ? value : 0), 0);
-  if (participants.some((value: number) => !Number.isFinite(value) || value < 0 || value > 100) || Number(terms.master_royalty) + participantTotal > 100) missing.push("Recording royalty shares totaling no more than 100%");
-  if (!Number.isFinite(sync) || sync < 0 || sync > 100) missing.push("Master sync share from 0 to 100%");
+  if (participantRows.some((row: any, index: number) => !nonempty(row.name) || row.share === "" || row.share === null || row.share === undefined || !Number.isFinite(participants[index]) || participants[index] < 0 || participants[index] > 100) || Number(terms.master_royalty) + participantTotal > 100) missing.push("Recording royalty shares totaling no more than 100%");
+  if (terms.advanced_master_sync_share !== undefined && terms.advanced_master_sync_share !== "" && (!Number.isFinite(Number(terms.advanced_master_sync_share)) || Number(terms.advanced_master_sync_share) < 0 || Number(terms.advanced_master_sync_share) > 100)) missing.push("Advanced master-side sync share from 0 to 100%");
   if (!nonempty(terms.legal_terms)) missing.push("Standard agreement terms");
   return [...new Set(missing)];
 }
@@ -208,54 +215,43 @@ const percent = (value: unknown) => `${(Number(value) || 0).toFixed(2).replace(/
 
 export function agreementText(type: AgreementType, terms: Record<string, any>) {
   const template = agreementTemplates[type];
-  const role = template.label;
   const fee = Number(terms.flat_fee || 0);
-  const paymentDirection = terms.payment_direction === "chxndler_pays" ? "CHXNDLER pays the collaborator" : terms.payment_direction === "collaborator_pays" ? "The collaborator pays CHXNDLER" : "No upfront payment";
-  const syncShare = terms.master_sync_mode === "same" ? Number(terms.master_royalty || 0) : terms.master_sync_mode === "custom" ? Number(terms.master_sync_share || 0) : 0;
-  const sections = [
-    `CHXNDLER COLLABORATION AGREEMENT · ${role.toUpperCase()}`,
-    "PREVIEW FOR REVIEW · This agreement is not signed or binding until executed by all parties.",
-    `Agreement version ${terms.agreement_version || "Draft"} · Template ${asText(terms.template_id, template.id)} v${terms.template_version || template.version}`,
-    `Effective date: ${asText(terms.effective_date)}`,
+  const direction = terms.payment_direction === "chxndler_pays" ? "CHXNDLER pays the collaborator" : terms.payment_direction === "collaborator_pays" ? "The collaborator pays CHXNDLER" : "No upfront payment";
+  const payment = fee && direction !== "No upfront payment" ? `${direction}: ${money(fee)}. ${asText(terms.payment_terms, "Due within 30 days after invoice and acceptance of deliverables.")}` : "No upfront payment.";
+  const writerRows = Array.isArray(terms.writer_splits) ? terms.writer_splits.map((row: any) => `${asText(row.name)}${nonempty(row.stage_name) ? ` (${row.stage_name})` : ""} — ${percent(row.share)}${nonempty(row.pro) ? ` · PRO: ${row.pro}` : ""}${nonempty(row.publisher) ? ` · Publisher/administrator: ${row.publisher}` : ""}`) : [];
+  const masterRows = Array.isArray(terms.master_participants) ? terms.master_participants.map((row: any) => `${asText(row.name)} — ${percent(row.share)}`) : String(terms.other_master_participants || "").split("\n").filter(Boolean);
+  const writers = terms.songwriting_status === "performance_only" ? "The collaborator reports no original lyric or music contribution. This does not waive rights arising from actual authorship; any authorship must be accurately documented and registered before release." : terms.songwriting_status === "co_writer" || terms.songwriting_status === "negotiated" ? `Agreed composition ownership schedule:\n${writerRows.join("\n")}\n\nOwnership reflects actual authorship. Writer ownership is distinct from publisher or administrator royalties. CHXNDLER administers its own shares and others only when expressly authorized. Distribution does not transfer or grant control of collaborator publishing interests. The agreed schedule and optional registration details will be accurately registered with relevant organizations and administrators.` : "Songwriting ownership is not yet determined. No composition share is waived, transferred, or presumed. The parties must agree and sign an accurate ownership schedule before execution and release clearance.";
+  return [
+    `CHXNDLER COLLABORATION AGREEMENT · ${template.label.toUpperCase()}`,
+    `Agreement version ${terms.agreement_version || "Draft"} · Template ${asText(terms.template_id, template.id)} v${terms.template_version || template.version} · Admin terms ${asText(terms.admin_template_version, "not versioned")}`,
+    `Effective date: ${asText(terms.effective_date, "Upon signature by all parties")}`,
+    `Song: ${asText(terms.song_title)} · Collaborator: ${asText(terms.collaborator_legal_name)}${terms.collaborator_artist_name ? ` (${terms.collaborator_artist_name})` : ""}`,
     "",
-    "1. PARTIES & PROJECT",
-    `CHXNDLER: ${asText(terms.admin_legal_name, "Chandler Pierce")} professionally known as ${asText(terms.admin_artist_name, "CHXNDLER")}.`,
-    `Collaborator: ${asText(terms.collaborator_legal_name)}${nonempty(terms.collaborator_artist_name) ? `, professionally known as ${terms.collaborator_artist_name}` : ""}.`,
-    `Song / project: ${asText(terms.song_title)}.`,
+    "1. CONTRIBUTION & DELIVERABLES",
+    `${template.scopeLabel}: ${asText(terms.contribution_description)}\n${template.deliverablesLabel}: ${asText(terms[template.deliverablesKey])}\nThe parties will confirm delivery timing, acceptance, and reasonable revisions in writing. Deliverables will be clean and labeled in the agreed format. Each party will disclose third-party materials and restrictions in their contribution.`,
     "",
-    "2. CONTRIBUTION & DELIVERABLES",
-    `${template.scopeLabel}: ${asText(terms.contribution_description)}${type === "videographer" ? ` ${asText(terms.production_scope, "")}` : ""}`.trim(),
-    `${template.deliverablesLabel}: ${asText(terms[template.deliverablesKey])}`,
-    ...(type === "videographer" ? [`Filming dates: ${asText(terms.shoot_dates)}.`, `Locations: ${asText(terms.shoot_locations)}.`, `Included revision rounds: ${asText(terms.revision_rounds)}.`, `Delivery deadline: ${asText(terms.delivery_deadline)}.`] : []),
-    "The parties will confirm delivery timing and acceptance or reasonable revisions in writing.",
+    "2. PAYMENT & RECORDING ROYALTIES",
+    `${payment}\nCollaborator recording royalty: ${percent(terms.master_royalty)} of Net Master Receipts actually received by CHXNDLER from this master, including streaming, downloads, physical sales, and master-side sync license fees. Net Master Receipts means those receipts less only third-party distributor/platform commissions, refunds, chargebacks, collected sales taxes, and payment processing fees actually charged. No production cost, advance, or other cost is recouped unless expressly stated in this signed agreement. Additional allocated recording shares: ${masterRows.join("; ") || "None"}. CHXNDLER receives the unallocated balance. Recording shares may not exceed 100%. This arrangement is separate from composition income and statutory featured-performer royalties.${nonempty(terms.admin_template_terms?.royalties) ? `\n\nAdministrator template — royalties: ${terms.admin_template_terms.royalties}` : ""}`,
     "",
-    "3. PAYMENT & RECORDING ROYALTIES",
-    `Payment direction: ${paymentDirection}. Amount: ${paymentDirection === "No upfront payment" || fee === 0 ? "$0" : money(fee)}. ${fee > 0 ? asText(terms.payment_terms, "Due within 30 days after invoice and acceptance of deliverables") + "." : ""}`,
-    `Collaborator recording royalty: ${percent(terms.master_royalty)} of defined net receipts actually received by CHXNDLER for this master after distributor/platform fees, refunds, taxes, payment processing, and directly attributable recoupable costs. Other participants: ${asText(terms.other_master_participants, "None listed")}. Total participant shares may not exceed 100%. Statements are provided annually within 90 days after year end; balances under $25 carry forward, and reasonable records may be requested once each year. A recording royalty does not transfer master copyright.`,
+    "3. SONGWRITING & PUBLISHING",
+    writers,
     "",
-    "4. SONGWRITING & PUBLISHING",
-    terms.songwriting_status === "performance_only" ? "The collaborator is credited for a performance only; no songwriting ownership is agreed under this agreement because no songwriting contribution is confirmed. Actual authorship rights are not waived and must be accurately documented in a signed writing before release if applicable." : ["co_writer", "negotiated"].includes(String(terms.songwriting_status)) ? `The collaborator's agreed composition ownership is ${percent(terms.songwriting_split ?? terms.publishing_split)}. This percentage must reflect actual authorship and agreed rights. Writer shares: ${asText(terms.songwriting_splits, "No separate writer list entered")}. CHXNDLER administers only its own share and any other shares it is expressly authorized to administer in writing; distribution of the recording does not grant publishing ownership or administration rights.` : "No new songwriting share or rights transfer is created by this agreement. Each actual writer keeps their composition rights unless an accurate split is expressly agreed in a separate signed writing.",
+    "4. MASTER RECORDING, PERMISSIONS & SYNC",
+    `CHXNDLER owns or controls the existing master. To the extent legally assignable, the collaborator hereby assigns to CHXNDLER all rights, title, and interest in the newly recorded performance and contribution as embodied in the completed master. Where an assignment is not legally effective, the collaborator grants an exclusive, perpetual, worldwide right to exploit that contribution as part of the completed master and its authorized promotion. The collaborator authorizes recording, editing, reproduction, distribution, and promotion of the agreed performance in this song. The recording royalty above includes collaborator participation in master-side sync income; an alternate master-side sync share applies only if expressly entered in Advanced Terms${terms.advanced_master_sync_share !== undefined && terms.advanced_master_sync_share !== "" ? `: ${percent(terms.advanced_master_sync_share)} of net master-side sync receipts calculated on the same basis` : ""}. Composition-side sync is separate and requires authorization from relevant composition rightsholders. CHXNDLER coordinates sync only for rights it controls and after required permissions. No statutory performer royalty is waived.${nonempty(terms.admin_template_terms?.ownership) ? `\n\nAdministrator template — ownership: ${terms.admin_template_terms.ownership}` : ""}`,
     "",
-    "5. MASTER RIGHTS, PERFORMANCE PERMISSIONS & SYNC",
-    `Master owner: ${asText(terms.master_owner, "CHXNDLER")}. A royalty does not transfer master copyright. The collaborator retains ownership of their performance and new material unless an effective written transfer is signed. The collaborator permits use of the agreed contribution in this project and authorized promotion, and permits sync licensing only to the extent of rights they control and approvals required from them are given. Additional master sync share: ${percent(syncShare)}. Composition licensing is separate; zero additional master sync share does not waive composition rights, composition income, or applicable statutory performer payments. CHXNDLER coordinates licensing only for rights it controls and permissions it has received.`,
+    "5. PRODUCTION, DISTRIBUTION & CREDITS",
+    `Primary artist: ${asText(terms.primary_artist, "CHXNDLER")} · Producer: ${asText(terms.producer, "CHXNDLER")} · Master rights holder: ${asText(terms.master_owner, "CHXNDLER")} · Official distribution: ${asText(terms.distribution_responsibility, "CHXNDLER")} · Publishing administration: ${asText(terms.publishing_administration, "CHXNDLER")} · Sync coordination: ${asText(terms.sync_coordination, "CHXNDLER")}\nAgreed credit: ${template.creditLabel}: ${asText(terms[template.creditKey])}. CHXNDLER controls official distribution of the agreed recording. The collaborator will not independently distribute or release the contribution or recording. Approved excerpts and agreed credits may be used to promote the released song; neither party may imply unrelated endorsement. Distribution does not transfer composition ownership.${nonempty(terms.admin_template_terms?.credits) ? `\n\nAdministrator template — credits: ${terms.admin_template_terms.credits}` : ""}${nonempty(terms.admin_template_terms?.release_rights) ? `\n\nAdministrator template — release rights: ${terms.admin_template_terms.release_rights}` : ""}`,
     "",
-    "6. PRODUCTION, RELEASE & CREDITS",
-    `Primary artist: ${asText(terms.primary_artist, "CHXNDLER")}. Producer: ${asText(terms.producer, "CHXNDLER")}. Distribution: ${asText(terms.distribution_responsibility, "Managed by CHXNDLER")}. Publishing administration: ${asText(terms.publishing_administration)}. Sync coordination: ${asText(terms.sync_coordination)}. CHXNDLER manages production and distribution of applicable CHXNDLER-owned recordings. Agreed credit: ${template.creditLabel}: ${asText(terms[template.creditKey])}. Project promotion may use the agreed credit after release; no unrelated endorsement is implied.`,
+    "6. STATEMENTS & PAYMENTS",
+    "Statements are provided annually within 90 days after calendar year end. Payment is due with the statement; amounts below $25 carry forward. The collaborator may dispute a statement in writing within 24 months and request one reasonable records review each year on 30 days notice. Confirmed errors will be corrected in the next statement or within 30 days. SoundExchange and other statutory featured-performer royalties are separate from contractual distributor/master royalties. For multiple featured artists, a separate SoundExchange allocation may need to be documented. Each party handles its own taxes.",
     "",
-    "7. STATEMENTS & STATUTORY PERFORMER PAYMENTS",
-    "Annual statements are provided within 90 days after year end and amounts under $25 carry forward unless otherwise stated. Eligible statutory or collecting-society performer payments, including applicable SoundExchange payments, are separate and are not replaced by the recording royalty stated here. Each party handles their own tax reporting.",
-    "",
-    "8. TERM, TERMINATION & GENERAL",
-    `This agreement covers only the named project. Project permissions apply only as stated above. Either party may end work not yet delivered by written notice; payment remains due for accepted work completed to that point. ${asText(terms.termination_terms, "No additional termination terms")}. Each party confirms authority to grant the permissions they expressly give and will disclose samples, third-party materials, restrictions, or claims affecting their contribution. Changes must be accepted in writing by both parties. No broader rights transfer is implied. Electronic signatures and counterparts are permitted where applicable. If a provision cannot be enforced, the remainder continues as allowed by law.`,
-    "",
-    ...(nonempty(terms.additional_terms) ? ["9. ADDITIONAL TERMS", String(terms.additional_terms).trim(), ""] : []),
+    "7. DURATION & GENERAL TERMS",
+    `This agreement applies only to ${asText(terms.song_title)} and the contribution described above. Rights for authorized released uses continue for exploitation of that recording. Either party may end undelivered work by written notice; payment for accepted completed work remains due. Uses outside the song require separate written agreement. Each party confirms authority to grant the rights stated and will disclose third-party restrictions or claims. Changes require a writing signed by both parties. Electronic signatures and counterparts are permitted where applicable. If a provision is unenforceable, the rest continues as allowed by law.${nonempty(terms.additional_terms) ? `\n\nAdvanced terms: ${String(terms.additional_terms).trim()}` : ""}`,
     "",
     "SIGNATURES",
-    "By signing, each party agrees to the terms above.",
-    `${asText(terms.admin_legal_name, "Chandler Pierce")} / CHXNDLER: __________________________________  Date: ______________`,
-    `${asText(terms.collaborator_legal_name, "Collaborator")}: __________________________________  Date: ______________`,
-  ];
-  return sections.join("\n").replace(/\n{3,}/g, "\n\n");
+    `${asText(terms.admin_legal_name, "Chandler Pierce")} / CHXNDLER: ______________________________ Date: __________`,
+    `${asText(terms.collaborator_legal_name, "Collaborator")}: ______________________________ Date: __________`,
+  ].join("\n").replace(/\n{3,}/g, "\n\n");
 }
 
 const escapeHtml = (value: string) => value.replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!);

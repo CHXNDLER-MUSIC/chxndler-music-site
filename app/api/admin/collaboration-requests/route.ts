@@ -5,6 +5,14 @@ import { canMarkAgreementSigned, canTransitionCollaborationStatus } from "@/lib/
 import { agreementHtml, agreementTemplates, validateAgreement, type AgreementType } from "@/lib/collaborationAgreements";
 
 const AGREEMENT_BUCKET = "collaboration-agreements";
+function safeAgreementValue(value: unknown, depth = 0): boolean {
+  if (depth > 4) return false;
+  if (value === null || typeof value === "string") return typeof value !== "string" || value.length <= 12000;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (Array.isArray(value)) return value.length <= 100 && value.every(item => safeAgreementValue(item, depth + 1));
+  if (value && typeof value === "object") return Object.entries(value as Record<string, unknown>).length <= 30 && Object.entries(value as Record<string, unknown>).every(([key, item]) => key.length <= 80 && safeAgreementValue(item, depth + 1));
+  return false;
+}
 
 export async function GET(request: Request) {
   const auth = await getApiUser(); if (!auth) return unauthorized(); if (!isAdminUser(auth.user)) return forbidden();
@@ -57,7 +65,7 @@ export async function PATCH(request: Request) {
   if (body.agreement_type !== undefined) update.agreement_type = requestedType;
   if (body.agreement !== undefined) {
     if (!body.agreement || typeof body.agreement !== "object" || Array.isArray(body.agreement)) return NextResponse.json({ error: "Agreement terms must be an object." }, { status: 400 });
-    if (Object.values(body.agreement as Record<string, unknown>).some(value => !(typeof value === "string" || typeof value === "number" || value === null) || (typeof value === "string" && value.length > 12000))) return NextResponse.json({ error: "Agreement fields must be text or numbers under 12,000 characters." }, { status: 400 });
+    if (Object.values(body.agreement as Record<string, unknown>).some(value => !safeAgreementValue(value))) return NextResponse.json({ error: "Agreement fields must be valid text, numbers, or structured rows." }, { status: 400 });
     if (!agreementTemplates[requestedType as AgreementType]) return NextResponse.json({ error: "Choose a valid agreement type." }, { status: 400 });
     const version = agreementChanged ? (current.agreement_version || 0) + 1 : (current.agreement_version || 1);
     const template = agreementTemplates[requestedType as AgreementType];
@@ -66,6 +74,11 @@ export async function PATCH(request: Request) {
     const templateId = !changingType ? savedTerms.template_id || current.agreement_template_id || body.agreement.template_id || template.id : template.id;
     const templateVersion = !changingType ? savedTerms.template_version || current.agreement_template_version || body.agreement.template_version || template.version : template.version;
     const terms = { ...body.agreement, agreement_type: requestedType, agreement_version: version, template_id: templateId, template_version: templateVersion } as Record<string, any>;
+    if (terms.songwriting_status === "co_writer" && Array.isArray(terms.writer_splits)) {
+      const collaboratorShare = terms.writer_splits.find((row: any) => row.collaborator || row.name === terms.collaborator_legal_name || row.stage_name === terms.collaborator_artist_name)?.share;
+      terms.songwriting_split = collaboratorShare === "" || collaboratorShare === undefined ? "" : Number(collaboratorShare);
+      terms.publishing_split = terms.songwriting_split;
+    }
     if (agreementChanged) terms.reviewed_pdf = "false";
     terms.contract_html = agreementHtml(requestedType as AgreementType, terms);
     update.agreement_terms = terms;
@@ -84,7 +97,7 @@ export async function PATCH(request: Request) {
   if (body.approve_agreement === true) {
     const type = requestedType as AgreementType;
     const terms = (update.agreement_terms || current.agreement_terms || {}) as Record<string, any>;
-    const missing = validateAgreement(type, terms);
+    const missing = validateAgreement(type, terms, true);
     if (missing.length) return NextResponse.json({ error: `Complete these essential terms before approval: ${missing.join(", ")}.` }, { status: 400 });
     update.agreement_approved_at = new Date().toISOString();
     update.agreement_approved_by = auth.user.email || "admin";
