@@ -43,7 +43,10 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
     let active = true;
     fetch("/api/admin/collaboration-terms", { cache: "no-store" }).then(response => response.ok ? response.json() : null).then(data => {
       const version = (data?.versions || []).find((item: any) => item.active);
-      if (active && version) setTerms(current => ({ ...current, admin_template_version: version.version, admin_template_terms: version.terms }));
+      if (active && version) {
+        setTerms(current => current.admin_template_version === version.version ? current : { ...current, admin_template_version: version.version, admin_template_terms: version.terms });
+        setDirty(true);
+      }
     }).catch(() => {});
     return () => { active = false; };
   }, []);
@@ -59,7 +62,7 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
   const sendEnabled = !busy && !dirty && executionIssues.length === 0 && previewIsCurrent && reviewConfirmed && currentApproval && (request.status === "approved" || request.status === "agreement_pending") && !sent && !signed;
   const template = agreementTemplates[agreementType];
 
-  function change(key: string, value: string | number) {
+  function change(key: string, value: any) {
     setTerms(current => {
       const next = { ...current, [key]: value };
       if (key === "flat_fee") {
