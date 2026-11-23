@@ -162,7 +162,7 @@ export async function GET() {
       if (!row.first_name && !row.last_name && !row.professional_email) continue;
       rows.push(makeContact({ id: `pitch:${row.import_lead_key}`, name: [row.first_name, row.last_name].filter(Boolean).join(" "), email: row.professional_email, venue: row.organization, category: row.category || "Sync licensing", role: row.job_role || row.lead_type || row.submission_route, source: "Sync licensing" }));
     }
-    for (const row of profiles) rows.push(makeContact({ id: `profile:${row.id}`, name: row.name, email: row.email, phone: row.phone, category: "Site profile", role: row.profile_complete ? "Profile complete" : "Profile in progress", profile: true, source: "Site profiles" }));
+    for (const row of profiles) rows.push(makeContact({ id: `profile:${row.id}`, name: row.name, email: row.email, phone: row.phone, category: "Site profile", role: row.profile_complete ? "Profile complete" : "Profile in progress", profile: Boolean(row.profile_complete), site_profile_status: row.profile_complete ? "has_profile" : "no_profile", source: "Site profiles" }));
     for (const row of guests) rows.push(makeContact({ id: `guest:${row.guest_id}`, name: row.username || "Guest profile", category: "Guest profile", role: "Website guest identity", source: "Guest profiles", identityKeys: [`guest:${row.guest_id}`] }));
     for (const row of gigs) {
       if (!row.first_name && !row.last_name && !row.contact_email && !row.phone) continue;
