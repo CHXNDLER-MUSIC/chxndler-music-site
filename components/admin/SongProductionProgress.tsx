@@ -101,6 +101,9 @@ export default function SongProductionProgress({ song, onSaved, compact = false 
   if (compact) return <div>
     <div className="flex items-center gap-1 sm:gap-2" aria-label={`Music production: ${completedStages} of 3 milestones complete`}>
       {DISPLAY_MILESTONES.map(key => <button key={key} type="button" disabled={savingMilestone !== null} aria-pressed={visibleMilestones[key]} aria-label={`${PRODUCTION_MILESTONE_LABELS[key]} ${visibleMilestones[key] ? "complete" : "incomplete"} for ${song.title}. Click to toggle.`} title={`${PRODUCTION_MILESTONE_LABELS[key]} · ${visibleMilestones[key] ? "Complete" : "Incomplete"} · Click to toggle`} onClick={() => void toggleMilestone(key)} className="rounded-md transition hover:bg-white/[.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white disabled:opacity-50"><ProductionStageIcon stage={milestoneStage[key]} complete={visibleMilestones[key]} className="h-6 w-6 sm:h-7 sm:w-7" /></button>)}
+      <button type="button" disabled={savingMilestone !== null} aria-pressed={instrumental} aria-label={`Instrumental ${instrumental ? "complete" : "incomplete"} for ${song.title}. Click to toggle.`} title={`Instrumental · ${instrumental ? "Complete" : "Incomplete"} · Click to toggle`} onClick={() => void toggleInstrumental()} className="rounded-md transition hover:bg-white/[.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white disabled:opacity-50">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`h-6 w-6 shrink-0 sm:h-7 sm:w-7 ${instrumental ? "opacity-100" : "opacity-30"}`}><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
+      </button>
     </div>
     {error && <p role="alert" className="mt-1 max-w-52 text-[.62rem] leading-tight text-rose-200">{error}</p>}
   </div>;

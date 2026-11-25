@@ -7,6 +7,7 @@ export default function CollabInviteExperience({ token, name, personalMessage = 
   const router = useRouter();
   const soundRef = useRef<HTMLAudioElement | null>(null);
   const [entering, setEntering] = useState(false);
+  const [warpActive, setWarpActive] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -31,14 +32,17 @@ export default function CollabInviteExperience({ token, name, personalMessage = 
       const response = await fetch(`/api/collab/invite/${encodeURIComponent(token)}`, { method: "POST", cache: "no-store" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "This invitation is no longer active.");
-      router.replace("/collab");
+      setWarpActive(true);
+      window.setTimeout(() => router.replace("/collab"), 2800);
     } catch (cause) {
       setEntering(false);
+      setWarpActive(false);
       setError(cause instanceof Error ? cause.message : "Unable to enter this collaboration space.");
     }
   }
 
-  return <main style={{ background: "#050505" }} className={`collab-invite-screen ${entering ? "is-entering" : ""}`}>
+  return <main style={{ background: "#050505" }} className={`collab-invite-screen ${entering && !warpActive ? "is-entering" : ""}`}>
+    {warpActive && <video autoPlay muted playsInline aria-hidden="true" className="collab-invite-warp"><source src="/skies/lightspeed.mp4" type="video/mp4" /></video>}
     <div className="collab-invite-content">
       <img className="collab-invite-wordmark" src="/elements/logo.webp" alt="CHXNDLER" />
       <h1><span className="collab-invite-name">{name}</span>, let&apos;s create something unforgettable.</h1>
@@ -51,7 +55,8 @@ export default function CollabInviteExperience({ token, name, personalMessage = 
     </div>
     <style>{`
       .collab-invite-screen{position:fixed;inset:0;z-index:9999;min-height:100svh;min-width:100%;display:grid;place-items:center;overflow:auto;padding:1.5rem 1.25rem;color:#fff;text-align:center;transition:opacity .32s ease,transform .4s cubic-bezier(.2,.8,.2,1);}
-      .collab-invite-screen.is-entering{opacity:0;transform:scale(1.035)}
+      .collab-invite-screen.is-entering .collab-invite-content{opacity:0;transform:scale(1.035);transition:opacity .32s ease,transform .4s cubic-bezier(.2,.8,.2,1)}
+      .collab-invite-warp{position:fixed;inset:0;z-index:10;width:100%;height:100%;object-fit:cover;pointer-events:none;animation:collab-warp-in .2s ease-out both}
       .collab-invite-content{width:min(100%,38rem);display:flex;flex-direction:column;align-items:center}
       .collab-invite-wordmark{width:clamp(12rem,48vw,19rem);height:clamp(4rem,15vw,6.25rem);object-fit:contain;margin:0 auto 1rem;filter:drop-shadow(0 0 12px rgba(253,82,175,.36)) drop-shadow(0 0 30px rgba(253,82,175,.16))}
       .collab-invite-content h1{max-width:35rem;margin:0;font-size:clamp(2rem,7vw,3.4rem);font-weight:700;letter-spacing:-.045em;line-height:1.08}
@@ -66,7 +71,8 @@ export default function CollabInviteExperience({ token, name, personalMessage = 
       .collab-invite-error{margin:1.25rem 0 0;color:#ff9bc9;font-size:.82rem}
       @keyframes collab-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
       @keyframes collab-glow{0%,100%{opacity:.1;transform:scale(.85)}50%{opacity:.2;transform:scale(1.08)}}
-      @media(prefers-reduced-motion:reduce){.collab-invite-screen,.collab-invite-enter,.collab-invite-glow{animation:none;transition-duration:.01ms}}
+      @keyframes collab-warp-in{from{opacity:0}to{opacity:1}}
+      @media(prefers-reduced-motion:reduce){.collab-invite-screen,.collab-invite-enter,.collab-invite-glow,.collab-invite-warp{animation:none;transition-duration:.01ms}}
     `}</style>
   </main>;
 }

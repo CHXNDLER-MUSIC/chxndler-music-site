@@ -68,7 +68,7 @@ export default function AdminTabs() {
   return <>
     <div className="relative mb-6 flex items-center justify-end">
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"><BrandNavigation /></div>
-      <nav aria-label="Music admin" className="admin-tabs relative flex justify-end" ref={moreRoot}>
+      <nav aria-label="Music admin" className="admin-tabs relative z-[120] flex justify-end" ref={moreRoot}>
       <button type="button" aria-label="Open admin tabs" aria-expanded={moreOpen} aria-haspopup="menu" onClick={() => setMoreOpen(value => !value)} className="admin-menu-trigger flex h-16 w-16 items-center justify-center rounded-xl text-[#fd52af] transition hover:text-[#ff8bc4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#fd52af]">
         <svg aria-hidden="true" viewBox="0 0 28 28" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M3 6h22M3 14h22M3 22h22"/></svg>
       </button>

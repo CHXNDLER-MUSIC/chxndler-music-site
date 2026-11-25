@@ -256,7 +256,7 @@ export default function SongTracker() {
       <button type="button" onClick={() => setAdding(value => !value)} className="rounded-xl bg-[#FD52AF] px-4 py-3 text-sm font-extrabold text-[#170d14] shadow-[0_8px_28px_rgba(253,82,175,.16)] transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">{adding ? "Cancel" : "+ Add Song"}</button>
     </header>
 
-    <section aria-label="Songs by production stage" className="mb-5 grid grid-cols-5 gap-2">
+    <section aria-label="Songs by production stage" className="mb-5 grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
       {[{ key: "all", label: "All songs", color: "#E8E8EF", count: songs.length },
         { key: "unset", label: "Not Set", color: "#777783", count: songs.filter(song => productionCategory(song) === "unset").length },
         { key: "wrote", label: "WROTE", color: "#A78BFA", count: songs.filter(song => matchesProductionFilter(song, "wrote")).length },
