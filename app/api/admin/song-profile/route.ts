@@ -67,7 +67,7 @@ export async function GET(request: Request) {
     spotifyCanvas: stages.spotify_canvas === true,
     sky: stages.sky === true,
     chxndlerCard: savedOrDerived("chxndler_card", (brandCards || []).some(item => String(item.song_title || "").trim().toLowerCase() === song.title.trim().toLowerCase())),
-    musicVideo: savedOrDerived("music_video_released", !!song.youtube_music_video_url || !!video),
+    musicVideo: savedOrDerived("music_video_released", !!song.youtube_music_video_url),
     contentReleased: savedOrDerived("content_released", (contentItems || []).some(item => item.status === "Published")),
     playlistPitched: savedOrDerived("playlist_pitch", (outreach || []).some(item => /playlist/i.test(item.category || "") && ["Contacted", "Sent", "Follow-up", "Interested", "Won", "Accepted"].includes(item.status || ""))),
     syncPlacement: savedOrDerived("sync_placement", (placements || []).length > 0),

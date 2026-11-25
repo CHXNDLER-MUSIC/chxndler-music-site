@@ -11,6 +11,7 @@ export default function CollaborationInviteManager() {
   const [inviteeEmail, setInviteeEmail] = useState("");
   const [invites, setInvites] = useState<Invite[]>([]);
   const [link, setLink] = useState("");
+  const [inviteLinks, setInviteLinks] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -29,7 +30,7 @@ export default function CollaborationInviteManager() {
       const response = await fetch("/api/admin/collaboration-invites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayName, artistName, firstName, lastName, inviteeEmail, scope: "catalog", expiryDays: "30" }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not generate invitation.");
-      setArtistName(""); setFirstName(""); setLastName(""); setInviteeEmail(""); setLink(data.link); setMessage("Personal invitation link generated. Copy it now; the secure token is shown only once."); await load();
+      setArtistName(""); setFirstName(""); setLastName(""); setInviteeEmail(""); setLink(data.link); if (data.invitation?.id) setInviteLinks(current => ({ ...current, [data.invitation.id]: data.link })); setMessage("Personal invitation link generated. Copy it now; the secure token is shown only once."); await load();
     } catch (error) { setMessage(error instanceof Error ? error.message : "Could not generate invitation."); }
     finally { setBusy(false); }
   }
@@ -53,7 +54,7 @@ export default function CollaborationInviteManager() {
       const response = await fetch("/api/admin/collaboration-invites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayName: name, songId: invite.song_id, scope: invite.invite_scope || (invite.song_id ? "song" : "catalog"), inviteeEmail: invite.invitee_email || "", expiryDays: "30" }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not regenerate invitation.");
-      setLink(data.link);
+      setLink(data.link); setInviteLinks(current => ({ ...current, [invite.id]: data.link }));
       try { await navigator.clipboard.writeText(data.link); setMessage("The previous link has been replaced and the new link was copied."); }
       catch { setMessage("The previous link has been replaced. Copy the new link below."); }
       await load();
@@ -76,6 +77,6 @@ export default function CollaborationInviteManager() {
     </form>
     {link && <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-black/30 p-3"><a href={link} target="_blank" rel="noreferrer" className="min-w-0 flex-1 break-all text-xs text-[#ff80c4]">{link}</a><button onClick={() => void navigator.clipboard.writeText(link).then(() => setMessage("Invitation link copied."))} className="rounded-md border border-white/20 px-3 py-2 text-xs">Copy link</button></div>}
     {message && <p role="status" className="mt-3 text-xs text-white/65">{message}</p>}
-    <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[48rem] text-left text-xs"><thead><tr className="border-b border-white/10 text-white/40"><th className="p-2">Creative / Display Name</th><th className="p-2">Song</th><th className="p-2">Status</th><th className="p-2">Last Accessed</th><th className="p-2">Requests</th><th className="p-2">Link</th><th className="p-2"></th></tr></thead><tbody>{invites.map(invite => <tr key={invite.id} className="border-b border-white/5"><td className="p-2 font-semibold">{invite.display_name}</td><td className="p-2 text-white/60">{Array.isArray(invite.songs) ? invite.songs[0]?.title : invite.songs?.title || "—"}</td><td className={`p-2 ${invite.status === "Active" ? "text-emerald-300" : "text-white/35"}`}>{invite.status}</td><td className="p-2 text-white/55">{invite.last_accessed_at ? new Date(invite.last_accessed_at).toLocaleString() : "Not accessed"}</td><td className="p-2 text-white/55">{invite.requests_count}</td><td className="p-2"><button disabled={busy || !invite.song_id} onClick={() => void regenerate(invite)} className="text-[#ff80c4]">{invite.status === "Active" ? "Regenerate + copy" : "Regenerate"}</button></td><td className="p-2">{invite.status === "Active" && <button disabled={busy} onClick={() => void revoke(invite)} className="text-red-300">Revoke</button>}</td></tr>)}</tbody></table>{invites.length === 0 && <p className="p-4 text-center text-xs text-white/40">No invitations yet.</p>}</div>
+    <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[56rem] text-left text-xs"><thead><tr className="border-b border-white/10 text-white/40"><th className="p-2">Creative / Display Name</th><th className="p-2">Song</th><th className="p-2">Status</th><th className="p-2">Last Accessed</th><th className="p-2">Requests</th><th className="p-2">Link</th><th className="p-2"></th></tr></thead><tbody>{invites.map(invite => <tr key={invite.id} className="border-b border-white/5"><td className="p-2 font-semibold">{invite.display_name}</td><td className="p-2 text-white/60">{Array.isArray(invite.songs) ? invite.songs[0]?.title : invite.songs?.title || "—"}</td><td className={`p-2 ${invite.status === "Active" ? "text-emerald-300" : "text-white/35"}`}>{invite.status}</td><td className="p-2 text-white/55">{invite.last_accessed_at ? new Date(invite.last_accessed_at).toLocaleString() : "Not accessed"}</td><td className="p-2 text-white/55">{invite.requests_count}</td><td className="p-2">{inviteLinks[invite.id] ? <a href={inviteLinks[invite.id]} target="_blank" rel="noreferrer" className="break-all text-[#ff80c4]">Open link ↗</a> : <button disabled={busy} onClick={() => void regenerate(invite)} className="text-[#ff80c4]">{invite.status === "Active" ? "Generate + copy link" : "Regenerate link"}</button>}</td><td className="p-2">{invite.status === "Active" && <button disabled={busy} onClick={() => void revoke(invite)} className="text-red-300">Revoke</button>}</td></tr>)}</tbody></table>{invites.length === 0 && <p className="p-4 text-center text-xs text-white/40">No invitations yet.</p>}</div>
   </details>;
 }

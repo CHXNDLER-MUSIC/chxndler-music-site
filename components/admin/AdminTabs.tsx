@@ -7,6 +7,7 @@ import TasksTab from "@/components/admin/TasksTab";
 import OverviewTab from "@/components/admin/OverviewTab";
 import OutreachWorkspace from "@/components/admin/OutreachWorkspace";
 import ContentTab from "@/components/admin/ContentTab";
+import BrandNavigation from "@/components/admin/BrandNavigation";
 import { sfx } from "@/lib/sfx";
 
 type Tab = "overview" | "songs" | "content" | "outreach" | "tasks" | "finance";
@@ -65,11 +66,11 @@ export default function AdminTabs() {
     window.history.pushState(null, "", `${window.location.pathname}?${params.toString()}`);
   };
   return <>
-    <div className="mb-6 flex items-center justify-between">
-      <p className="text-sm font-semibold text-white/50">{new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "America/New_York" }).format(new Date())}</p>
+    <div className="relative mb-6 flex items-center justify-end">
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"><BrandNavigation /></div>
       <nav aria-label="Music admin" className="admin-tabs relative flex justify-end" ref={moreRoot}>
-      <button type="button" aria-label="Open admin tabs" aria-expanded={moreOpen} aria-haspopup="menu" onClick={() => setMoreOpen(value => !value)} className="admin-menu-trigger rounded-xl border border-white/10 bg-[#111116] p-3 text-white/75 transition hover:border-white/25 hover:text-white">
-        <svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <button type="button" aria-label="Open admin tabs" aria-expanded={moreOpen} aria-haspopup="menu" onClick={() => setMoreOpen(value => !value)} className="admin-menu-trigger flex h-16 w-16 items-center justify-center rounded-xl text-[#fd52af] transition hover:text-[#ff8bc4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#fd52af]">
+        <svg aria-hidden="true" viewBox="0 0 28 28" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M3 6h22M3 14h22M3 22h22"/></svg>
       </button>
       {moreOpen && <div role="menu" className="absolute right-0 top-full z-30 mt-2 min-w-52 rounded-xl border border-white/10 bg-[#15151b] p-1.5 shadow-2xl">{[...primary, ...more].map(([id, label, icon]) => <button key={id} type="button" role="menuitem" aria-current={tab === id ? "page" : undefined} data-tab={id} onClick={() => choose(id)} className={`admin-menu-item ${tab === id ? "is-active" : ""}`}><TabIcon name={icon}/><span>{label}</span></button>)}</div>}
       </nav>

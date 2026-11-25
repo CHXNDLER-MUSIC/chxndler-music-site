@@ -16,6 +16,8 @@ const COVER_OVERRIDES: Record<string, string> = {
   "were-just-friends": "/covers/WE'RE JUST FRIENDS.webp",
   "were-just-friends-dmvrco-remix": "/covers/WE'RE JUST FRIENDS (DMVRCO Remix).webp",
   "were-just-friends-mickey-jas-remix": "/covers/WE'RE JUST FRIENDS (Mickey Jas Remix).webp",
+  // The display title includes a question mark; the uploaded artwork filename does not.
+  "who-taught-you-to-love": "/covers/WHO TAUGHT YOU TO LOVE.webp",
   // These cover files are PNGs rather than the default WEBP extension.
   "bad-idea": "/covers/BAD IDEA.png",
   "like-this": "/covers/LIKE THIS.png",
@@ -38,6 +40,9 @@ export function songCoverPath(slug: string, title: string): string {
   // (including the locally synced copies of Supabase covers) use uppercase
   // filenames. Preserve the exact title punctuation, only normalizing case
   // and diacritics so titles such as Pokémon resolve to POKEMON.webp.
-  const filename = title.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase();
+  // Display titles can end in a question mark that is intentionally omitted
+  // from the corresponding cover filename (for example, "Who Taught You to
+  // Love?" -> "WHO TAUGHT YOU TO LOVE.webp").
+  const filename = title.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\?+$/, "").toUpperCase();
   return `/covers/${filename}.webp`;
 }

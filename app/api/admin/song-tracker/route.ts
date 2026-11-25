@@ -81,7 +81,7 @@ export async function GET() {
     const savedOrDerived = (key: string, derived: boolean) => typeof stages[key] === "boolean" ? stages[key] : derived;
     const playlistPitched = savedOrDerived("playlist_pitch", outreachRows.some(row => row.song_id === song.id && /playlist/i.test(row.category || "") && ["Contacted", "Sent", "Follow-up", "Interested", "Won", "Accepted"].includes(row.status || "")));
     const syncPlacement = savedOrDerived("sync_placement", placementRows.some(row => row.song_id === song.id));
-    const musicVideoReleased = !!song.youtube_music_video_url || youtubeVideoTitles.has(normalizeSongTitle(song.title)) || !!musicVideo || stages.music_video_released === true;
+    const musicVideoReleased = !!song.youtube_music_video_url || youtubeVideoTitles.has(normalizeSongTitle(song.title)) || stages.music_video_released === true;
     const skyAssociated = !!song.sky_video_url || !!youtubeSkyFor(song.slug) || stages.sky === true;
     const contentReleased = savedOrDerived("content_released", contentRows.some(row => row.song_id === song.id && row.status === "Published"));
     return ({

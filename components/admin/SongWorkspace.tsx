@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { CheckCircle2, Circle, Clapperboard, Lightbulb, Rocket } from "lucide-react";
 import SongPractice from "@/components/admin/SongPractice";
 import SongContent from "@/components/admin/SongContent";
 import OutreachWorkspace from "@/components/admin/OutreachWorkspace";
@@ -43,18 +44,22 @@ const postReleaseStage: Record<PostReleaseKey, string> = {
   contentReleased: "content_released", playlistPitched: "playlist_pitch", syncPlacement: "sync_placement",
 };
 
-function projectStage(project: MusicVideoProject) {
-  const production = (project.workspace?.production || {}) as Record<string, unknown>;
-  const stage = typeof production.stage === "string" ? production.stage : "";
-  const legacy: Record<string, string> = { concept: "Concept", planning: "Planning", agreement: "Pre-production", filming: "Filming", editing: "Editing", delivered: "Delivered", complete: "Released" };
-  return stage || legacy[project.status] || project.status || "Planning";
-}
-function projectVideographer(project: MusicVideoProject) {
-  return String(project.assigned_videographer?.name || project.assigned_videographer?.email || "Not assigned");
-}
-function projectReadiness(project: MusicVideoProject) {
-  const readiness = (project.workspace?.readiness || {}) as Record<string, string>;
-  return Object.values(readiness).filter(value => value === "ready").length;
+function musicVideoStages(project: MusicVideoProject) {
+  const workspace = project.workspace || {};
+  const creative = (workspace.creative || {}) as Record<string, any>;
+  const concepts = Array.isArray(creative.concepts) ? creative.concepts : [];
+  const concept = concepts.find((item: Record<string, any>) => item.id === creative.selectedConceptId) || concepts.find((item: Record<string, any>) => !item.archived) || concepts[0];
+  const production = (workspace.production || {}) as Record<string, any>;
+  const readiness = (workspace.readiness || {}) as Record<string, string>;
+  const release = (workspace.release || {}) as Record<string, any>;
+  const creativeComplete = Boolean(concept && (concept.developmentStatus === "developed" || concept.synopsis?.trim() || concept.story?.trim()));
+  const productionComplete = (Object.keys(readiness).length > 0 && Object.values(readiness).every(value => value === "ready")) || ["filming", "editing", "delivered", "complete"].includes(project.status);
+  const releaseComplete = release.publicationConfirmed === true || release.publicationStatus === "Published";
+  return [
+    { label: "Creative", Icon: Lightbulb, complete: creativeComplete },
+    { label: "Production", Icon: Clapperboard, complete: productionComplete },
+    { label: "Release", Icon: Rocket, complete: releaseComplete },
+  ];
 }
 export default function SongWorkspace({ id, embedded = false, onBack }: { id: string; embedded?: boolean; onBack?: () => void }) {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -221,7 +226,7 @@ export default function SongWorkspace({ id, embedded = false, onBack }: { id: st
 
         <section className="rounded-xl border border-white/[.08] bg-[#111116] p-4 sm:p-5" aria-labelledby="song-music-video">
           <div className="flex flex-wrap items-start gap-3"><div className="mr-auto"><h2 id="song-music-video" className="text-sm font-bold uppercase tracking-[.08em]">MUSIC VIDEO</h2><p className={`mt-1 text-xs ${profile.postRelease.musicVideo ? "text-emerald-300" : "text-white/45"}`}>{profile.postRelease.musicVideo ? "Completed" : profile.musicVideo ? "Project in progress" : "No project started."}</p></div>{profile.musicVideo && <button type="button" onClick={() => selectTab("Music Video")} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition hover:border-[#EF43A3]/40 hover:text-white">Open Project</button>}</div>
-          {profile.musicVideo && <div className="mt-3 grid gap-3 text-sm sm:grid-cols-3"><div><p className="text-[.65rem] text-white/38">Production stage · Readiness</p><p className="mt-1 font-semibold text-white/80">{projectStage(profile.musicVideo)} · {projectReadiness(profile.musicVideo)}/5 Ready</p></div><div><p className="text-[.65rem] text-white/38">Videographer</p><p className="mt-1 font-semibold text-white/80">{projectVideographer(profile.musicVideo)}</p></div><div><p className="text-[.65rem] text-white/38">Next action</p><p className="mt-1 font-semibold text-white/80">{profile.musicVideo.next_action || "Add a next action"}</p></div></div>}
+          {profile.musicVideo && <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl border border-white/[.07] bg-black/15 p-3">{musicVideoStages(profile.musicVideo).map(({ label, Icon, complete }) => <div key={label} className={`flex flex-col items-center gap-1.5 rounded-lg px-2 py-2 text-center ${complete ? "text-emerald-300" : "text-rose-300"}`}><span className="flex items-center gap-1.5"><Icon size={20}/>{complete ? <CheckCircle2 size={15} aria-label="Complete"/> : <Circle size={15} aria-label="Incomplete"/>}</span><span className="text-xs font-bold">{label}</span></div>)}</div>}
         </section>
 
         <details className="rounded-xl border border-white/[.08] bg-[#111116]">

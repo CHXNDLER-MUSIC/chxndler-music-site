@@ -8,9 +8,9 @@ type SongProgress = {
   production_progress_verified?: boolean; next_action?: string | null; is_released?: boolean;
 };
 
-export function ProductionStageIcon({ stage, complete = true, className }: { stage: ProductionStage | null; complete?: boolean; className?: string }) {
+export function ProductionStageIcon({ stage, complete = true, className, dimIncomplete = true }: { stage: ProductionStage | null; complete?: boolean; className?: string; dimIncomplete?: boolean }) {
   const color = stage === "Idea" ? "#EF43A3" : stage === "Writing" ? "#A78BFA" : stage === "Recording" ? "#F2B84B" : stage === "Mixing" || stage === "Mastering" ? "#55D6A4" : "#8b8b96";
-  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={`${className || "h-4 w-4"} shrink-0 ${complete ? "opacity-100" : "opacity-30"}`}>
+  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`${className || "h-4 w-4"} shrink-0 ${!dimIncomplete || complete ? "opacity-100" : "opacity-30"}`}>
     {stage === "Idea" ? <><path d="M9 18h6M10 22h4M8.2 14.5a7 7 0 1 1 7.6 0c-.9.6-1.3 1.4-1.4 2.5h-4.8c-.1-1.1-.5-1.9-1.4-2.5Z"/><path d="M12 4v2M5.6 6.6 7 8M18.4 6.6 17 8"/></>
       : stage === "Writing" ? <><path d="m14 5 5 5M4 20l4.2-.9L19 8.3a2.1 2.1 0 0 0-3-3L5.2 16.1 4 20Z"/><path d="m13 6 5 5"/></>
       : stage === "Recording" ? <><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M9 22h6"/></>
