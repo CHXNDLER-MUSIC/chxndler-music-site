@@ -58,13 +58,21 @@ export async function POST(request: Request) {
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const normalizedName = normalize(displayName);
   const expiresAt = expiryDays === null ? null : new Date(Date.now() + expiryDays * 86400000).toISOString();
-  const { data, error } = await db.from("collaboration_invites")
-    .insert({ display_name: displayName, normalized_display_name: normalizedName, invite_scope: scope, invitee_email: inviteeEmail || null, contact_id: contactId, personal_message: personalMessage, contribution_type: contributionType, agreement_type: agreementType, song_id: scope === "song" ? songId : null,
-      first_name: firstName || null, last_name: lastName || null, artist_name: artistName || null, phone: phone || null,
-      token_hash: tokenHash, expires_at: expiresAt, revoked_at: null, last_accessed_at: null })
-    .select("id,display_name,first_name,last_name,artist_name,phone,agreement_type,expires_at,created_at").single();
+  const inviteValues = { display_name: displayName, normalized_display_name: normalizedName, invite_scope: scope, invitee_email: inviteeEmail || null, contact_id: contactId, personal_message: personalMessage, contribution_type: contributionType, agreement_type: agreementType, song_id: scope === "song" ? songId : null,
+    first_name: firstName || null, last_name: lastName || null, artist_name: artistName || null, phone: phone || null,
+    token_hash: tokenHash, expires_at: expiresAt, revoked_at: null, last_accessed_at: null };
+  const { data: existing, error: lookupError } = await db.from("collaboration_invites")
+    .select("id").eq("normalized_display_name", normalizedName).maybeSingle();
+  const result = lookupError
+    ? { data: null, error: lookupError }
+    : existing
+      ? await db.from("collaboration_invites").update(inviteValues).eq("id", existing.id)
+        .select("id,display_name,first_name,last_name,artist_name,phone,agreement_type,expires_at,created_at").single()
+      : await db.from("collaboration_invites").insert(inviteValues)
+        .select("id,display_name,first_name,last_name,artist_name,phone,agreement_type,expires_at,created_at").single();
+  const { data, error } = result;
   if (error || !data) {
-    console.error("[admin/collaboration-invites] create failed", error);
+    console.error("[admin/collaboration-invites] create or replace failed", error);
     return NextResponse.json({ error: "Could not create the invitation. Apply the personalized invitations migration first." }, { status: 503 });
   }
   let oldInvites = db.from("collaboration_invites")
@@ -81,7 +89,7 @@ export async function POST(request: Request) {
   let base = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
   if (["localhost", "127.0.0.1", "0.0.0.0"].includes(new URL(base).hostname)) base = "https://chxndler.world";
   base = base.replace(/\/+$/, "");
-  const link = scope === "catalog" ? `${base}/collab` : `${base}/collab/invite/${token}`;
+  const link = `${base}/collab/invite/${token}`;
   return NextResponse.json({ invitation: data, link });
 }
 

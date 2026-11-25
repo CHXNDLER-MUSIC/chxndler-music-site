@@ -49,7 +49,6 @@ function musicVideoStages(project: MusicVideoProject) {
   const creative = (workspace.creative || {}) as Record<string, any>;
   const concepts = Array.isArray(creative.concepts) ? creative.concepts : [];
   const concept = concepts.find((item: Record<string, any>) => item.id === creative.selectedConceptId) || concepts.find((item: Record<string, any>) => !item.archived) || concepts[0];
-  const production = (workspace.production || {}) as Record<string, any>;
   const readiness = (workspace.readiness || {}) as Record<string, string>;
   const release = (workspace.release || {}) as Record<string, any>;
   const creativeComplete = Boolean(concept && (concept.developmentStatus === "developed" || concept.synopsis?.trim() || concept.story?.trim()));
