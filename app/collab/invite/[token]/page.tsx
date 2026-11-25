@@ -15,9 +15,9 @@ export default async function PersonalizedCollabInvite({ params }: { params: Pro
     if (/^[A-Za-z0-9_-]{40,60}$/.test(token)) {
       const tokenHash = createHash("sha256").update(token).digest("hex");
       const { data } = await getSupabaseAdmin().from("collaboration_invites")
-        .select("id,display_name,personal_message,contribution_type").eq("token_hash", tokenHash).is("revoked_at", null)
+        .select("id,display_name,first_name,artist_name,personal_message,contribution_type").eq("token_hash", tokenHash).is("revoked_at", null)
         .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`).maybeSingle();
-      firstName = data?.display_name?.trim().split(/\s+/)[0] || "";
+      firstName = data?.artist_name?.trim() || data?.first_name?.trim() || data?.display_name?.trim().split(/\s+/)[0] || "";
       personalMessage = data?.personal_message || "";
       contributionType = data?.contribution_type || "Other";
     }
