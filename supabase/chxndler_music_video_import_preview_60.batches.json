@@ -1,0 +1,3495 @@
+[
+  {
+    "batch": 1,
+    "phase": "developed",
+    "plans": [
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "0a24ac4c-1ceb-434c-ac68-e24045b4ec77",
+          "songTitle": "MY MOM THINKS I'M FAMOUS",
+          "videoType": "Official Music Video",
+          "projectTitle": "The Biggest Show in the World (According to Mom)",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "Mom discovers a tiny LES concert flyer and prepares for her son’s show as though he is headlining Madison Square Garden.",
+          "narrativeOverview": "Scene 1: Mom spots CHXNDLER in tiny print on a flyer on the fridge, circles his name, writes SOLD OUT and celebrates; he notices the exaggeration.\n\nScene 2: Mom wears CHXNDLER merch, makes THAT’S MY SON sign, learns every lyric, practices screaming and dramatically fainting on the couch.\n\nScene 3: CHXNDLER sings while getting ready in bathroom; Mom appears with sign and phone, cheering and demanding an encore.\n\nScene 4: Mom sings and dances to his song in kitchen, grabs CHXNDLER and gets him to join her.\n\nScene 5: Preferred practical version: shoot a real tiny gig if one is scheduled; Mom cheers like an arena. Ultra-low-budget alternative: reveal a one-chair living-room concert.\n\nScene 6: Mom takes a celebrity-style selfie with CHXNDLER, hugs him, and continues celebrating.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: A mother believes in her musician son long before the world does. Inspired by childhood rock shows and current Lower East Side gigs.\nVisual style notes: Deadpan comedy; natural apartment footage with music-video energy\nMood notes: Funny, loving, celebratory\nSignature visual: Tiny local-show flyer treated like Times Square billboard; Mom’s THAT’S MY SON sign\nEnding: Mom and CHXNDLER dance/sing together; her stadium-sized pride contrasts with the small reality."
+        },
+        "scenes": [
+          {
+            "importKey": "my-mom-thinks-i-m-famous-scene-1",
+            "order": 1,
+            "title": "The Announcement",
+            "description": "Mom spots CHXNDLER in tiny print on a flyer on the fridge, circles his name, writes SOLD OUT and celebrates; he notices the exaggeration.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "my-mom-thinks-i-m-famous-scene-2",
+            "order": 2,
+            "title": "Superfan Training",
+            "description": "Mom wears CHXNDLER merch, makes THAT’S MY SON sign, learns every lyric, practices screaming and dramatically fainting on the couch.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "my-mom-thinks-i-m-famous-scene-3",
+            "order": 3,
+            "title": "Private Soundcheck",
+            "description": "CHXNDLER sings while getting ready in bathroom; Mom appears with sign and phone, cheering and demanding an encore.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "my-mom-thinks-i-m-famous-scene-4",
+            "order": 4,
+            "title": "Pre-Show Party",
+            "description": "Mom sings and dances to his song in kitchen, grabs CHXNDLER and gets him to join her.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "my-mom-thinks-i-m-famous-scene-5",
+            "order": 5,
+            "title": "The Big Show",
+            "description": "Preferred practical version: shoot a real tiny gig if one is scheduled; Mom cheers like an arena. Ultra-low-budget alternative: reveal a one-chair living-room concert.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "my-mom-thinks-i-m-famous-scene-6",
+            "order": 6,
+            "title": "After the Show",
+            "description": "Mom takes a celebrity-style selfie with CHXNDLER, hugs him, and continues celebrating.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 3–4.\nVenue vs living-room reveal is NOT finalized; choose one coherent version before shoot.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "my-mom-thinks-i-m-famous-cast-mom-lead-self-appointed-superfan-1",
+              "name": "Mom",
+              "role": "lead, self-appointed superfan",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Mom — lead, self-appointed superfan"
+            },
+            {
+              "importKey": "my-mom-thinks-i-m-famous-cast-chxndler-musician-son-2",
+              "name": "CHXNDLER",
+              "role": "musician son",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER — musician son"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "my-mom-thinks-i-m-famous-location-home-kitchen-bedroom-bathroom-1",
+              "name": "Home: kitchen, bedroom, bathroom",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            },
+            {
+              "importKey": "my-mom-thinks-i-m-famous-location-optional-actual-small-nyc-show-2",
+              "name": "Optional: actual small NYC show",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "my-mom-thinks-i-m-famous-prop-chxndler-merch-1",
+              "name": "CHXNDLER merch",
+              "description": "Proposed source prop/set-dressing detail: CHXNDLER merch",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "my-mom-thinks-i-m-famous-prop-flyer-2",
+              "name": "flyer",
+              "description": "Proposed source prop/set-dressing detail: flyer",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "my-mom-thinks-i-m-famous-prop-marker-3",
+              "name": "marker",
+              "description": "Proposed source prop/set-dressing detail: marker",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "my-mom-thinks-i-m-famous-prop-sign-4",
+              "name": "sign",
+              "description": "Proposed source prop/set-dressing detail: sign",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "my-mom-thinks-i-m-famous-prop-phone-5",
+              "name": "phone",
+              "description": "Proposed source prop/set-dressing detail: phone",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "my-mom-thinks-i-m-famous-prop-sunglasses-6",
+              "name": "sunglasses",
+              "description": "Proposed source prop/set-dressing detail: sunglasses",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "my-mom-thinks-i-m-famous",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "3ce01fe7-1fbe-424a-bfb4-faebdafe2ae9",
+          "songTitle": "SOMEBODY TOO",
+          "videoType": "Official Music Video",
+          "projectTitle": "You Thought I Was Human",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "An unseen first-person protagonist navigates an overwhelming day; midway we discover we have been seeing through a dog’s eyes.",
+          "narrativeOverview": "Scene 1: First-person camera wakes to light, watches a human prepare breakfast; no dog features revealed.\n\nScene 2: POV experiences rushing feet, loud noises, a stranger reaching, uncertainty around others; emotional perspective without obvious canine props.\n\nScene 3: POV approaches CHXNDLER distracted on couch. He looks down, smiles Hey buddy; cut wide for first sight of dog.\n\nScene 4: Now external shots show dog’s natural hesitations, window watching, toy invitation and CHXNDLER choosing to sit at dog’s level.\n\nScene 5: Return to dog POV as CHXNDLER looks into lens with affection; no speech necessary.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: A dog is somebody: they feel fear, shyness, loneliness, joy, love and trust.\nVisual style notes: First-person low camera; natural light; gentle sound design\nMood notes: Mysterious, tender, uplifting\nSignature visual: Mid-song reveal that unseen POV narrator is a dog\nEnding: Dog looks into camera / human meets their gaze; empathy without text explanation."
+        },
+        "scenes": [
+          {
+            "importKey": "somebody-too-scene-1",
+            "order": 1,
+            "title": "An Ordinary Morning",
+            "description": "First-person camera wakes to light, watches a human prepare breakfast; no dog features revealed.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "somebody-too-scene-2",
+            "order": 2,
+            "title": "The Big World",
+            "description": "POV experiences rushing feet, loud noises, a stranger reaching, uncertainty around others; emotional perspective without obvious canine props.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "somebody-too-scene-3",
+            "order": 3,
+            "title": "The Reveal",
+            "description": "POV approaches CHXNDLER distracted on couch. He looks down, smiles Hey buddy; cut wide for first sight of dog.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "somebody-too-scene-4",
+            "order": 4,
+            "title": "Someone Sees Me",
+            "description": "Now external shots show dog’s natural hesitations, window watching, toy invitation and CHXNDLER choosing to sit at dog’s level.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "somebody-too-scene-5",
+            "order": 5,
+            "title": "I Am Somebody",
+            "description": "Return to dog POV as CHXNDLER looks into lens with affection; no speech necessary.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 2–3.\nDog welfare first: short sessions, no forced actions or startling sounds; edit sound in post.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "somebody-too-cast-dog-protagonist-1",
+              "name": "Dog",
+              "role": "protagonist",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Dog — protagonist"
+            },
+            {
+              "importKey": "somebody-too-cast-chxndler-trusted-human-2",
+              "name": "CHXNDLER",
+              "role": "trusted human",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER — trusted human"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "somebody-too-location-apartment-1",
+              "name": "Apartment",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            },
+            {
+              "importKey": "somebody-too-location-quiet-sidewalk-or-park-2",
+              "name": "Quiet sidewalk or park",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "somebody-too-prop-dog-toy-1",
+              "name": "Dog toy",
+              "description": "Proposed source prop/set-dressing detail: Dog toy",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "somebody-too-prop-camera-low-to-ground-2",
+              "name": "camera low to ground",
+              "description": "Proposed source prop/set-dressing detail: camera low to ground",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "somebody-too",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "736af4ab-0c19-4594-8f39-c70d62b8508d",
+          "songTitle": "EMO GIRL",
+          "videoType": "Official Music Video",
+          "projectTitle": "The Happiest Emo Girl Alive",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "CHXNDLER falls for an intimidating-looking emo girl who secretly adores cute things and happy dances.",
+          "narrativeOverview": "Scene 1: She sits deadpan in black; CHXNDLER sits beside her; she silently sticks a pink heart sticker on his cheek.\n\nScene 2: She opens a dark closet to reveal one oversized pink plush, hugs it, then solemnly gives him a tiny plush.\n\nScene 3: She paints his nails black, he puts a pink clip in her hair; they do an absurdly cheerful dance while she keeps a straight face.\n\nScene 4: They pose for an extremely serious emo selfie; immediately afterward they laugh, kiss and dance.\n\nScene 5: After CHXNDLER walks away holding her pink heart balloon, she breaks into a tiny uncontrollable happy dance.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: Falling for someone whose dark style does not predict their joyful personality.\nVisual style notes: Black-and-hot-pink, deadpan romantic comedy\nMood notes: Flirty, playful, unexpectedly sweet\nSignature visual: All-black deadpan emo girl holding huge pink heart balloon\nEnding: The girl’s private happy dance reveals she is falling in love too."
+        },
+        "scenes": [
+          {
+            "importKey": "emo-girl-scene-1",
+            "order": 1,
+            "title": "The Crush",
+            "description": "She sits deadpan in black; CHXNDLER sits beside her; she silently sticks a pink heart sticker on his cheek.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "emo-girl-scene-2",
+            "order": 2,
+            "title": "The Secret",
+            "description": "She opens a dark closet to reveal one oversized pink plush, hugs it, then solemnly gives him a tiny plush.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "emo-girl-scene-3",
+            "order": 3,
+            "title": "The Date",
+            "description": "She paints his nails black, he puts a pink clip in her hair; they do an absurdly cheerful dance while she keeps a straight face.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "emo-girl-scene-4",
+            "order": 4,
+            "title": "The Photo",
+            "description": "They pose for an extremely serious emo selfie; immediately afterward they laugh, kiss and dance.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "emo-girl-scene-5",
+            "order": 5,
+            "title": "Secret Happy Dance",
+            "description": "After CHXNDLER walks away holding her pink heart balloon, she breaks into a tiny uncontrollable happy dance.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 2–3.\nMGK cover; obtain composition synchronization permission before public music-video release.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "emo-girl-cast-chxndler-1",
+              "name": "CHXNDLER",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER"
+            },
+            {
+              "importKey": "emo-girl-cast-emo-girl-romantic-lead-2",
+              "name": "Emo girl",
+              "role": "romantic lead",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Emo girl — romantic lead"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "emo-girl-location-one-apartment-couch-bedroom-1",
+              "name": "One apartment / couch / bedroom",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "emo-girl-prop-pink-heart-balloon-1",
+              "name": "Pink heart balloon",
+              "description": "Proposed source prop/set-dressing detail: Pink heart balloon",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "emo-girl-prop-heart-stickers-2",
+              "name": "heart stickers",
+              "description": "Proposed source prop/set-dressing detail: heart stickers",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "emo-girl-prop-plush-3",
+              "name": "plush",
+              "description": "Proposed source prop/set-dressing detail: plush",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "emo-girl-prop-black-nail-polish-4",
+              "name": "black nail polish",
+              "description": "Proposed source prop/set-dressing detail: black nail polish",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "emo-girl-prop-hair-clip-5",
+              "name": "hair clip",
+              "description": "Proposed source prop/set-dressing detail: hair clip",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "emo-girl-prop-phone-6",
+              "name": "phone",
+              "description": "Proposed source prop/set-dressing detail: phone",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "emo-girl",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "28dee0fd-2012-4fe7-bb82-8991e77cf187",
+          "songTitle": "LOST IN BERMUDA",
+          "videoType": "Official Music Video",
+          "projectTitle": "The Treasure We Never Found",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "Two lovers follow a treasure map toward a ring but choose the joy of being lost together over reaching a prescribed future.",
+          "narrativeOverview": "Scene 1: Travel plans reveal a hand-drawn map with an X; couple sets out on treasure hunt.\n\nScene 2: They follow the map, go the wrong way, dance on beach, laugh and take playful pictures; she admires a ring in a shop window if available.\n\nScene 3: They find a small box with a ring; she closes it before a proposal and pulls him back toward the ocean.\n\nScene 4: They realize the cruise ship may be leaving; they start to run, then stop to enjoy the sunset together.\n\nScene 5: They dance as the map blows across sand, revealing GET LOST WITH ME.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: A cruise to Bermuda, getting lost together, imagining marriage and a ring that never became a wedding; the adventure mattered most.\nVisual style notes: Golden-hour tropical romance, nostalgic vacation-film texture\nMood notes: Dreamy, playful, bittersweet\nSignature visual: Treasure map marked X; box with a ring they choose not to take\nEnding: Missed boat / sunset dance; love was the adventure, not the wedding."
+        },
+        "scenes": [
+          {
+            "importKey": "lost-in-bermuda-scene-1",
+            "order": 1,
+            "title": "The Map",
+            "description": "Travel plans reveal a hand-drawn map with an X; couple sets out on treasure hunt.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "lost-in-bermuda-scene-2",
+            "order": 2,
+            "title": "Lost Together",
+            "description": "They follow the map, go the wrong way, dance on beach, laugh and take playful pictures; she admires a ring in a shop window if available.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "lost-in-bermuda-scene-3",
+            "order": 3,
+            "title": "The Treasure",
+            "description": "They find a small box with a ring; she closes it before a proposal and pulls him back toward the ocean.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "lost-in-bermuda-scene-4",
+            "order": 4,
+            "title": "The Boat",
+            "description": "They realize the cruise ship may be leaving; they start to run, then stop to enjoy the sunset together.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "lost-in-bermuda-scene-5",
+            "order": 5,
+            "title": "Get Lost With Me",
+            "description": "They dance as the map blows across sand, revealing GET LOST WITH ME.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 2–3.\nDo not imply actual marriage happened; cruise departure can be suggested in editing rather than filming a ship.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "lost-in-bermuda-cast-chxndler-1",
+              "name": "CHXNDLER",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER"
+            },
+            {
+              "importKey": "lost-in-bermuda-cast-love-interest-2",
+              "name": "Love interest",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Love interest"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "lost-in-bermuda-location-one-beach-coastline-1",
+              "name": "One beach/coastline",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            },
+            {
+              "importKey": "lost-in-bermuda-location-optional-existing-cruise-footage-2",
+              "name": "Optional existing cruise footage",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "lost-in-bermuda-prop-hand-drawn-map-1",
+              "name": "Hand-drawn map",
+              "description": "Proposed source prop/set-dressing detail: Hand-drawn map",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "lost-in-bermuda-prop-small-jewelry-box-2",
+              "name": "small jewelry box",
+              "description": "Proposed source prop/set-dressing detail: small jewelry box",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "lost-in-bermuda-prop-prop-ring-3",
+              "name": "prop ring",
+              "description": "Proposed source prop/set-dressing detail: prop ring",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "lost-in-bermuda-prop-travel-tickets-4",
+              "name": "travel tickets",
+              "description": "Proposed source prop/set-dressing detail: travel tickets",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "lost-in-bermuda-prop-beach-bag-5",
+              "name": "beach bag",
+              "description": "Proposed source prop/set-dressing detail: beach bag",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "lost-in-bermuda",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "2668a8be-f50c-47e6-8260-7a3c936aa3a9",
+          "songTitle": "PLAY HOUSE",
+          "videoType": "Official Music Video",
+          "projectTitle": "The Invisible House",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "A couple performs an entire imaginary domestic life in an empty room, without a single real piece of furniture.",
+          "narrativeOverview": "Scene 1: He turns a real key in an invisible door; she knocks and enters their imagined house.\n\nScene 2: They mime cooking, eating at an invisible table, bringing groceries and dancing in the living room.\n\nScene 3: They pretend to cradle a baby and laugh when CHXNDLER is nervous holding it.\n\nScene 4: They turn off an invisible light and lie together on the bare floor, embracing.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: Two lovers play at having a family and a future as though they were children playing house.\nVisual style notes: Minimal, warm, symmetrical, surreal mime\nMood notes: Whimsical, romantic, nostalgic\nSignature visual: Two adults living in a fully invisible house; one real key\nEnding: Overhead wide shot reveals empty room, couple together and a single real key."
+        },
+        "scenes": [
+          {
+            "importKey": "play-house-scene-1",
+            "order": 1,
+            "title": "Welcome Home",
+            "description": "He turns a real key in an invisible door; she knocks and enters their imagined house.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "play-house-scene-2",
+            "order": 2,
+            "title": "Our Little Life",
+            "description": "They mime cooking, eating at an invisible table, bringing groceries and dancing in the living room.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "play-house-scene-3",
+            "order": 3,
+            "title": "Our Future",
+            "description": "They pretend to cradle a baby and laugh when CHXNDLER is nervous holding it.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "play-house-scene-4",
+            "order": 4,
+            "title": "Home",
+            "description": "They turn off an invisible light and lie together on the bare floor, embracing.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 2–3.\nCorrect title is two words: PLAY HOUSE.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "play-house-cast-chxndler-1",
+              "name": "CHXNDLER",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER"
+            },
+            {
+              "importKey": "play-house-cast-love-interest-2",
+              "name": "Love interest",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Love interest"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "play-house-location-one-empty-room-1",
+              "name": "One empty room",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "play-house-prop-one-key-1",
+              "name": "One key",
+              "description": "Proposed source prop/set-dressing detail: One key",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "play-house",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "6dfddde4-322b-47de-ad3f-6f6d85b0b55f",
+          "songTitle": "HOW TO LOVE",
+          "videoType": "Official Music Video",
+          "projectTitle": "The Movie Set",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "A young couple believe they are living a cinematic love story until the set lights go out and reveal how little they know.",
+          "narrativeOverview": "Scene 1: Couple watch romance on a couch; camera pulls back to show it is a set in an otherwise empty room.\n\nScene 2: On the couch they share cheap red roses, a burned CD and headphones, copying film-like romantic moments.\n\nScene 3: She walks away; CHXNDLER waits as studio lights turn off one by one.\n\nScene 4: He sits alone while television replays happy moments and shows THE END.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: At seventeen, learning romance from TV and movies does not mean knowing how to love.\nVisual style notes: Nostalgic teen romance, simple set-reveal\nMood notes: Romantic, vulnerable, bittersweet\nSignature visual: Romantic couch scene revealed as a fake movie set\nEnding: CHXNDLER alone under last TV glow; THE END."
+        },
+        "scenes": [
+          {
+            "importKey": "how-to-love-scene-1",
+            "order": 1,
+            "title": "The Movie",
+            "description": "Couple watch romance on a couch; camera pulls back to show it is a set in an otherwise empty room.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "how-to-love-scene-2",
+            "order": 2,
+            "title": "Movie Romance",
+            "description": "On the couch they share cheap red roses, a burned CD and headphones, copying film-like romantic moments.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "how-to-love-scene-3",
+            "order": 3,
+            "title": "The Exit",
+            "description": "She walks away; CHXNDLER waits as studio lights turn off one by one.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "how-to-love-scene-4",
+            "order": 4,
+            "title": "The End",
+            "description": "He sits alone while television replays happy moments and shows THE END.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": 3,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 3.\nLil Wayne composition; video sync clearance required.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "how-to-love-cast-chxndler-1",
+              "name": "CHXNDLER",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER"
+            },
+            {
+              "importKey": "how-to-love-cast-love-interest-2",
+              "name": "Love interest",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Love interest"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "how-to-love-location-one-room-small-studio-1",
+              "name": "One room / small studio",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "how-to-love-prop-couch-1",
+              "name": "Couch",
+              "description": "Proposed source prop/set-dressing detail: Couch",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "how-to-love-prop-old-tv-2",
+              "name": "old TV",
+              "description": "Proposed source prop/set-dressing detail: old TV",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "how-to-love-prop-red-roses-3",
+              "name": "red roses",
+              "description": "Proposed source prop/set-dressing detail: red roses",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "how-to-love-prop-burned-cd-4",
+              "name": "burned CD",
+              "description": "Proposed source prop/set-dressing detail: burned CD",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "how-to-love-prop-film-lights-5",
+              "name": "film lights",
+              "description": "Proposed source prop/set-dressing detail: film lights",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "how-to-love",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "a5b8ed49-e621-43dc-a0ad-8d9424de95cf",
+          "songTitle": "TIDE IN",
+          "videoType": "Official Music Video",
+          "projectTitle": "The Night You Dreamed About at 17",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "CHXNDLER arrives alone at a rooftop with a teenage wish list; friends arrive and turn it into the night he dreamed of.",
+          "narrativeOverview": "Scene 1: CHXNDLER alone reads teenage goals: move to NYC, make music, find my people.\n\nScene 2: Friends arrive, lights come on and the rooftop transforms into an intimate party.\n\nScene 3: During chorus, friends form a synchronized wave; CHXNDLER performs amid the celebration.\n\nScene 4: He pauses at skyline, smiling, as the party continues behind him.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: A rooftop NYC party and the feeling of finally living the dream imagined as a teenager.\nVisual style notes: Dreamy neon rooftop at dusk\nMood notes: Euphoric, nostalgic, triumphant\nSignature visual: Friends making a human wave against the NYC skyline\nEnding: CHXNDLER looks out at city he once dreamed of."
+        },
+        "scenes": [
+          {
+            "importKey": "tide-in-scene-1",
+            "order": 1,
+            "title": "The List",
+            "description": "CHXNDLER alone reads teenage goals: move to NYC, make music, find my people.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "tide-in-scene-2",
+            "order": 2,
+            "title": "The Tide Arrives",
+            "description": "Friends arrive, lights come on and the rooftop transforms into an intimate party.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "tide-in-scene-3",
+            "order": 3,
+            "title": "Human Wave",
+            "description": "During chorus, friends form a synchronized wave; CHXNDLER performs amid the celebration.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "tide-in-scene-4",
+            "order": 4,
+            "title": "The View",
+            "description": "He pauses at skyline, smiling, as the party continues behind him.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 3–4.\nFormer title DIVE IN. Lil Surf verse/credits/recording rights need clearance; no collaborator likeness required.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "tide-in-cast-chxndler-1",
+              "name": "CHXNDLER",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER"
+            },
+            {
+              "importKey": "tide-in-cast-6-10-friends-partygoers-2",
+              "name": "6–10 friends / partygoers",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: 6–10 friends / partygoers"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "tide-in-location-one-permitted-brooklyn-rooftop-with-nyc-skyline-1",
+              "name": "One permitted Brooklyn rooftop with NYC skyline",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "tide-in-prop-handwritten-goals-list-1",
+              "name": "Handwritten goals list",
+              "description": "Proposed source prop/set-dressing detail: Handwritten goals list",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "tide-in-prop-party-lights-2",
+              "name": "party lights",
+              "description": "Proposed source prop/set-dressing detail: party lights",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "tide-in",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "d5d28cc4-9970-4378-8649-4b9a38a21865",
+          "songTitle": "PLAYDOUGH",
+          "videoType": "Official Music Video",
+          "projectTitle": "The Normal Mold",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "A silver clay alien is squeezed into a human-shaped NORMAL mold until he breaks free and reshapes gray NYC into a colorful Heartverse.",
+          "narrativeOverview": "Scene 1: Giant hands reshape silver alien; antennae cannot fit a mold labeled NORMAL.\n\nScene 2: Gray commuters and office boss try to make him conform; music gets shut down.\n\nScene 3: Alien tries to fit mold, then cracks it.\n\nScene 4: Even creative peers pressure him to become someone else; he peels off false identity.\n\nScene 5: He transforms gray buildings into bright clay life and makes room for different creatures.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: Other people try to shape an artist into someone acceptable; refusing conformity gives him the power to reshape his world.\nVisual style notes: AI-generated stop-motion-style clay animation\nMood notes: Playful, defiant, triumphant\nSignature visual: Silver alien crushed into NORMAL-shaped mold\nEnding: Gray NYC becomes bright Heartverse; alien makes another unique friend."
+        },
+        "scenes": [
+          {
+            "importKey": "playdough-scene-1",
+            "order": 1,
+            "title": "The Mold",
+            "description": "Giant hands reshape silver alien; antennae cannot fit a mold labeled NORMAL.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "playdough-scene-2",
+            "order": 2,
+            "title": "Assembly Line",
+            "description": "Gray commuters and office boss try to make him conform; music gets shut down.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "playdough-scene-3",
+            "order": 3,
+            "title": "Breakout",
+            "description": "Alien tries to fit mold, then cracks it.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "playdough-scene-4",
+            "order": 4,
+            "title": "Another Mold",
+            "description": "Even creative peers pressure him to become someone else; he peels off false identity.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "playdough-scene-5",
+            "order": 5,
+            "title": "Reshape",
+            "description": "He transforms gray buildings into bright clay life and makes room for different creatures.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): No live shoot.\nEntirely AI animated; preserve consistent character. Avoid depicting real collaborators as villains. Rights dispute exists regarding separate release.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "playdough-cast-silver-alien-chxndler-animated-lead-1",
+              "name": "Silver alien CHXNDLER",
+              "role": "animated lead",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Silver alien CHXNDLER — animated lead"
+            },
+            {
+              "importKey": "playdough-cast-generic-parents-boss-commuters-other-artists-2",
+              "name": "Generic parents, boss, commuters, other artists",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Generic parents, boss, commuters, other artists"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "playdough-location-ai-clay-apartment-1",
+              "name": "AI clay apartment",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            },
+            {
+              "importKey": "playdough-location-miniature-gray-nyc-2",
+              "name": "Miniature gray NYC",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            },
+            {
+              "importKey": "playdough-location-clay-office-3",
+              "name": "Clay office",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            },
+            {
+              "importKey": "playdough-location-colorful-heartverse-4",
+              "name": "Colorful Heartverse",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "playdough-prop-ai-reference-character-sheet-1",
+              "name": "AI reference character sheet",
+              "description": "Proposed source prop/set-dressing detail: AI reference character sheet",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "playdough-prop-clay-look-keyframes-2",
+              "name": "clay-look keyframes",
+              "description": "Proposed source prop/set-dressing detail: clay-look keyframes",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "playdough",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "ddc2d515-26fa-4477-b659-e9707c0730e8",
+          "songTitle": "FEELING THIS",
+          "videoType": "Official Music Video",
+          "projectTitle": "The Girl Who Stole My Sunglasses",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "A skater girl steals CHXNDLER’s sunglasses and leads him through a chaotic Brooklyn afternoon, ending at his performance.",
+          "narrativeOverview": "Scene 1: Girl steals his sunglasses at skatepark; CHXNDLER chases, intrigued.\n\nScene 2: They flirt, buy candy at bodega and share an impulsive kiss near a mirror.\n\nScene 3: Intercut energetic CHXNDLER/drummer performance with their day.\n\nScene 4: Girl enters performance, grabs him and pulls him away; sunglasses returned.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: Spontaneous skater romance and rebellious early-2000s pop-punk attraction.\nVisual style notes: Handheld 2000s NYC pop-punk\nMood notes: Rebellious, sexy, kinetic\nSignature visual: Recurring stolen sunglasses linking romance and performance\nEnding: She puts sunglasses back on him before they leave together."
+        },
+        "scenes": [
+          {
+            "importKey": "feeling-this-scene-1",
+            "order": 1,
+            "title": "The Theft",
+            "description": "Girl steals his sunglasses at skatepark; CHXNDLER chases, intrigued.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "feeling-this-scene-2",
+            "order": 2,
+            "title": "The Adventure",
+            "description": "They flirt, buy candy at bodega and share an impulsive kiss near a mirror.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "feeling-this-scene-3",
+            "order": 3,
+            "title": "The Performance",
+            "description": "Intercut energetic CHXNDLER/drummer performance with their day.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "feeling-this-scene-4",
+            "order": 4,
+            "title": "The Escape",
+            "description": "Girl enters performance, grabs him and pulls him away; sunglasses returned.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 4–5.\nNYC/Brooklyn, not Baltimore. Store and public-performance permissions; avoid hauling full kit without plan.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "feeling-this-cast-chxndler-1",
+              "name": "CHXNDLER",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER"
+            },
+            {
+              "importKey": "feeling-this-cast-skater-girl-2",
+              "name": "Skater girl",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Skater girl"
+            },
+            {
+              "importKey": "feeling-this-cast-drummer-3",
+              "name": "Drummer",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Drummer"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "feeling-this-location-brooklyn-skatepark-1",
+              "name": "Brooklyn skatepark",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            },
+            {
+              "importKey": "feeling-this-location-nearby-bodega-with-permission-2",
+              "name": "Nearby bodega with permission",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            },
+            {
+              "importKey": "feeling-this-location-graffiti-mural-performance-wall-3",
+              "name": "Graffiti/mural performance wall",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "feeling-this-prop-sunglasses-1",
+              "name": "Sunglasses",
+              "description": "Proposed source prop/set-dressing detail: Sunglasses",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "feeling-this-prop-skateboard-2",
+              "name": "skateboard",
+              "description": "Proposed source prop/set-dressing detail: skateboard",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "feeling-this-prop-candy-3",
+              "name": "candy",
+              "description": "Proposed source prop/set-dressing detail: candy",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "feeling-this-prop-portable-drum-performance-kit-4",
+              "name": "portable drum/performance kit",
+              "description": "Proposed source prop/set-dressing detail: portable drum/performance kit",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "feeling-this",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "27a2ea39-a7fd-4bce-83f5-61e9582ef6d7",
+          "songTitle": "AM I PRETTY WHEN I CRY?",
+          "videoType": "Official Music Video",
+          "projectTitle": "Invisible Butterfly Wings",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "Everyone acts as if Sofia has enormous butterfly wings, but she believes they are staring because she is awkward.",
+          "narrativeOverview": "Scene 1: People step aside, point, smile and make room as Sofia passes; wings are never shown.\n\nScene 2: Sofia feels judged while artists draw her, strangers photograph and curtains move around her.\n\nScene 3: More impossible reactions suggest an unseen beautiful presence.\n\nScene 4: At final lyric a practical stained-glass/branch/projected shadow creates wing silhouette behind Sofia for one shot.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: Self-consciousness makes someone misread admiration as judgment.\nVisual style notes: Magical realism, practical shadows\nMood notes: Vulnerable, whimsical, affirming\nSignature visual: Invisible wings shown only through other people’s reactions\nEnding: One fleeting wing-shaped shadow, never literal CGI wings."
+        },
+        "scenes": [
+          {
+            "importKey": "am-i-pretty-when-i-cry-scene-1",
+            "order": 1,
+            "title": "Strange Reactions",
+            "description": "People step aside, point, smile and make room as Sofia passes; wings are never shown.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "am-i-pretty-when-i-cry-scene-2",
+            "order": 2,
+            "title": "The Misunderstanding",
+            "description": "Sofia feels judged while artists draw her, strangers photograph and curtains move around her.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "am-i-pretty-when-i-cry-scene-3",
+            "order": 3,
+            "title": "The Build",
+            "description": "More impossible reactions suggest an unseen beautiful presence.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "am-i-pretty-when-i-cry-scene-4",
+            "order": 4,
+            "title": "The Butterfly",
+            "description": "At final lyric a practical stained-glass/branch/projected shadow creates wing silhouette behind Sofia for one shot.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 4–5.\nAlternative distinct concept: Freaky Friday-style CHXNDLER/Sofia body swap via butterfly mirror; DO NOT merge without decision.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "am-i-pretty-when-i-cry-cast-sofia-lead-1",
+              "name": "Sofia",
+              "role": "lead",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Sofia — lead"
+            },
+            {
+              "importKey": "am-i-pretty-when-i-cry-cast-chxndler-optional-2",
+              "name": "CHXNDLER",
+              "role": "optional",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER — optional"
+            },
+            {
+              "importKey": "am-i-pretty-when-i-cry-cast-passersby-extras-3",
+              "name": "Passersby / extras",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Passersby / extras"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "am-i-pretty-when-i-cry-location-apartment-1",
+              "name": "Apartment",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            },
+            {
+              "importKey": "am-i-pretty-when-i-cry-location-public-or-gallery-like-location-with-permission-2",
+              "name": "Public or gallery-like location with permission",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "am-i-pretty-when-i-cry-prop-projector-or-patterned-light-1",
+              "name": "Projector or patterned light",
+              "description": "Proposed source prop/set-dressing detail: Projector or patterned light",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "am-i-pretty-when-i-cry-prop-wardrobe-2",
+              "name": "wardrobe",
+              "description": "Proposed source prop/set-dressing detail: wardrobe",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "am-i-pretty-when-i-cry",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "f0ee1774-164c-4f18-bb83-5fd56a0a0b58",
+          "songTitle": "SOMEBODY TO LOVE",
+          "videoType": "Official Music Video",
+          "projectTitle": "Almost a Match",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "CHXNDLER and Sofia are on separate bad dates, repeatedly almost meet, then match on their phones.",
+          "narrativeOverview": "Scene 1: Parallel split-screen dates: CHXNDLER and Sofia with incompatible partners.\n\nScene 2: They pass near each other outside without noticing.\n\nScene 3: Both receive IT’S A MATCH notification; they turn toward each other.\n\nScene 4: Cut before their actual meeting, preserving romantic suspense.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: Two people endure mismatched dates and unknowingly orbit one another.\nVisual style notes: Romantic split-screen indie comedy\nMood notes: Awkward, hopeful\nSignature visual: Split-screen of parallel bad dates\nEnding: Matching phone notifications as they turn; cut before meeting."
+        },
+        "scenes": [
+          {
+            "importKey": "somebody-to-love-scene-1",
+            "order": 1,
+            "title": "Wrong Dates",
+            "description": "Parallel split-screen dates: CHXNDLER and Sofia with incompatible partners.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "somebody-to-love-scene-2",
+            "order": 2,
+            "title": "Near Miss",
+            "description": "They pass near each other outside without noticing.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "somebody-to-love-scene-3",
+            "order": 3,
+            "title": "The Match",
+            "description": "Both receive IT’S A MATCH notification; they turn toward each other.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "somebody-to-love-scene-4",
+            "order": 4,
+            "title": "Cut",
+            "description": "Cut before their actual meeting, preserving romantic suspense.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": 4,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 4.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "somebody-to-love-cast-chxndler-1",
+              "name": "CHXNDLER",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER"
+            },
+            {
+              "importKey": "somebody-to-love-cast-sofia-2",
+              "name": "Sofia",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Sofia"
+            },
+            {
+              "importKey": "somebody-to-love-cast-two-wrong-dates-3",
+              "name": "Two wrong dates",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Two wrong dates"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "somebody-to-love-location-one-cafe-1",
+              "name": "One café",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            },
+            {
+              "importKey": "somebody-to-love-location-sidewalk-or-transit-like-setting-2",
+              "name": "Sidewalk or transit-like setting",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "somebody-to-love-prop-phones-1",
+              "name": "Phones",
+              "description": "Proposed source prop/set-dressing detail: Phones",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "somebody-to-love-prop-cafe-table-2",
+              "name": "café table",
+              "description": "Proposed source prop/set-dressing detail: café table",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "somebody-to-love",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "3b5edb00-7151-4104-bafd-ebb9a1cbc2fc",
+          "songTitle": "CHEERLEADER",
+          "videoType": "Official Music Video",
+          "projectTitle": "The Cheerleader Who Never Sits Down",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "A surreal cheerleader loudly supports CHXNDLER from outside a diner but cannot sit with him when he asks.",
+          "narrativeOverview": "Scene 1: CHXNDLER’s awkward diner date goes badly.\n\nScene 2: Cheerleader outside window enthusiastically cheers each failure.\n\nScene 3: Date leaves; CHXNDLER invites cheerleader into empty booth, but she cannot join.\n\nScene 4: Waitress looks like cheerleader yet does not recognize him; check says YOU GOT THIS! ♡.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: A mother cheers from afar but is not present in the way the child needs.\nVisual style notes: Deadpan surreal diner comedy\nMood notes: Darkly funny, aching\nSignature visual: Cheerleader always cheering through window but never entering\nEnding: Cheerleader-like waitress with no recognition; ambiguous, haunting note."
+        },
+        "scenes": [
+          {
+            "importKey": "cheerleader-scene-1",
+            "order": 1,
+            "title": "The Date",
+            "description": "CHXNDLER’s awkward diner date goes badly.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "cheerleader-scene-2",
+            "order": 2,
+            "title": "The Cheer",
+            "description": "Cheerleader outside window enthusiastically cheers each failure.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "cheerleader-scene-3",
+            "order": 3,
+            "title": "The Empty Seat",
+            "description": "Date leaves; CHXNDLER invites cheerleader into empty booth, but she cannot join.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "cheerleader-scene-4",
+            "order": 4,
+            "title": "The Check",
+            "description": "Waitress looks like cheerleader yet does not recognize him; check says YOU GOT THIS! ♡.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 3–4.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "cheerleader-cast-chxndler-1",
+              "name": "CHXNDLER",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER"
+            },
+            {
+              "importKey": "cheerleader-cast-cheerleader-maternal-figure-2",
+              "name": "Cheerleader / maternal figure",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Cheerleader / maternal figure"
+            },
+            {
+              "importKey": "cheerleader-cast-date-or-waitress-3",
+              "name": "Date or waitress",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Date or waitress"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "cheerleader-location-one-diner-with-window-1",
+              "name": "One diner with window",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "cheerleader-prop-pom-poms-1",
+              "name": "Pom-poms",
+              "description": "Proposed source prop/set-dressing detail: Pom-poms",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "cheerleader-prop-diner-check-2",
+              "name": "diner check",
+              "description": "Proposed source prop/set-dressing detail: diner check",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "cheerleader",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "28f4c9d6-12da-4824-8f46-4129f2388de2",
+          "songTitle": "LOVE ME",
+          "videoType": "Official Music Video",
+          "projectTitle": "Audience of One",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "Two imagined futures contrast lonely fame with ordinary life and real love; he keeps making music either way.",
+          "narrativeOverview": "Scene 1: Parallel visions: famous but lonely vs normal 9-to-5 life together.\n\nScene 2: Takeout, small routines and shared moments are warmer than the glamorous future.\n\nScene 3: CHXNDLER performs on an otherwise empty stage.\n\nScene 4: His partner alone applauds him from the audience.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: Would someone still love CHXNDLER if he never becomes famous?\nVisual style notes: Warm vs cold parallel-life montage\nMood notes: Tender, questioning, hopeful\nSignature visual: One person applauding at an empty concert hall\nEnding: He keeps singing for the one person who loves him."
+        },
+        "scenes": [
+          {
+            "importKey": "love-me-scene-1",
+            "order": 1,
+            "title": "Two Futures",
+            "description": "Parallel visions: famous but lonely vs normal 9-to-5 life together.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "love-me-scene-2",
+            "order": 2,
+            "title": "Ordinary Love",
+            "description": "Takeout, small routines and shared moments are warmer than the glamorous future.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "love-me-scene-3",
+            "order": 3,
+            "title": "The Performance",
+            "description": "CHXNDLER performs on an otherwise empty stage.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "love-me-scene-4",
+            "order": 4,
+            "title": "Audience of One",
+            "description": "His partner alone applauds him from the audience.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 4–5.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "love-me-cast-chxndler-1",
+              "name": "CHXNDLER",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER"
+            },
+            {
+              "importKey": "love-me-cast-love-interest-2",
+              "name": "Love interest",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Love interest"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "love-me-location-apartment-1",
+              "name": "Apartment",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            },
+            {
+              "importKey": "love-me-location-small-empty-stage-2",
+              "name": "Small empty stage",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "love-me-prop-takeout-containers-1",
+              "name": "Takeout containers",
+              "description": "Proposed source prop/set-dressing detail: Takeout containers",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "love-me-prop-microphone-2",
+              "name": "microphone",
+              "description": "Proposed source prop/set-dressing detail: microphone",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "love-me-prop-single-chair-3",
+              "name": "single chair",
+              "description": "Proposed source prop/set-dressing detail: single chair",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "love-me",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "ef2cd735-cd8e-4acc-b240-cd0a061e30a4",
+          "songTitle": "AMERICAN DREAM",
+          "videoType": "Official Music Video",
+          "projectTitle": "Employee of the Month",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "A silver alien performs the motions of conventional success in a retro corporate advertisement that resets every morning.",
+          "narrativeOverview": "Scene 1: 6 AM alarm: LIVE THE DREAM; alien commutes.\n\nScene 2: Employee-of-month photo and sad celebratory pizza slice.\n\nScene 3: Bills, bad car, laundry, tired routine accompanied by absurd cheerful ad slogans.\n\nScene 4: Same 6 AM alarm and routine begin again.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: The prescribed corporate American dream feels empty and absurd to an alien artist.\nVisual style notes: Retro infomercial satire\nMood notes: Absurd, deadpan, critical\nSignature visual: ALIEN employee-of-month photo with a lonely pizza slice\nEnding: LIVE THE DREAM alarm restarts the loop."
+        },
+        "scenes": [
+          {
+            "importKey": "american-dream-scene-1",
+            "order": 1,
+            "title": "Morning Routine",
+            "description": "6 AM alarm: LIVE THE DREAM; alien commutes.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "american-dream-scene-2",
+            "order": 2,
+            "title": "Success",
+            "description": "Employee-of-month photo and sad celebratory pizza slice.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "american-dream-scene-3",
+            "order": 3,
+            "title": "The Dream",
+            "description": "Bills, bad car, laundry, tired routine accompanied by absurd cheerful ad slogans.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "american-dream-scene-4",
+            "order": 4,
+            "title": "Reset",
+            "description": "Same 6 AM alarm and routine begin again.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 4–5.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "american-dream-cast-chxndler-silver-alien-1",
+              "name": "CHXNDLER / silver alien",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER / silver alien"
+            },
+            {
+              "importKey": "american-dream-cast-optional-office-extras-2",
+              "name": "Optional office extras",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Optional office extras"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "american-dream-location-apartment-1",
+              "name": "Apartment",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            },
+            {
+              "importKey": "american-dream-location-office-like-corner-2",
+              "name": "Office-like corner",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            },
+            {
+              "importKey": "american-dream-location-laundry-sidewalk-3",
+              "name": "Laundry / sidewalk",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "american-dream-prop-alarm-phone-1",
+              "name": "Alarm phone",
+              "description": "Proposed source prop/set-dressing detail: Alarm phone",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "american-dream-prop-office-badge-2",
+              "name": "office badge",
+              "description": "Proposed source prop/set-dressing detail: office badge",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "american-dream-prop-pizza-slice-3",
+              "name": "pizza slice",
+              "description": "Proposed source prop/set-dressing detail: pizza slice",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "american-dream-prop-bills-4",
+              "name": "bills",
+              "description": "Proposed source prop/set-dressing detail: bills",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "american-dream",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "56b50a02-e1b6-4159-8101-1b630bbd816e",
+          "songTitle": "WHAT’S MY AGE AGAIN?",
+          "videoType": "Official Music Video",
+          "projectTitle": "Grandma’s Sleepover",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "CHXNDLER dresses for a wild night out; the party turns out to be a sleepover with Grandma.",
+          "narrativeOverview": "Scene 1: CHXNDLER dresses excitedly for a big night.\n\nScene 2: He arrives at Grandma’s for pajama sleepover.\n\nScene 3: Pillow fort, facemasks, pranks and pillow fight.\n\nScene 4: Exhausted CHXNDLER is kicked out while Grandma keeps dancing.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: Being young at heart matters more than behaving your age.\nVisual style notes: Playful punk comedy\nMood notes: Ridiculous, affectionate\nSignature visual: Wild rock-star night is actually a grandma sleepover\nEnding: Grandma outparties him and dances into morning."
+        },
+        "scenes": [
+          {
+            "importKey": "what-s-my-age-again-scene-1",
+            "order": 1,
+            "title": "Getting Ready",
+            "description": "CHXNDLER dresses excitedly for a big night.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "what-s-my-age-again-scene-2",
+            "order": 2,
+            "title": "The Reveal",
+            "description": "He arrives at Grandma’s for pajama sleepover.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "what-s-my-age-again-scene-3",
+            "order": 3,
+            "title": "Party",
+            "description": "Pillow fort, facemasks, pranks and pillow fight.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "what-s-my-age-again-scene-4",
+            "order": 4,
+            "title": "Morning After",
+            "description": "Exhausted CHXNDLER is kicked out while Grandma keeps dancing.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 3–4.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "what-s-my-age-again-cast-chxndler-1",
+              "name": "CHXNDLER",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER"
+            },
+            {
+              "importKey": "what-s-my-age-again-cast-grandma-2",
+              "name": "Grandma",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Grandma"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "what-s-my-age-again-location-one-house-1",
+              "name": "One house",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "what-s-my-age-again-prop-pajamas-1",
+              "name": "Pajamas",
+              "description": "Proposed source prop/set-dressing detail: Pajamas",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "what-s-my-age-again-prop-pillows-2",
+              "name": "pillows",
+              "description": "Proposed source prop/set-dressing detail: pillows",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "what-s-my-age-again-prop-facemasks-3",
+              "name": "facemasks",
+              "description": "Proposed source prop/set-dressing detail: facemasks",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "what-s-my-age-again",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "4d182597-f1bd-413e-9226-41f515aad813",
+          "songTitle": "HAPPY MEAL",
+          "videoType": "Official Music Video",
+          "projectTitle": "Happiness in a Box",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "A cheerful retro fast-food commercial collapses into the quiet loneliness of its clown mascot.",
+          "narrativeOverview": "Scene 1: Bright 1990s-style happy-meal commercial.\n\nScene 2: Clown watches commercial alone, buys food and eats alone in car.\n\nScene 3: Alone in apartment with balloon animals shaped like cow, pig and chicken, cake and candle.\n\nScene 4: He looks at burger and balloon animals, closes the box, blows candle; a balloon pops.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: Fast-food happiness marketing masks loneliness and suffering; empathy for animals.\nVisual style notes: Retro commercial vs sad realism\nMood notes: Satirical, tender, unsettling\nSignature visual: Lonely clown birthday surrounded by balloon farm animals\nEnding: Burger box closes; candle out; balloon pops to black."
+        },
+        "scenes": [
+          {
+            "importKey": "happy-meal-scene-1",
+            "order": 1,
+            "title": "The Commercial",
+            "description": "Bright 1990s-style happy-meal commercial.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "happy-meal-scene-2",
+            "order": 2,
+            "title": "After the Ad",
+            "description": "Clown watches commercial alone, buys food and eats alone in car.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "happy-meal-scene-3",
+            "order": 3,
+            "title": "Birthday",
+            "description": "Alone in apartment with balloon animals shaped like cow, pig and chicken, cake and candle.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "happy-meal-scene-4",
+            "order": 4,
+            "title": "The Choice",
+            "description": "He looks at burger and balloon animals, closes the box, blows candle; a balloon pops.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 4–5.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "happy-meal-cast-chxndler-clown-mascot-1",
+              "name": "CHXNDLER / clown mascot",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER / clown mascot"
+            },
+            {
+              "importKey": "happy-meal-cast-optional-ad-actors-2",
+              "name": "Optional ad actors",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Optional ad actors"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "happy-meal-location-fast-food-styled-corner-1",
+              "name": "Fast-food styled corner",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            },
+            {
+              "importKey": "happy-meal-location-car-2",
+              "name": "Car",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            },
+            {
+              "importKey": "happy-meal-location-apartment-3",
+              "name": "Apartment",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "happy-meal-prop-clown-costume-1",
+              "name": "Clown costume",
+              "description": "Proposed source prop/set-dressing detail: Clown costume",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "happy-meal-prop-takeout-box-2",
+              "name": "takeout box",
+              "description": "Proposed source prop/set-dressing detail: takeout box",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "happy-meal-prop-balloon-animals-3",
+              "name": "balloon animals",
+              "description": "Proposed source prop/set-dressing detail: balloon animals",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "happy-meal-prop-cake-4",
+              "name": "cake",
+              "description": "Proposed source prop/set-dressing detail: cake",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "happy-meal",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "aa3b8388-7168-4129-9e61-85906a0436f7",
+          "songTitle": "LITTLE BLACK HEART",
+          "videoType": "Official Music Video",
+          "projectTitle": "The Masquerade Graveyard",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "A masked lover frees CHXNDLER from a surreal ballroom ritual then disappears.",
+          "narrativeOverview": "Scene 1: CHXNDLER waits restrained in a gothic masquerade setting.\n\nScene 2: Masked lover frees him.\n\nScene 3: They dance together in an empty ballroom.\n\nScene 4: She disappears; a grave marker bears a little black heart.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: Gothic forbidden love and the risk of surrendering your heart.\nVisual style notes: Gothic romantic fantasy\nMood notes: Dark, sexy, tragic\nSignature visual: Gothic masquerade dance beside fake graveyard\nEnding: Her disappearance leaves a black-heart tombstone."
+        },
+        "scenes": [
+          {
+            "importKey": "little-black-heart-scene-1",
+            "order": 1,
+            "title": "Bound",
+            "description": "CHXNDLER waits restrained in a gothic masquerade setting.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "little-black-heart-scene-2",
+            "order": 2,
+            "title": "Rescue",
+            "description": "Masked lover frees him.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "little-black-heart-scene-3",
+            "order": 3,
+            "title": "Dance",
+            "description": "They dance together in an empty ballroom.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "little-black-heart-scene-4",
+            "order": 4,
+            "title": "Vanishing",
+            "description": "She disappears; a grave marker bears a little black heart.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 4–5.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "little-black-heart-cast-chxndler-1",
+              "name": "CHXNDLER",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER"
+            },
+            {
+              "importKey": "little-black-heart-cast-gizmo-sofia-2",
+              "name": "Gizmo / Sofia",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Gizmo / Sofia"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "little-black-heart-location-one-decorated-property-ballroom-fake-graveyard-1",
+              "name": "One decorated property: ballroom / fake graveyard",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "little-black-heart-prop-masks-1",
+              "name": "Masks",
+              "description": "Proposed source prop/set-dressing detail: Masks",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "little-black-heart-prop-candles-leds-2",
+              "name": "candles/LEDs",
+              "description": "Proposed source prop/set-dressing detail: candles/LEDs",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "little-black-heart-prop-fabric-3",
+              "name": "fabric",
+              "description": "Proposed source prop/set-dressing detail: fabric",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "little-black-heart-prop-safe-restraints-4",
+              "name": "safe restraints",
+              "description": "Proposed source prop/set-dressing detail: safe restraints",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "little-black-heart-prop-fake-marker-5",
+              "name": "fake marker",
+              "description": "Proposed source prop/set-dressing detail: fake marker",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "little-black-heart",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "d30a4883-d8bd-43f4-b67b-1a63e8e63b32",
+          "songTitle": "I WOULD DIE FOR YOUR LOVE",
+          "videoType": "Official Music Video",
+          "projectTitle": "The Endless Doorstep",
+          "planningStatus": "planning",
+          "developmentStatus": "developed"
+        },
+        "vision": {
+          "concept": "CHXNDLER repeatedly attempts romantic gestures at a girl’s door and meets cartoonish slapstick fates until he stops trying.",
+          "narrativeOverview": "Scene 1: He arrives with a flower; absurd comic mishap resets him.\n\nScene 2: Escalating romantic gestures lead to safe implied slapstick deaths and resets.\n\nScene 3: He chooses not to knock and turns away.\n\nScene 4: She opens door herself holding his original flower.",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: concept_developed — DEVELOPED SOURCE CONCEPT.\nSong meaning: Trying too hard to prove love can become absurd; authenticity breaks the cycle.\nVisual style notes: Deadpan physical comedy, edit tricks\nMood notes: Absurd, romantic\nSignature visual: Groundhog Day-style resets at one doorway\nEnding: She opens the door without his performance."
+        },
+        "scenes": [
+          {
+            "importKey": "i-would-die-for-your-love-scene-1",
+            "order": 1,
+            "title": "First Knock",
+            "description": "He arrives with a flower; absurd comic mishap resets him.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "i-would-die-for-your-love-scene-2",
+            "order": 2,
+            "title": "Again and Again",
+            "description": "Escalating romantic gestures lead to safe implied slapstick deaths and resets.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "i-would-die-for-your-love-scene-3",
+            "order": 3,
+            "title": "The Choice",
+            "description": "He chooses not to knock and turns away.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          },
+          {
+            "importKey": "i-would-die-for-your-love-scene-4",
+            "order": 4,
+            "title": "The Door Opens",
+            "description": "She opens door herself holding his original flower.",
+            "status": "planned",
+            "castKeys": [],
+            "wardrobeKeys": [],
+            "propKeys": [],
+            "referenceImages": [],
+            "shots": []
+          }
+        ],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "Source concept marked developed; production details remain proposals until confirmed.\nSource estimated shoot duration (preserved as written): 3–4.\nUse cuts and safe effects, not real stunts.",
+          "tasks": [],
+          "castCrew": [
+            {
+              "importKey": "i-would-die-for-your-love-cast-chxndler-1",
+              "name": "CHXNDLER",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: CHXNDLER"
+            },
+            {
+              "importKey": "i-would-die-for-your-love-cast-love-interest-2",
+              "name": "Love interest",
+              "role": "Proposed participant",
+              "status": "Planned",
+              "notes": "PROPOSED from source; not contacted, hired, or confirmed. Source wording: Love interest"
+            }
+          ],
+          "locations": [
+            {
+              "importKey": "i-would-die-for-your-love-location-one-doorway-entrance-1",
+              "name": "One doorway / entrance",
+              "status": "Idea",
+              "notes": "PROPOSED from source; not verified, booked, or confirmed. No address supplied."
+            }
+          ],
+          "wardrobe": [],
+          "props": [
+            {
+              "importKey": "i-would-die-for-your-love-prop-flower-1",
+              "name": "Flower",
+              "description": "Proposed source prop/set-dressing detail: Flower",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "i-would-die-for-your-love-prop-door-2",
+              "name": "door",
+              "description": "Proposed source prop/set-dressing detail: door",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            },
+            {
+              "importKey": "i-would-die-for-your-love-prop-repeatable-costume-3",
+              "name": "repeatable costume",
+              "description": "Proposed source prop/set-dressing detail: repeatable costume",
+              "status": "Needed",
+              "notes": "PROPOSED only; sourcing and safety review remain TBD."
+            }
+          ],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "i-would-die-for-your-love",
+          "sourceDevelopmentStatus": "concept_developed",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      }
+    ]
+  },
+  {
+    "batch": 2,
+    "phase": "needs_development",
+    "plans": [
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "f5692faf-33a2-4461-a9de-cf732928eef4",
+          "songTitle": "SUPERSTAR",
+          "videoType": "Official Music Video",
+          "planningStatus": "concept",
+          "developmentStatus": "needs_development"
+        },
+        "vision": {
+          "concept": "Music-video treatment has not yet been finalized.",
+          "narrativeOverview": "",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Aspiration, self-belief and star imagery; artwork/video assets discussed.\nSignature visual: To develop\nEnding: To develop"
+        },
+        "scenes": [],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+          "tasks": [],
+          "castCrew": [],
+          "locations": [],
+          "wardrobe": [],
+          "props": [],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "superstar",
+          "sourceDevelopmentStatus": "needs_treatment",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "850f05f7-dd5c-441d-9fd1-6e84b0e246b7",
+          "songTitle": "PINK MOON",
+          "videoType": "Official Music Video",
+          "planningStatus": "concept",
+          "developmentStatus": "needs_development"
+        },
+        "vision": {
+          "concept": "Music-video treatment has not yet been finalized.",
+          "narrativeOverview": "",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Heartverse song; full music-video storyline not established.\nSignature visual: To develop\nEnding: To develop"
+        },
+        "scenes": [],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+          "tasks": [],
+          "castCrew": [],
+          "locations": [],
+          "wardrobe": [],
+          "props": [],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "pink-moon",
+          "sourceDevelopmentStatus": "needs_treatment",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "da2f0844-09c2-40e3-ab81-14f7e260fcab",
+          "songTitle": "ALWAYS ON MY MIND",
+          "videoType": "Official Music Video",
+          "planningStatus": "concept",
+          "developmentStatus": "needs_development"
+        },
+        "vision": {
+          "concept": "Music-video treatment has not yet been finalized.",
+          "narrativeOverview": "",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Heartverse song; full music-video storyline not established.\nSignature visual: To develop\nEnding: To develop"
+        },
+        "scenes": [],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+          "tasks": [],
+          "castCrew": [],
+          "locations": [],
+          "wardrobe": [],
+          "props": [],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "always-on-my-mind",
+          "sourceDevelopmentStatus": "needs_treatment",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "07175340-ac4d-4519-8a78-5db2c5a59efe",
+          "songTitle": "BE MY BEE",
+          "videoType": "Official Music Video",
+          "planningStatus": "concept",
+          "developmentStatus": "needs_development"
+        },
+        "vision": {
+          "concept": "Music-video treatment has not yet been finalized.",
+          "narrativeOverview": "",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Heartverse song; full music-video storyline not established.\nSignature visual: To develop\nEnding: To develop"
+        },
+        "scenes": [],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+          "tasks": [],
+          "castCrew": [],
+          "locations": [],
+          "wardrobe": [],
+          "props": [],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "be-my-bee",
+          "sourceDevelopmentStatus": "needs_treatment",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "d8c96dd9-5290-4672-8550-95e43a26cea5",
+          "songTitle": "I MIGHT FALL IN LOVE WITH YOU",
+          "videoType": "Official Music Video",
+          "planningStatus": "concept",
+          "developmentStatus": "needs_development"
+        },
+        "vision": {
+          "concept": "Music-video treatment has not yet been finalized.",
+          "narrativeOverview": "",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Romantic song; full music-video storyline not established.\nSignature visual: To develop\nEnding: To develop"
+        },
+        "scenes": [],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+          "tasks": [],
+          "castCrew": [],
+          "locations": [],
+          "wardrobe": [],
+          "props": [],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "i-might-fall-in-love-with-you",
+          "sourceDevelopmentStatus": "needs_treatment",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "698c36ed-ab70-49ab-abc8-8affcbfa0ce7",
+          "songTitle": "HOME",
+          "videoType": "Official Music Video",
+          "planningStatus": "concept",
+          "developmentStatus": "needs_development"
+        },
+        "vision": {
+          "concept": "Music-video treatment has not yet been finalized.",
+          "narrativeOverview": "",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Heartverse song; full music-video storyline not established.\nSignature visual: To develop\nEnding: To develop"
+        },
+        "scenes": [],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+          "tasks": [],
+          "castCrew": [],
+          "locations": [],
+          "wardrobe": [],
+          "props": [],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "home",
+          "sourceDevelopmentStatus": "needs_treatment",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "777cd015-179d-4ecf-b8d8-7b306f704b67",
+          "songTitle": "TIENES UN AMIGO",
+          "videoType": "Official Music Video",
+          "planningStatus": "concept",
+          "developmentStatus": "needs_development"
+        },
+        "vision": {
+          "concept": "Music-video treatment has not yet been finalized.",
+          "narrativeOverview": "",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Song previously listed; full video storyline not established.\nSignature visual: To develop\nEnding: To develop"
+        },
+        "scenes": [],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+          "tasks": [],
+          "castCrew": [],
+          "locations": [],
+          "wardrobe": [],
+          "props": [],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "tienes-un-amigo",
+          "sourceDevelopmentStatus": "needs_treatment",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "eacc3ae4-b392-4511-9090-ff943d01a89c",
+          "songTitle": "COLORS OF OUR HOME",
+          "videoType": "Official Music Video",
+          "planningStatus": "concept",
+          "developmentStatus": "needs_development"
+        },
+        "vision": {
+          "concept": "Music-video treatment has not yet been finalized.",
+          "narrativeOverview": "",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Song previously listed; full video storyline not established.\nSignature visual: To develop\nEnding: To develop"
+        },
+        "scenes": [],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+          "tasks": [],
+          "castCrew": [],
+          "locations": [],
+          "wardrobe": [],
+          "props": [],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "colors-of-our-home",
+          "sourceDevelopmentStatus": "needs_treatment",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "eb996ae9-47d4-45ef-9907-4fb457d7765e",
+          "songTitle": "BAD IDEA",
+          "videoType": "Official Music Video",
+          "planningStatus": "concept",
+          "developmentStatus": "needs_development"
+        },
+        "vision": {
+          "concept": "Music-video treatment has not yet been finalized.",
+          "narrativeOverview": "",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Attraction to someone you should avoid; recurring temptation.\nSignature visual: To develop\nEnding: To develop"
+        },
+        "scenes": [],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+          "tasks": [],
+          "castCrew": [],
+          "locations": [],
+          "wardrobe": [],
+          "props": [],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "bad-idea",
+          "sourceDevelopmentStatus": "needs_treatment",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "c86854f3-5d42-4213-bb11-5ae4f6835e37",
+          "songTitle": "LIKE THIS",
+          "videoType": "Official Music Video",
+          "planningStatus": "concept",
+          "developmentStatus": "needs_development"
+        },
+        "vision": {
+          "concept": "Music-video treatment has not yet been finalized.",
+          "narrativeOverview": "",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Sexy, fast-paced romantic energy; elevator-going-up image explored.\nSignature visual: To develop\nEnding: To develop"
+        },
+        "scenes": [],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+          "tasks": [],
+          "castCrew": [],
+          "locations": [],
+          "wardrobe": [],
+          "props": [],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "like-this",
+          "sourceDevelopmentStatus": "needs_treatment",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "6c1882bd-02da-42df-925a-c70d418f2b01",
+          "songTitle": "ALMOST HUMAN",
+          "videoType": "Official Music Video",
+          "planningStatus": "concept",
+          "developmentStatus": "needs_development"
+        },
+        "vision": {
+          "concept": "Music-video treatment has not yet been finalized.",
+          "narrativeOverview": "",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Animal empathy and the question of what makes someone human.\nSignature visual: To develop\nEnding: To develop"
+        },
+        "scenes": [],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+          "tasks": [],
+          "castCrew": [],
+          "locations": [],
+          "wardrobe": [],
+          "props": [],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "almost-human",
+          "sourceDevelopmentStatus": "needs_treatment",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "76369b7b-c788-4fe6-9e61-e0875ece711a",
+          "songTitle": "WHO TAUGHT YOU TO LOVE?",
+          "videoType": "Official Music Video",
+          "planningStatus": "concept",
+          "developmentStatus": "needs_development"
+        },
+        "vision": {
+          "concept": "Music-video treatment has not yet been finalized.",
+          "narrativeOverview": "",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Animals feel love, trust, fear and attachment.\nSignature visual: To develop\nEnding: To develop"
+        },
+        "scenes": [],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+          "tasks": [],
+          "castCrew": [],
+          "locations": [],
+          "wardrobe": [],
+          "props": [],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "who-taught-you-to-love",
+          "sourceDevelopmentStatus": "needs_treatment",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      },
+      {
+        "schemaVersion": "chxndler.music-video-plan.v1",
+        "project": {
+          "songId": "de5b3789-1fae-413b-82fc-c212c3b22942",
+          "songTitle": "COPYCAT",
+          "videoType": "Official Music Video",
+          "planningStatus": "concept",
+          "developmentStatus": "needs_development"
+        },
+        "vision": {
+          "concept": "Music-video treatment has not yet been finalized.",
+          "narrativeOverview": "",
+          "format": null,
+          "visualStyles": [],
+          "moods": [],
+          "inspirationLinks": [],
+          "referenceImages": [],
+          "colorPalette": [],
+          "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Someone can copy a song but not steal the original artist’s soul or vision.\nSignature visual: To develop\nEnding: To develop"
+        },
+        "scenes": [],
+        "production": {
+          "shootDate": null,
+          "shootDateStatus": "tbd",
+          "estimatedShootHours": null,
+          "budget": null,
+          "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+          "tasks": [],
+          "castCrew": [],
+          "locations": [],
+          "wardrobe": [],
+          "props": [],
+          "shootSchedule": []
+        },
+        "release": {
+          "editingStatus": "Not Started",
+          "finalVideoApproved": false,
+          "targetVideoReleaseDate": null,
+          "publishedVideoUrl": null,
+          "publicationStatus": "Not published",
+          "actualPublicationDate": null
+        },
+        "extensions": {
+          "source": "chxndler_music_video_import_source_60.json",
+          "sourceSlug": "copycat",
+          "sourceDevelopmentStatus": "needs_treatment",
+          "reviewRequired": true,
+          "existingVideoCheckRequired": true
+        }
+      }
+    ]
+  }
+]

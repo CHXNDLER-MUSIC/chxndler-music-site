@@ -15,16 +15,17 @@
         "songTitle": { "type": "string", "minLength": 1, "maxLength": 180 },
         "videoType": { "const": "Official Music Video" },
         "projectTitle": { "type": "string", "minLength": 1, "maxLength": 180 },
-        "planningStatus": { "enum": ["concept", "planning", "agreement", "filming", "editing", "delivered", "complete"] }
+        "planningStatus": { "enum": ["concept", "planning", "agreement", "filming", "editing", "delivered", "complete"] },
+        "developmentStatus": { "enum": ["developed", "needs_development"], "description": "Set to needs_development for concept-only entries with no source storyboard; this permits an empty scene list without inventing scenes." }
       }
     },
     "vision": {
       "type": "object", "additionalProperties": false,
-      "required": ["concept", "narrativeOverview", "format", "visualStyles", "moods", "inspirationLinks", "referenceImages", "colorPalette"],
+      "required": ["concept", "visualStyles", "moods", "inspirationLinks", "referenceImages", "colorPalette"],
       "properties": {
         "concept": { "type": "string", "minLength": 1, "maxLength": 5000 },
-        "narrativeOverview": { "type": "string", "minLength": 1, "maxLength": 12000 },
-        "format": { "enum": ["Narrative", "Performance", "Visualizer", "Hybrid"] },
+        "narrativeOverview": { "type": "string", "maxLength": 12000 },
+        "format": { "enum": ["Narrative", "Performance", "Visualizer", "Hybrid", null] },
         "visualStyles": { "type": "array", "items": { "type": "string", "minLength": 1 } },
         "moods": { "type": "array", "items": { "type": "string", "minLength": 1 } },
         "inspirationLinks": { "type": "array", "items": { "type": "string", "format": "uri" } },
@@ -34,7 +35,7 @@
       }
     },
     "scenes": {
-      "type": "array", "minItems": 1, "maxItems": 100,
+      "type": "array", "maxItems": 100,
       "items": {
         "type": "object", "additionalProperties": false,
         "required": ["importKey", "order", "title", "description", "status", "referenceImages", "castKeys", "wardrobeKeys", "propKeys", "shots"],

@@ -46,18 +46,25 @@ export async function POST(request: Request) {
   const choices = body.choices && typeof body.choices === "object" && !Array.isArray(body.choices) ? body.choices : {};
   const songIds = plans.map(plan => plan.project.songId);
   const db = getSupabaseAdmin();
-  const [{ data: songs, error: songError }, { data: projects, error: projectError }] = await Promise.all([
-    db.from("songs").select("id,title").in("id", songIds),
+  const [{ data: songs, error: songError }, { data: projects, error: projectError }, { data: publishedItems, error: contentError }] = await Promise.all([
+    db.from("songs").select("id,title,youtube_music_video_url").in("id", songIds),
     db.from("music_video_projects").select("id,song_id,project_type,status,public_concept,workspace,updated_at").eq("project_type", "primary").in("song_id", songIds),
+    db.from("content_items").select("id,song_id,music_video_project_id,content_template_key,published,recorded,edited,post_ready").in("song_id", songIds).eq("content_template_key", "official_music_video"),
   ]);
-  if (songError || projectError) return NextResponse.json({ error: "Could not read the existing songs and music video projects." }, { status: 500 });
-  const songsById = new Map((songs || []).map(song => [song.id, song]));
+  if (songError || projectError || contentError) return NextResponse.json({ error: "Could not read the existing songs, video projects, and release records." }, { status: 500 });
+  const publishedSongIds = new Set((publishedItems || []).filter(item => item.published === true).map(item => item.song_id));
+  const contentBySong = new Map<string, any[]>();
+  for (const item of publishedItems || []) contentBySong.set(item.song_id, [...(contentBySong.get(item.song_id) || []), item]);
+  const songsById = new Map((songs || []).map(song => [song.id, { ...song, existingPublishedVideo: publishedSongIds.has(song.id) }]));
   const projectsBySong = new Map((projects || []).map(project => [project.song_id, project]));
-  const previews = plans.map((plan, index) => {
+  const previews: any[] = plans.map((plan, index) => {
     const song = songsById.get(plan.project.songId);
     const project = projectsBySong.get(plan.project.songId) || null;
-    const preview = previewMusicVideoPlanImport({ plan, project, song, choices, allowCreateProject });
-    return { index, songId: plan.project.songId, planTitle: plan.project.projectTitle || plan.project.songTitle, token: previewToken(plan, project), ...preview, candidateWorkspace: undefined, candidateProject: undefined };
+    const preview = previewMusicVideoPlanImport({ plan, project: project as any, song: song as any, choices, allowCreateProject });
+    const { songId: _songId, ...summary } = preview;
+    const contentRows = contentBySong.get(plan.project.songId) || [];
+    const contentItemAction = summary.skipped ? "none (existing video protected)" : project ? "no content update for an existing project" : contentRows.some(item => !item.music_video_project_id) ? "link existing official-video checklist item and preserve progress" : "create one official-video content item";
+    return { index, songId: plan.project.songId, planTitle: plan.project.projectTitle || plan.project.songTitle, developmentStatus: plan.project.developmentStatus || "developed", token: previewToken(plan, project), contentItemAction, ...summary, candidateWorkspace: undefined, candidateProject: undefined };
   });
   if (body.action === "preview") return NextResponse.json({ plans: previews, totals: sumPlanCounts(previews), createProjects: allowCreateProject });
 
@@ -68,14 +75,14 @@ export async function POST(request: Request) {
   const unresolved = unresolvedMusicVideoPlanConflicts(previews, choices);
   if (unresolved.length) return NextResponse.json({ error: "Choose Keep current or Use imported for every conflict before importing.", conflicts: unresolved, plans: previews, totals: sumPlanCounts(previews) }, { status: 409 });
 
-  const results = [];
+  const results: any[] = [];
   for (let index = 0; index < previews.length; index++) {
     const preview = previews[index];
     const plan = plans[index];
     if (preview.skipped) { results.push({ songId: preview.songId, songTitle: preview.songTitle, status: "skipped", warnings: preview.warnings, counts: preview.counts }); continue; }
     let project = projectsBySong.get(preview.songId) || null;
     if (project) {
-      const nextProject = preview.candidateProject || previewMusicVideoPlanImport({ plan, project, song: songsById.get(preview.songId), choices, allowCreateProject }).candidateProject;
+      const nextProject = preview.candidateProject || previewMusicVideoPlanImport({ plan, project: project as any, song: songsById.get(preview.songId) as any, choices, allowCreateProject }).candidateProject;
       const changed = JSON.stringify(project.workspace || {}) !== JSON.stringify(nextProject.workspace || {}) || project.status !== nextProject.status || project.public_concept !== nextProject.public_concept;
       if (!changed) { results.push({ songId: preview.songId, songTitle: preview.songTitle, projectId: project.id, status: "unchanged", warnings: preview.warnings, counts: preview.counts }); continue; }
       const updated = await db.from("music_video_projects").update({ workspace: nextProject.workspace, status: nextProject.status, public_concept: nextProject.public_concept, updated_at: new Date().toISOString() }).eq("id", project.id).eq("updated_at", project.updated_at).select("id,updated_at").maybeSingle();
@@ -83,7 +90,7 @@ export async function POST(request: Request) {
       results.push({ songId: preview.songId, songTitle: preview.songTitle, projectId: project.id, status: "updated", warnings: preview.warnings, counts: preview.counts });
       continue;
     }
-    const candidate = preview.candidateProject || previewMusicVideoPlanImport({ plan, project: null, song: songsById.get(preview.songId), choices, allowCreateProject }).candidateProject;
+    const candidate = preview.candidateProject || previewMusicVideoPlanImport({ plan, project: null, song: songsById.get(preview.songId) as any, choices, allowCreateProject }).candidateProject;
     const inserted = await db.from("music_video_projects").upsert({ song_id: preview.songId, project_type: "primary", status: candidate.status, public_concept: candidate.public_concept, workspace: candidate.workspace }, { onConflict: "song_id,project_type", ignoreDuplicates: true }).select("id,song_id,project_type,status,public_concept,workspace,updated_at").maybeSingle();
     if (inserted.error) return NextResponse.json({ error: "Could not create the official video project.", partial: results.length > 0, results, failedSongId: preview.songId }, { status: 500 });
     project = inserted.data;

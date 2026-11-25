@@ -1,0 +1,652 @@
+[
+  {
+    "schemaVersion": "chxndler.music-video-plan.v1",
+    "project": {
+      "songId": "f5692faf-33a2-4461-a9de-cf732928eef4",
+      "songTitle": "SUPERSTAR",
+      "videoType": "Official Music Video",
+      "planningStatus": "concept",
+      "developmentStatus": "needs_development"
+    },
+    "vision": {
+      "concept": "Music-video treatment has not yet been finalized.",
+      "narrativeOverview": "",
+      "format": null,
+      "visualStyles": [],
+      "moods": [],
+      "inspirationLinks": [],
+      "referenceImages": [],
+      "colorPalette": [],
+      "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Aspiration, self-belief and star imagery; artwork/video assets discussed.\nSignature visual: To develop\nEnding: To develop"
+    },
+    "scenes": [],
+    "production": {
+      "shootDate": null,
+      "shootDateStatus": "tbd",
+      "estimatedShootHours": null,
+      "budget": null,
+      "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+      "tasks": [],
+      "castCrew": [],
+      "locations": [],
+      "wardrobe": [],
+      "props": [],
+      "shootSchedule": []
+    },
+    "release": {
+      "editingStatus": "Not Started",
+      "finalVideoApproved": false,
+      "targetVideoReleaseDate": null,
+      "publishedVideoUrl": null,
+      "publicationStatus": "Not published",
+      "actualPublicationDate": null
+    },
+    "extensions": {
+      "source": "chxndler_music_video_import_source_60.json",
+      "sourceSlug": "superstar",
+      "sourceDevelopmentStatus": "needs_treatment",
+      "reviewRequired": true,
+      "existingVideoCheckRequired": true
+    }
+  },
+  {
+    "schemaVersion": "chxndler.music-video-plan.v1",
+    "project": {
+      "songId": "850f05f7-dd5c-441d-9fd1-6e84b0e246b7",
+      "songTitle": "PINK MOON",
+      "videoType": "Official Music Video",
+      "planningStatus": "concept",
+      "developmentStatus": "needs_development"
+    },
+    "vision": {
+      "concept": "Music-video treatment has not yet been finalized.",
+      "narrativeOverview": "",
+      "format": null,
+      "visualStyles": [],
+      "moods": [],
+      "inspirationLinks": [],
+      "referenceImages": [],
+      "colorPalette": [],
+      "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Heartverse song; full music-video storyline not established.\nSignature visual: To develop\nEnding: To develop"
+    },
+    "scenes": [],
+    "production": {
+      "shootDate": null,
+      "shootDateStatus": "tbd",
+      "estimatedShootHours": null,
+      "budget": null,
+      "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+      "tasks": [],
+      "castCrew": [],
+      "locations": [],
+      "wardrobe": [],
+      "props": [],
+      "shootSchedule": []
+    },
+    "release": {
+      "editingStatus": "Not Started",
+      "finalVideoApproved": false,
+      "targetVideoReleaseDate": null,
+      "publishedVideoUrl": null,
+      "publicationStatus": "Not published",
+      "actualPublicationDate": null
+    },
+    "extensions": {
+      "source": "chxndler_music_video_import_source_60.json",
+      "sourceSlug": "pink-moon",
+      "sourceDevelopmentStatus": "needs_treatment",
+      "reviewRequired": true,
+      "existingVideoCheckRequired": true
+    }
+  },
+  {
+    "schemaVersion": "chxndler.music-video-plan.v1",
+    "project": {
+      "songId": "da2f0844-09c2-40e3-ab81-14f7e260fcab",
+      "songTitle": "ALWAYS ON MY MIND",
+      "videoType": "Official Music Video",
+      "planningStatus": "concept",
+      "developmentStatus": "needs_development"
+    },
+    "vision": {
+      "concept": "Music-video treatment has not yet been finalized.",
+      "narrativeOverview": "",
+      "format": null,
+      "visualStyles": [],
+      "moods": [],
+      "inspirationLinks": [],
+      "referenceImages": [],
+      "colorPalette": [],
+      "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Heartverse song; full music-video storyline not established.\nSignature visual: To develop\nEnding: To develop"
+    },
+    "scenes": [],
+    "production": {
+      "shootDate": null,
+      "shootDateStatus": "tbd",
+      "estimatedShootHours": null,
+      "budget": null,
+      "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+      "tasks": [],
+      "castCrew": [],
+      "locations": [],
+      "wardrobe": [],
+      "props": [],
+      "shootSchedule": []
+    },
+    "release": {
+      "editingStatus": "Not Started",
+      "finalVideoApproved": false,
+      "targetVideoReleaseDate": null,
+      "publishedVideoUrl": null,
+      "publicationStatus": "Not published",
+      "actualPublicationDate": null
+    },
+    "extensions": {
+      "source": "chxndler_music_video_import_source_60.json",
+      "sourceSlug": "always-on-my-mind",
+      "sourceDevelopmentStatus": "needs_treatment",
+      "reviewRequired": true,
+      "existingVideoCheckRequired": true
+    }
+  },
+  {
+    "schemaVersion": "chxndler.music-video-plan.v1",
+    "project": {
+      "songId": "07175340-ac4d-4519-8a78-5db2c5a59efe",
+      "songTitle": "BE MY BEE",
+      "videoType": "Official Music Video",
+      "planningStatus": "concept",
+      "developmentStatus": "needs_development"
+    },
+    "vision": {
+      "concept": "Music-video treatment has not yet been finalized.",
+      "narrativeOverview": "",
+      "format": null,
+      "visualStyles": [],
+      "moods": [],
+      "inspirationLinks": [],
+      "referenceImages": [],
+      "colorPalette": [],
+      "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Heartverse song; full music-video storyline not established.\nSignature visual: To develop\nEnding: To develop"
+    },
+    "scenes": [],
+    "production": {
+      "shootDate": null,
+      "shootDateStatus": "tbd",
+      "estimatedShootHours": null,
+      "budget": null,
+      "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+      "tasks": [],
+      "castCrew": [],
+      "locations": [],
+      "wardrobe": [],
+      "props": [],
+      "shootSchedule": []
+    },
+    "release": {
+      "editingStatus": "Not Started",
+      "finalVideoApproved": false,
+      "targetVideoReleaseDate": null,
+      "publishedVideoUrl": null,
+      "publicationStatus": "Not published",
+      "actualPublicationDate": null
+    },
+    "extensions": {
+      "source": "chxndler_music_video_import_source_60.json",
+      "sourceSlug": "be-my-bee",
+      "sourceDevelopmentStatus": "needs_treatment",
+      "reviewRequired": true,
+      "existingVideoCheckRequired": true
+    }
+  },
+  {
+    "schemaVersion": "chxndler.music-video-plan.v1",
+    "project": {
+      "songId": "d8c96dd9-5290-4672-8550-95e43a26cea5",
+      "songTitle": "I MIGHT FALL IN LOVE WITH YOU",
+      "videoType": "Official Music Video",
+      "planningStatus": "concept",
+      "developmentStatus": "needs_development"
+    },
+    "vision": {
+      "concept": "Music-video treatment has not yet been finalized.",
+      "narrativeOverview": "",
+      "format": null,
+      "visualStyles": [],
+      "moods": [],
+      "inspirationLinks": [],
+      "referenceImages": [],
+      "colorPalette": [],
+      "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Romantic song; full music-video storyline not established.\nSignature visual: To develop\nEnding: To develop"
+    },
+    "scenes": [],
+    "production": {
+      "shootDate": null,
+      "shootDateStatus": "tbd",
+      "estimatedShootHours": null,
+      "budget": null,
+      "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+      "tasks": [],
+      "castCrew": [],
+      "locations": [],
+      "wardrobe": [],
+      "props": [],
+      "shootSchedule": []
+    },
+    "release": {
+      "editingStatus": "Not Started",
+      "finalVideoApproved": false,
+      "targetVideoReleaseDate": null,
+      "publishedVideoUrl": null,
+      "publicationStatus": "Not published",
+      "actualPublicationDate": null
+    },
+    "extensions": {
+      "source": "chxndler_music_video_import_source_60.json",
+      "sourceSlug": "i-might-fall-in-love-with-you",
+      "sourceDevelopmentStatus": "needs_treatment",
+      "reviewRequired": true,
+      "existingVideoCheckRequired": true
+    }
+  },
+  {
+    "schemaVersion": "chxndler.music-video-plan.v1",
+    "project": {
+      "songId": "698c36ed-ab70-49ab-abc8-8affcbfa0ce7",
+      "songTitle": "HOME",
+      "videoType": "Official Music Video",
+      "planningStatus": "concept",
+      "developmentStatus": "needs_development"
+    },
+    "vision": {
+      "concept": "Music-video treatment has not yet been finalized.",
+      "narrativeOverview": "",
+      "format": null,
+      "visualStyles": [],
+      "moods": [],
+      "inspirationLinks": [],
+      "referenceImages": [],
+      "colorPalette": [],
+      "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Heartverse song; full music-video storyline not established.\nSignature visual: To develop\nEnding: To develop"
+    },
+    "scenes": [],
+    "production": {
+      "shootDate": null,
+      "shootDateStatus": "tbd",
+      "estimatedShootHours": null,
+      "budget": null,
+      "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+      "tasks": [],
+      "castCrew": [],
+      "locations": [],
+      "wardrobe": [],
+      "props": [],
+      "shootSchedule": []
+    },
+    "release": {
+      "editingStatus": "Not Started",
+      "finalVideoApproved": false,
+      "targetVideoReleaseDate": null,
+      "publishedVideoUrl": null,
+      "publicationStatus": "Not published",
+      "actualPublicationDate": null
+    },
+    "extensions": {
+      "source": "chxndler_music_video_import_source_60.json",
+      "sourceSlug": "home",
+      "sourceDevelopmentStatus": "needs_treatment",
+      "reviewRequired": true,
+      "existingVideoCheckRequired": true
+    }
+  },
+  {
+    "schemaVersion": "chxndler.music-video-plan.v1",
+    "project": {
+      "songId": "777cd015-179d-4ecf-b8d8-7b306f704b67",
+      "songTitle": "TIENES UN AMIGO",
+      "videoType": "Official Music Video",
+      "planningStatus": "concept",
+      "developmentStatus": "needs_development"
+    },
+    "vision": {
+      "concept": "Music-video treatment has not yet been finalized.",
+      "narrativeOverview": "",
+      "format": null,
+      "visualStyles": [],
+      "moods": [],
+      "inspirationLinks": [],
+      "referenceImages": [],
+      "colorPalette": [],
+      "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Song previously listed; full video storyline not established.\nSignature visual: To develop\nEnding: To develop"
+    },
+    "scenes": [],
+    "production": {
+      "shootDate": null,
+      "shootDateStatus": "tbd",
+      "estimatedShootHours": null,
+      "budget": null,
+      "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+      "tasks": [],
+      "castCrew": [],
+      "locations": [],
+      "wardrobe": [],
+      "props": [],
+      "shootSchedule": []
+    },
+    "release": {
+      "editingStatus": "Not Started",
+      "finalVideoApproved": false,
+      "targetVideoReleaseDate": null,
+      "publishedVideoUrl": null,
+      "publicationStatus": "Not published",
+      "actualPublicationDate": null
+    },
+    "extensions": {
+      "source": "chxndler_music_video_import_source_60.json",
+      "sourceSlug": "tienes-un-amigo",
+      "sourceDevelopmentStatus": "needs_treatment",
+      "reviewRequired": true,
+      "existingVideoCheckRequired": true
+    }
+  },
+  {
+    "schemaVersion": "chxndler.music-video-plan.v1",
+    "project": {
+      "songId": "eacc3ae4-b392-4511-9090-ff943d01a89c",
+      "songTitle": "COLORS OF OUR HOME",
+      "videoType": "Official Music Video",
+      "planningStatus": "concept",
+      "developmentStatus": "needs_development"
+    },
+    "vision": {
+      "concept": "Music-video treatment has not yet been finalized.",
+      "narrativeOverview": "",
+      "format": null,
+      "visualStyles": [],
+      "moods": [],
+      "inspirationLinks": [],
+      "referenceImages": [],
+      "colorPalette": [],
+      "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Song previously listed; full video storyline not established.\nSignature visual: To develop\nEnding: To develop"
+    },
+    "scenes": [],
+    "production": {
+      "shootDate": null,
+      "shootDateStatus": "tbd",
+      "estimatedShootHours": null,
+      "budget": null,
+      "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+      "tasks": [],
+      "castCrew": [],
+      "locations": [],
+      "wardrobe": [],
+      "props": [],
+      "shootSchedule": []
+    },
+    "release": {
+      "editingStatus": "Not Started",
+      "finalVideoApproved": false,
+      "targetVideoReleaseDate": null,
+      "publishedVideoUrl": null,
+      "publicationStatus": "Not published",
+      "actualPublicationDate": null
+    },
+    "extensions": {
+      "source": "chxndler_music_video_import_source_60.json",
+      "sourceSlug": "colors-of-our-home",
+      "sourceDevelopmentStatus": "needs_treatment",
+      "reviewRequired": true,
+      "existingVideoCheckRequired": true
+    }
+  },
+  {
+    "schemaVersion": "chxndler.music-video-plan.v1",
+    "project": {
+      "songId": "eb996ae9-47d4-45ef-9907-4fb457d7765e",
+      "songTitle": "BAD IDEA",
+      "videoType": "Official Music Video",
+      "planningStatus": "concept",
+      "developmentStatus": "needs_development"
+    },
+    "vision": {
+      "concept": "Music-video treatment has not yet been finalized.",
+      "narrativeOverview": "",
+      "format": null,
+      "visualStyles": [],
+      "moods": [],
+      "inspirationLinks": [],
+      "referenceImages": [],
+      "colorPalette": [],
+      "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Attraction to someone you should avoid; recurring temptation.\nSignature visual: To develop\nEnding: To develop"
+    },
+    "scenes": [],
+    "production": {
+      "shootDate": null,
+      "shootDateStatus": "tbd",
+      "estimatedShootHours": null,
+      "budget": null,
+      "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+      "tasks": [],
+      "castCrew": [],
+      "locations": [],
+      "wardrobe": [],
+      "props": [],
+      "shootSchedule": []
+    },
+    "release": {
+      "editingStatus": "Not Started",
+      "finalVideoApproved": false,
+      "targetVideoReleaseDate": null,
+      "publishedVideoUrl": null,
+      "publicationStatus": "Not published",
+      "actualPublicationDate": null
+    },
+    "extensions": {
+      "source": "chxndler_music_video_import_source_60.json",
+      "sourceSlug": "bad-idea",
+      "sourceDevelopmentStatus": "needs_treatment",
+      "reviewRequired": true,
+      "existingVideoCheckRequired": true
+    }
+  },
+  {
+    "schemaVersion": "chxndler.music-video-plan.v1",
+    "project": {
+      "songId": "c86854f3-5d42-4213-bb11-5ae4f6835e37",
+      "songTitle": "LIKE THIS",
+      "videoType": "Official Music Video",
+      "planningStatus": "concept",
+      "developmentStatus": "needs_development"
+    },
+    "vision": {
+      "concept": "Music-video treatment has not yet been finalized.",
+      "narrativeOverview": "",
+      "format": null,
+      "visualStyles": [],
+      "moods": [],
+      "inspirationLinks": [],
+      "referenceImages": [],
+      "colorPalette": [],
+      "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Sexy, fast-paced romantic energy; elevator-going-up image explored.\nSignature visual: To develop\nEnding: To develop"
+    },
+    "scenes": [],
+    "production": {
+      "shootDate": null,
+      "shootDateStatus": "tbd",
+      "estimatedShootHours": null,
+      "budget": null,
+      "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+      "tasks": [],
+      "castCrew": [],
+      "locations": [],
+      "wardrobe": [],
+      "props": [],
+      "shootSchedule": []
+    },
+    "release": {
+      "editingStatus": "Not Started",
+      "finalVideoApproved": false,
+      "targetVideoReleaseDate": null,
+      "publishedVideoUrl": null,
+      "publicationStatus": "Not published",
+      "actualPublicationDate": null
+    },
+    "extensions": {
+      "source": "chxndler_music_video_import_source_60.json",
+      "sourceSlug": "like-this",
+      "sourceDevelopmentStatus": "needs_treatment",
+      "reviewRequired": true,
+      "existingVideoCheckRequired": true
+    }
+  },
+  {
+    "schemaVersion": "chxndler.music-video-plan.v1",
+    "project": {
+      "songId": "6c1882bd-02da-42df-925a-c70d418f2b01",
+      "songTitle": "ALMOST HUMAN",
+      "videoType": "Official Music Video",
+      "planningStatus": "concept",
+      "developmentStatus": "needs_development"
+    },
+    "vision": {
+      "concept": "Music-video treatment has not yet been finalized.",
+      "narrativeOverview": "",
+      "format": null,
+      "visualStyles": [],
+      "moods": [],
+      "inspirationLinks": [],
+      "referenceImages": [],
+      "colorPalette": [],
+      "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Animal empathy and the question of what makes someone human.\nSignature visual: To develop\nEnding: To develop"
+    },
+    "scenes": [],
+    "production": {
+      "shootDate": null,
+      "shootDateStatus": "tbd",
+      "estimatedShootHours": null,
+      "budget": null,
+      "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+      "tasks": [],
+      "castCrew": [],
+      "locations": [],
+      "wardrobe": [],
+      "props": [],
+      "shootSchedule": []
+    },
+    "release": {
+      "editingStatus": "Not Started",
+      "finalVideoApproved": false,
+      "targetVideoReleaseDate": null,
+      "publishedVideoUrl": null,
+      "publicationStatus": "Not published",
+      "actualPublicationDate": null
+    },
+    "extensions": {
+      "source": "chxndler_music_video_import_source_60.json",
+      "sourceSlug": "almost-human",
+      "sourceDevelopmentStatus": "needs_treatment",
+      "reviewRequired": true,
+      "existingVideoCheckRequired": true
+    }
+  },
+  {
+    "schemaVersion": "chxndler.music-video-plan.v1",
+    "project": {
+      "songId": "76369b7b-c788-4fe6-9e61-e0875ece711a",
+      "songTitle": "WHO TAUGHT YOU TO LOVE?",
+      "videoType": "Official Music Video",
+      "planningStatus": "concept",
+      "developmentStatus": "needs_development"
+    },
+    "vision": {
+      "concept": "Music-video treatment has not yet been finalized.",
+      "narrativeOverview": "",
+      "format": null,
+      "visualStyles": [],
+      "moods": [],
+      "inspirationLinks": [],
+      "referenceImages": [],
+      "colorPalette": [],
+      "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Animals feel love, trust, fear and attachment.\nSignature visual: To develop\nEnding: To develop"
+    },
+    "scenes": [],
+    "production": {
+      "shootDate": null,
+      "shootDateStatus": "tbd",
+      "estimatedShootHours": null,
+      "budget": null,
+      "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+      "tasks": [],
+      "castCrew": [],
+      "locations": [],
+      "wardrobe": [],
+      "props": [],
+      "shootSchedule": []
+    },
+    "release": {
+      "editingStatus": "Not Started",
+      "finalVideoApproved": false,
+      "targetVideoReleaseDate": null,
+      "publishedVideoUrl": null,
+      "publicationStatus": "Not published",
+      "actualPublicationDate": null
+    },
+    "extensions": {
+      "source": "chxndler_music_video_import_source_60.json",
+      "sourceSlug": "who-taught-you-to-love",
+      "sourceDevelopmentStatus": "needs_treatment",
+      "reviewRequired": true,
+      "existingVideoCheckRequired": true
+    }
+  },
+  {
+    "schemaVersion": "chxndler.music-video-plan.v1",
+    "project": {
+      "songId": "de5b3789-1fae-413b-82fc-c212c3b22942",
+      "songTitle": "COPYCAT",
+      "videoType": "Official Music Video",
+      "planningStatus": "concept",
+      "developmentStatus": "needs_development"
+    },
+    "vision": {
+      "concept": "Music-video treatment has not yet been finalized.",
+      "narrativeOverview": "",
+      "format": null,
+      "visualStyles": [],
+      "moods": [],
+      "inspirationLinks": [],
+      "referenceImages": [],
+      "colorPalette": [],
+      "notes": "Source development status: needs_treatment — NEEDS DEVELOPMENT.\nSong meaning: Someone can copy a song but not steal the original artist’s soul or vision.\nSignature visual: To develop\nEnding: To develop"
+    },
+    "scenes": [],
+    "production": {
+      "shootDate": null,
+      "shootDateStatus": "tbd",
+      "estimatedShootHours": null,
+      "budget": null,
+      "notes": "NEEDS DEVELOPMENT. This is a preliminary source entry; no missing scenes or schedule have been invented.\nPlaceholder catalog entry only; do not invent a finalized storyline.",
+      "tasks": [],
+      "castCrew": [],
+      "locations": [],
+      "wardrobe": [],
+      "props": [],
+      "shootSchedule": []
+    },
+    "release": {
+      "editingStatus": "Not Started",
+      "finalVideoApproved": false,
+      "targetVideoReleaseDate": null,
+      "publishedVideoUrl": null,
+      "publicationStatus": "Not published",
+      "actualPublicationDate": null
+    },
+    "extensions": {
+      "source": "chxndler_music_video_import_source_60.json",
+      "sourceSlug": "copycat",
+      "sourceDevelopmentStatus": "needs_treatment",
+      "reviewRequired": true,
+      "existingVideoCheckRequired": true
+    }
+  }
+]

@@ -1,0 +1,3365 @@
+{
+  "source": "CHXNDLER previously developed music-video concept library",
+  "note": "Source plans, not the exact importer schema. Resolve song IDs and adapt to the codebase importer schema before writing. Do not overwrite existing projects or released videos.",
+  "plans": [
+    {
+      "song_title": "MY MOM THINKS I'M FAMOUS",
+      "source_slug": "my-mom-thinks-i-m-famous",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Mom discovers a tiny LES concert flyer and prepares for her son’s show as though he is headlining Madison Square Garden.",
+        "concept_title": "The Biggest Show in the World (According to Mom)",
+        "song_meaning": "A mother believes in her musician son long before the world does. Inspired by childhood rock shows and current Lower East Side gigs.",
+        "visual_style_notes": "Deadpan comedy; natural apartment footage with music-video energy",
+        "mood_notes": "Funny, loving, celebratory",
+        "signature_visual": "Tiny local-show flyer treated like Times Square billboard; Mom’s THAT’S MY SON sign",
+        "ending": "Mom and CHXNDLER dance/sing together; her stadium-sized pride contrasts with the small reality."
+      },
+      "storyboard": [
+        {
+          "import_key": "my-mom-thinks-i-m-famous-scene-1",
+          "order": 1,
+          "title": "The Announcement",
+          "description": "Mom spots CHXNDLER in tiny print on a flyer on the fridge, circles his name, writes SOLD OUT and celebrates; he notices the exaggeration.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "my-mom-thinks-i-m-famous-scene-2",
+          "order": 2,
+          "title": "Superfan Training",
+          "description": "Mom wears CHXNDLER merch, makes THAT’S MY SON sign, learns every lyric, practices screaming and dramatically fainting on the couch.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "my-mom-thinks-i-m-famous-scene-3",
+          "order": 3,
+          "title": "Private Soundcheck",
+          "description": "CHXNDLER sings while getting ready in bathroom; Mom appears with sign and phone, cheering and demanding an encore.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "my-mom-thinks-i-m-famous-scene-4",
+          "order": 4,
+          "title": "Pre-Show Party",
+          "description": "Mom sings and dances to his song in kitchen, grabs CHXNDLER and gets him to join her.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "my-mom-thinks-i-m-famous-scene-5",
+          "order": 5,
+          "title": "The Big Show",
+          "description": "Preferred practical version: shoot a real tiny gig if one is scheduled; Mom cheers like an arena. Ultra-low-budget alternative: reveal a one-chair living-room concert.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "my-mom-thinks-i-m-famous-scene-6",
+          "order": 6,
+          "title": "After the Show",
+          "description": "Mom takes a celebrity-style selfie with CHXNDLER, hugs him, and continues celebrating.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "Mom — lead, self-appointed superfan",
+          "CHXNDLER — musician son"
+        ],
+        "locations_proposed": [
+          "Home: kitchen, bedroom, bathroom",
+          "Optional: actual small NYC show"
+        ],
+        "props_notes": "CHXNDLER merch, flyer, marker, sign, phone, sunglasses",
+        "estimated_shoot_hours": "3–4",
+        "production_notes": "Venue vs living-room reveal is NOT finalized; choose one coherent version before shoot.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "SOMEBODY TOO",
+      "source_slug": "somebody-too",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "An unseen first-person protagonist navigates an overwhelming day; midway we discover we have been seeing through a dog’s eyes.",
+        "concept_title": "You Thought I Was Human",
+        "song_meaning": "A dog is somebody: they feel fear, shyness, loneliness, joy, love and trust.",
+        "visual_style_notes": "First-person low camera; natural light; gentle sound design",
+        "mood_notes": "Mysterious, tender, uplifting",
+        "signature_visual": "Mid-song reveal that unseen POV narrator is a dog",
+        "ending": "Dog looks into camera / human meets their gaze; empathy without text explanation."
+      },
+      "storyboard": [
+        {
+          "import_key": "somebody-too-scene-1",
+          "order": 1,
+          "title": "An Ordinary Morning",
+          "description": "First-person camera wakes to light, watches a human prepare breakfast; no dog features revealed.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "somebody-too-scene-2",
+          "order": 2,
+          "title": "The Big World",
+          "description": "POV experiences rushing feet, loud noises, a stranger reaching, uncertainty around others; emotional perspective without obvious canine props.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "somebody-too-scene-3",
+          "order": 3,
+          "title": "The Reveal",
+          "description": "POV approaches CHXNDLER distracted on couch. He looks down, smiles Hey buddy; cut wide for first sight of dog.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "somebody-too-scene-4",
+          "order": 4,
+          "title": "Someone Sees Me",
+          "description": "Now external shots show dog’s natural hesitations, window watching, toy invitation and CHXNDLER choosing to sit at dog’s level.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "somebody-too-scene-5",
+          "order": 5,
+          "title": "I Am Somebody",
+          "description": "Return to dog POV as CHXNDLER looks into lens with affection; no speech necessary.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "Dog — protagonist",
+          "CHXNDLER — trusted human"
+        ],
+        "locations_proposed": [
+          "Apartment",
+          "Quiet sidewalk or park"
+        ],
+        "props_notes": "Dog toy; camera low to ground",
+        "estimated_shoot_hours": "2–3",
+        "production_notes": "Dog welfare first: short sessions, no forced actions or startling sounds; edit sound in post.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "EMO GIRL",
+      "source_slug": "emo-girl",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "CHXNDLER falls for an intimidating-looking emo girl who secretly adores cute things and happy dances.",
+        "concept_title": "The Happiest Emo Girl Alive",
+        "song_meaning": "Falling for someone whose dark style does not predict their joyful personality.",
+        "visual_style_notes": "Black-and-hot-pink, deadpan romantic comedy",
+        "mood_notes": "Flirty, playful, unexpectedly sweet",
+        "signature_visual": "All-black deadpan emo girl holding huge pink heart balloon",
+        "ending": "The girl’s private happy dance reveals she is falling in love too."
+      },
+      "storyboard": [
+        {
+          "import_key": "emo-girl-scene-1",
+          "order": 1,
+          "title": "The Crush",
+          "description": "She sits deadpan in black; CHXNDLER sits beside her; she silently sticks a pink heart sticker on his cheek.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "emo-girl-scene-2",
+          "order": 2,
+          "title": "The Secret",
+          "description": "She opens a dark closet to reveal one oversized pink plush, hugs it, then solemnly gives him a tiny plush.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "emo-girl-scene-3",
+          "order": 3,
+          "title": "The Date",
+          "description": "She paints his nails black, he puts a pink clip in her hair; they do an absurdly cheerful dance while she keeps a straight face.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "emo-girl-scene-4",
+          "order": 4,
+          "title": "The Photo",
+          "description": "They pose for an extremely serious emo selfie; immediately afterward they laugh, kiss and dance.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "emo-girl-scene-5",
+          "order": 5,
+          "title": "Secret Happy Dance",
+          "description": "After CHXNDLER walks away holding her pink heart balloon, she breaks into a tiny uncontrollable happy dance.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "Emo girl — romantic lead"
+        ],
+        "locations_proposed": [
+          "One apartment / couch / bedroom"
+        ],
+        "props_notes": "Pink heart balloon, heart stickers, plush, black nail polish, hair clip, phone",
+        "estimated_shoot_hours": "2–3",
+        "production_notes": "MGK cover; obtain composition synchronization permission before public music-video release.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "LOST IN BERMUDA",
+      "source_slug": "lost-in-bermuda",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Two lovers follow a treasure map toward a ring but choose the joy of being lost together over reaching a prescribed future.",
+        "concept_title": "The Treasure We Never Found",
+        "song_meaning": "A cruise to Bermuda, getting lost together, imagining marriage and a ring that never became a wedding; the adventure mattered most.",
+        "visual_style_notes": "Golden-hour tropical romance, nostalgic vacation-film texture",
+        "mood_notes": "Dreamy, playful, bittersweet",
+        "signature_visual": "Treasure map marked X; box with a ring they choose not to take",
+        "ending": "Missed boat / sunset dance; love was the adventure, not the wedding."
+      },
+      "storyboard": [
+        {
+          "import_key": "lost-in-bermuda-scene-1",
+          "order": 1,
+          "title": "The Map",
+          "description": "Travel plans reveal a hand-drawn map with an X; couple sets out on treasure hunt.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "lost-in-bermuda-scene-2",
+          "order": 2,
+          "title": "Lost Together",
+          "description": "They follow the map, go the wrong way, dance on beach, laugh and take playful pictures; she admires a ring in a shop window if available.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "lost-in-bermuda-scene-3",
+          "order": 3,
+          "title": "The Treasure",
+          "description": "They find a small box with a ring; she closes it before a proposal and pulls him back toward the ocean.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "lost-in-bermuda-scene-4",
+          "order": 4,
+          "title": "The Boat",
+          "description": "They realize the cruise ship may be leaving; they start to run, then stop to enjoy the sunset together.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "lost-in-bermuda-scene-5",
+          "order": 5,
+          "title": "Get Lost With Me",
+          "description": "They dance as the map blows across sand, revealing GET LOST WITH ME.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "Love interest"
+        ],
+        "locations_proposed": [
+          "One beach/coastline",
+          "Optional existing cruise footage"
+        ],
+        "props_notes": "Hand-drawn map, small jewelry box, prop ring, travel tickets, beach bag",
+        "estimated_shoot_hours": "2–3",
+        "production_notes": "Do not imply actual marriage happened; cruise departure can be suggested in editing rather than filming a ship.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "PLAY HOUSE",
+      "source_slug": "play-house",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "A couple performs an entire imaginary domestic life in an empty room, without a single real piece of furniture.",
+        "concept_title": "The Invisible House",
+        "song_meaning": "Two lovers play at having a family and a future as though they were children playing house.",
+        "visual_style_notes": "Minimal, warm, symmetrical, surreal mime",
+        "mood_notes": "Whimsical, romantic, nostalgic",
+        "signature_visual": "Two adults living in a fully invisible house; one real key",
+        "ending": "Overhead wide shot reveals empty room, couple together and a single real key."
+      },
+      "storyboard": [
+        {
+          "import_key": "play-house-scene-1",
+          "order": 1,
+          "title": "Welcome Home",
+          "description": "He turns a real key in an invisible door; she knocks and enters their imagined house.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "play-house-scene-2",
+          "order": 2,
+          "title": "Our Little Life",
+          "description": "They mime cooking, eating at an invisible table, bringing groceries and dancing in the living room.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "play-house-scene-3",
+          "order": 3,
+          "title": "Our Future",
+          "description": "They pretend to cradle a baby and laugh when CHXNDLER is nervous holding it.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "play-house-scene-4",
+          "order": 4,
+          "title": "Home",
+          "description": "They turn off an invisible light and lie together on the bare floor, embracing.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "Love interest"
+        ],
+        "locations_proposed": [
+          "One empty room"
+        ],
+        "props_notes": "One key",
+        "estimated_shoot_hours": "2–3",
+        "production_notes": "Correct title is two words: PLAY HOUSE.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "HOW TO LOVE",
+      "source_slug": "how-to-love",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "A young couple believe they are living a cinematic love story until the set lights go out and reveal how little they know.",
+        "concept_title": "The Movie Set",
+        "song_meaning": "At seventeen, learning romance from TV and movies does not mean knowing how to love.",
+        "visual_style_notes": "Nostalgic teen romance, simple set-reveal",
+        "mood_notes": "Romantic, vulnerable, bittersweet",
+        "signature_visual": "Romantic couch scene revealed as a fake movie set",
+        "ending": "CHXNDLER alone under last TV glow; THE END."
+      },
+      "storyboard": [
+        {
+          "import_key": "how-to-love-scene-1",
+          "order": 1,
+          "title": "The Movie",
+          "description": "Couple watch romance on a couch; camera pulls back to show it is a set in an otherwise empty room.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "how-to-love-scene-2",
+          "order": 2,
+          "title": "Movie Romance",
+          "description": "On the couch they share cheap red roses, a burned CD and headphones, copying film-like romantic moments.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "how-to-love-scene-3",
+          "order": 3,
+          "title": "The Exit",
+          "description": "She walks away; CHXNDLER waits as studio lights turn off one by one.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "how-to-love-scene-4",
+          "order": 4,
+          "title": "The End",
+          "description": "He sits alone while television replays happy moments and shows THE END.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "Love interest"
+        ],
+        "locations_proposed": [
+          "One room / small studio"
+        ],
+        "props_notes": "Couch, old TV, red roses, burned CD, film lights",
+        "estimated_shoot_hours": "3",
+        "production_notes": "Lil Wayne composition; video sync clearance required.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "SUGAR, WE'RE GOIN DOWN",
+      "source_slug": "sugar-we-re-goin-down",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "CHXNDLER’s world tilts when he falls for a girl; simple camera rotations make him appear to defy gravity.",
+        "concept_title": "Falling for You",
+        "song_meaning": "Love makes gravity and emotional balance disappear.",
+        "visual_style_notes": "Neon pink/blue, practical camera tricks",
+        "mood_notes": "Energetic, surreal, romantic",
+        "signature_visual": "Apparent sideways wall-walk achieved by rotating camera",
+        "ending": "She exits; his gravity never returns to normal."
+      },
+      "storyboard": [
+        {
+          "import_key": "sugar-we-re-goin-down-scene-1",
+          "order": 1,
+          "title": "The Date",
+          "description": "Ordinary date; a drink or picture appears to slide strangely when she enters.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "sugar-we-re-goin-down-scene-2",
+          "order": 2,
+          "title": "Gravity Shifts",
+          "description": "Camera rotates to make CHXNDLER appear to walk sideways; she remains unaffected.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "sugar-we-re-goin-down-scene-3",
+          "order": 3,
+          "title": "Sideways",
+          "description": "As she walks away, the room seems to tip further and he loses his bearings.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "sugar-we-re-goin-down-scene-4",
+          "order": 4,
+          "title": "Aftermath",
+          "description": "Normal view returns; a safe floor-camera trick makes him appear stuck on the ceiling.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "Love interest"
+        ],
+        "locations_proposed": [
+          "One apartment / studio"
+        ],
+        "props_notes": "Picture frame, cup, simple safe camera rig",
+        "estimated_shoot_hours": "3–4",
+        "production_notes": "Fall Out Boy cover; sync rights required. No dangerous inverted stunts.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "TIDE IN",
+      "source_slug": "tide-in",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "CHXNDLER arrives alone at a rooftop with a teenage wish list; friends arrive and turn it into the night he dreamed of.",
+        "concept_title": "The Night You Dreamed About at 17",
+        "song_meaning": "A rooftop NYC party and the feeling of finally living the dream imagined as a teenager.",
+        "visual_style_notes": "Dreamy neon rooftop at dusk",
+        "mood_notes": "Euphoric, nostalgic, triumphant",
+        "signature_visual": "Friends making a human wave against the NYC skyline",
+        "ending": "CHXNDLER looks out at city he once dreamed of."
+      },
+      "storyboard": [
+        {
+          "import_key": "tide-in-scene-1",
+          "order": 1,
+          "title": "The List",
+          "description": "CHXNDLER alone reads teenage goals: move to NYC, make music, find my people.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "tide-in-scene-2",
+          "order": 2,
+          "title": "The Tide Arrives",
+          "description": "Friends arrive, lights come on and the rooftop transforms into an intimate party.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "tide-in-scene-3",
+          "order": 3,
+          "title": "Human Wave",
+          "description": "During chorus, friends form a synchronized wave; CHXNDLER performs amid the celebration.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "tide-in-scene-4",
+          "order": 4,
+          "title": "The View",
+          "description": "He pauses at skyline, smiling, as the party continues behind him.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "6–10 friends / partygoers"
+        ],
+        "locations_proposed": [
+          "One permitted Brooklyn rooftop with NYC skyline"
+        ],
+        "props_notes": "Handwritten goals list, party lights",
+        "estimated_shoot_hours": "3–4",
+        "production_notes": "Former title DIVE IN. Lil Surf verse/credits/recording rights need clearance; no collaborator likeness required.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "PLAYDOUGH",
+      "source_slug": "playdough",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "A silver clay alien is squeezed into a human-shaped NORMAL mold until he breaks free and reshapes gray NYC into a colorful Heartverse.",
+        "concept_title": "The Normal Mold",
+        "song_meaning": "Other people try to shape an artist into someone acceptable; refusing conformity gives him the power to reshape his world.",
+        "visual_style_notes": "AI-generated stop-motion-style clay animation",
+        "mood_notes": "Playful, defiant, triumphant",
+        "signature_visual": "Silver alien crushed into NORMAL-shaped mold",
+        "ending": "Gray NYC becomes bright Heartverse; alien makes another unique friend."
+      },
+      "storyboard": [
+        {
+          "import_key": "playdough-scene-1",
+          "order": 1,
+          "title": "The Mold",
+          "description": "Giant hands reshape silver alien; antennae cannot fit a mold labeled NORMAL.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "playdough-scene-2",
+          "order": 2,
+          "title": "Assembly Line",
+          "description": "Gray commuters and office boss try to make him conform; music gets shut down.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "playdough-scene-3",
+          "order": 3,
+          "title": "Breakout",
+          "description": "Alien tries to fit mold, then cracks it.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "playdough-scene-4",
+          "order": 4,
+          "title": "Another Mold",
+          "description": "Even creative peers pressure him to become someone else; he peels off false identity.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "playdough-scene-5",
+          "order": 5,
+          "title": "Reshape",
+          "description": "He transforms gray buildings into bright clay life and makes room for different creatures.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "Silver alien CHXNDLER — animated lead",
+          "Generic parents, boss, commuters, other artists"
+        ],
+        "locations_proposed": [
+          "AI clay apartment",
+          "Miniature gray NYC",
+          "Clay office",
+          "Colorful Heartverse"
+        ],
+        "props_notes": "AI reference character sheet, clay-look keyframes",
+        "estimated_shoot_hours": "No live shoot",
+        "production_notes": "Entirely AI animated; preserve consistent character. Avoid depicting real collaborators as villains. Rights dispute exists regarding separate release.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "FEELING THIS",
+      "source_slug": "feeling-this",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "A skater girl steals CHXNDLER’s sunglasses and leads him through a chaotic Brooklyn afternoon, ending at his performance.",
+        "concept_title": "The Girl Who Stole My Sunglasses",
+        "song_meaning": "Spontaneous skater romance and rebellious early-2000s pop-punk attraction.",
+        "visual_style_notes": "Handheld 2000s NYC pop-punk",
+        "mood_notes": "Rebellious, sexy, kinetic",
+        "signature_visual": "Recurring stolen sunglasses linking romance and performance",
+        "ending": "She puts sunglasses back on him before they leave together."
+      },
+      "storyboard": [
+        {
+          "import_key": "feeling-this-scene-1",
+          "order": 1,
+          "title": "The Theft",
+          "description": "Girl steals his sunglasses at skatepark; CHXNDLER chases, intrigued.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "feeling-this-scene-2",
+          "order": 2,
+          "title": "The Adventure",
+          "description": "They flirt, buy candy at bodega and share an impulsive kiss near a mirror.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "feeling-this-scene-3",
+          "order": 3,
+          "title": "The Performance",
+          "description": "Intercut energetic CHXNDLER/drummer performance with their day.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "feeling-this-scene-4",
+          "order": 4,
+          "title": "The Escape",
+          "description": "Girl enters performance, grabs him and pulls him away; sunglasses returned.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "Skater girl",
+          "Drummer"
+        ],
+        "locations_proposed": [
+          "Brooklyn skatepark",
+          "Nearby bodega with permission",
+          "Graffiti/mural performance wall"
+        ],
+        "props_notes": "Sunglasses, skateboard, candy, portable drum/performance kit",
+        "estimated_shoot_hours": "4–5",
+        "production_notes": "NYC/Brooklyn, not Baltimore. Store and public-performance permissions; avoid hauling full kit without plan.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "AM I PRETTY WHEN I CRY",
+      "source_slug": "am-i-pretty-when-i-cry",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Everyone acts as if Sofia has enormous butterfly wings, but she believes they are staring because she is awkward.",
+        "concept_title": "Invisible Butterfly Wings",
+        "song_meaning": "Self-consciousness makes someone misread admiration as judgment.",
+        "visual_style_notes": "Magical realism, practical shadows",
+        "mood_notes": "Vulnerable, whimsical, affirming",
+        "signature_visual": "Invisible wings shown only through other people’s reactions",
+        "ending": "One fleeting wing-shaped shadow, never literal CGI wings."
+      },
+      "storyboard": [
+        {
+          "import_key": "am-i-pretty-when-i-cry-scene-1",
+          "order": 1,
+          "title": "Strange Reactions",
+          "description": "People step aside, point, smile and make room as Sofia passes; wings are never shown.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "am-i-pretty-when-i-cry-scene-2",
+          "order": 2,
+          "title": "The Misunderstanding",
+          "description": "Sofia feels judged while artists draw her, strangers photograph and curtains move around her.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "am-i-pretty-when-i-cry-scene-3",
+          "order": 3,
+          "title": "The Build",
+          "description": "More impossible reactions suggest an unseen beautiful presence.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "am-i-pretty-when-i-cry-scene-4",
+          "order": 4,
+          "title": "The Butterfly",
+          "description": "At final lyric a practical stained-glass/branch/projected shadow creates wing silhouette behind Sofia for one shot.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "Sofia — lead",
+          "CHXNDLER — optional",
+          "Passersby / extras"
+        ],
+        "locations_proposed": [
+          "Apartment",
+          "Public or gallery-like location with permission"
+        ],
+        "props_notes": "Projector or patterned light, wardrobe",
+        "estimated_shoot_hours": "4–5",
+        "production_notes": "Alternative distinct concept: Freaky Friday-style CHXNDLER/Sofia body swap via butterfly mirror; DO NOT merge without decision.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "SOMEBODY TO LOVE",
+      "source_slug": "somebody-to-love",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "CHXNDLER and Sofia are on separate bad dates, repeatedly almost meet, then match on their phones.",
+        "concept_title": "Almost a Match",
+        "song_meaning": "Two people endure mismatched dates and unknowingly orbit one another.",
+        "visual_style_notes": "Romantic split-screen indie comedy",
+        "mood_notes": "Awkward, hopeful",
+        "signature_visual": "Split-screen of parallel bad dates",
+        "ending": "Matching phone notifications as they turn; cut before meeting."
+      },
+      "storyboard": [
+        {
+          "import_key": "somebody-to-love-scene-1",
+          "order": 1,
+          "title": "Wrong Dates",
+          "description": "Parallel split-screen dates: CHXNDLER and Sofia with incompatible partners.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "somebody-to-love-scene-2",
+          "order": 2,
+          "title": "Near Miss",
+          "description": "They pass near each other outside without noticing.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "somebody-to-love-scene-3",
+          "order": 3,
+          "title": "The Match",
+          "description": "Both receive IT’S A MATCH notification; they turn toward each other.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "somebody-to-love-scene-4",
+          "order": 4,
+          "title": "Cut",
+          "description": "Cut before their actual meeting, preserving romantic suspense.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "Sofia",
+          "Two wrong dates"
+        ],
+        "locations_proposed": [
+          "One café",
+          "Sidewalk or transit-like setting"
+        ],
+        "props_notes": "Phones, café table",
+        "estimated_shoot_hours": "4",
+        "production_notes": null,
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "CHEERLEADER",
+      "source_slug": "cheerleader",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "A surreal cheerleader loudly supports CHXNDLER from outside a diner but cannot sit with him when he asks.",
+        "concept_title": "The Cheerleader Who Never Sits Down",
+        "song_meaning": "A mother cheers from afar but is not present in the way the child needs.",
+        "visual_style_notes": "Deadpan surreal diner comedy",
+        "mood_notes": "Darkly funny, aching",
+        "signature_visual": "Cheerleader always cheering through window but never entering",
+        "ending": "Cheerleader-like waitress with no recognition; ambiguous, haunting note."
+      },
+      "storyboard": [
+        {
+          "import_key": "cheerleader-scene-1",
+          "order": 1,
+          "title": "The Date",
+          "description": "CHXNDLER’s awkward diner date goes badly.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "cheerleader-scene-2",
+          "order": 2,
+          "title": "The Cheer",
+          "description": "Cheerleader outside window enthusiastically cheers each failure.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "cheerleader-scene-3",
+          "order": 3,
+          "title": "The Empty Seat",
+          "description": "Date leaves; CHXNDLER invites cheerleader into empty booth, but she cannot join.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "cheerleader-scene-4",
+          "order": 4,
+          "title": "The Check",
+          "description": "Waitress looks like cheerleader yet does not recognize him; check says YOU GOT THIS! ♡.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "Cheerleader / maternal figure",
+          "Date or waitress"
+        ],
+        "locations_proposed": [
+          "One diner with window"
+        ],
+        "props_notes": "Pom-poms, diner check",
+        "estimated_shoot_hours": "3–4",
+        "production_notes": null,
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "LOVE ME",
+      "source_slug": "love-me",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Two imagined futures contrast lonely fame with ordinary life and real love; he keeps making music either way.",
+        "concept_title": "Audience of One",
+        "song_meaning": "Would someone still love CHXNDLER if he never becomes famous?",
+        "visual_style_notes": "Warm vs cold parallel-life montage",
+        "mood_notes": "Tender, questioning, hopeful",
+        "signature_visual": "One person applauding at an empty concert hall",
+        "ending": "He keeps singing for the one person who loves him."
+      },
+      "storyboard": [
+        {
+          "import_key": "love-me-scene-1",
+          "order": 1,
+          "title": "Two Futures",
+          "description": "Parallel visions: famous but lonely vs normal 9-to-5 life together.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "love-me-scene-2",
+          "order": 2,
+          "title": "Ordinary Love",
+          "description": "Takeout, small routines and shared moments are warmer than the glamorous future.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "love-me-scene-3",
+          "order": 3,
+          "title": "The Performance",
+          "description": "CHXNDLER performs on an otherwise empty stage.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "love-me-scene-4",
+          "order": 4,
+          "title": "Audience of One",
+          "description": "His partner alone applauds him from the audience.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "Love interest"
+        ],
+        "locations_proposed": [
+          "Apartment",
+          "Small empty stage"
+        ],
+        "props_notes": "Takeout containers, microphone, single chair",
+        "estimated_shoot_hours": "4–5",
+        "production_notes": null,
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "AMERICAN DREAM",
+      "source_slug": "american-dream",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "A silver alien performs the motions of conventional success in a retro corporate advertisement that resets every morning.",
+        "concept_title": "Employee of the Month",
+        "song_meaning": "The prescribed corporate American dream feels empty and absurd to an alien artist.",
+        "visual_style_notes": "Retro infomercial satire",
+        "mood_notes": "Absurd, deadpan, critical",
+        "signature_visual": "ALIEN employee-of-month photo with a lonely pizza slice",
+        "ending": "LIVE THE DREAM alarm restarts the loop."
+      },
+      "storyboard": [
+        {
+          "import_key": "american-dream-scene-1",
+          "order": 1,
+          "title": "Morning Routine",
+          "description": "6 AM alarm: LIVE THE DREAM; alien commutes.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "american-dream-scene-2",
+          "order": 2,
+          "title": "Success",
+          "description": "Employee-of-month photo and sad celebratory pizza slice.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "american-dream-scene-3",
+          "order": 3,
+          "title": "The Dream",
+          "description": "Bills, bad car, laundry, tired routine accompanied by absurd cheerful ad slogans.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "american-dream-scene-4",
+          "order": 4,
+          "title": "Reset",
+          "description": "Same 6 AM alarm and routine begin again.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER / silver alien",
+          "Optional office extras"
+        ],
+        "locations_proposed": [
+          "Apartment",
+          "Office-like corner",
+          "Laundry / sidewalk"
+        ],
+        "props_notes": "Alarm phone, office badge, pizza slice, bills",
+        "estimated_shoot_hours": "4–5",
+        "production_notes": null,
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "WHAT'S MY AGE AGAIN?",
+      "source_slug": "what-s-my-age-again",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "CHXNDLER dresses for a wild night out; the party turns out to be a sleepover with Grandma.",
+        "concept_title": "Grandma’s Sleepover",
+        "song_meaning": "Being young at heart matters more than behaving your age.",
+        "visual_style_notes": "Playful punk comedy",
+        "mood_notes": "Ridiculous, affectionate",
+        "signature_visual": "Wild rock-star night is actually a grandma sleepover",
+        "ending": "Grandma outparties him and dances into morning."
+      },
+      "storyboard": [
+        {
+          "import_key": "what-s-my-age-again-scene-1",
+          "order": 1,
+          "title": "Getting Ready",
+          "description": "CHXNDLER dresses excitedly for a big night.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "what-s-my-age-again-scene-2",
+          "order": 2,
+          "title": "The Reveal",
+          "description": "He arrives at Grandma’s for pajama sleepover.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "what-s-my-age-again-scene-3",
+          "order": 3,
+          "title": "Party",
+          "description": "Pillow fort, facemasks, pranks and pillow fight.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "what-s-my-age-again-scene-4",
+          "order": 4,
+          "title": "Morning After",
+          "description": "Exhausted CHXNDLER is kicked out while Grandma keeps dancing.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "Grandma"
+        ],
+        "locations_proposed": [
+          "One house"
+        ],
+        "props_notes": "Pajamas, pillows, facemasks",
+        "estimated_shoot_hours": "3–4",
+        "production_notes": null,
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "THE BLACK & WHITE HOTEL",
+      "source_slug": "the-black-white-hotel",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "A monochrome hotel-room encounter repeats, revealing CHXNDLER has been there before.",
+        "concept_title": "Room 11",
+        "song_meaning": "A mysterious romance traps someone in a repeating memory.",
+        "visual_style_notes": "Noir, black-and-white, surreal",
+        "mood_notes": "Haunting, romantic",
+        "signature_visual": "Monochrome hotel room that replays his arrival",
+        "ending": "Trapped watching himself enter on TV."
+      },
+      "storyboard": [
+        {
+          "import_key": "the-black-white-hotel-scene-1",
+          "order": 1,
+          "title": "Check In",
+          "description": "CHXNDLER enters monochrome hotel Room 11.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "the-black-white-hotel-scene-2",
+          "order": 2,
+          "title": "The Woman",
+          "description": "Mysterious woman appears and disappears in a romantic loop.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "the-black-white-hotel-scene-3",
+          "order": 3,
+          "title": "The Note",
+          "description": "A note says YOU ALWAYS COME BACK.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "the-black-white-hotel-scene-4",
+          "order": 4,
+          "title": "The Screen",
+          "description": "TV shows CHXNDLER arriving at room again; he realizes the loop.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "Mysterious woman"
+        ],
+        "locations_proposed": [
+          "Hotel room",
+          "Hallway"
+        ],
+        "props_notes": "Room key, note, television",
+        "estimated_shoot_hours": "4",
+        "production_notes": null,
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "HAPPY MEAL",
+      "source_slug": "happy-meal",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "A cheerful retro fast-food commercial collapses into the quiet loneliness of its clown mascot.",
+        "concept_title": "Happiness in a Box",
+        "song_meaning": "Fast-food happiness marketing masks loneliness and suffering; empathy for animals.",
+        "visual_style_notes": "Retro commercial vs sad realism",
+        "mood_notes": "Satirical, tender, unsettling",
+        "signature_visual": "Lonely clown birthday surrounded by balloon farm animals",
+        "ending": "Burger box closes; candle out; balloon pops to black."
+      },
+      "storyboard": [
+        {
+          "import_key": "happy-meal-scene-1",
+          "order": 1,
+          "title": "The Commercial",
+          "description": "Bright 1990s-style happy-meal commercial.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "happy-meal-scene-2",
+          "order": 2,
+          "title": "After the Ad",
+          "description": "Clown watches commercial alone, buys food and eats alone in car.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "happy-meal-scene-3",
+          "order": 3,
+          "title": "Birthday",
+          "description": "Alone in apartment with balloon animals shaped like cow, pig and chicken, cake and candle.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "happy-meal-scene-4",
+          "order": 4,
+          "title": "The Choice",
+          "description": "He looks at burger and balloon animals, closes the box, blows candle; a balloon pops.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER / clown mascot",
+          "Optional ad actors"
+        ],
+        "locations_proposed": [
+          "Fast-food styled corner",
+          "Car",
+          "Apartment"
+        ],
+        "props_notes": "Clown costume, takeout box, balloon animals, cake",
+        "estimated_shoot_hours": "4–5",
+        "production_notes": null,
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "WE'RE JUST FRIENDS",
+      "source_slug": "we-re-just-friends",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Two magical outsider children bury a time capsule, then meet again as adults to reopen it and their feelings.",
+        "concept_title": "The Time Capsule",
+        "song_meaning": "Childhood alien/fairy friendship grows into love neither wants to name.",
+        "visual_style_notes": "Nostalgic magical realism",
+        "mood_notes": "Innocent, wistful, romantic",
+        "signature_visual": "Same childhood game played by children and adults",
+        "ending": "Ambiguous romantic near-confession beneath night sky."
+      },
+      "storyboard": [
+        {
+          "import_key": "we-re-just-friends-scene-1",
+          "order": 1,
+          "title": "Childhood",
+          "description": "Alien boy and fairy girl meet, play hopscotch and bury a capsule.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "we-re-just-friends-scene-2",
+          "order": 2,
+          "title": "Twenty Years Later",
+          "description": "Adult versions return to park and uncover capsule.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "we-re-just-friends-scene-3",
+          "order": 3,
+          "title": "Old Games",
+          "description": "They repeat childhood games and share quiet stargazing in a car.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "we-re-just-friends-scene-4",
+          "order": 4,
+          "title": "The Question",
+          "description": "A moment hangs between them: WE’RE JUST FRIENDS?",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "Young alien boy",
+          "Young fairy girl",
+          "Adult CHXNDLER",
+          "Adult Sofia / Gizmo"
+        ],
+        "locations_proposed": [
+          "Park",
+          "Parked car"
+        ],
+        "props_notes": "Time capsule, chalk, small childhood mementos",
+        "estimated_shoot_hours": "5",
+        "production_notes": "Needs two child actors and child-performer permissions.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "LITTLE BLACK HEART",
+      "source_slug": "little-black-heart",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "A masked lover frees CHXNDLER from a surreal ballroom ritual then disappears.",
+        "concept_title": "The Masquerade Graveyard",
+        "song_meaning": "Gothic forbidden love and the risk of surrendering your heart.",
+        "visual_style_notes": "Gothic romantic fantasy",
+        "mood_notes": "Dark, sexy, tragic",
+        "signature_visual": "Gothic masquerade dance beside fake graveyard",
+        "ending": "Her disappearance leaves a black-heart tombstone."
+      },
+      "storyboard": [
+        {
+          "import_key": "little-black-heart-scene-1",
+          "order": 1,
+          "title": "Bound",
+          "description": "CHXNDLER waits restrained in a gothic masquerade setting.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "little-black-heart-scene-2",
+          "order": 2,
+          "title": "Rescue",
+          "description": "Masked lover frees him.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "little-black-heart-scene-3",
+          "order": 3,
+          "title": "Dance",
+          "description": "They dance together in an empty ballroom.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "little-black-heart-scene-4",
+          "order": 4,
+          "title": "Vanishing",
+          "description": "She disappears; a grave marker bears a little black heart.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "Gizmo / Sofia"
+        ],
+        "locations_proposed": [
+          "One decorated property: ballroom / fake graveyard"
+        ],
+        "props_notes": "Masks, candles/LEDs, fabric, safe restraints, fake marker",
+        "estimated_shoot_hours": "4–5",
+        "production_notes": null,
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "I WOULD DIE FOR YOUR LOVE",
+      "source_slug": "i-would-die-for-your-love",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "CHXNDLER repeatedly attempts romantic gestures at a girl’s door and meets cartoonish slapstick fates until he stops trying.",
+        "concept_title": "The Endless Doorstep",
+        "song_meaning": "Trying too hard to prove love can become absurd; authenticity breaks the cycle.",
+        "visual_style_notes": "Deadpan physical comedy, edit tricks",
+        "mood_notes": "Absurd, romantic",
+        "signature_visual": "Groundhog Day-style resets at one doorway",
+        "ending": "She opens the door without his performance."
+      },
+      "storyboard": [
+        {
+          "import_key": "i-would-die-for-your-love-scene-1",
+          "order": 1,
+          "title": "First Knock",
+          "description": "He arrives with a flower; absurd comic mishap resets him.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "i-would-die-for-your-love-scene-2",
+          "order": 2,
+          "title": "Again and Again",
+          "description": "Escalating romantic gestures lead to safe implied slapstick deaths and resets.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "i-would-die-for-your-love-scene-3",
+          "order": 3,
+          "title": "The Choice",
+          "description": "He chooses not to knock and turns away.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "i-would-die-for-your-love-scene-4",
+          "order": 4,
+          "title": "The Door Opens",
+          "description": "She opens door herself holding his original flower.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "Love interest"
+        ],
+        "locations_proposed": [
+          "One doorway / entrance"
+        ],
+        "props_notes": "Flower, door, repeatable costume",
+        "estimated_shoot_hours": "3–4",
+        "production_notes": "Use cuts and safe effects, not real stunts.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "I WANT TO BE A PRETTY CAT",
+      "source_slug": "i-want-to-be-a-pretty-cat",
+      "development_status": "early_concept",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "A couple turn an ordinary park picnic into an affectionate catlike game.",
+        "concept_title": "Cat Date",
+        "song_meaning": "Playful, slightly absurd romance inspired by feline behavior.",
+        "visual_style_notes": "Whimsical low-budget park romance",
+        "mood_notes": "Cute, playful",
+        "signature_visual": "Two people acting like cats during a romantic picnic",
+        "ending": "They settle together like two contented cats."
+      },
+      "storyboard": [
+        {
+          "import_key": "i-want-to-be-a-pretty-cat-scene-1",
+          "order": 1,
+          "title": "The Picnic",
+          "description": "Couple arrive at a picnic with playful cat-ear accessories.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "i-want-to-be-a-pretty-cat-scene-2",
+          "order": 2,
+          "title": "Cat Games",
+          "description": "They imitate feline curiosity, chasing, stretching and teasing.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "i-want-to-be-a-pretty-cat-scene-3",
+          "order": 3,
+          "title": "The Bond",
+          "description": "Playfulness becomes a sweet romantic connection.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "Love interest"
+        ],
+        "locations_proposed": [
+          "One park / picnic lawn"
+        ],
+        "props_notes": "Picnic blanket, cat ears",
+        "estimated_shoot_hours": "3–4",
+        "production_notes": "Title is provisional; confirm exact song title.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "I CHOOSE YOU",
+      "source_slug": "i-choose-you",
+      "development_status": "concept_developed",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "A lonely child bonds with an abandoned dog; a fantasy world imagines animals free rather than captured.",
+        "concept_title": "Free Them All",
+        "song_meaning": "Pokémon-inspired cover reframed around compassion and freeing rather than collecting animals.",
+        "visual_style_notes": "Dreamy humane fantasy",
+        "mood_notes": "Tender, hopeful",
+        "signature_visual": "Heart-shaped Pokéball / fantasy of free animals",
+        "ending": "I don’t want to catch them all. I want to free them all."
+      },
+      "storyboard": [
+        {
+          "import_key": "i-choose-you-scene-1",
+          "order": 1,
+          "title": "The Rescue",
+          "description": "A lonely kid meets an abandoned dog; they comfort each other.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "i-choose-you-scene-2",
+          "order": 2,
+          "title": "The Bond",
+          "description": "They watch Pokémon together and imagine adventures.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "i-choose-you-scene-3",
+          "order": 3,
+          "title": "Free World",
+          "description": "Dream images of animals running free contrast with cages.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "i-choose-you-scene-4",
+          "order": 4,
+          "title": "Choose You",
+          "description": "The child chooses the dog as companion, not collectible; they walk together.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "Young CHXNDLER",
+          "Dog",
+          "Optional adult CHXNDLER"
+        ],
+        "locations_proposed": [
+          "Home",
+          "Quiet park / outdoor area",
+          "Dreamlike edit environment"
+        ],
+        "props_notes": "Dog, television, symbolic prop ball",
+        "estimated_shoot_hours": "4–5",
+        "production_notes": "Pokémon song/video and brand IP: obtain necessary music sync and visual/trademark permissions; avoid copying protected character art.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "ALIEN (HOUSE PARTY)",
+      "source_slug": "alien-house-party",
+      "development_status": "early_concept",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "An Earth house party secretly welcomes aliens and outsiders, transforming a strange night into a community.",
+        "concept_title": "Aliens Only",
+        "song_meaning": "Misfits discover a place to belong with each other.",
+        "visual_style_notes": "Neon Heartverse house party",
+        "mood_notes": "Chaotic, inclusive, euphoric",
+        "signature_visual": "House party where only aliens are invited",
+        "ending": "Group finally finds their people."
+      },
+      "storyboard": [
+        {
+          "import_key": "alien-house-party-scene-1",
+          "order": 1,
+          "title": "The Invitation",
+          "description": "Secret signal or invite reveals ALIENS ONLY party.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "alien-house-party-scene-2",
+          "order": 2,
+          "title": "The Gathering",
+          "description": "Oddball guests arrive, glowing details reveal they are all different.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "alien-house-party-scene-3",
+          "order": 3,
+          "title": "Belonging",
+          "description": "They dance and connect; outsider feels at home.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER / alien",
+          "Alien party guests"
+        ],
+        "locations_proposed": [
+          "One apartment / house party"
+        ],
+        "props_notes": "Alien details, party lights, invite",
+        "estimated_shoot_hours": "4",
+        "production_notes": null,
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "ALONE",
+      "source_slug": "alone",
+      "development_status": "early_concept",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "CHXNDLER moves through a crowded city yet remains emotionally alone.",
+        "concept_title": "Lost in a City of Millions",
+        "song_meaning": "Feeling isolated in NYC despite being surrounded by people.",
+        "visual_style_notes": "Nocturnal NYC cinematic loneliness",
+        "mood_notes": "Lonely, reflective",
+        "signature_visual": "Single lonely figure amid city of millions",
+        "ending": "Open-ended lonely city transmission."
+      },
+      "storyboard": [
+        {
+          "import_key": "alone-scene-1",
+          "order": 1,
+          "title": "The Crowd",
+          "description": "CHXNDLER surrounded by city movement, emotionally disconnected.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "alone-scene-2",
+          "order": 2,
+          "title": "The Empty Space",
+          "description": "Alone in a city apartment or quiet street after dark.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "alone-scene-3",
+          "order": 3,
+          "title": "The Signal",
+          "description": "He sings into the night as if sending a transmission.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "Optional blurred passersby"
+        ],
+        "locations_proposed": [
+          "NYC streets / transit-like exteriors"
+        ],
+        "props_notes": "Phone, headphones",
+        "estimated_shoot_hours": "3–4",
+        "production_notes": "Previous discussion also includes vertical/karaoke/acoustic content; full narrative not finalized.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "LETTING GO",
+      "source_slug": "letting-go",
+      "development_status": "early_concept",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "CHXNDLER moves from office confinement toward ocean freedom and his own life.",
+        "concept_title": "The Life I Was Supposed to Live",
+        "song_meaning": "Leaving corporate expectations and identities built for other people.",
+        "visual_style_notes": "Corporate gray to ocean color",
+        "mood_notes": "Liberating, reflective",
+        "signature_visual": "Corporate clothes left behind as ocean opens up",
+        "ending": "The hardest thing to let go of is the version of yourself built for other people."
+      },
+      "storyboard": [
+        {
+          "import_key": "letting-go-scene-1",
+          "order": 1,
+          "title": "The Role",
+          "description": "Corporate routines and pressure to be the expected version of himself.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "letting-go-scene-2",
+          "order": 2,
+          "title": "The Release",
+          "description": "He removes or leaves behind symbols of the role.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "letting-go-scene-3",
+          "order": 3,
+          "title": "The Ocean",
+          "description": "He reaches beach/ocean and steps toward an authentic future.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER"
+        ],
+        "locations_proposed": [
+          "Office-like room",
+          "Beach / ocean"
+        ],
+        "props_notes": "Work clothes, office badge",
+        "estimated_shoot_hours": "4–5",
+        "production_notes": "Some official vertical video content may already exist; verify website release status.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "OCEAN GIRL",
+      "source_slug": "ocean-girl",
+      "development_status": "early_concept",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "A couple share a cinematic summer love by the ocean.",
+        "concept_title": "Summer Ocean Romance",
+        "song_meaning": "Dreamy beach romance, nostalgia, freedom and soft rebellion.",
+        "visual_style_notes": "Dreamy indie-pop beach film",
+        "mood_notes": "Nostalgic, romantic",
+        "signature_visual": "Sunset shoreline romantic silhouette",
+        "ending": "A lingering ocean memory."
+      },
+      "storyboard": [
+        {
+          "import_key": "ocean-girl-scene-1",
+          "order": 1,
+          "title": "The Beach",
+          "description": "Romantic arrival and playful beach moments.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "ocean-girl-scene-2",
+          "order": 2,
+          "title": "Golden Hour",
+          "description": "Warm ocean-side intimacy and summer nostalgia.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        },
+        {
+          "import_key": "ocean-girl-scene-3",
+          "order": 3,
+          "title": "The Memory",
+          "description": "The shoreline becomes a dreamy lasting memory.",
+          "status": "planned",
+          "location": null,
+          "cast": [],
+          "wardrobe": [],
+          "props": [],
+          "shots": []
+        }
+      ],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "Love interest"
+        ],
+        "locations_proposed": [
+          "Beach / shoreline"
+        ],
+        "props_notes": "Beach accessories",
+        "estimated_shoot_hours": "3–4",
+        "production_notes": "Original, remix and acoustic content were discussed; verify which versions already have official video or lyric video.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "MAKE BELIEVE",
+      "source_slug": "make-believe",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Song/video exists in prior discussions, but a complete scene treatment is not established here.",
+        "concept_title": "Make Believe (feat. ARINES)",
+        "song_meaning": "Fantasy romance and imagined realities.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "Not established",
+        "ending": "Not established"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [
+          "CHXNDLER",
+          "ARINES — collaborator, participation TBD"
+        ],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Previously referenced as an official music video; verify existing release and avoid marking as unshot.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "SUPERSTAR",
+      "source_slug": "superstar",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Aspiration, self-belief and star imagery; artwork/video assets discussed.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "PINK MOON",
+      "source_slug": "pink-moon",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Heartverse song; full music-video storyline not established.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "ALWAYS ON MY MIND",
+      "source_slug": "always-on-my-mind",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Heartverse song; full music-video storyline not established.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "BE MY BEE",
+      "source_slug": "be-my-bee",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Heartverse song; full music-video storyline not established.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "I MIGHT FALL IN LOVE WITH YOU",
+      "source_slug": "i-might-fall-in-love-with-you",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Romantic song; full music-video storyline not established.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "HOME",
+      "source_slug": "home",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Heartverse song; full music-video storyline not established.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "TIENES UN AMIGO",
+      "source_slug": "tienes-un-amigo",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Song previously listed; full video storyline not established.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "COLORS OF OUR HOME",
+      "source_slug": "colors-of-our-home",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Song previously listed; full video storyline not established.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "BABY",
+      "source_slug": "baby",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Song and video/visual assets discussed; full narrative not established.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "PARIS",
+      "source_slug": "paris",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Paris and Eiffel Tower / moon-heart visuals discussed; full narrative not established.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "MEAN IT",
+      "source_slug": "mean-it",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Song and content mentioned; full narrative not established.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "BAD IDEA",
+      "source_slug": "bad-idea",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Attraction to someone you should avoid; recurring temptation.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "LIKE THIS",
+      "source_slug": "like-this",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Sexy, fast-paced romantic energy; elevator-going-up image explored.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "ALMOST HUMAN",
+      "source_slug": "almost-human",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Animal empathy and the question of what makes someone human.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "WHO TAUGHT YOU TO LOVE",
+      "source_slug": "who-taught-you-to-love",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Animals feel love, trust, fear and attachment.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "DEAR HUMAN",
+      "source_slug": "dear-human",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Alien narrator learning empathy for life on Earth.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "THE AFTER PARTY",
+      "source_slug": "the-after-party",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Underground party, masks, sensuality, neon and secret identities.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "SCREENSAVER",
+      "source_slug": "screensaver",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Dreamy electronic nostalgia with piano-to-electronic transition.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "COPYCAT",
+      "source_slug": "copycat",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Someone can copy a song but not steal the original artist’s soul or vision.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "MERRY LITTLE SECRET",
+      "source_slug": "merry-little-secret",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Playful Christmas duet with Lil Gizmo and CHXNDLER.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "CHRISTMAS WITHOUT YOU",
+      "source_slug": "christmas-without-you",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Holiday song idea.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "CHRISTMAS MAGIC",
+      "source_slug": "christmas-magic",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Holiday song idea.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "WISH LIST",
+      "source_slug": "wish-list",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Holiday song idea.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "MIDNIGHT IN MANHATTAN",
+      "source_slug": "midnight-in-manhattan",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "NYC Christmas song idea.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "SNOW GLOBE",
+      "source_slug": "snow-globe",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Holiday song idea.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "MY FIRST CHRISTMAS",
+      "source_slug": "my-first-christmas",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Holiday song idea.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "IF I WERE YOU",
+      "source_slug": "if-i-were-you",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Animal-empathy song idea.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "SAME HEART",
+      "source_slug": "same-heart",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Animal-empathy song idea.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "MONSTER TO YOU",
+      "source_slug": "monster-to-you",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Animal-empathy song idea.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "WILD THINGS",
+      "source_slug": "wild-things",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Animal-empathy song idea.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "JUST LIKE YOU",
+      "source_slug": "just-like-you",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Animal-empathy song idea.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    },
+    {
+      "song_title": "MR. BRIGHTSIDE",
+      "source_slug": "mr-brightside",
+      "development_status": "needs_treatment",
+      "existing_video_check_required": true,
+      "vision": {
+        "concept": "Music-video treatment has not yet been finalized.",
+        "concept_title": "Not yet developed",
+        "song_meaning": "Cover content and jealousy/paranoia visual hook discussed.",
+        "visual_style_notes": null,
+        "mood_notes": null,
+        "signature_visual": "To develop",
+        "ending": "To develop"
+      },
+      "storyboard": [],
+      "production": {
+        "characters_proposed": [],
+        "locations_proposed": [],
+        "props_notes": null,
+        "estimated_shoot_hours": null,
+        "production_notes": "Placeholder catalog entry only; do not invent a finalized storyline.",
+        "shoot_date": null,
+        "tasks": [],
+        "wardrobe": []
+      },
+      "release": {
+        "target_date": null,
+        "published": false
+      },
+      "review_required": true
+    }
+  ]
+}
