@@ -1,4 +1,4 @@
-WHO TAUGHT YOU TO LOVE
+WHO TAUGHT YOU TO LOVE?
 
 Ooh, ooh
 Who taught you?

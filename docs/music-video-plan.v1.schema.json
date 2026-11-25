@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chxndler-music-site/music-video-plan.v1.schema.json",
+  "title": "CHXNDLER Music Video Plan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "project", "vision", "scenes", "production", "release"],
+  "properties": {
+    "schemaVersion": { "const": "chxndler.music-video-plan.v1" },
+    "project": {
+      "type": "object", "additionalProperties": false,
+      "required": ["songId", "songTitle", "videoType", "planningStatus"],
+      "properties": {
+        "songId": { "type": "string", "format": "uuid", "description": "UUID of an existing songs.id. Imports never create songs." },
+        "songTitle": { "type": "string", "minLength": 1, "maxLength": 180 },
+        "videoType": { "const": "Official Music Video" },
+        "projectTitle": { "type": "string", "minLength": 1, "maxLength": 180 },
+        "planningStatus": { "enum": ["concept", "planning", "agreement", "filming", "editing", "delivered", "complete"] }
+      }
+    },
+    "vision": {
+      "type": "object", "additionalProperties": false,
+      "required": ["concept", "narrativeOverview", "format", "visualStyles", "moods", "inspirationLinks", "referenceImages", "colorPalette"],
+      "properties": {
+        "concept": { "type": "string", "minLength": 1, "maxLength": 5000 },
+        "narrativeOverview": { "type": "string", "minLength": 1, "maxLength": 12000 },
+        "format": { "enum": ["Narrative", "Performance", "Visualizer", "Hybrid"] },
+        "visualStyles": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "moods": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "inspirationLinks": { "type": "array", "items": { "type": "string", "format": "uri" } },
+        "referenceImages": { "type": "array", "items": { "$ref": "#/$defs/referenceImage" } },
+        "colorPalette": { "type": "array", "items": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" } },
+        "notes": { "type": "string", "maxLength": 12000 }
+      }
+    },
+    "scenes": {
+      "type": "array", "minItems": 1, "maxItems": 100,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["importKey", "order", "title", "description", "status", "referenceImages", "castKeys", "wardrobeKeys", "propKeys", "shots"],
+        "properties": {
+          "importKey": { "$ref": "#/$defs/key" },
+          "order": { "type": "integer", "minimum": 1, "maximum": 200 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 180 },
+          "description": { "type": "string", "minLength": 1, "maxLength": 12000 },
+          "status": { "enum": ["planned", "ready", "filmed"] },
+          "locationKey": { "$ref": "#/$defs/key" },
+          "castKeys": { "type": "array", "items": { "$ref": "#/$defs/key" } },
+          "wardrobeKeys": { "type": "array", "items": { "$ref": "#/$defs/key" } },
+          "propKeys": { "type": "array", "items": { "$ref": "#/$defs/key" } },
+          "referenceImages": { "type": "array", "items": { "$ref": "#/$defs/referenceImage" } },
+          "shots": { "type": "array", "items": { "$ref": "#/$defs/shot" } },
+          "notes": { "type": "string", "maxLength": 4000 }
+        }
+      }
+    },
+    "production": {
+      "type": "object", "additionalProperties": false,
+      "required": ["shootDate", "shootDateStatus", "tasks", "castCrew", "locations", "wardrobe", "props", "shootSchedule"],
+      "properties": {
+        "shootDate": { "oneOf": [{ "type": "string", "format": "date" }, { "type": "null" }] },
+        "shootDateStatus": { "enum": ["confirmed", "proposed", "tbd"] },
+        "estimatedShootHours": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 10 },
+        "budget": { "type": ["string", "number", "null"], "minimum": 0 },
+        "notes": { "type": "string", "maxLength": 12000 },
+        "tasks": { "type": "array", "items": { "$ref": "#/$defs/task" } },
+        "castCrew": { "type": "array", "items": { "$ref": "#/$defs/person" } },
+        "locations": { "type": "array", "items": { "$ref": "#/$defs/location" } },
+        "wardrobe": { "type": "array", "items": { "$ref": "#/$defs/resource" } },
+        "props": { "type": "array", "items": { "$ref": "#/$defs/resource" } },
+        "shootSchedule": { "type": "array", "items": { "$ref": "#/$defs/scheduleBlock" } }
+      }
+    },
+    "release": {
+      "type": "object", "additionalProperties": false,
+      "required": ["editingStatus", "finalVideoApproved", "targetVideoReleaseDate", "publishedVideoUrl", "publicationStatus", "actualPublicationDate"],
+      "properties": {
+        "editingStatus": { "enum": ["Not Started", "Editing", "In Review", "Final"] },
+        "finalVideoApproved": { "type": "boolean" },
+        "targetVideoReleaseDate": { "oneOf": [{ "type": "string", "format": "date" }, { "type": "null" }] },
+        "publishedVideoUrl": { "oneOf": [{ "type": "string", "format": "uri" }, { "type": "null" }] },
+        "publicationStatus": { "enum": ["Not published", "Scheduled", "Published"] },
+        "actualPublicationDate": { "oneOf": [{ "type": "string", "format": "date" }, { "type": "null" }] }
+      }
+    },
+    "extensions": { "type": "object", "description": "Optional planning details not mapped by this schema version. Stored as JSONB metadata." }
+  },
+  "$defs": {
+    "key": { "type": "string", "minLength": 1, "maxLength": 100, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+    "referenceImage": {
+      "type": "object", "additionalProperties": false, "required": ["url"],
+      "properties": { "url": { "type": "string", "format": "uri" }, "alt": { "type": "string", "maxLength": 500 } }
+    },
+    "shot": {
+      "type": "object", "additionalProperties": false, "required": ["importKey", "order", "description"],
+      "properties": {
+        "importKey": { "$ref": "#/$defs/key" }, "order": { "type": "integer", "minimum": 1, "maximum": 500 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "framing": { "enum": ["Wide", "Medium", "Close-up", "Detail", "Moving"] },
+        "referenceImage": { "type": "string", "format": "uri" }, "done": { "type": "boolean" }
+      }
+    },
+    "task": {
+      "type": "object", "additionalProperties": false, "required": ["importKey", "title", "status"],
+      "properties": {
+        "importKey": { "$ref": "#/$defs/key" }, "title": { "type": "string", "minLength": 1, "maxLength": 180 },
+        "dueDate": { "oneOf": [{ "type": "string", "format": "date" }, { "type": "null" }] },
+        "assignee": { "type": "string", "maxLength": 180 }, "status": { "enum": ["To Do", "In Progress", "Done"] },
+        "notes": { "type": "string", "maxLength": 4000 }
+      }
+    },
+    "person": {
+      "type": "object", "additionalProperties": false, "required": ["importKey", "name", "role", "status"],
+      "properties": {
+        "importKey": { "$ref": "#/$defs/key" }, "name": { "type": "string", "minLength": 1, "maxLength": 180 },
+        "kind": { "enum": ["cast", "crew"] }, "role": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "email": { "type": "string", "format": "email", "maxLength": 320 }, "phone": { "type": "string", "maxLength": 80 },
+        "status": { "enum": ["Planned", "Contacted", "Confirmed", "Declined", "Considering", "Invited", "Completed"] },
+        "notes": { "type": "string", "maxLength": 4000 }
+      }
+    },
+    "location": {
+      "type": "object", "additionalProperties": false, "required": ["importKey", "name", "status"],
+      "properties": {
+        "importKey": { "$ref": "#/$defs/key" }, "name": { "type": "string", "minLength": 1, "maxLength": 180 },
+        "address": { "type": "string", "maxLength": 500 }, "addressStatus": { "enum": ["verified"] },
+        "notes": { "type": "string", "maxLength": 4000 }, "status": { "enum": ["Idea", "Contacted", "Confirmed"] },
+        "imageUrl": { "type": "string", "format": "uri" }
+      }
+    },
+    "resource": {
+      "type": "object", "additionalProperties": false, "required": ["importKey", "name", "status"],
+      "properties": {
+        "importKey": { "$ref": "#/$defs/key" }, "name": { "type": "string", "minLength": 1, "maxLength": 180 },
+        "description": { "type": "string", "maxLength": 4000 }, "notes": { "type": "string", "maxLength": 4000 },
+        "status": { "enum": ["Needed", "Sourced", "Ready"] }, "imageUrl": { "type": "string", "format": "uri" }
+      }
+    },
+    "scheduleBlock": {
+      "type": "object", "additionalProperties": false,
+      "required": ["importKey", "title", "sceneKeys", "locationKey", "startTime", "endTime", "setupMinutes", "travelMinutes", "castKeys", "wardrobeKeys", "propKeys"],
+      "properties": {
+        "importKey": { "$ref": "#/$defs/key" }, "title": { "type": "string", "minLength": 1, "maxLength": 180 },
+        "sceneKeys": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/key" } },
+        "locationKey": { "$ref": "#/$defs/key" }, "startTime": { "type": "string", "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$" },
+        "endTime": { "type": "string", "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$" },
+        "setupMinutes": { "type": "integer", "minimum": 0, "maximum": 600 }, "travelMinutes": { "type": "integer", "minimum": 0, "maximum": 600 },
+        "castKeys": { "type": "array", "items": { "$ref": "#/$defs/key" } }, "wardrobeKeys": { "type": "array", "items": { "$ref": "#/$defs/key" } },
+        "propKeys": { "type": "array", "items": { "$ref": "#/$defs/key" } }, "notes": { "type": "string", "maxLength": 4000 }
+      }
+    }
+  }
+}

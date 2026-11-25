@@ -78,7 +78,9 @@ export async function POST(request: Request) {
     await db.from("collaboration_invites").update({ revoked_at: new Date().toISOString() }).eq("id", data.id);
     return NextResponse.json({ error: "The new link could not safely replace the existing invitation." }, { status: 500 });
   }
-  const base = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
+  let base = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
+  if (["localhost", "127.0.0.1", "0.0.0.0"].includes(new URL(base).hostname)) base = "https://chxndler.world";
+  base = base.replace(/\/+$/, "");
   const link = scope === "catalog" ? `${base}/collab` : `${base}/collab/invite/${token}`;
   return NextResponse.json({ invitation: data, link });
 }

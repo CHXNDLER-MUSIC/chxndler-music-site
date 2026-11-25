@@ -1,0 +1,156 @@
+{
+  "schemaVersion": "chxndler.music-video-plan.v1",
+  "project": {
+    "songId": "00000000-0000-4000-8000-000000000001",
+    "songTitle": "ILLUSTRATIVE SONG TITLE",
+    "videoType": "Official Music Video",
+    "projectTitle": "A Room That Remembers",
+    "planningStatus": "planning"
+  },
+  "vision": {
+    "concept": "A relationship told through the small things left behind in one shared room.",
+    "narrativeOverview": "PROPOSED: The lead performer moves through an empty loft after a breakup. Each chorus reveals a different memory staged in the same room. The final chorus returns to the present and ends with the performer choosing what to keep. No dialogue or additional location is required.",
+    "format": "Hybrid",
+    "visualStyles": ["Cinematic", "Dreamy", "Minimal"],
+    "moods": ["Intimate", "Melancholic", "Hopeful"],
+    "inspirationLinks": [],
+    "referenceImages": [],
+    "colorPalette": ["#28333A", "#B88F7B", "#E5D7C5"],
+    "notes": "Illustrative example only. All cast, wardrobe, props, location and schedule details below are proposals, not bookings or confirmed arrangements."
+  },
+  "scenes": [
+    {
+      "importKey": "room-intro",
+      "order": 1,
+      "title": "The Empty Room",
+      "description": "PROPOSED: A wide, still frame introduces the lead alone in the shared loft. They notice a small stack of photographs and begin the first verse.",
+      "status": "planned",
+      "locationKey": "loft-main",
+      "castKeys": ["lead-performer"],
+      "wardrobeKeys": ["look-neutral"],
+      "propKeys": ["photo-stack"],
+      "referenceImages": [],
+      "shots": [
+        { "importKey": "room-intro-wide", "order": 1, "description": "Locked wide master with the performer entering frame", "framing": "Wide" },
+        { "importKey": "room-intro-detail", "order": 2, "description": "Close detail of the photographs on the table", "framing": "Detail" }
+      ]
+    },
+    {
+      "importKey": "memory-chorus",
+      "order": 2,
+      "title": "Memory in the Chorus",
+      "description": "PROPOSED: The second presence is suggested by an empty chair, a second cup, and eyeline matches. Keep the other person off camera to avoid adding cast unless later approved.",
+      "status": "planned",
+      "locationKey": "loft-main",
+      "castKeys": ["lead-performer"],
+      "wardrobeKeys": ["look-neutral"],
+      "propKeys": ["two-cups", "photo-stack"],
+      "referenceImages": [],
+      "shots": [
+        { "importKey": "memory-chorus-medium", "order": 1, "description": "Medium performance take across the table", "framing": "Medium" },
+        { "importKey": "memory-chorus-move", "order": 2, "description": "Slow move toward the empty chair on the last chorus line", "framing": "Moving" }
+      ]
+    },
+    {
+      "importKey": "room-release",
+      "order": 3,
+      "title": "Choosing What Remains",
+      "description": "PROPOSED: At the bridge, the performer sorts the photographs, keeps one, and leaves the room in a calm final wide shot. Reuse the same light and set dressing.",
+      "status": "planned",
+      "locationKey": "loft-main",
+      "castKeys": ["lead-performer"],
+      "wardrobeKeys": ["look-neutral"],
+      "propKeys": ["photo-stack", "two-cups"],
+      "referenceImages": [],
+      "shots": [
+        { "importKey": "room-release-hands", "order": 1, "description": "Hands keep one photograph and place the rest in a box", "framing": "Close-up" },
+        { "importKey": "room-release-wide", "order": 2, "description": "Final locked wide with the performer leaving frame", "framing": "Wide" }
+      ]
+    }
+  ],
+  "production": {
+    "shootDate": null,
+    "shootDateStatus": "tbd",
+    "estimatedShootHours": 4.5,
+    "budget": null,
+    "notes": "PROPOSED one-day shoot plan: one location, one on-camera performer, one camera operator, one lighting helper. Reserve short reset and break buffers inside the schedule. No bookings, hires, rates, or addresses are confirmed.",
+    "tasks": [
+      { "importKey": "confirm-location", "title": "Confirm a suitable shared-room location", "status": "To Do", "notes": "Proposal only; confirm access, permission, power and parking before booking." },
+      { "importKey": "confirm-performer", "title": "Confirm lead performer availability", "status": "To Do" },
+      { "importKey": "source-wardrobe", "title": "Source one neutral wardrobe look", "status": "To Do" },
+      { "importKey": "gather-props", "title": "Gather photographs and two cups", "status": "To Do" },
+      { "importKey": "edit-review", "title": "Assemble first cut for review", "status": "To Do" }
+    ],
+    "castCrew": [
+      { "importKey": "lead-performer", "name": "Lead performer (TBD)", "kind": "cast", "role": "Lead performer", "status": "Planned", "notes": "Placeholder; no person is cast or hired." },
+      { "importKey": "camera-operator", "name": "Camera operator (TBD)", "kind": "crew", "role": "Camera operator", "status": "Planned", "notes": "Placeholder; no crew member is hired." },
+      { "importKey": "lighting-helper", "name": "Lighting helper (TBD)", "kind": "crew", "role": "Lighting assistant", "status": "Planned", "notes": "Optional small crew proposal; confirm only if needed." }
+    ],
+    "locations": [
+      { "importKey": "loft-main", "name": "Shared room / loft (proposed)", "status": "Idea", "notes": "One nearby interior location proposed for all scenes. Address and booking are TBD." }
+    ],
+    "wardrobe": [
+      { "importKey": "look-neutral", "name": "Neutral everyday look", "description": "One muted, comfortable outfit; avoid prominent logos.", "status": "Needed", "notes": "Proposal; reuse for all scenes." }
+    ],
+    "props": [
+      { "importKey": "photo-stack", "name": "Small stack of photographs", "description": "Non-sensitive printed images or blank backs; no personal photos without permission.", "status": "Needed" },
+      { "importKey": "two-cups", "name": "Two cups", "description": "Use existing set pieces if available.", "status": "Needed" }
+    ],
+    "shootSchedule": [
+      {
+        "importKey": "schedule-intro",
+        "title": "Scene 1 · The Empty Room",
+        "sceneKeys": ["room-intro"],
+        "locationKey": "loft-main",
+        "startTime": "09:00",
+        "endTime": "10:15",
+        "setupMinutes": 20,
+        "travelMinutes": 0,
+        "castKeys": ["lead-performer"],
+        "wardrobeKeys": ["look-neutral"],
+        "propKeys": ["photo-stack"],
+        "notes": "Estimate includes setup, a wide master, details and a brief reset."
+      },
+      {
+        "importKey": "schedule-chorus",
+        "title": "Scene 2 · Memory in the Chorus",
+        "sceneKeys": ["memory-chorus"],
+        "locationKey": "loft-main",
+        "startTime": "10:15",
+        "endTime": "11:45",
+        "setupMinutes": 15,
+        "travelMinutes": 0,
+        "castKeys": ["lead-performer"],
+        "wardrobeKeys": ["look-neutral"],
+        "propKeys": ["two-cups", "photo-stack"],
+        "notes": "Estimate includes a short break, performance takes and a moving shot."
+      },
+      {
+        "importKey": "schedule-release",
+        "title": "Scene 3 · Choosing What Remains",
+        "sceneKeys": ["room-release"],
+        "locationKey": "loft-main",
+        "startTime": "11:45",
+        "endTime": "13:30",
+        "setupMinutes": 15,
+        "travelMinutes": 0,
+        "castKeys": ["lead-performer"],
+        "wardrobeKeys": ["look-neutral"],
+        "propKeys": ["photo-stack", "two-cups"],
+        "notes": "Estimate includes a reset, bridge coverage and the final wide. Wrap by 13:30."
+      }
+    ]
+  },
+  "release": {
+    "editingStatus": "Not Started",
+    "finalVideoApproved": false,
+    "targetVideoReleaseDate": null,
+    "publishedVideoUrl": null,
+    "publicationStatus": "Not published",
+    "actualPublicationDate": null
+  },
+  "extensions": {
+    "exampleOnly": true,
+    "planningNote": "Every creative and production detail is illustrative and proposed, not a real CHXNDLER booking or confirmed plan. Replace songId with an existing songs.id UUID before import."
+  }
+}

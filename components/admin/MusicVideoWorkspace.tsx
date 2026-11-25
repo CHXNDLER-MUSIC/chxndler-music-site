@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { songCoverPath } from "@/lib/songCover";
-import { CalendarDays, Camera, CheckCircle2, Clapperboard, Ellipsis, ArrowUp, ArrowDown, Copy, ExternalLink as ExternalLinkIcon, Film, GripVertical, Images, ImagePlus, LayoutGrid, Lightbulb, List, ListChecks, MapPin, Package, PanelsTopLeft, Plus, Rocket, Shirt, Trash2, Users, Clock3, Info, X } from "lucide-react";
+import { CalendarDays, Camera, CheckCircle2, Clapperboard, Ellipsis, ArrowUp, ArrowDown, Copy, ExternalLink as ExternalLinkIcon, Film, GripVertical, Images, ImagePlus, LayoutGrid, Lightbulb, List, ListChecks, MapPin, Package, PanelsTopLeft, Plus, Rocket, Shirt, Trash2, Users, Clock3, Info, X, FileUp } from "lucide-react";
 
 type Project = { id: string; visibility: string; status: string; public_concept: string; public_status: string; next_action: string; workspace: Record<string, any>; assigned_videographer?: Record<string, any>; songs?: { title: string; slug: string } };
 type Stage = "creative" | "production" | "release";
@@ -35,12 +35,21 @@ export default function MusicVideoWorkspace({ id, embedded = false }: { id: stri
   const [activeScene, setActiveScene] = useState<string | null>(null);
   const [draftScene, setDraftScene] = useState<Row | null>(null);
   const [itemModal, setItemModal] = useState<{ type: string; index: number | null; value: Row } | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importJson, setImportJson] = useState("");
+  const [importPreview, setImportPreview] = useState<Row | null>(null);
+  const [importChoices, setImportChoices] = useState<Record<string, "keep" | "replace">>({});
+  const [importCreateProjects, setImportCreateProjects] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importError, setImportError] = useState("");
+  const [importResult, setImportResult] = useState<Row | null>(null);
   const [versionsOpen, setVersionsOpen] = useState(false);
   const [menuScene, setMenuScene] = useState<string | null>(null);
   const [dragOverScene, setDragOverScene] = useState<string | null>(null);
   const [sceneView, setSceneView] = useState<"grid" | "list">("grid");
   const [invites, setInvites] = useState<Record<string, { id: string; email: string; link?: string }>>({});
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveInFlight = useRef<Promise<boolean> | null>(null);
   const dragScene = useRef<string | null>(null);
 
   useEffect(() => {
@@ -110,22 +119,74 @@ export default function MusicVideoWorkspace({ id, embedded = false }: { id: stri
   const savedLocationNames = locations.filter((row: Row) => row.name && !row.archived).map((row: Row) => row.name);
   const savedCastNames = cast.filter((row: Row) => row.name && !row.archived).map((row: Row) => row.name);
 
+  function workspaceProjectStatus(value: Row) {
+    const releaseValue = value.release || {};
+    const activeConcept = (value.creative?.concepts || []).find((row: Row) => row.id === value.creative?.selectedConceptId);
+    const activeScenes = activeConcept?.scenes || [];
+    return releaseValue.publicationConfirmed === true || releaseValue.publicationStatus === "Published" ? "complete" : releaseValue.editingStatus && releaseValue.editingStatus !== "Not Started" ? "editing" : activeScenes.length && activeScenes.every((scene: Row) => scene.status === "filmed") ? "filming" : activeScenes.length ? "planning" : "concept";
+  }
+  async function persistWorkspace(nextWorkspace: Row, projectId = project?.id) {
+    if (!projectId) return false;
+    try {
+      const response = await fetch("/api/music-video-projects", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: projectId, workspace: nextWorkspace, status: workspaceProjectStatus(nextWorkspace) }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Save failed.");
+      setNotice("Saved");
+      return true;
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Save failed."); return false; }
+  }
   function queueSave(nextWorkspace: Row) {
     if (!project) return;
     setProject(current => current ? { ...current, workspace: nextWorkspace } : current);
     setNotice("Saving…");
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(async () => {
-      try {
-        const nextRelease = nextWorkspace.release || {};
-        const nextScenes = (nextWorkspace.creative?.concepts || []).find((row: Row) => row.id === nextWorkspace.creative?.selectedConceptId)?.scenes || [];
-        const status = nextRelease.publicationConfirmed === true || nextRelease.publicationStatus === "Published" ? "complete" : nextRelease.editingStatus && nextRelease.editingStatus !== "Not Started" ? "editing" : nextScenes.length && nextScenes.every((scene: Row) => scene.status === "filmed") ? "filming" : nextScenes.length ? "planning" : "concept";
-        const response = await fetch("/api/music-video-projects", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: project.id, workspace: nextWorkspace, status }) });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || "Save failed.");
-        setNotice("Saved");
-      } catch (error) { setNotice(error instanceof Error ? error.message : "Save failed."); }
+    saveTimer.current = setTimeout(() => {
+      saveTimer.current = null;
+      const saving = persistWorkspace(nextWorkspace, project.id);
+      saveInFlight.current = saving;
+      void saving.finally(() => { if (saveInFlight.current === saving) saveInFlight.current = null; });
     }, 450);
+  }
+  function resetImport() {
+    setImportOpen(false); setImportJson(""); setImportPreview(null); setImportChoices({}); setImportError(""); setImportResult(null); setImportCreateProjects(false);
+  }
+  async function previewImport() {
+    setImportError(""); setImportResult(null); setImportPreview(null); setImportChoices({});
+    let plans: Row[];
+    try { const parsed = JSON.parse(importJson); plans = Array.isArray(parsed) ? parsed : [parsed]; }
+    catch { setImportError("Paste valid JSON before previewing."); return; }
+    setImportBusy(true);
+    try {
+      const hadPendingSave = !!saveTimer.current || !!saveInFlight.current;
+      if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
+      if (saveInFlight.current) await saveInFlight.current;
+      if (hadPendingSave && !await persistWorkspace(workspace, project?.id)) throw new Error("Save your current workspace edits before previewing the import.");
+      const response = await fetch("/api/music-video-projects/import", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "preview", plans, createProjects: importCreateProjects }) });
+      const result = await response.json();
+      if (!response.ok) { setImportError(result.error || "Plan validation failed."); setImportPreview(result); return; }
+      setImportPreview(result);
+    } catch (error) { setImportError(error instanceof Error ? error.message : "Unable to preview the plan."); }
+    finally { setImportBusy(false); }
+  }
+  async function confirmImport() {
+    if (!importPreview || !project) return;
+    const plansInPaste = (() => { try { const parsed = JSON.parse(importJson); return Array.isArray(parsed) ? parsed : [parsed]; } catch { return []; } })();
+    if (!plansInPaste.length) { setImportError("Paste the plan again and preview it before importing."); return; }
+    setImportBusy(true); setImportError("");
+    try {
+      const hadPendingSave = !!saveTimer.current || !!saveInFlight.current;
+      if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
+      if (saveInFlight.current) await saveInFlight.current;
+      if (hadPendingSave && !await persistWorkspace(workspace, project.id)) throw new Error("Your current workspace edits could not be saved. Resolve the save message before importing.");
+      const response = await fetch("/api/music-video-projects/import", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "import", plans: plansInPaste, choices: importChoices, createProjects: importCreateProjects, previewTokens: importPreview.plans?.map((row: Row) => row.token) }) });
+      const result = await response.json();
+      if (!response.ok) { setImportError(result.error || "Import was stopped safely."); if (result.plans) setImportPreview(result); return; }
+      const refresh = await fetch(`/api/music-video-projects?id=${encodeURIComponent(project.id)}`, { cache: "no-store" });
+      if (refresh.ok) { const saved = await refresh.json(); if (saved.project) setProject(saved.project); }
+      setImportResult(result); setImportPreview(null); setImportError("");
+      setNotice("Plan import complete");
+    } catch (error) { setImportError(error instanceof Error ? error.message : "Import failed safely."); }
+    finally { setImportBusy(false); }
   }
   function update(section: string, value: Row) { queueSave({ ...workspace, [section]: value }); }
   function updateCreative(value: Row) { update("creative", value); }
@@ -244,6 +305,7 @@ export default function MusicVideoWorkspace({ id, embedded = false }: { id: stri
       {!embedded && <img src={songCoverPath(project.songs?.slug || "", project.songs?.title || "")} alt="" className="h-14 w-14 rounded-xl border border-white/10 object-cover" />}
       <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><Clapperboard size={18} strokeWidth={1.8} className="text-white/45"/>{!embedded && <h1 className="truncate text-lg font-bold">{project.songs?.title || "Music Video"}</h1>}<span className="rounded-full bg-white/[.06] px-2.5 py-1 text-[.62rem] font-semibold text-white/65">{workspace.videoType || "Official Music Video"}</span><span className="rounded-full border border-[#FD52AF]/30 px-2.5 py-1 text-[.62rem] font-semibold text-[#FD52AF]">{overall}</span></div><p className="mt-1 truncate text-xs text-white/45">{scenes.length} scenes <span className="px-1">·</span> Tasks {doneTasks}/{visibleTasks.length} <span className="px-1">·</span> Shoot {production.shootDate || "Not scheduled"}</p></div>
       <span className="text-[.65rem] text-white/40" aria-live="polite">{notice}</span>
+      <button type="button" onClick={() => { setImportOpen(true); setImportError(""); setImportResult(null); }} className="flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-white/75 hover:border-[#FD52AF]/50 hover:text-white"><FileUp size={14}/>Import Plan</button>
     </header>
     <nav aria-label="Music video stages" className="my-4 grid grid-cols-3 rounded-xl bg-white/[.035] p-1">{stages.map(([key, label, subtitle, Icon, iconColor]) => <button key={key} type="button" onClick={() => setStage(key)} className={`flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-lg border px-2 py-2 transition ${stage === key ? "border-[#FD52AF]/35 bg-[#FD52AF]/[.10] text-white" : "border-transparent text-white/55 hover:bg-white/[.04] hover:text-white"}`}><span className="flex items-center gap-1.5"><Icon size={23} strokeWidth={1.9} className={iconColor}/>{stageProgress[key] && <CheckCircle2 size={14} className="text-emerald-300"/>}</span><span className="text-xs font-semibold sm:text-sm">{label}</span><span className="text-[.62rem] text-white/40">{subtitle}</span></button>)}</nav>
 
@@ -252,8 +314,11 @@ export default function MusicVideoWorkspace({ id, embedded = false }: { id: stri
         <div className="flex flex-wrap items-start gap-4">
           <div className="min-w-0 flex-1">
             <h2 className="flex items-center gap-2 text-sm font-bold"><Lightbulb size={19} className="text-[#FD52AF]"/>The Vision</h2>
-            <label className="mt-4 block text-[.68rem] font-semibold text-white/55">Concept</label>
-            <textarea aria-label="Video concept" value={concept.synopsis || ""} onChange={event => updateConcept({ synopsis: event.target.value, story: event.target.value })} rows={2} placeholder="What's the story or idea behind this video?" className={`${field} mt-1 min-h-20 resize-y bg-black/35 leading-6`}/>
+            <label className="mt-4 block text-[.68rem] font-semibold text-white/55">Core concept</label>
+            <textarea aria-label="Core video concept" value={concept.conceptStatement || (!concept.narrativeOverview ? concept.synopsis : "")} onChange={event => updateConcept({ conceptStatement: event.target.value })} rows={2} placeholder="What's the central idea behind this video?" className={`${field} mt-1 min-h-20 resize-y bg-black/35 leading-6`}/>
+            <label className="mt-3 block text-[.68rem] font-semibold text-white/55">Narrative overview</label>
+            <textarea aria-label="Narrative overview" value={concept.synopsis || ""} onChange={event => updateConcept({ synopsis: event.target.value, narrativeOverview: event.target.value })} rows={3} placeholder="Describe the story from beginning to end." className={`${field} mt-1 resize-y bg-black/35 leading-6`}/>
+            <label className="mt-3 block text-[.68rem] font-semibold text-white/55">Format</label><select aria-label="Video format" value={concept.videoFormat || "Hybrid"} onChange={event => updateConcept({ videoFormat: event.target.value })} className={`${field} mt-1 bg-[#17171c]`}>{["Narrative", "Performance", "Visualizer", "Hybrid"].map(value => <option key={value}>{value}</option>)}</select>
             <details className="mt-2 text-xs text-white/45"><summary className="w-fit cursor-pointer hover:text-white/70">Optional video title</summary><input aria-label="Optional video title" value={concept.title || ""} onChange={event => updateConcept({ title: event.target.value })} placeholder="Use the song title by default" className={`${field} mt-2`}/></details>
           </div>
         </div>

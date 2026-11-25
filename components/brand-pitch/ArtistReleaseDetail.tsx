@@ -291,7 +291,8 @@ export default function ArtistReleaseDetail({
                 step={0.1}
                 value={Math.min(shownTime, shownDuration || 0)}
                 disabled={!audioSrc || !isActive || shownDuration <= 0}
-                onChange={(e) => seek(Number(e.target.value))}
+                onInput={(e) => seek(Number(e.currentTarget.value))}
+                onChange={(e) => seek(Number(e.currentTarget.value))}
                 aria-label="Seek"
                 className="release-seek w-full"
                 style={{
@@ -403,11 +404,14 @@ export default function ArtistReleaseDetail({
         .streaming-link-apple { color:#ff5a75; border-color:rgba(255,90,117,.55); background:linear-gradient(135deg,rgba(255,90,117,.16),rgba(196,90,255,.14)); }
         .streaming-link:hover { transform:translateY(-1px) scale(1.05); box-shadow:0 0 16px currentColor; }
         .release-seek {
+          display: block;
+          width: 100%;
           -webkit-appearance: none;
           appearance: none;
           height: 0.25rem;
           border-radius: 9999px;
           cursor: pointer;
+          touch-action: pan-y;
         }
         .release-seek:disabled {
           cursor: default;

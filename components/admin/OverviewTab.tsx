@@ -5,9 +5,10 @@ import Link from "next/link";
 import { songCoverPath } from "@/lib/songCover";
 import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 import { parseYouTubeId } from "@/lib/youtube";
-import { songProductionLabel, trackedProductionMilestones } from "@/lib/songWorkflow";
+import { milestoneValue, songProductionLabel, trackedProductionMilestones, type ProductionMilestone, type ProductionStage } from "@/lib/songWorkflow";
 import SkyVideoBackground from "@/components/brand-pitch/SkyVideoBackground";
 import PracticeTab from "@/components/admin/PracticeTab";
+import { ProductionStageIcon } from "@/components/admin/SongProductionProgress";
 
 type Song = {
   id: string; title: string; slug: string; is_released: boolean; release_date?: string | null; workflow_stage?: string | null;
@@ -22,6 +23,9 @@ type SyncRecord = { id: string; status?: string | null };
 type CollaborationRequest = { id: string; song_id?: string | null; artist_name: string; contribution_type: string; status: string; submitted_at: string; songs?: { title?: string } | null };
 
 const generatedProfileTask = (title: string) => title.trim().toLowerCase() === "complete song profile";
+const focusProductionStages: Array<{ milestone: ProductionMilestone; stage: ProductionStage }> = [
+  { milestone: "concept", stage: "Idea" }, { milestone: "lyrics", stage: "Writing" }, { milestone: "recorded", stage: "Recording" }, { milestone: "mixed", stage: "Mixing" }, { milestone: "mastered", stage: "Mastering" },
+];
 const activePitchStatuses = new Set(["Planned", "Sent", "Follow-up"]);
 const terminalSyncStatuses = new Set(["Licensed", "Passed", "Declined", "Closed"]);
 const songColors = ["#FF8BC4", "#76D8FF", "#B99AFF", "#FFC66D", "#7EE0B5", "#FF9A7A"];
@@ -159,6 +163,16 @@ export default function OverviewTab() {
     return () => window.removeEventListener("song-production-updated", handleProgressUpdate);
   }, []);
 
+  useEffect(() => {
+    const handleTaskUpdate = (event: Event) => {
+      const updated = (event as CustomEvent<{ id?: string; status?: string }>).detail;
+      if (!updated?.id || !updated.status) return;
+      setTasks(rows => rows.map(task => task.id === updated.id ? { ...task, status: updated.status! } : task));
+    };
+    window.addEventListener("admin-task-updated", handleTaskUpdate);
+    return () => window.removeEventListener("admin-task-updated", handleTaskUpdate);
+  }, []);
+
   const today = localToday();
   const actionableTasks = useMemo(() => tasks
     .filter(task => task.status !== "done" && !generatedProfileTask(task.title))
@@ -169,7 +183,6 @@ export default function OverviewTab() {
   const focusCollaborationRequests = featuredSong ? collaborationRequests.filter(request => request.song_id === featuredSong.id) : [];
   const releasedCount = songs.filter(song => song.is_released).length;
   const milestoneCount = featuredSong ? trackedProductionMilestones(featuredSong) : null;
-  const nextStep = featuredSong?.next_action?.trim() || focusTasks[0]?.title || "";
   const [contentRemaining, setContentRemaining] = useState<number | null>(null);
 
   useEffect(() => {
@@ -196,6 +209,16 @@ export default function OverviewTab() {
     const data = await response.json(); setTaskSaving(null);
     if (!response.ok) { setTaskError(data.error || "Unable to complete this task."); return; }
     setTasks(rows => rows.map(row => row.id === task.id ? { ...row, status: "done" } : row));
+    window.dispatchEvent(new CustomEvent("admin-task-updated", { detail: { id: task.id, status: "done" } }));
+  }
+
+  async function updateTaskDate(task: Task, dueAt: string) {
+    setTaskSaving(task.id); setTaskError("");
+    const response = await fetch("/api/admin/tasks", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: task.id, due_at: dueAt || null }) });
+    const data = await response.json(); setTaskSaving(null);
+    if (!response.ok) { setTaskError(data.error || "Unable to update this task date."); return; }
+    setTasks(rows => rows.map(row => row.id === task.id ? { ...row, due_at: dueAt || null } : row));
+    window.dispatchEvent(new CustomEvent("admin-task-updated", { detail: { id: task.id, due_at: dueAt || null } }));
   }
 
   const chooser = <div ref={songChooserRef} className="relative">
@@ -210,17 +233,16 @@ export default function OverviewTab() {
   </div>;
 
   return <div className="space-y-4 sm:space-y-5">
-    <section aria-labelledby="portfolio-snapshot-title" className="grid gap-2 sm:grid-cols-3 sm:gap-3">
+    <section aria-labelledby="portfolio-snapshot-title" className="grid grid-cols-3 gap-2 sm:gap-3">
       <h1 id="portfolio-snapshot-title" className="sr-only">Portfolio Snapshot</h1>
-      <Link href="/admin?view=songs" className="group rounded-xl border border-white/[.08] bg-[#111116] px-4 py-3 transition hover:-translate-y-px hover:border-[#FD52AF]/30 sm:px-5"><span className="block text-xs font-semibold text-white/45">Total Songs</span><span className="mt-1 block text-2xl font-black tabular-nums text-white">{loading ? "—" : songs.length}</span></Link>
-      <Link href="/admin?view=songs&filter=released" className="group rounded-xl border border-white/[.08] bg-[#111116] px-4 py-3 transition hover:-translate-y-px hover:border-emerald-300/25 sm:px-5"><span className="block text-xs font-semibold text-white/45">Released</span><span className="mt-1 block text-2xl font-black tabular-nums text-emerald-200">{loading ? "—" : releasedCount}</span></Link>
-      <Link href="/admin?view=outreach" className="group rounded-xl border border-white/[.08] bg-[#111116] px-4 py-3 transition hover:-translate-y-px hover:border-sky-300/25 sm:px-5"><span className="block text-xs font-semibold text-white/45">Active Outreach</span><span className="mt-1 block text-2xl font-black tabular-nums text-sky-200">{loading ? "—" : activeOutreach}</span></Link>
+      <Link href="/admin?view=songs" className="group min-w-0 rounded-xl border border-white/[.08] bg-[#111116] px-2.5 py-3 transition hover:-translate-y-px hover:border-[#FD52AF]/30 sm:px-4"><span className="block text-[.65rem] font-semibold leading-tight text-white/45 sm:text-xs">Total Songs</span><span className="mt-1 block text-2xl font-black tabular-nums text-white">{loading ? "—" : songs.length}</span></Link>
+      <Link href="/admin?view=songs&filter=released" className="group min-w-0 rounded-xl border border-white/[.08] bg-[#111116] px-2.5 py-3 transition hover:-translate-y-px hover:border-emerald-300/25 sm:px-4"><span className="block text-[.65rem] font-semibold leading-tight text-white/45 sm:text-xs">Released</span><span className="mt-1 block text-2xl font-black tabular-nums text-emerald-200">{loading ? "—" : releasedCount}</span></Link>
+      <Link href="/admin?view=outreach" className="group min-w-0 rounded-xl border border-white/[.08] bg-[#111116] px-2.5 py-3 transition hover:-translate-y-px hover:border-sky-300/25 sm:px-4"><span className="block text-[.65rem] font-semibold leading-tight text-white/45 sm:text-xs">Active Outreach</span><span className="mt-1 block text-2xl font-black tabular-nums text-sky-200">{loading ? "—" : activeOutreach}</span></Link>
     </section>
 
     <button type="button" onClick={() => setPracticeOpen(true)} aria-haspopup="dialog" className="group flex w-full items-center gap-4 rounded-2xl border border-[#FD52AF]/20 bg-gradient-to-r from-[#21121c] to-[#111116] p-4 text-left transition hover:-translate-y-px hover:border-[#FD52AF]/45 hover:from-[#291522] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FD52AF] sm:p-5">
       <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-[#FD52AF]/25 bg-[#FD52AF]/[.09] text-[#FD52AF]"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
-      <span className="min-w-0 flex-1"><span className="block text-[.62rem] font-bold uppercase tracking-[.17em] text-[#FD52AF]">Practice</span><span className="mt-1 block text-base font-bold text-white">Pick a song and start a session</span><span className="mt-1 block text-xs text-white/45">Song key, capo, chords, lyrics, and tracks in one place.</span></span>
-      <span aria-hidden="true" className="text-lg text-[#FD52AF] transition-transform group-hover:translate-x-1">→</span>
+      <span className="min-w-0 flex-1 text-base font-bold text-white">Practice</span>
     </button>
 
     {practiceOpen && <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 p-3 backdrop-blur-sm sm:p-6" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setPracticeOpen(false); }}>
@@ -237,18 +259,16 @@ export default function OverviewTab() {
         <div className="absolute inset-0 bg-black/55" />
       </div>}
       <div className="relative flex flex-wrap items-center justify-between gap-3 border-b border-white/[.06] px-4 py-3.5 sm:px-6"><p id="currently-working-title" className="text-[.62rem] font-bold uppercase tracking-[.18em] text-[#FD52AF]">Your focus</p>{chooser}</div>
-      {loading ? <div className="relative grid min-h-48 place-items-center p-8 text-sm text-white/40">Loading your workspace…</div> : featuredSong ? <div className="relative grid gap-5 p-4 pr-16 sm:grid-cols-[160px_minmax(0,1fr)] sm:items-center sm:gap-7 sm:p-6 sm:pr-20 lg:grid-cols-[180px_minmax(0,1fr)]">
+      {loading ? <div className="relative grid min-h-48 place-items-center p-8 text-sm text-white/40">Loading your workspace…</div> : featuredSong ? <div className="relative grid gap-5 p-4 sm:grid-cols-[160px_minmax(0,1fr)] sm:items-center sm:gap-7 sm:p-6 lg:grid-cols-[180px_minmax(0,1fr)]">
         <Link href={`/admin/songs/${featuredSong.id}`} aria-label={`Open ${featuredSong.title} artwork and workspace`} className="group relative mx-auto block h-40 w-40 sm:h-40 sm:w-40 lg:h-44 lg:w-44">
           <span className="absolute -inset-5 rounded-full bg-[#FD52AF]/20 blur-2xl transition duration-500 group-hover:bg-[#FD52AF]/30" />
           <span className="relative block h-full w-full overflow-hidden rounded-2xl border border-white/[.11] bg-gradient-to-br from-[#291321] to-[#101014] shadow-[0_16px_45px_rgba(0,0,0,.4)]"><span className="absolute inset-0 grid place-items-center text-[.62rem] font-black tracking-[.16em] text-[#FD52AF]/60">CHXNDLER</span><img src={songCoverPath(featuredSong.slug, featuredSong.title)} alt={`${featuredSong.title} cover art`} onError={event => { event.currentTarget.style.display = "none"; }} className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.035]" /></span>
         </Link>
         <div className="min-w-0 text-center sm:text-left"><div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start"><span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-2.5 py-1 text-[.62rem] font-bold text-white"><svg aria-hidden="true" viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M3 10h14M10 3l7 7-7 7"/></svg>{featuredSong.is_released ? "Released" : "Unreleased"}</span><span className="inline-flex items-center gap-1.5 rounded-full bg-black/40 px-2 py-1 text-[.68rem] font-semibold text-white"><svg aria-hidden="true" viewBox="0 0 20 20" className="h-3.5 w-3.5 text-[#FD52AF]" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M3 15.5V4.5M3 15.5h14M6 12l3-3 2 2 4-5"/></svg>{songProductionLabel(featuredSong)}</span></div><h3 className="mt-2 text-3xl font-black tracking-tight text-white [text-shadow:0_2px_10px_rgba(0,0,0,.8)] sm:text-4xl">{featuredSong.title}</h3>
-          {featuredSong.release_date && <p className="mt-1 text-sm font-semibold text-white [text-shadow:0_1px_6px_rgba(0,0,0,.9)]">Release date · {featuredSong.release_date}</p>}
-          <p className="mt-2 text-sm font-semibold text-white [text-shadow:0_1px_6px_rgba(0,0,0,.9)]">Content left to release · <strong>{contentRemaining === null ? "—" : contentRemaining}</strong></p>
-          {milestoneCount !== null && <div className="mx-auto mt-3 max-w-sm sm:mx-0"><div className="flex items-center justify-between rounded-md bg-black/40 px-2 py-1 text-xs font-semibold text-white"><span>Reviewed production progress</span><span>{milestoneCount}/5</span></div><div className="mt-1.5 h-1 overflow-hidden rounded-full bg-black/60"><div className="h-full rounded-full bg-gradient-to-r from-[#FD52AF] to-[#f8a2ce] transition-[width] duration-500" style={{ width: `${milestoneCount / 5 * 100}%` }} /></div></div>}
-          <div className="mt-4"><p className="inline-block rounded bg-black/50 px-2 py-1 text-[.65rem] font-bold uppercase tracking-[.15em] text-white">Next step</p>{nextStep ? <p className="mt-1 inline-block rounded bg-black/55 px-2 py-1 text-sm font-semibold text-white">{nextStep}</p> : <p className="mt-1 text-sm font-semibold text-white">No next step saved yet.</p>}</div>
+          {featuredSong.release_date && <p className="mt-2 text-lg font-bold text-[#FD52AF] [text-shadow:0_1px_6px_rgba(0,0,0,.9)]">Release day · {(() => { const [year, month, day] = featuredSong.release_date!.slice(0, 10).split("-"); return `${month}/${day}/${year}`; })()}</p>}
+          <p className="mt-2 text-sm font-semibold text-white [text-shadow:0_1px_6px_rgba(0,0,0,.9)]">Content left to release · <strong className="text-lg font-black text-[#FD52AF]">{contentRemaining === null ? "—" : `#${contentRemaining}`}</strong></p>
+          {milestoneCount !== null && <div className="mx-auto mt-3 max-w-sm sm:mx-0"><div className="flex items-center justify-between rounded-md bg-black/40 px-2 py-1 text-xs font-semibold text-white"><span>Reviewed production progress</span><span>{milestoneCount}/5</span></div><div className="mt-2 flex items-center justify-between rounded-md bg-black/35 px-2 py-1.5" aria-label={`Music production milestones: ${milestoneCount} of 5 complete`}>{focusProductionStages.map(({ milestone, stage }) => { const complete = milestoneValue(featuredSong, milestone); return <span key={milestone} title={`${stage} · ${complete ? "Complete" : "Incomplete"}`} aria-label={`${stage} ${complete ? "complete" : "incomplete"}`}><ProductionStageIcon stage={stage} complete={complete} className="h-5 w-5 sm:h-6 sm:w-6" /></span>; })}</div><div className="mt-1.5 h-1 overflow-hidden rounded-full bg-black/60"><div className="h-full rounded-full bg-gradient-to-r from-[#FD52AF] to-[#f8a2ce] transition-[width] duration-500" style={{ width: `${milestoneCount / 5 * 100}%` }} /></div></div>}
         </div>
-        <Link href={`/admin/songs/${featuredSong.id}`} aria-label={`Continue working on ${featuredSong.title}`} className="absolute right-4 top-1/2 -translate-y-1/2 text-4xl font-black leading-none text-[#FF4FB3] drop-shadow-[0_0_12px_rgba(253,82,175,.9)] transition hover:scale-110 hover:text-[#FF8BC4] focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-white animate-pulse">→</Link>
       </div> : <div className="relative flex flex-col items-center px-5 py-9 text-center sm:py-11"><div className="grid h-12 w-12 place-items-center rounded-2xl border border-[#FD52AF]/20 bg-[#FD52AF]/[.06] text-xl text-[#FD52AF]" aria-hidden="true">♪</div><h3 className="mt-3 text-lg font-bold text-white">Choose your focus song</h3><p className="mt-1 max-w-sm text-sm leading-5 text-white/45">Your selected song will stay here between visits. Nothing is picked for you.</p><label className="mt-4"><span className="sr-only">Choose a song to feature</span><select value="" disabled={savingSong || !songs.length} onChange={event => { if (event.target.value) void chooseSong(event.target.value); }} className="min-w-48 rounded-xl border border-white/[.12] bg-[#17171c] px-4 py-3 text-sm font-semibold text-white outline-none focus:border-[#FD52AF]/50"><option value="" disabled>{songs.length ? "Choose a song…" : "No songs available"}</option>{songs.map(song => <option key={song.id} value={song.id}>{song.title}</option>)}</select></label></div>}
       {error && <p role="alert" className="relative border-t border-red-300/10 bg-red-300/[.035] px-4 py-2.5 text-sm text-red-200 sm:px-6">{error}</p>}
     </section>
@@ -257,24 +277,22 @@ export default function OverviewTab() {
       <header className="mb-3 flex items-center gap-3"><div><p className="text-[.62rem] font-bold uppercase tracking-[.18em] text-white/35">Your task list</p><h2 id="up-next-title" className="mt-0.5 text-base font-bold">Up Next</h2></div></header>
       {taskError && <p role="alert" className="mb-3 rounded-lg border border-red-300/10 bg-red-300/[.04] px-3 py-2 text-xs text-red-200">{taskError}</p>}
       {loading ? <p className="py-5 text-center text-sm text-white/40">Loading tasks…</p> : focusTasks.length || focusCollaborationRequests.length ? <>
-        <div className="hidden grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_6rem_2rem] gap-3 border-b border-white/[.06] pb-2 text-[.6rem] font-bold uppercase tracking-[.14em] text-white/30 sm:grid"><span/><span>Task</span><span>Song</span><span>Date</span><span/></div>
+        <div className="hidden grid-cols-[1.25rem_minmax(0,2.5fr)_minmax(7rem,.65fr)_8rem] gap-3 border-b border-white/[.06] pb-2 text-[.6rem] font-bold uppercase tracking-[.14em] text-white/30 sm:grid"><span/><span>Task</span><span>Song</span><span>Date</span></div>
         <ul className="divide-y divide-white/[.06]">
-        {focusCollaborationRequests.map(request => <li key={`collab-${request.id}`} className="grid grid-cols-[1.25rem_minmax(0,1fr)_5rem_2rem] items-center gap-3 border-b border-[#FD52AF]/15 py-3 first:pt-1 sm:grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_6rem_2rem]">
+        {focusCollaborationRequests.map(request => <li key={`collab-${request.id}`} className="grid grid-cols-[1.25rem_minmax(0,1fr)_7rem] items-center gap-3 border-b border-[#FD52AF]/15 py-3 first:pt-1 sm:grid-cols-[1.25rem_minmax(0,2.5fr)_minmax(7rem,.65fr)_8rem]">
           <span aria-label="Collaboration request" title="Collaboration request" className="grid h-6 w-6 shrink-0 place-items-center"><img src="/elements/alien.webp" alt="" className="h-6 w-6 object-contain" /></span>
           <a href={`/admin?view=outreach&section=collabs&request=${encodeURIComponent(request.id)}`} onClick={event => { if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); openCollaborationRequest(request.id); }} className="min-w-0 truncate text-sm font-semibold text-white/90 transition hover:text-[#ff9dcd]">New collaboration request · {request.artist_name} <span className="font-normal text-white/50">· {request.contribution_type}</span></a>
           <a href={`/admin?view=outreach&section=collabs&request=${encodeURIComponent(request.id)}`} onClick={event => { if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); openCollaborationRequest(request.id); }} className="hidden min-w-0 truncate text-xs font-semibold sm:block" style={{ color: request.songs?.title ? songColor(request.songs.title) : "rgba(255,255,255,.45)" }} title={request.songs?.title || "No song selected"}>{request.songs?.title || "—"}</a>
           <span className="whitespace-nowrap text-xs text-white/45" title={request.submitted_at}>{displayDate(request.submitted_at)}</span>
-          <a href={`/admin?view=outreach&section=collabs&request=${encodeURIComponent(request.id)}`} onClick={event => { if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); openCollaborationRequest(request.id); }} aria-label={`Review collaboration request from ${request.artist_name}`} className="grid h-8 w-8 shrink-0 translate-x-2 place-items-center rounded-lg text-[#FF4FB3] drop-shadow-[0_0_8px_rgba(253,82,175,.8)] transition hover:scale-110 hover:text-[#FF8BC4] hover:drop-shadow-[0_0_12px_rgba(253,82,175,1)]">↗</a>
         </li>)}
         {focusTasks.slice(0, 5).map(task => {
         const isOverdue = !!task.due_at && task.due_at < today;
         const taskHref = task.content ? `/admin/songs/${task.content.song_id}?tab=content&content=${task.content.id}` : `/admin?view=tasks&task=${task.id}`;
-        return <li key={task.id} className="grid grid-cols-[1.25rem_minmax(0,1fr)_5rem_2rem] items-center gap-3 py-3 first:pt-1 last:pb-1 sm:grid-cols-[1.25rem_minmax(0,1fr)_minmax(7rem,.65fr)_6rem_2rem]">
-          <button type="button" disabled={taskSaving === task.id} onClick={() => void completeTask(task)} aria-label={`Mark ${task.title} complete`} className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-white/20 text-transparent transition hover:border-[#FD52AF] hover:bg-[#FD52AF]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FD52AF] disabled:opacity-40"><span aria-hidden="true">✓</span></button>
-          <div className="flex min-w-0 items-start gap-2"><TaskCategoryIcon category={task.task_category} title={task.title}/><div className="min-w-0 flex-1"><Link href={taskHref} className="block truncate text-sm font-semibold text-white/85 transition hover:text-[#ff9dcd]">{displayTaskTitle(task.title)}</Link><div className="mt-1">{task.priority === "high" && <span className="rounded-full bg-amber-200/[.08] px-1.5 py-0.5 text-[.66rem] font-semibold text-amber-100">High priority</span>}</div></div></div>
+        return <li key={task.id} className="grid grid-cols-[1.25rem_minmax(0,1fr)_7rem] items-center gap-3 py-3 first:pt-1 last:pb-1 sm:grid-cols-[1.25rem_minmax(0,2.5fr)_minmax(7rem,.65fr)_8rem]">
+          <button type="button" disabled={taskSaving === task.id} onClick={() => void completeTask(task)} aria-label={`Mark ${task.title} complete`} className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FD52AF] disabled:opacity-70 ${taskSaving === task.id ? "border-emerald-400 bg-emerald-400/15 text-emerald-300" : "border-white/20 text-transparent hover:border-[#FD52AF] hover:bg-[#FD52AF]/10"}`}><span aria-hidden="true">✓</span></button>
+          <div className="flex min-w-0 items-start gap-2"><TaskCategoryIcon category={task.task_category} title={task.title}/><div className="min-w-0 flex-1"><Link href={taskHref} className="block whitespace-normal break-words text-sm font-semibold text-white/85 transition hover:text-[#ff9dcd]">{displayTaskTitle(task.title)}</Link><div className="mt-1">{task.priority === "high" && <span className="rounded-full bg-amber-200/[.08] px-1.5 py-0.5 text-[.66rem] font-semibold text-amber-100">High priority</span>}</div></div></div>
           <span className="hidden min-w-0 truncate text-xs font-semibold sm:block" style={{ color: songColor(task.song?.title || featuredSong?.title || "") }} title={task.song?.title || featuredSong?.title || "No song"}>{task.song?.title || featuredSong?.title || "—"}</span>
-          <span className={`whitespace-nowrap text-xs ${isOverdue ? "font-semibold text-amber-200" : "text-white/45"}`} title={task.due_at ? `${isOverdue ? "Overdue · " : "Due "}${task.due_at}` : "No date set"}>{task.due_at ? displayDate(task.due_at) : "—"}</span>
-          <Link href={taskHref} aria-label={`Open ${task.title}`} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-white/25 transition hover:bg-white/[.05] hover:text-white/75">↗</Link>
+          <input type="date" aria-label={`Set date for ${task.title}`} value={task.due_at || ""} disabled={taskSaving === task.id} onChange={event => void updateTaskDate(task, event.target.value)} className={`w-full min-w-0 rounded-md border border-transparent bg-transparent px-1 py-1 text-xs outline-none transition focus:border-white/15 focus:bg-white/[.04] disabled:opacity-50 ${isOverdue ? "font-semibold text-amber-200" : "text-white/55"}`} />
         </li>;
       })}</ul></> : <div className="rounded-xl border border-dashed border-white/[.09] px-4 py-5 text-center"><p className="text-sm font-semibold text-white/65">You’re clear for now.</p><p className="mt-1 text-xs text-white/35">When something needs follow-up, it’ll appear here.</p></div>}
     </section>

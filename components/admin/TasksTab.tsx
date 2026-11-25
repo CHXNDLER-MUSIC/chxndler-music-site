@@ -47,6 +47,15 @@ export default function TasksTab() {
   }
   useEffect(() => { setFocusTaskId(new URLSearchParams(window.location.search).get("task") || ""); }, []);
   useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    const handleTaskUpdate = (event: Event) => {
+      const updated = (event as CustomEvent<{ id?: string; status?: string }>).detail;
+      if (!updated?.id || !updated.status) return;
+      setTasks(current => current.map(task => task.id === updated.id ? { ...task, status: updated.status! } : task));
+    };
+    window.addEventListener("admin-task-updated", handleTaskUpdate);
+    return () => window.removeEventListener("admin-task-updated", handleTaskUpdate);
+  }, []);
   const visible = useMemo(() => tasks.filter(task => {
     if ((focusTaskId && task.id !== focusTaskId) || (scope !== "all" && task.business_area !== scope) || !`${task.title} ${task.description} ${task.song?.title || ""}`.toLowerCase().includes(search.toLowerCase())) return false;
     if (!quickFilter) return true;
@@ -158,7 +167,10 @@ export default function TasksTab() {
   async function saveStatus(task: Task, status: string) {
     const response = await fetch("/api/admin/tasks", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: task.id, status }) });
     const result = await response.json();
-    if (response.ok) setTasks(current => current.map(row => row.id === task.id ? { ...row, status } : row)); else setError(result.error || "Unable to save task.");
+    if (response.ok) {
+      setTasks(current => current.map(row => row.id === task.id ? { ...row, status } : row));
+      window.dispatchEvent(new CustomEvent("admin-task-updated", { detail: { id: task.id, status } }));
+    } else setError(result.error || "Unable to save task.");
   }
   async function updateTask(task: Task, values: Record<string, unknown>) {
     const response = await fetch("/api/admin/tasks", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: task.id, ...values }) });

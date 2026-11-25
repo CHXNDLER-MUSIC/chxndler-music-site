@@ -50,7 +50,7 @@ const catalogInfo: SongInfo[] = [
   { title: "SUGAR, WE'RE GOING DOWN", key: "C", capo: "0", shape: "C" }, { title: "SUGAR, WE'RE GOING DOWN (REMIX)", key: "", capo: "", shape: "" }, { title: "SUPERSTAR", key: "D#", capo: "3", shape: "C" },
   { title: "THE AFTER PARTY", key: "", capo: "", shape: "" }, { title: "THREE CHEERS FOR FIVE YEARS", key: "B", capo: "0", shape: "B" }, { title: "TIENES UN AMIGO", key: "E", capo: "0", shape: "E" }, { title: "TIDE IN", key: "D#", capo: "3", shape: "C" },
   { title: "WE’RE JUST FRIENDS", key: "C", capo: "0", shape: "C" }, { title: "WE’RE JUST FRIENDS (ACOUSTIC)", key: "C", capo: "0", shape: "C" }, { title: "WE’RE JUST FRIENDS (DMVRCO Remix)", key: "", capo: "", shape: "" }, { title: "WE’RE JUST FRIENDS (MICKEY JAS REMIX)", key: "", capo: "", shape: "" },
-  { title: "WHAT'S MY AGE AGAIN", key: "F#", capo: "5", shape: "C" }, { title: "WHO TAUGHT YOU TO LOVE", key: "D#", capo: "3", shape: "C" },
+  { title: "WHAT'S MY AGE AGAIN", key: "F#", capo: "5", shape: "C" }, { title: "WHO TAUGHT YOU TO LOVE?", key: "D#", capo: "3", shape: "C" },
   { title: "YOU FEEL IT", key: "A#", capo: "3", shape: "G" }, { title: "YOU FEEL IT (ACOUSTIC)", key: "A#", capo: "3", shape: "G" },
 ];
 const catalogInfoByTitle = new Map(catalogInfo.map(info => [info.title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, ""), info]));

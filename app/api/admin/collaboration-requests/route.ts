@@ -63,7 +63,7 @@ export async function PATCH(request: Request) {
   if (current.agreement_status === "signed" && (agreementChanged || body.approve_agreement !== undefined || (body.agreement_status !== undefined && body.agreement_status !== "completed"))) {
     return NextResponse.json({ error: "This agreement is signed and immutable. Use a new amendment version for any changes." }, { status: 409 });
   }
-  const allowed = ["new","reviewing","approved","declined","agreement_pending","signed","in_progress","completed","canceled","archived"];
+  const allowed = ["new","reviewing","approved","declined","returned","agreement_pending","signed","in_progress","completed","canceled","archived"];
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (body.agreement_type !== undefined && !agreementTemplates[requestedType as AgreementType]) return NextResponse.json({ error: "Choose a valid agreement type." }, { status: 400 });
   if (body.agreement_type !== undefined) update.agreement_type = requestedType;
@@ -115,7 +115,7 @@ export async function PATCH(request: Request) {
   if (typeof body.status === "string" && allowed.includes(body.status)) {
     if (!canTransitionCollaborationStatus(current.status, body.status)) return NextResponse.json({ error: `Cannot move a request from ${current.status} to ${body.status}.` }, { status: 409 });
     update.status = body.status;
-    if (["reviewing","approved","declined"].includes(body.status)) update.reviewed_at = new Date().toISOString();
+    if (["reviewing","approved","declined","returned"].includes(body.status)) update.reviewed_at = new Date().toISOString();
   }
   if (body.status !== undefined && (typeof body.status !== "string" || !allowed.includes(body.status))) return NextResponse.json({ error: "Invalid request status." }, { status: 400 });
   if (body.project_status !== undefined) {

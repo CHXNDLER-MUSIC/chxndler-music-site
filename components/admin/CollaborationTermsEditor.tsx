@@ -1,11 +1,71 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
 const fields = ["ownership", "royalties", "credits", "release_rights"] as const;
 const labels: Record<typeof fields[number], string> = { ownership: "Ownership", royalties: "Royalties", credits: "Credits", release_rights: "Release rights" };
+type Terms = Record<string, string>;
+
 export default function CollaborationTermsEditor() {
-  const [versions, setVersions] = useState<Array<{ version: string; terms: Record<string, string>; active: boolean; created_at: string }>>([]), [draft, setDraft] = useState<Record<string, string>>({}), [message, setMessage] = useState("");
-  async function load() { const r = await fetch("/api/admin/collaboration-terms", { cache: "no-store" }); const j = await r.json(); if (r.ok) { setVersions(j.versions || []); const active = (j.versions || []).find((item: any) => item.active) || j.versions?.[0]; if (active) setDraft(active.terms); } }
-  useEffect(() => { void load(); }, []);
-  return <details className="mb-5 rounded-xl border border-white/10 bg-white/[.02] p-4"><summary className="cursor-pointer font-semibold">Agreement Templates <span className="text-xs font-normal text-white/45">Administrator-managed terms, active version, and history</span></summary><p className="mt-3 text-xs leading-5 text-white/45">Review and approve these standard clauses with counsel before using them for real contracts. Each saved version is retained; executed agreements keep their signed document and version.</p><div className="mt-4 grid gap-3 sm:grid-cols-2">{fields.map(field => <label key={field} className="text-xs text-white/55">Standard {labels[field]} terms<textarea value={draft[field] || ""} onChange={e => setDraft({ ...draft, [field]: e.target.value })} rows={4} className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 p-3 text-sm text-white"/></label>)}</div><details className="mt-3 rounded-lg bg-black/20 p-3"><summary className="cursor-pointer text-xs font-semibold text-white/70">Preview active template</summary><div className="mt-3 space-y-3">{fields.map(field => <section key={field}><h3 className="text-[10px] font-bold uppercase tracking-wider text-[#FD52AF]">{labels[field]}</h3><p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-white/55">{draft[field] || "No clause entered."}</p></section>)}</div></details><button onClick={async () => { setMessage("Saving new agreement template version…"); const r = await fetch("/api/admin/collaboration-terms", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ terms: draft }) }); const j = await r.json(); if (!r.ok) setMessage(j.error || "Could not save terms."); else { setMessage(`Saved ${j.version}. This is now the active template version.`); await load(); } }} className="mt-3 rounded-lg bg-[#FD52AF] px-4 py-2 text-sm font-bold text-black">Save as active template version</button>{message && <p className="mt-2 text-xs text-white/60">{message}</p>}<div className="mt-4 border-t border-white/10 pt-3"><p className="text-xs font-semibold text-white/65">Version history</p>{versions.map(item => <p key={item.version} className="mt-2 text-xs text-white/45">{item.version} · {new Date(item.created_at).toLocaleString()} {item.active && <span className="text-emerald-300">· Active</span>}</p>)}</div></details>;
+  const [draft, setDraft] = useState<Terms>({});
+  const [message, setMessage] = useState("");
+  const savedTerms = useRef<Terms | null>(null);
+  const saving = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftRef = useRef<Terms>({});
+  draftRef.current = draft;
+
+  const save = useCallback(async (terms: Terms) => {
+    if (saving.current) return;
+    saving.current = true;
+    let didSave = false;
+    setMessage("Saving changes…");
+    try {
+      const response = await fetch("/api/admin/collaboration-terms", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ terms }) });
+      const data = await response.json();
+      if (!response.ok) { setMessage(data.error || "Could not save terms."); return; }
+      savedTerms.current = terms;
+      didSave = true;
+      setMessage("Changes saved.");
+    } catch {
+      setMessage("Could not save terms. Changes will retry when you edit again.");
+    } finally {
+      saving.current = false;
+      const latestDraft = draftRef.current;
+      if (didSave && savedTerms.current && fields.every(field => (latestDraft[field] || "").trim()) && fields.some(field => (latestDraft[field] || "").trim() !== (savedTerms.current?.[field] || "").trim())) {
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = setTimeout(() => { void save(draftRef.current); }, 800);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    void fetch("/api/admin/collaboration-terms", { cache: "no-store" })
+      .then(async response => ({ response, data: await response.json() }))
+      .then(({ response, data }) => {
+        if (!mounted) return;
+        if (!response.ok) { setMessage(data.error || "Could not load agreement terms."); return; }
+        const active = (data.versions || []).find((item: { active: boolean }) => item.active) || data.versions?.[0];
+        if (active?.terms) { savedTerms.current = active.terms; setDraft(active.terms); }
+      })
+      .catch(() => { if (mounted) setMessage("Could not load agreement terms."); });
+    return () => { mounted = false; if (timer.current) clearTimeout(timer.current); };
+  }, []);
+
+  useEffect(() => {
+    const saved = savedTerms.current;
+    if (!saved || fields.every(field => (draft[field] || "").trim() === (saved[field] || "").trim())) return;
+    if (fields.some(field => !(draft[field] || "").trim())) return;
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => { void save(draft); }, 800);
+  }, [draft, save]);
+
+  return <details className="mb-5 rounded-xl border border-white/10 bg-white/[.02] p-4">
+    <summary className="cursor-pointer font-semibold">Agreement Templates</summary>
+    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      {fields.map(field => <label key={field} className="text-xs text-white/55">Standard {labels[field]} terms<textarea value={draft[field] || ""} onChange={event => setDraft(current => ({ ...current, [field]: event.target.value }))} rows={4} className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 p-3 text-sm text-white"/></label>)}
+    </div>
+    {message && <p role="status" className="mt-2 text-xs text-white/60">{message}</p>}
+  </details>;
 }
