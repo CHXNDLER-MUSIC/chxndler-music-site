@@ -46,7 +46,7 @@ export async function PATCH(request: Request) {
   const auth = await getApiUser(); if (!auth) return unauthorized(); if (!isAdminUser(auth.user)) return forbidden();
   const body = await request.json(), id = String(body.id || ""), db = getSupabaseAdmin();
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
-  const { data: current, error: currentError } = await db.from("collaboration_requests").select("status,agreement_status,agreement_path,signed_agreement_path,signed_agreement_version,agreement_type,agreement_terms,agreement_version,agreement_approved_at,agreement_approved_by,agreement_approved_version,agreement_template_id,agreement_template_version,song_id,music_video_project_id,recording_arrangement,music_video_participation,invite_id,authorized_person_id,contribution_type,artist_name,email,profile_link,portfolio_url,estimated_rate,first_name,last_name,songs(title)").eq("id", id).maybeSingle();
+  const { data: current, error: currentError } = await db.from("collaboration_requests").select("status,agreement_status,agreement_path,signed_agreement_path,signed_agreement_version,admin_signed_at,collaborator_signed_at,collaborator_signed_version,agreement_type,agreement_terms,agreement_version,agreement_approved_at,agreement_approved_by,agreement_approved_version,agreement_template_id,agreement_template_version,song_id,music_video_project_id,recording_arrangement,music_video_participation,invite_id,authorized_person_id,contribution_type,artist_name,email,profile_link,portfolio_url,estimated_rate,first_name,last_name,songs(title)").eq("id", id).maybeSingle();
   if (currentError) {
     console.error("[admin/collaboration-requests] lookup failed", { id, code: currentError.code, message: currentError.message });
     return NextResponse.json({ error: "Unable to look up this collaboration request. Refresh the request and try again." }, { status: 500 });
@@ -105,6 +105,10 @@ export async function PATCH(request: Request) {
     update.agreement_approved_at = null; update.agreement_approved_by = null; update.agreement_approved_version = null;
     update.agreement_path = null; update.agreement_status = "draft"; update.agreement_sent_at = null;
     update.agreement_access_token_hash = null; update.agreement_access_expires_at = null; update.agreement_access_version = null;
+    update.admin_signed_at = null; update.admin_signature = null;
+    update.collaborator_printed_name = null; update.collaborator_signature = null; update.collaborator_signed_at = null; update.collaborator_signed_version = null;
+    update.collaborator_signature_consent_at = null; update.collaborator_signature_ip = null; update.collaborator_signature_user_agent = null; update.collaborator_signed_snapshot_hash = null;
+    update.agreement_verified_session_hash = null; update.agreement_verified_session_expires_at = null;
   }
   if (body.approve_agreement === true) {
     const type = requestedType as AgreementType;
@@ -121,9 +125,11 @@ export async function PATCH(request: Request) {
     update.agreement_status = "draft"; update.agreement_sent_at = null;
   }
   if (typeof body.status === "string" && allowed.includes(body.status)) {
-    if (!canTransitionCollaborationStatus(current.status, body.status)) return NextResponse.json({ error: `Cannot move a request from ${current.status} to ${body.status}.` }, { status: 409 });
-    update.status = body.status;
-    if (["reviewing","approved","declined","returned"].includes(body.status)) update.reviewed_at = new Date().toISOString();
+    if (body.status !== "signed") {
+      if (!canTransitionCollaborationStatus(current.status, body.status)) return NextResponse.json({ error: `Cannot move a request from ${current.status} to ${body.status}.` }, { status: 409 });
+      update.status = body.status;
+      if (["reviewing","approved","declined","returned"].includes(body.status)) update.reviewed_at = new Date().toISOString();
+    }
   }
   if (body.status !== undefined && (typeof body.status !== "string" || !allowed.includes(body.status))) return NextResponse.json({ error: "Invalid request status." }, { status: 400 });
   if (body.project_status !== undefined) {
@@ -131,6 +137,7 @@ export async function PATCH(request: Request) {
     update.project_status = body.project_status;
   }
   if (body.status === "signed") {
+    if (!current.admin_signed_at || !current.collaborator_signed_at || current.collaborator_signed_version !== current.agreement_version) return NextResponse.json({ error: "Both parties must sign the current agreement version before it can be marked Signed." }, { status: 409 });
     const signedPath = current.signed_agreement_path;
     if (typeof signedPath !== "string" || !signedPath || current.signed_agreement_version !== current.agreement_approved_version || current.agreement_approved_version !== current.agreement_version) return NextResponse.json({ error: "Upload executed signature evidence for the exact approved agreement version before verification." }, { status: 409 });
     const folder = signedPath.slice(0, signedPath.lastIndexOf("/")), filename = signedPath.split("/").pop();

@@ -28,9 +28,9 @@ test("new singer feature draft loads artist and song details without importing p
   assert.equal(draft.song_title, "We're Just Friends");
   assert.equal(draft.contribution_description, "Perform the agreed vocal feature.");
   assert.equal(draft.vocal_deliverables, "Lead vocals, agreed harmonies and ad-libs.");
-  assert.equal(draft.flat_fee, "");
+  assert.equal(draft.flat_fee, 0);
   assert.equal(draft.master_royalty, "");
-  assert.equal(draft.payment_direction, "");
+  assert.equal(draft.payment_direction, "none");
   assert.equal(draft.artist_credit, "CHXNDLER feat. LEX");
   assert.equal(draft.songwriting_status, "unresolved");
   assert.ok(validateAgreement("singer_feature", draft, true).some(term => term.toLowerCase().includes("songwriting")));
@@ -40,7 +40,7 @@ test("saved negotiated values and template version take precedence over defaults
   const draft = createAgreementDraft({
     type: "singer_feature",
     request,
-    existing: { collaborator_legal_name: "A. Example", flat_fee: 0, master_royalty: 0, template_id: "archived-singer-template", template_version: 7, songwriting_status: "separate_agreement" },
+    existing: { collaborator_legal_name: "A. Example", flat_fee: 0, master_royalty: 0, template_id: "archived-singer-template", template_version: 7, songwriting_status: "performance_only", writer_splits: [{name:"Chandler Pierce", share:100, chxndler:true},{name:"A. Example",share:0,collaborator:true}] },
   });
   assert.equal(draft.collaborator_legal_name, "A. Example");
   assert.equal(draft.flat_fee, 0);
@@ -89,31 +89,31 @@ test("canonical agreement order, arrangement details, and no unrelated admin con
   assert.match(text, /One-Time Payment: \$0/);
   assert.match(text, /Recording Arrangement: Recording independently/);
   assert.match(text, /Music Video Participation: Not interested/);
-  assert.match(text, /subject to change/);
+  assert.match(text, /Target Release Date: 02-05-2027/);
+  assert.doesNotMatch(text.slice(text.indexOf("AGREEMENT TERMS")), /02-05-2027/);
   assert.doesNotMatch(text, /Add a vocal feature and harmonies|Internal admin/i);
 });
 
-test("unresolved values stay pending and the sync share only appears when explicitly agreed", () => {
+test("unresolved values stay pending and v7 uses the standard royalty split without a separate sync input", () => {
   const pending = createAgreementDraft({ type: "singer_feature", request });
   const view = agreementPresentation("singer_feature", pending);
-  assert.deepEqual(view.compensation.map(item => item.value), ["Pending", "Pending", "Pending"]);
+  assert.deepEqual(view.compensation.map(item => item.value), ["$0", "Pending", "Pending"]);
   assert.equal(view.compensation.some(item => item.label === "Additional Master Sync Share"), false);
   const sync = agreementPresentation("producer", { ...pending, advanced_master_sync_share: 12.5 });
-  assert.equal(sync.compensation.at(-1).label, "Additional Master Sync Share");
+  assert.equal(sync.compensation.some(item => item.label === "Additional Master Sync Share"), false);
   const text = agreementText("producer", { ...pending, advanced_master_sync_share: 12.5, payment_direction: "none", flat_fee: 0, master_royalty: 0, songwriting_status: "performance_only" });
-  assert.match(text, /no recording royalty applies to those same receipts/);
-  assert.match(text, /Reporting and payment/);
+  assert.match(text, /Recording royalties are calculated from master revenue received/);
+  assert.doesNotMatch(text, /Additional Master Sync Share|Reporting and payment|Amounts below/);
 });
 
 test("send validation requires explicit payment, royalty, recording arrangement, video interest, and songwriting terms", () => {
   const pending = createAgreementDraft({ type: "singer_feature", request });
   const unresolved = validateAgreement("singer_feature", pending, true).join(" ");
-  assert.match(unresolved, /payment arrangement/i);
-  assert.match(unresolved, /Master royalty/i);
+  assert.match(unresolved, /Recording royalty shares/i);
   assert.match(unresolved, /Recording arrangement/i);
   assert.match(unresolved, /target release date/i);
   assert.match(unresolved, /Music video participation/i);
   assert.match(unresolved, /songwriting/i);
-  const resolved = { ...pending, flat_fee: 0, payment_direction: "none", master_royalty: 0, songwriting_status: "performance_only", recording_arrangement: "chxndler_session", target_release_date: "2027-02-05", music_video_participation: "interested" };
+  const resolved = { ...pending, flat_fee: 0, payment_direction: "none", master_royalty: 0, songwriting_status: "performance_only", writer_splits: [{name:"Chandler Pierce",share:100,chxndler:true},{name:"Alex Example",share:0,collaborator:true}], recording_arrangement: "chxndler_session", target_release_date: "2027-02-05", music_video_participation: "interested" };
   assert.deepEqual(validateAgreement("singer_feature", resolved, true), []);
 });

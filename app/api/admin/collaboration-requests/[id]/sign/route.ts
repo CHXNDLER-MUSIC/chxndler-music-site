@@ -29,7 +29,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   const uploaded = await db.storage.from("collaboration-agreements").upload(path, pdf, { contentType: "application/pdf", upsert: false });
   if (uploaded.error) return NextResponse.json({ error: "CHXNDLER signature saved, but the final PDF could not be stored. Contact support before retrying." }, { status: 500 });
   const pdfHash = hash(pdf);
-  const finalized = await db.from("collaboration_requests").update({ status: "signed", agreement_status: "signed", signed_at: signedAt, signed_agreement_version: row.agreement_version, signed_agreement_path: path, signed_agreement_hash: pdfHash, updated_at: signedAt }).eq("id", id).eq("agreement_version", row.agreement_version).eq("collaborator_signed_version", row.agreement_version).select("id").maybeSingle();
+  const finalized = await db.from("collaboration_requests").update({ agreement_status: "signed", signed_at: signedAt, signed_agreement_version: row.agreement_version, signed_agreement_path: path, signed_agreement_hash: pdfHash, updated_at: signedAt }).eq("id", id).eq("agreement_version", row.agreement_version).eq("collaborator_signed_version", row.agreement_version).select("id").maybeSingle();
   if (finalized.error || !finalized.data) return NextResponse.json({ error: "PDF created but final status could not be recorded. Contact support before retrying." }, { status: 500 });
   await db.from("collaboration_request_events").insert({ request_id: id, event: "agreement_fully_executed", details: { version: row.agreement_version, signed_at: signedAt, pdf_hash: pdfHash } });
   if (row.email && process.env.SMTP_HOST && process.env.SMTP_FROM && process.env.SMTP_USER && process.env.SMTP_PASS) {

@@ -7,6 +7,8 @@ import {
   agreementTypeForContribution,
   agreementTypes,
   agreementReviewFlags,
+  agreementStatusLabel,
+  productionTooltipText,
   createAgreementDraft,
   calculateSplitSummary,
   validateAgreement,
@@ -32,7 +34,6 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
   const [terms, setTerms] = useState<Record<string, any>>(() => createAgreementDraft({ type: initialType, request, invite: request.collaboration_invites, existing: request.agreement_terms }));
   const [savedVersion, setSavedVersion] = useState(Number(request.agreement_version || 0));
   const [approvedVersion, setApprovedVersion] = useState(Number(request.agreement_approved_version || 0));
-  const [approvedAt, setApprovedAt] = useState<string | null>(request.agreement_approved_at || null);
   const [agreementStatus, setAgreementStatus] = useState(String(request.agreement_status || "draft"));
   const [agreementPath, setAgreementPath] = useState<string | null>(request.agreement_path || null);
   const [reviewedUrl, setReviewedUrl] = useState<string | null>(request.agreement_url || null);
@@ -41,8 +42,6 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
   const [privateAgreementUrl, setPrivateAgreementUrl] = useState("");
   const [flowStep, setFlowStep] = useState<1 | 2 | 3>(1);
   const [dirty, setDirty] = useState(false);
-  const [previewedVersion, setPreviewedVersion] = useState(0);
-  const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -65,13 +64,12 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
   const executionIssues = useMemo(() => validateAgreement(agreementType, terms, true), [agreementType, terms]);
   const reviewFlags = useMemo(() => agreementReviewFlags(agreementType, terms), [agreementType, terms]);
   const previewReady = true;
-  const currentApproval = approvedVersion > 0 && approvedVersion === savedVersion;
-  const requestApprovalOkay = request.status === "approved" || request.status === "agreement_pending";
-  const sent = ["awaiting_signature", "offer_sent"].includes(agreementStatus) || (request.status === "agreement_pending" && agreementStatus !== "draft");
-  const signed = agreementStatus === "signed" || request.status === "signed";
-  const previewIsCurrent = previewedVersion > 0 && previewedVersion === savedVersion && !dirty;
-  const sendEnabled = !busy && !dirty && executionIssues.length === 0 && previewIsCurrent && reviewConfirmed && currentApproval && (request.status === "approved" || request.status === "agreement_pending") && !sent && !signed;
-  const sendReason = executionIssues[0] ? `Resolve ${executionIssues[0]} before sending.` : dirty ? "Save the current changes before sending." : !previewIsCurrent ? "Preview the current saved version before sending." : !reviewConfirmed || !currentApproval ? "Approve the current preview before sending." : !requestApprovalOkay ? "Approve the collaboration request before sending." : "";
+  const sent = ["sent", "awaiting_signature", "offer_sent"].includes(agreementStatus);
+  const signed = agreementStatus === "signed";
+  const sending = agreementStatus === "sending";
+  const requestRejected = ["declined", "rejected", "canceled", "cancelled", "archived"].includes(String(request.status || "").toLowerCase()) || ["declined", "rejected", "cancelled"].includes(String(agreementStatus).toLowerCase());
+  const sendEnabled = !busy && executionIssues.length === 0 && !sent && !signed && !sending && !requestRejected;
+  const sendReason = executionIssues[0] ? `Resolve ${executionIssues[0]} before sending.` : requestRejected ? "This request was declined or cancelled and cannot be sent an agreement." : sending ? "The agreement is currently being sent. Refresh before trying again." : "";
   const template = agreementTemplates[agreementType];
 
   function change(key: string, value: any) {
@@ -115,7 +113,6 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
       return next;
     });
     setDirty(true);
-    setReviewConfirmed(false);
     setError("");
   }
 
@@ -136,10 +133,8 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
       const saved = result.request || {};
       const nextTerms = saved.agreement_terms || terms;
       const nextVersion = Number(saved.agreement_version || saved.agreement_approved_version || 1);
-      if (nextVersion !== savedVersion || dirty) setPreviewedVersion(0);
-      setTerms(nextTerms); setSavedVersion(nextVersion); setApprovedVersion(Number(saved.agreement_approved_version || 0));
-      setApprovedAt(saved.agreement_approved_at || null); setAgreementStatus(saved.agreement_status || "draft"); setAgreementPath(saved.agreement_path || null);
-      setDirty(false); setReviewConfirmed(false);
+      setTerms(nextTerms); setSavedVersion(nextVersion); setApprovedVersion(Number(saved.agreement_approved_version || 0)); setAgreementStatus(saved.agreement_status || "draft"); setAgreementPath(saved.agreement_path || null);
+      setDirty(false);
       setNotice(`Draft v${nextVersion} saved.`);
       return { terms: nextTerms, version: nextVersion };
     } catch (saveError) {
@@ -151,63 +146,25 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
   async function previewAgreement() {
     const saved = sent ? { terms, version: savedVersion } : await saveDraft({ quiet: true });
     if (saved) {
-      setPreviewedVersion(saved.version);
-      setReviewConfirmed(false);
       setFlowStep(3);
       setNotice(`Previewing saved agreement v${saved.version}.`);
     } else {
-      setPreviewedVersion(0);
-      setReviewConfirmed(false);
-      // Preview the current form locally even if persistence fails. The approval
-      // and send controls remain locked until this exact version is saved.
       setFlowStep(3);
-      setNotice("Showing a local preview. Save the draft before approving or sending it.");
+      setNotice("Showing a local preview. Save or send when the agreement is ready.");
     }
   }
 
-  async function approveCurrentVersion() {
-    const result = await readResponse(await fetch("/api/admin/collaboration-requests", {
-      method: "PATCH", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id: request.id, agreement_type: agreementType, agreement: terms, approve_agreement: true }),
-    }));
-    const saved = result.request || {};
-    setTerms(saved.agreement_terms || terms); setApprovedVersion(Number(saved.agreement_approved_version || saved.agreement_version || savedVersion));
-    setApprovedAt(saved.agreement_approved_at || new Date().toISOString()); setSavedVersion(Number(saved.agreement_version || savedVersion));
-    setAgreementStatus(saved.agreement_status || "draft");
-  }
-
-  async function confirmReview(checked: boolean) {
-    setReviewConfirmed(checked);
-    if (!checked) return;
-    setBusy(true); setError(""); setNotice("Recording approval for this exact version…");
-    try {
-      await approveCurrentVersion();
-      setReviewConfirmed(true); setNotice(`Version v${savedVersion} approved for sending.`);
-    } catch (approvalError) {
-      setReviewConfirmed(false);
-      setError(approvalError instanceof Error ? approvalError.message : "This version could not be approved.");
-      setNotice("");
-    } finally { setBusy(false); }
-  }
-
-  async function generateContractLink() {
-    if (!sendEnabled) return;
-    setBusy(true); setError(""); setNotice("Generating a private contract link…");
-    try {
-      const result = await readResponse(await fetch(`/api/admin/collaboration-requests/${request.id}/generate-link`, { method: "POST" }));
-      setAgreementStatus(result.agreement_status || "awaiting_signature"); setApprovedVersion(Number(result.version || savedVersion)); setPrivateAgreementUrl(String(result.reviewUrl || ""));
-      setNotice("Private link is ready. Copy it or send it by email."); setReviewConfirmed(false); onUpdated();
-    } catch (sendError) { setError(sendError instanceof Error ? sendError.message : "The contract link could not be generated."); setNotice(""); }
-    finally { setBusy(false); }
-  }
-
   async function sendAgreementEmail() {
-    const token = privateAgreementUrl.split("/").filter(Boolean).at(-1);
-    if (!token || signed) return;
-    setBusy(true); setError(""); setNotice("Sending the private agreement link by email…");
+    if (!sendEnabled) return;
+    setBusy(true); setError(""); setNotice("Saving and sending the finalized agreement…");
     try {
-      const result = await readResponse(await fetch(`/api/admin/collaboration-requests/${request.id}/send-agreement`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token }) }));
-      setAgreementStatus(result.agreement_status || "awaiting_signature"); setNotice("Agreement email sent. The email and copied link open the same private agreement."); onUpdated();
+      const savedResult = await readResponse(await fetch("/api/admin/collaboration-requests", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: request.id, agreement_type: agreementType, agreement: terms, agreement_status: "draft" }) }));
+      const saved = savedResult.request || {};
+      const savedTerms = saved.agreement_terms || terms;
+      const version = Number(saved.agreement_version || savedVersion || 1);
+      setTerms(savedTerms); setSavedVersion(version); setApprovedVersion(Number(saved.agreement_approved_version || 0)); setDirty(false); setAgreementPath(saved.agreement_path || null);
+      const result = await readResponse(await fetch(`/api/admin/collaboration-requests/${request.id}/send-agreement`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}) }));
+      setAgreementStatus(result.agreement_status || "awaiting_signature"); setApprovedVersion(version); setPrivateAgreementUrl(String(result.reviewUrl || "")); setNotice("Agreement sent. The request is approved and the collaborator can review and sign it from the private link."); onUpdated();
     } catch (sendError) { setError(sendError instanceof Error ? sendError.message : "Agreement email could not be sent."); setNotice(""); }
     finally { setBusy(false); }
   }
@@ -215,7 +172,7 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
   async function revokeAgreementLink() {
     if (!privateAgreementUrl || signed) return;
     await readResponse(await fetch("/api/admin/collaboration-requests", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: request.id, approve_agreement: false }) }));
-    setPrivateAgreementUrl(""); setAgreementStatus("draft"); setReviewConfirmed(false); setNotice("Private link revoked. The saved agreement draft remains available to edit or send again."); onUpdated();
+    setPrivateAgreementUrl(""); setAgreementStatus("draft"); setNotice("Private link revoked. The saved agreement draft remains available to edit or send again."); onUpdated();
   }
 
   async function signForChxndler() {
@@ -237,8 +194,8 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
       const result = await readResponse(await fetch(`/api/admin/collaboration-requests/${request.id}/agreement`, { method: "POST", body: form }));
       if (type === "draft") {
         const version = Number(result.version || savedVersion + 1);
-        setSavedVersion(version); setAgreementPath(result.path); setReviewedUrl(result.url || null); setApprovedVersion(0); setApprovedAt(null); setAgreementStatus("draft");
-        setPreviewedVersion(0); setReviewConfirmed(false); setNotice(`Reviewed PDF attached to v${version}. Preview and approve the new version before sending.`);
+        setSavedVersion(version); setAgreementPath(result.path); setReviewedUrl(result.url || null); setApprovedVersion(0); setAgreementStatus("draft");
+        setNotice(`Reviewed PDF attached to v${version}.`);
       } else {
         setSignedPath(result.path); setSignedVersion(Number(result.version || approvedVersion)); setNotice("Executed PDF uploaded. Verify the signatures to mark the agreement signed.");
       }
@@ -265,7 +222,7 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
     nextTerms.template_version = agreementTemplates[nextType].version;
     nextTerms.legal_terms = "No additional terms.";
     setTerms(nextTerms);
-    setAgreementType(nextType); setDirty(true); setPreviewedVersion(0); setReviewConfirmed(false); setError("");
+    setAgreementType(nextType); setDirty(true); setError("");
   }
 
   function fieldControl(field: (typeof agreementFields)[AgreementType][number]) {
@@ -281,8 +238,8 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
   const royaltyTermsApply = Number(terms.master_royalty) > 0 || (terms.master_participants || []).some((row: any) => Number(row.share) > 0);
   const royaltyShareTotal = royaltySplit.total;
   const songwritingFieldError = terms.songwriting_status === "co_writer" && (Math.abs(writerShareTotal - 100) > 0.001 || (terms.writer_splits || []).some((row: any) => !row.name || row.share === "")) ? "Writer shares and names must be complete and total 100%." : "";
-  const activeStep = signed ? 4 : sent ? 3 : currentApproval ? 2 : savedVersion > 0 && ready ? 1 : 0;
-  const steps = ["Draft", "Ready for Review", "Approved", "Sent", "Signed"];
+  const activeStep = signed ? 2 : sent ? 1 : 0;
+  const steps = ["Draft", "Sent", "Signed"];
 
   return <div className="fixed inset-0 z-[140] grid place-items-center bg-black/80 p-3 backdrop-blur-sm sm:p-5" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !busy) close(); }}>
     <section role="dialog" aria-modal="true" aria-labelledby="agreement-builder-title" className="flex h-[min(94dvh,960px)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-[#101014] text-white shadow-2xl">
@@ -308,11 +265,11 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
         </>}
 
         {flowStep === 2 && <>
-        <section className="rounded-xl border border-white/10 bg-[#121216] p-4 sm:p-5"><h3 className="flex items-center gap-2 text-sm font-bold text-white"><BadgeDollarSign className="h-4 w-4 text-[#FD52AF]"/>Upfront Payment</h3><p className="mt-1 text-xs text-white/50">Choose whether this collaboration includes a fixed payment.</p><div className="mt-3 grid grid-cols-2 gap-2"><button type="button" disabled={signed || sent} onClick={() => change("payment_direction", "none")} className={`rounded-lg border px-3 py-2 text-sm ${terms.payment_direction === "none" ? "border-[#FD52AF] bg-[#FD52AF]/10 text-white" : "border-white/10 text-white/60"}`}>No upfront payment</button><button type="button" disabled={signed || sent} onClick={() => change("payment_direction", "chxndler_pays")} className={`rounded-lg border px-3 py-2 text-sm ${["chxndler_pays","collaborator_pays"].includes(terms.payment_direction) ? "border-[#FD52AF] bg-[#FD52AF]/10 text-white" : "border-white/10 text-white/60"}`}>Fixed payment</button></div>{["chxndler_pays","collaborator_pays"].includes(terms.payment_direction) && <label className="mt-3 block max-w-xs text-xs text-white/60">Amount<div className="relative mt-1"><span className="absolute left-3 top-2.5 text-white/40">$</span><input type="text" inputMode="decimal" disabled={signed || sent} value={terms.flat_fee ?? ""} onChange={event => change("flat_fee", event.target.value === "" ? "" : event.target.value)} className={`${inputClass} pl-7`}/></div></label>}</section>
+        <section className="rounded-xl border border-white/10 bg-[#121216] p-4 sm:p-5"><h3 className="flex items-center gap-2 text-sm font-bold text-white"><BadgeDollarSign className="h-4 w-4 text-[#FD52AF]"/>Upfront Payment</h3><p className="mt-1 text-xs text-white/50">Choose whether this collaboration includes a fixed payment.</p><div className="mt-3 grid grid-cols-2 gap-2"><button type="button" disabled={signed || sent} onClick={() => change("payment_direction", "none")} className={`rounded-lg border px-3 py-2 text-sm ${terms.payment_direction === "none" ? "border-[#FD52AF] bg-[#FD52AF]/10 text-white" : "border-white/10 text-white/60"}`}>No upfront payment</button><button type="button" disabled={signed || sent} onClick={() => change("payment_direction", "chxndler_pays")} className={`rounded-lg border px-3 py-2 text-sm ${["chxndler_pays","collaborator_pays"].includes(terms.payment_direction) ? "border-[#FD52AF] bg-[#FD52AF]/10 text-white" : "border-white/10 text-white/60"}`}>Fixed payment</button></div>{["chxndler_pays","collaborator_pays"].includes(terms.payment_direction) && <div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="block text-xs text-white/60">Amount<div className="relative mt-1"><span className="absolute left-3 top-2.5 text-white/40">$</span><input type="text" inputMode="decimal" disabled={signed || sent} value={terms.flat_fee ?? ""} onChange={event => change("flat_fee", event.target.value === "" ? "" : event.target.value)} className={`${inputClass} pl-7`}/></div></label><label className="block text-xs text-white/60">Agreed payment due date<input type="date" disabled={signed || sent} value={terms.payment_due_date ?? ""} onChange={event => change("payment_due_date", event.target.value)} className={`${inputClass} mt-1`}/></label></div>}</section>
         <section className="rounded-xl border border-white/10 bg-[#121216] p-4 sm:p-5"><h3 className="flex items-center gap-2 text-sm font-bold text-white"><Disc3 className="h-4 w-4 text-[#FD52AF]"/>Recording Royalties</h3><p className="mt-1 text-xs text-white/50">How revenue from this recording is shared.</p><p className="mt-2 text-[11px] text-white/40">Royalty participation does not grant master ownership.</p><SplitBar values={[royaltySplit.primaryShare,Number(terms.master_royalty||0),...(terms.master_participants||[]).map((r:any)=>Number(r.share||0))]}/><div className="mt-3 grid grid-cols-[minmax(0,1fr)_7rem] gap-x-3 text-xs text-white/45"><span>Participant</span><span className="text-right">Share</span><span className="border-b border-white/10 py-2 font-semibold text-white">CHXNDLER</span><span className="border-b border-white/10 py-2 text-right text-white">{terms.master_royalty===""||terms.master_royalty===null?"—%":`${royaltySplit.primaryShare}%`}</span><span className="border-b border-white/10 py-2 font-medium text-white">{terms.collaborator_artist_name || "Collaborator"}</span><PercentInput label="Recording royalty share" value={terms.master_royalty} disabled={signed||sent} onChange={value=>change("master_royalty",value)}/>{(terms.master_participants||[]).map((row:any,index:number)=><SplitRow key={index} row={row} label={`Additional participant ${index+1}`} disabled={signed||sent} onChange={(next:any)=>change("master_participants",terms.master_participants.map((x:any,i:number)=>i===index?next:x))} onRemove={()=>change("master_participants",terms.master_participants.filter((_:any,i:number)=>i!==index))}/>)}<span className="py-2 font-bold text-white">Total</span><span className="py-2 text-right font-bold text-white">{royaltyShareTotal}%</span></div><button type="button" disabled={signed||sent} onClick={()=>change("master_participants",[...(terms.master_participants||[]),{name:"",share:""}])} className="mt-3 text-xs font-semibold text-[#ff9bcd]">+ Add participant</button></section>
         <section className="rounded-xl border border-white/10 bg-[#121216] p-4 sm:p-5"><h3 className="flex items-center gap-2 text-sm font-bold text-white"><Music2 className="h-4 w-4 text-[#FD52AF]"/>Songwriting</h3><p className="mt-1 text-xs text-white/50">Ownership of the underlying lyrics and musical composition.</p><div className="mt-3 flex flex-wrap items-center justify-between gap-3"><span className="text-sm text-white/75">Did {terms.collaborator_artist_name || "the collaborator"} contribute to the songwriting?</span><div className="flex gap-2"><button type="button" disabled={signed||sent} onClick={()=>change("songwriting_status","co_writer")} className={`rounded-lg border px-4 py-2 text-xs font-semibold ${terms.songwriting_status==="co_writer"?"border-[#FD52AF] bg-[#FD52AF]/10 text-white":"border-white/10 text-white/55"}`}>Yes</button><button type="button" disabled={signed||sent} onClick={()=>change("songwriting_status","performance_only")} className={`rounded-lg border px-4 py-2 text-xs font-semibold ${terms.songwriting_status==="performance_only"?"border-[#FD52AF] bg-[#FD52AF]/10 text-white":"border-white/10 text-white/55"}`}>No</button></div></div>{terms.songwriting_status!=="unresolved"&&<><SplitBar values={(terms.writer_splits||[]).map((r:any)=>Number(r.share||0))}/><div className="mt-3 grid grid-cols-[minmax(0,1fr)_7rem] gap-x-3 text-xs text-white/45"><span>Songwriter</span><span className="text-right">Ownership</span>{(terms.writer_splits||[]).map((row:any,index:number)=><React.Fragment key={index}><span className="border-b border-white/10 py-2 font-medium text-white">{row.chxndler?"CHXNDLER":row.collaborator?(terms.collaborator_artist_name||"Collaborator"):(row.stage_name||row.name||"New songwriter")}{!row.chxndler&&!row.collaborator&&<input aria-label="Songwriter legal name" value={row.name||""} placeholder="Legal name" disabled={signed||sent} onChange={event=>change("writer_splits",terms.writer_splits.map((x:any,i:number)=>i===index?{...x,name:event.target.value}:x))} className={`${inputClass} mt-1`}/>}</span><PercentInput label={`${row.stage_name||row.name||"Songwriter"} ownership`} value={row.share} disabled={signed||sent||row.chxndler} onChange={value=>change("writer_splits",terms.writer_splits.map((x:any,i:number)=>i===index?{...x,share:value}:x))}/></React.Fragment>)}<span className="py-2 font-bold text-white">Total</span><span className="py-2 text-right font-bold text-white">{writerShareTotal}%</span></div><button type="button" disabled={signed||sent} onClick={()=>change("writer_splits",[...(terms.writer_splits||[]),{name:"",stage_name:"",share:"",pro:"",ipi:"",publisher:""}])} className="mt-3 text-xs font-semibold text-[#ff9bcd]">+ Add songwriter</button><details className="mt-3 text-xs text-white/55"><summary className="cursor-pointer">Songwriter registration details</summary>{(terms.writer_splits||[]).map((row:any,index:number)=><div key={index} className="mt-2 grid gap-2 sm:grid-cols-3"><input aria-label="Artist name" placeholder="Artist name" value={row.stage_name||""} disabled={signed||sent} onChange={event=>change("writer_splits",terms.writer_splits.map((x:any,i:number)=>i===index?{...x,stage_name:event.target.value}:x))} className={inputClass}/><input aria-label="PRO" placeholder="PRO" value={row.pro||""} disabled={signed||sent} onChange={event=>change("writer_splits",terms.writer_splits.map((x:any,i:number)=>i===index?{...x,pro:event.target.value}:x))} className={inputClass}/><input aria-label="IPI / CAE" placeholder="IPI / CAE" value={row.ipi||""} disabled={signed||sent} onChange={event=>change("writer_splits",terms.writer_splits.map((x:any,i:number)=>i===index?{...x,ipi:event.target.value}:x))} className={inputClass}/><input aria-label="Publisher" placeholder="Publisher" value={row.publisher||""} disabled={signed||sent} onChange={event=>change("writer_splits",terms.writer_splits.map((x:any,i:number)=>i===index?{...x,publisher:event.target.value}:x))} className={`${inputClass} sm:col-span-3`}/></div>)}</details></>}</section>
         <details className="rounded-xl bg-white/[.025] p-4"><summary className="cursor-pointer text-xs font-bold text-white/75">Additional Terms (Optional)</summary><textarea aria-label="Additional terms (optional)" rows={3} disabled={signed || sent} value={terms.additional_terms ?? ""} onChange={event => change("additional_terms", event.target.value)} placeholder="Any additional terms agreed upon for this collaboration..." className={`${inputClass} resize-y`}/></details>
-        <section className="rounded-xl border border-white/10 bg-[#121216] p-4 sm:p-5"><h3 className="text-xs font-bold uppercase tracking-[.15em] text-white">Production &amp; Release</h3><div className="mt-2 grid gap-x-4 sm:grid-cols-2">{([ ["Primary Artist",UserRound], ["Producer",Music2], ["Master Owner",Disc3], ["Distribution",Radio] ] as const).map(([label,Icon])=><div key={label} className="flex min-w-0 items-center gap-2 border-b border-white/[.06] py-2 text-[11px] text-white/55"><Icon className="h-4 w-4 shrink-0 text-[#FD52AF]"/>{label}<span className="ml-auto px-2 py-1.5 text-right text-xs font-semibold text-white">CHXNDLER</span></div>)}</div></section>
+        <section className="rounded-xl border border-white/10 bg-[#121216] p-4 sm:p-5"><h3 className="text-xs font-bold uppercase tracking-[.15em] text-white">Production &amp; Release</h3><div className="mt-2 grid gap-x-4 sm:grid-cols-2">{([ ["Primary Artist",UserRound], ["Producer",Music2], ["Master Owner",Disc3], ["Distribution Rights",Radio] ] as const).map(([label,Icon])=><div key={label} className="flex min-w-0 items-center gap-2 border-b border-white/[.06] py-2 text-[11px] text-white/55"><Icon className="h-4 w-4 shrink-0 text-[#FD52AF]"/>{label}<InfoTip label={label} text={productionTooltipText[label]}/><span className="ml-auto px-2 py-1.5 text-right text-xs font-semibold text-white">CHXNDLER</span></div>)}</div></section>
         </>}
 
         {flowStep === 3 && <>
@@ -322,14 +279,11 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
           <div aria-label={`Agreement stage: ${steps[activeStep]}`} className="mt-3 flex flex-wrap items-center gap-1.5">{steps.map((step, index) => <div key={step} aria-current={index === activeStep ? "step" : undefined} className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${index === activeStep ? "bg-[#FD52AF]/15 text-[#ff9bcd]" : index < activeStep ? "text-emerald-200/75" : "text-white/35"}`}><span className="mr-1">{index < activeStep ? "✓" : index + 1}</span>{step}</div>)}</div>
           {missing.length > 0 && <div className="mt-3 rounded-lg border border-amber-200/15 bg-amber-100/[.03] px-3 py-2 text-xs leading-5 text-amber-100/80"><span className="font-semibold">Resolve before sending:</span> {missing.slice(0, 4).join(" · ")}{missing.length > 4 ? ` · +${missing.length - 4} more` : ""}<button type="button" onClick={() => setFlowStep(missing.some(item => /payment|fee|royalt|songwriting|ownership|share/i.test(item)) ? 2 : 1)} className="ml-2 font-bold text-[#ff9bcd] underline underline-offset-2">Edit fields</button></div>}
           {reviewFlags.map(flag => <p key={flag} className="mt-2 text-xs leading-5 text-amber-100/70">Admin review: {flag}</p>)}
-          {!requestApprovalOkay && <p className="mt-3 text-xs text-amber-100/75">Approve this collaboration request in its request review before sending an agreement.</p>}
-          {savedVersion > 0 && <label className={`mt-3 flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-xs leading-5 ${reviewConfirmed ? "border-[#FD52AF]/40 bg-[#FD52AF]/[.06]" : "border-white/10 bg-black/15"}`}><input type="checkbox" checked={reviewConfirmed} disabled={!previewIsCurrent || executionIssues.length > 0 || busy || signed || sent} onChange={event => void confirmReview(event.target.checked)} className="mt-0.5 accent-[#FD52AF]"/><span>I reviewed the exact preview for v{savedVersion} and approve this version for sending.</span></label>}
-          <p className="mt-3 text-[11px] leading-5 text-white/40">Generate a private link to open this contract in Collab. The collaborator can review and sign there.</p>
+          <p className="mt-3 text-[11px] leading-5 text-white/40">Sending approves an eligible pending request and emails the finalized agreement.</p>
           {request.collaborator_signed_at && <p className="mt-3 rounded-lg border border-emerald-300/20 bg-emerald-300/[.05] px-3 py-2 text-xs text-emerald-100/80">Signed online by <strong>{request.collaborator_printed_name || [request.collaborator_first_name, request.collaborator_last_name].filter(Boolean).join(" ")}</strong> on {new Date(request.collaborator_signed_at).toLocaleString()}.{request.collaborator_signature_email_sent_at ? " Signed copy emailed." : " Signed copy email has not been confirmed."}</p>}
-          {privateAgreementUrl && <div className="mt-3 flex flex-wrap items-center gap-2"><a href={privateAgreementUrl} target="_blank" rel="noreferrer" className="inline-flex rounded-lg border border-[#FD52AF]/30 px-3 py-2 text-xs font-semibold text-[#ff9bcd] hover:bg-[#FD52AF]/[.06]">Preview Agreement ↗</a><button type="button" onClick={() => void navigator.clipboard.writeText(privateAgreementUrl).then(() => setNotice("Private agreement link copied."))} className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-white/70 hover:bg-white/[.05]">Copy Private Link</button><button type="button" onClick={() => void sendAgreementEmail()} disabled={busy || signed} className="rounded-lg bg-[#FD52AF] px-3 py-2 text-xs font-bold text-[#170d14] disabled:opacity-40">{sent ? "Resend Email" : "Send Email"}</button><button type="button" onClick={() => void revokeAgreementLink()} disabled={busy || signed} className="rounded-lg border border-rose-300/25 px-3 py-2 text-xs font-semibold text-rose-200 disabled:opacity-40">Revoke Link</button><button type="button" onClick={() => void signForChxndler()} disabled={busy || signed || !!request.admin_signed_at} className="rounded-lg border border-emerald-300/30 px-3 py-2 text-xs font-semibold text-emerald-200 disabled:opacity-40">{request.admin_signed_at ? `CHXNDLER signed ${new Date(request.admin_signed_at).toLocaleDateString()}` : "Sign as CHXNDLER"}</button></div>}
+          {privateAgreementUrl && <div className="mt-3 flex flex-wrap items-center gap-2"><a href={privateAgreementUrl} target="_blank" rel="noreferrer" className="inline-flex rounded-lg border border-[#FD52AF]/30 px-3 py-2 text-xs font-semibold text-[#ff9bcd] hover:bg-[#FD52AF]/[.06]">Preview Agreement ↗</a><button type="button" onClick={() => void navigator.clipboard.writeText(privateAgreementUrl).then(() => setNotice("Private agreement link copied."))} className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-white/70 hover:bg-white/[.05]">Copy Private Link</button><button type="button" onClick={() => void revokeAgreementLink()} disabled={busy || signed} className="rounded-lg border border-rose-300/25 px-3 py-2 text-xs font-semibold text-rose-200 disabled:opacity-40">Revoke Link</button><button type="button" onClick={() => void signForChxndler()} disabled={busy || signed || !!request.admin_signed_at} className="rounded-lg border border-emerald-300/30 px-3 py-2 text-xs font-semibold text-emerald-200 disabled:opacity-40">{request.admin_signed_at ? `CHXNDLER signed ${new Date(request.admin_signed_at).toLocaleDateString()}` : "Sign as CHXNDLER"}</button></div>}
           {request.signed_agreement_url && <a href={request.signed_agreement_url} target="_blank" rel="noreferrer" className="mt-3 inline-block text-xs font-semibold text-emerald-200">Download signed PDF</a>}
-          {approvedAt && <p className="mt-2 text-[11px] text-white/40">Version v{approvedVersion} approved {new Date(approvedAt).toLocaleString()}.</p>}
-          {(request.agreementVersions || []).length > 0 && <details className="mt-3"><summary className="cursor-pointer text-xs font-semibold text-white/45">Version history</summary><div className="mt-2 space-y-1">{request.agreementVersions.map((version: any) => <p key={version.id} className="text-[11px] text-white/40">v{version.version} · {agreementTypes.find(item => item.value === version.agreement_type)?.label || version.agreement_type} · {version.agreement_status} · {new Date(version.created_at).toLocaleString()} {version.document_url && <a href={version.document_url} target="_blank" rel="noreferrer" className="ml-1 text-[#ff80c4]">PDF</a>}</p>)}</div></details>}
+          {(request.agreementVersions || []).length > 0 && <details className="mt-3"><summary className="cursor-pointer text-xs font-semibold text-white/45">Version history</summary><div className="mt-2 space-y-1">{request.agreementVersions.map((version: any) => <p key={version.id} className="text-[11px] text-white/40">v{version.version} · {agreementTypes.find(item => item.value === version.agreement_type)?.label || version.agreement_type} · {agreementStatusLabel(version.agreement_status)} · {new Date(version.created_at).toLocaleString()} {version.document_url && <a href={version.document_url} target="_blank" rel="noreferrer" className="ml-1 text-[#ff80c4]">PDF</a>}</p>)}</div></details>}
         </section>
         </>}
         {flowStep < 3 && <div className="flex justify-between"><button type="button" onClick={() => setFlowStep(flowStep === 2 ? 1 : 2)} disabled={flowStep === 1} className="rounded-lg border border-white/15 px-4 py-2 text-xs font-semibold text-white/65 disabled:opacity-35">Back</button><button type="button" onClick={() => setFlowStep(flowStep === 1 ? 2 : 3)} className="rounded-lg bg-[#FD52AF] px-5 py-2 text-xs font-bold text-[#170d14]">Continue</button></div>}
@@ -337,10 +291,11 @@ export default function AgreementBuilder({ request, close, onUpdated }: { reques
       </div>
 
       <footer className="sticky bottom-0 flex shrink-0 flex-wrap items-center gap-2 border-t border-white/10 bg-[#101014]/95 px-4 py-3 backdrop-blur sm:justify-end sm:px-7">
-        <div className="mr-auto min-w-0 flex-1 text-xs" role="status">{error ? <span className="text-rose-300">{error}</span> : <span className="text-white/45">{notice || (dirty ? "Unsaved changes" : savedVersion ? `Version ${savedVersion}${currentApproval ? " · approved" : " · draft"}` : "Save a draft to begin version history")}</span>}</div>
+        <div className="mr-auto min-w-0 flex-1 text-xs" role="status">{error ? <span className="text-rose-300">{error}</span> : <span className="text-white/45">{notice || (dirty ? "Unsaved changes" : `${agreementStatusLabel(agreementStatus)}${savedVersion ? ` · version ${savedVersion}` : ""}`)}</span>}</div>
         <button type="button" onClick={() => void saveDraft()} disabled={busy || signed || sent || !dirty && savedVersion > 0} className="rounded-lg border border-white/15 px-3 py-2.5 text-xs font-bold text-white/75 hover:bg-white/[.05] disabled:opacity-35">Save Draft</button>
         <button type="button" onClick={() => void previewAgreement()} disabled={busy || signed || !previewReady} className="rounded-lg border border-white/15 px-3 py-2.5 text-xs font-bold text-white/75 hover:bg-white/[.05] disabled:opacity-35">Preview Agreement</button>
-        {!privateAgreementUrl && <button type="button" onClick={() => void generateContractLink()} disabled={!sendEnabled} aria-describedby={!sendEnabled && sendReason ? "agreement-send-reason" : undefined} title={!sendEnabled ? sendReason : undefined} className="rounded-lg bg-[#FD52AF] px-4 py-2.5 text-xs font-extrabold text-[#170d14] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35">{busy ? "Working…" : "Send Agreement"}</button>}
+        {!sent && !signed && <button type="button" onClick={() => void sendAgreementEmail()} disabled={!sendEnabled} aria-describedby={!sendEnabled && sendReason ? "agreement-send-reason" : undefined} title={!sendEnabled ? sendReason : undefined} className="rounded-lg bg-[#FD52AF] px-4 py-2.5 text-xs font-extrabold text-[#170d14] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35">{busy ? "Working…" : "Send Agreement"}</button>}
+        {sent && <span className="rounded-lg border border-[#FD52AF]/30 px-4 py-2.5 text-xs font-bold text-[#ff9bcd]">Sent</span>}
         {!privateAgreementUrl && !sendEnabled && sendReason && <span id="agreement-send-reason" className="sr-only">{sendReason}</span>}
       </footer>
     </section>

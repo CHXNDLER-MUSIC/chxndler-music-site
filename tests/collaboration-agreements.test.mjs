@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { agreementFields, agreementPresentation, agreementText, agreementTypeForContribution, calculateSplitSummary, createAgreementDraft, validateAgreement } from "../lib/collaborationAgreements.ts";
+import { agreementFields, agreementPresentation, agreementStatusLabel, agreementText, agreementTypeForContribution, calculateSplitSummary, createAgreementDraft, productionTooltipText, validateAgreement } from "../lib/collaborationAgreements.ts";
 
 const request = { id: "request-123", artist_name: "ARINES", contribution_type: "Vocals / Feature", message: "Private application note", songs: { title: "COPYCAT", release_date: "2027-02-05" }, music_video_project_id: "video-project-123" };
 const invite = { first_name: "Ari", last_name: "Ness", artist_name: "ARINES", agreement_type: "singer_feature" };
@@ -10,6 +10,14 @@ test("contribution roles map to their existing agreement templates", () => {
   assert.equal(agreementTypeForContribution("Remix"), "remix");
   assert.equal(agreementTypeForContribution("Production"), "producer");
   assert.equal(agreementTypeForContribution("Music Video"), "videographer");
+});
+
+test("agreement statuses stay concise in the UI", () => {
+  assert.equal(agreementStatusLabel("draft"), "Draft");
+  assert.equal(agreementStatusLabel("sending"), "Draft");
+  assert.equal(agreementStatusLabel("awaiting_signature"), "Sent");
+  assert.equal(agreementStatusLabel("offer_sent"), "Sent");
+  assert.equal(agreementStatusLabel("signed"), "Signed");
 });
 
 for (const type of ["singer_feature", "remix", "producer", "videographer"]) {
@@ -36,19 +44,33 @@ test("feature deliverables do not require WAV stems by default", () => {
   assert.doesNotMatch(terms.vocal_deliverables, /WAV|stems/i);
 });
 
-test("signed terms state the five requested sections and separate recording from songwriting rights", () => {
+test("version 7 uses the approved five sections and exact master ownership terms", () => {
   const terms = { ...createAgreementDraft({ type: "singer_feature", request, invite }), flat_fee: 0, payment_direction: "none", master_royalty: 8, songwriting_status: "performance_only", recording_arrangement: "chxndler_session", music_video_participation: "not_interested" };
   const text = agreementText("singer_feature", terms);
   for (const title of ["01 · Contribution", "02 · Compensation & Songwriting", "03 · Recording & Release", "04 · Creative Use & Credits", "05 · General Terms"]) assert.ok(text.includes(title));
-  assert.match(text, /songwriting rights and nonwaivable statutory royalties remain separate/i);
-  assert.match(text, /may not independently release, upload, or distribute/i);
-  assert.match(text, /AI voice cloning and digital replicas require separate written consent/i);
-  assert.match(text, /governed by the laws of the State of New York/i);
-  assert.match(text, /release date is subject to change/i);
+  assert.match(text, /The collaboration details, compensation, royalty splits, ownership and credits outlined above form part of this agreement\./);
+  assert.match(text, /The collaborator hereby assigns their copyright interest in the sound recording to CHXNDLER/);
+  assert.match(text, /CHXNDLER retains exclusive master ownership and authority to edit, distribute, promote, release and license the recording/);
+  assert.match(text, /New York law governs this agreement\. Electronic signatures are accepted\./);
+  assert.doesNotMatch(text, /AI voice cloning|90 days|payment threshold|disputes|within 30 days|cancellation/i);
+});
+
+test("v7 signed summary includes both legal names and complete independent splits", () => {
+  const terms = { ...createAgreementDraft({ type: "singer_feature", request, invite }), flat_fee: 0, payment_direction: "none", master_royalty: 20, master_participants: [{ name: "Guest Writer LLC", legal_name: "G. Writer", share: 5 }], songwriting_status: "co_writer", writer_splits: [{ name: "Chandler Pierce", stage_name: "CHXNDLER", share: 70, chxndler: true }, { name: "Ari Ness", stage_name: "ARINES", share: 20, collaborator: true }, { name: "Gina Writer", stage_name: "GINA", share: 10 }] };
+  const text = agreementText("singer_feature", terms);
+  assert.match(text, /RECORDING ROYALTY SPLITS[\s\S]*CHXNDLER \(Chandler Pierce\): 75%[\s\S]*ARINES \(Ari Ness\): 20%[\s\S]*Guest Writer LLC \(G\. Writer\): 5%/);
+  assert.match(text, /SONGWRITING OWNERSHIP SPLITS[\s\S]*CHXNDLER \(Chandler Pierce\): 70%[\s\S]*ARINES \(Ari Ness\): 20%[\s\S]*GINA \(Gina Writer\): 10%/);
+});
+
+test("version 6 retains its historical agreement wording", () => {
+  const terms = { ...createAgreementDraft({ type: "singer_feature", request, invite }), template_version: 6, flat_fee: 0, payment_direction: "none", master_royalty: 0 };
+  const text = agreementText("singer_feature", terms);
+  assert.match(text, /AI voice cloning and digital replicas require separate written consent/);
+  assert.doesNotMatch(text, /The collaborator hereby assigns their copyright interest/);
 });
 
 test("royalty accounting is conditional and separately agreed sync share replaces duplicate accounting", () => {
-  const noRoyalty = { ...createAgreementDraft({ type: "singer_feature", request, invite }), flat_fee: 0, payment_direction: "none", master_royalty: 0, writer_splits:[{name:"Chandler Pierce",stage_name:"CHXNDLER",share:100,chxndler:true},{name:"Ari Ness",stage_name:"ARINES",share:0,collaborator:true}], songwriting_status: "performance_only", recording_arrangement: "independent", music_video_participation: "interested" };
+  const noRoyalty = { ...createAgreementDraft({ type: "singer_feature", request, invite }), template_version: 6, flat_fee: 0, payment_direction: "none", master_royalty: 0, writer_splits:[{name:"Chandler Pierce",stage_name:"CHXNDLER",share:100,chxndler:true},{name:"Ari Ness",stage_name:"ARINES",share:0,collaborator:true}], songwriting_status: "performance_only", recording_arrangement: "independent", music_video_participation: "interested" };
   const noRoyaltyText = agreementText("singer_feature", noRoyalty);
   assert.doesNotMatch(noRoyaltyText, /Reporting and payment|Amounts below|Agreed deductions/i);
   const syncText = agreementText("singer_feature", { ...noRoyalty, advanced_master_sync_share: 10 });
@@ -69,7 +91,7 @@ test("saved zero values remain intentional and songwriting stays unresolved unti
 });
 
 test("all supported recording arrangements and video interest choices render distinctly", () => {
-  const base = createAgreementDraft({ type: "producer", request, invite });
+  const base = { ...createAgreementDraft({ type: "producer", request, invite }), template_version: 6 };
   for (const [arrangement, label] of [["chxndler_session", "Recording with CHXNDLER"], ["independent", "Recording independently"], ["other", "Another agreed arrangement"]]) {
     const terms = { ...base, recording_arrangement: arrangement, recording_arrangement_details: "At the collaborator’s studio", music_video_participation: "interested" };
     const view = agreementPresentation("producer", terms);
@@ -78,20 +100,23 @@ test("all supported recording arrangements and video interest choices render dis
   for (const choice of ["interested", "not_interested"]) {
     assert.ok(agreementPresentation("producer", { ...base, music_video_participation: choice }).arrangements.some(row => row[1].includes(choice === "interested" ? "Interested" : "Not interested")));
   }
+  assert.equal(agreementPresentation("producer", { ...base, music_video_participation: "interested" }).arrangements.find(row => row[0] === "Music Video Participation")[1], "Interested");
+  assert.equal(agreementPresentation("producer", { ...base, target_release_date: "2026-12-26" }).arrangements.find(row => row[0] === "Target Release Date")[1], "12-26-2026");
 });
 
 test("all one-time payment models require a positive amount and render the direction clearly", () => {
   const base = createAgreementDraft({ type: "singer_feature", request, invite });
   for (const [direction, amount, expected] of [["none", 0, "$0"], ["chxndler_pays", 450, "CHXNDLER pays"], ["collaborator_pays", 125, "collaborator pays"]]) {
-    const terms = { ...base, payment_direction: direction, flat_fee: amount, fee_currency: "USD", payment_terms: amount ? "Within 14 days after invoice" : "", master_royalty: 0, writer_splits:[{name:"Chandler Pierce",share:100,chxndler:true},{name:"Ari Ness",share:0,collaborator:true}], songwriting_status: "performance_only", recording_arrangement: "chxndler_session", music_video_participation: "interested" };
+    const terms = { ...base, payment_direction: direction, flat_fee: amount, fee_currency: "USD", payment_due_date: amount ? "2027-03-01" : "", master_royalty: 0, writer_splits:[{name:"Chandler Pierce",share:100,chxndler:true},{name:"Ari Ness",share:0,collaborator:true}], songwriting_status: "performance_only", recording_arrangement: "chxndler_session", music_video_participation: "interested" };
     assert.deepEqual(validateAgreement("singer_feature", terms, true), []);
     assert.ok(agreementPresentation("singer_feature", terms).compensation[0].value.includes(expected));
   }
   assert.ok(validateAgreement("singer_feature", { ...base, payment_direction: "chxndler_pays", flat_fee: 0 }, true).some(issue => /payment amount/i.test(issue)));
+  assert.ok(validateAgreement("singer_feature", { ...base, payment_direction: "chxndler_pays", flat_fee: 450, payment_due_date: "" }, true).some(issue => /payment due date/i.test(issue)));
 });
 
 test("royalty and sync combinations include only applicable reporting terms", () => {
-  const base = createAgreementDraft({ type: "producer", request, invite });
+  const base = { ...createAgreementDraft({ type: "producer", request, invite }), template_version: 6 };
   const standard = { ...base, flat_fee: 0, payment_direction: "none", writer_splits:[{name:"Chandler Pierce",share:100,chxndler:true},{name:"Ari Ness",share:0,collaborator:true}], songwriting_status: "performance_only", recording_arrangement: "independent", music_video_participation: "interested" };
   const cases = [
     { master_royalty: 0, advanced_master_sync_share: 0, expectsAccounting: false },
@@ -117,8 +142,9 @@ test("songwriting performance-only, co-writer, negotiated, and unresolved scenar
     const writer_splits = [{ name: "Chandler Pierce", share: 60, chxndler: true }, { name: "Ari Ness", share: 40, collaborator: true }];
     const terms = { ...core, songwriting_status, writer_splits };
     assert.deepEqual(validateAgreement("singer_feature", terms, true), []);
-    assert.match(agreementPresentation("singer_feature", terms).compensation[2].value, /Chandler Pierce: 60%.*Ari Ness: 40%/);
-    assert.match(agreementText("singer_feature", terms), /Each writer retains their composition rights; administration and composition sync licenses follow the applicable ownership/i);
+    assert.equal(agreementPresentation("singer_feature", terms).compensation[2].value, "40%");
+    assert.match(agreementText("singer_feature", terms), /Chandler Pierce \(Chandler Pierce\): 60%[\s\S]*Ari Ness \(Ari Ness\): 40%/);
+    assert.match(agreementText("singer_feature", terms), /Each songwriter retains their agreed composition ownership/i);
   }
   const unresolved = { ...core, songwriting_status: "unresolved" };
   assert.equal(agreementPresentation("singer_feature", unresolved).compensation[2].value, "Pending");
@@ -141,14 +167,15 @@ test("deal builder terms round-trip independently from editing through agreement
   draft.recording_arrangement = "chxndler_session";
   draft.music_video_participation = "interested";
   draft.payment_terms = "Within 14 days";
+  draft.payment_due_date = "2027-03-01";
   assert.deepEqual(validateAgreement("singer_feature", draft, true), []);
   const restored = createAgreementDraft({ type: "singer_feature", request, invite, existing: draft });
   assert.equal(restored.master_royalty, 20);
   assert.equal(restored.writer_splits[1].share, 20);
   const generated = agreementText("singer_feature", restored);
-  assert.match(generated, /Recording royalties \(separate from master ownership\):[\s\S]*CHXNDLER — 70%[\s\S]*ARINES — 20%[\s\S]*Guest Producer — 10%/);
-  assert.match(generated, /Songwriting ownership of the underlying lyrics and composition:[\s\S]*Chandler Pierce \(CHXNDLER\) — 80%[\s\S]*Ari Ness \(ARINES\) — 20%/);
-  assert.match(generated, /governed by the laws of the State of New York/i);
+  assert.match(generated, /RECORDING ROYALTY SPLITS[\s\S]*CHXNDLER \(Chandler Pierce\): 70%[\s\S]*ARINES \(Ari Ness\): 20%[\s\S]*Guest Producer \(Guest Producer\): 10%/);
+  assert.match(generated, /SONGWRITING OWNERSHIP SPLITS[\s\S]*CHXNDLER \(Chandler Pierce\): 80%[\s\S]*ARINES \(Ari Ness\): 20%/);
+  assert.match(generated, /New York law governs this agreement/i);
 });
 
 test("each royalty and composition split rejects invalid or incomplete participant rows", () => {
@@ -189,4 +216,31 @@ test("both split tables calculate the primary remainder and total from participa
   assert.equal(calculateSplitSummary([80, 20]).valid, true);
   assert.equal(calculateSplitSummary([80, 20, 1]).valid, false);
   assert.equal(calculateSplitSummary([-1]).valid, false);
+});
+
+test("compensation card shows only the current collaborator songwriting share", () => {
+  const base = createAgreementDraft({ type: "singer_feature", request, invite });
+  const terms = {
+    ...base,
+    songwriting_status: "co_writer",
+    writer_splits: [
+      { name: "Chandler Pierce", stage_name: "CHXNDLER", share: 60, chxndler: true },
+      { name: "Ari Ness", stage_name: "ARINES", share: 20, collaborator: true },
+      { name: "Guest Writer", stage_name: "GUEST", share: 20 },
+    ],
+  };
+  assert.equal(agreementPresentation("singer_feature", terms).compensation[2].value, "20%");
+  assert.match(agreementText("singer_feature", terms), /CHXNDLER \(Chandler Pierce\): 60%[\s\S]*ARINES \(Ari Ness\): 20%[\s\S]*GUEST \(Guest Writer\): 20%/);
+  assert.equal(agreementPresentation("singer_feature", { ...terms, songwriting_status: "performance_only" }).compensation[2].value, "0%");
+  assert.match(agreementPresentation("singer_feature", terms).compensation[1].help, /separate from master ownership and songwriting/i);
+  assert.match(agreementPresentation("singer_feature", terms).compensation[2].help, /separate from recording royalties/i);
+});
+
+test("Production & Release labels and tooltip copy stay consistent in agreement views", () => {
+  const terms = createAgreementDraft({ type: "singer_feature", request, invite });
+  assert.deepEqual(agreementPresentation("singer_feature", terms).productionRows.map(row => row[0]), ["Primary Artist", "Producer", "Master Owner", "Distribution Rights"]);
+  assert.equal(productionTooltipText["Primary Artist"], "The main artist credited on the official release.");
+  assert.equal(productionTooltipText.Producer, "The person responsible for producing the musical recording.");
+  assert.equal(productionTooltipText["Master Owner"], "The owner of the sound recording. Receiving recording royalties does not automatically grant ownership of the master.");
+  assert.equal(productionTooltipText["Distribution Rights"], "The party authorized to distribute and release the recording on streaming platforms and other services.");
 });

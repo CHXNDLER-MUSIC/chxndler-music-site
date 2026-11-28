@@ -16,6 +16,10 @@ export default function RecordingArrangementSelect({ id, name, value, onChange, 
   const selectedIndex = options.findIndex(option => option.value === value);
 
   useEffect(() => {
+    setOpen(false);
+  }, [value]);
+
+  useEffect(() => {
     if (!open) return;
     const onPointerDown = (event: PointerEvent) => {
       if (event.target instanceof Node && !rootRef.current?.contains(event.target)) setOpen(false);
@@ -36,8 +40,8 @@ export default function RecordingArrangementSelect({ id, name, value, onChange, 
   }, [open, selectedIndex]);
 
   function select(optionValue: string) {
-    onChange(optionValue);
     setOpen(false);
+    onChange(optionValue);
     triggerRef.current?.focus();
   }
 
