@@ -236,7 +236,7 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
           </section>
 
           {error && <p role="alert" className="rounded-xl border border-rose-300/20 bg-rose-300/[.06] px-4 py-3 text-sm leading-5 text-rose-100">{error}</p>}
-          <button type="submit" disabled={!canSubmit} className="min-h-12 w-full rounded-full bg-[#FD52AF] px-6 py-3 text-sm font-extrabold text-[#170d14] shadow-[0_8px_24px_rgba(253,82,175,.14)] transition hover:shadow-[0_0_28px_rgba(253,82,175,.3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none">{busy ? "Sending your request…" : "Send Collaboration Request →"}</button>
+          <button type="submit" disabled={!canSubmit} className="min-h-12 w-full rounded-full bg-[#FD52AF] px-6 py-3 text-sm font-extrabold uppercase text-[#170d14] shadow-[0_8px_24px_rgba(253,82,175,.14)] transition hover:shadow-[0_0_28px_rgba(253,82,175,.3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none">{busy ? "Sending your request…" : "Send Collaboration Request →"}</button>
         </form>
       </>}
     </section>

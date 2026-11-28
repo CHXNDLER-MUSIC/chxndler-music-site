@@ -27,16 +27,17 @@ export async function GET(request: Request) {
       db.from("collaboration_agreement_versions").select("*").eq("request_id", id).order("version", { ascending: false }),
     ]);
     const requestRow = data[0];
-    const [draft, signed] = await Promise.all([
+    const [draft, signed, profileResult] = await Promise.all([
       requestRow.agreement_path ? db.storage.from(AGREEMENT_BUCKET).createSignedUrl(requestRow.agreement_path, 60 * 5) : Promise.resolve({ data: null }),
       requestRow.signed_agreement_path ? db.storage.from(AGREEMENT_BUCKET).createSignedUrl(requestRow.signed_agreement_path, 60 * 5) : Promise.resolve({ data: null }),
+      requestRow.email ? db.from("collaborator_artist_profiles").select("legal_name,artist_name").eq("email_key", String(requestRow.email).trim().toLowerCase()).maybeSingle() : Promise.resolve({ data: null }),
     ]);
     const versionRows = await Promise.all((versions || []).map(async version => {
       const document = version.document_path ? await db.storage.from(AGREEMENT_BUCKET).createSignedUrl(version.document_path, 60 * 5) : { data: null };
       const executed = version.signed_document_path ? await db.storage.from(AGREEMENT_BUCKET).createSignedUrl(version.signed_document_path, 60 * 5) : { data: null };
       return { ...version, document_url: document.data?.signedUrl || null, signed_document_url: executed.data?.signedUrl || null };
     }));
-    return NextResponse.json({ request: { ...requestRow, agreement_url: draft.data?.signedUrl || null, signed_agreement_url: signed.data?.signedUrl || null, agreementVersions: versionRows }, events: events || [], agreementVersions: versionRows });
+    return NextResponse.json({ request: { ...requestRow, collaborator_profile: profileResult.data || null, agreement_url: draft.data?.signedUrl || null, signed_agreement_url: signed.data?.signedUrl || null, agreementVersions: versionRows }, events: events || [], agreementVersions: versionRows });
   }
   return NextResponse.json({ requests: data || [] });
 }
@@ -76,9 +77,10 @@ export async function PATCH(request: Request) {
     const savedTerms = (current.agreement_terms || {}) as Record<string, any>;
     const changingType = requestedType !== current.agreement_type;
     const templateId = !changingType ? savedTerms.template_id || current.agreement_template_id || body.agreement.template_id || template.id : template.id;
-    const templateVersion = !changingType ? savedTerms.template_version || current.agreement_template_version || body.agreement.template_version || template.version : template.version;
+    const templateVersion = Number(body.agreement.template_version || template.version);
     const terms = { ...body.agreement, agreement_type: requestedType, agreement_version: version, template_id: templateId, template_version: templateVersion } as Record<string, any>;
-    if (typeof current.recording_arrangement === "string" && current.recording_arrangement && !terms.recording_arrangement) {
+    const validRecordingArrangements = ["chxndler_session", "independent"];
+    if (validRecordingArrangements.includes(String(current.recording_arrangement || "")) && !validRecordingArrangements.includes(String(terms.recording_arrangement || ""))) {
       terms.recording_arrangement = current.recording_arrangement;
     }
     if (typeof current.music_video_participation === "string" && current.music_video_participation && !terms.music_video_participation) {
@@ -96,7 +98,7 @@ export async function PATCH(request: Request) {
     update.agreement_template_version = templateVersion;
     update.agreement_version = version;
     update.flat_fee = Number(terms.flat_fee ?? 0);
-    update.master_royalty = Number(terms.master_royalty ?? 0);
+    update.master_royalty = terms.master_royalty === "" || terms.master_royalty === null || terms.master_royalty === undefined ? null : Number(terms.master_royalty);
     update.publishing_royalty = ["negotiated", "co_writer"].includes(String(terms.songwriting_status)) && (terms.songwriting_split ?? terms.publishing_split) !== "" ? Number(terms.songwriting_split ?? terms.publishing_split) : null;
   }
   if (agreementChanged) {
