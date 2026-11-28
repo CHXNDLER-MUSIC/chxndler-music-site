@@ -9,6 +9,7 @@ function safeAgreementValue(value: unknown, depth = 0): boolean {
   if (depth > 4) return false;
   if (value === null || typeof value === "string") return typeof value !== "string" || value.length <= 12000;
   if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value === "boolean") return true;
   if (Array.isArray(value)) return value.length <= 100 && value.every(item => safeAgreementValue(item, depth + 1));
   if (value && typeof value === "object") return Object.entries(value as Record<string, unknown>).length <= 30 && Object.entries(value as Record<string, unknown>).every(([key, item]) => key.length <= 80 && safeAgreementValue(item, depth + 1));
   return false;
@@ -46,7 +47,7 @@ export async function PATCH(request: Request) {
   const auth = await getApiUser(); if (!auth) return unauthorized(); if (!isAdminUser(auth.user)) return forbidden();
   const body = await request.json(), id = String(body.id || ""), db = getSupabaseAdmin();
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
-  const { data: current, error: currentError } = await db.from("collaboration_requests").select("status,agreement_status,agreement_path,signed_agreement_path,signed_agreement_version,admin_signed_at,collaborator_signed_at,collaborator_signed_version,agreement_type,agreement_terms,agreement_version,agreement_approved_at,agreement_approved_by,agreement_approved_version,agreement_template_id,agreement_template_version,song_id,music_video_project_id,recording_arrangement,music_video_participation,invite_id,authorized_person_id,contribution_type,artist_name,email,profile_link,portfolio_url,estimated_rate,first_name,last_name,songs(title)").eq("id", id).maybeSingle();
+  const { data: current, error: currentError } = await db.from("collaboration_requests").select("status,agreement_status,agreement_path,signed_agreement_path,signed_agreement_version,admin_signed_at,collaborator_signed_at,collaborator_signed_version,agreement_type,agreement_terms,agreement_version,agreement_approved_at,agreement_approved_by,agreement_approved_version,agreement_template_id,agreement_template_version,song_id,music_video_project_id,recording_arrangement,music_video_participation,invite_id,contribution_type,artist_name,email,profile_link,portfolio_url,estimated_rate,first_name,last_name").eq("id", id).maybeSingle();
   if (currentError) {
     console.error("[admin/collaboration-requests] lookup failed", { id, code: currentError.code, message: currentError.message });
     return NextResponse.json({ error: "Unable to look up this collaboration request. Refresh the request and try again." }, { status: 500 });
@@ -180,7 +181,7 @@ export async function PATCH(request: Request) {
   if (error) return NextResponse.json({ error: "Unable to update request." }, { status: 500 });
   if (saveAgreementSnapshot) {
     const snapshot = await db.from("collaboration_agreement_versions").insert({
-      request_id: id, song_id: current.song_id, invite_id: current.invite_id, authorized_person_id: current.authorized_person_id,
+      request_id: id, song_id: current.song_id, invite_id: current.invite_id,
       agreement_type: (update.agreement_type || current.agreement_type || "singer_feature"), version: update.agreement_version,
       agreement_status: "draft", structured_terms: update.agreement_terms || current.agreement_terms || {},
       agreement_template_id: update.agreement_template_id || current.agreement_template_id,

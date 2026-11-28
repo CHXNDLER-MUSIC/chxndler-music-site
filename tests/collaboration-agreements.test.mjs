@@ -49,8 +49,9 @@ test("version 7 uses the approved five sections and exact master ownership terms
   const text = agreementText("singer_feature", terms);
   for (const title of ["01 · Contribution", "02 · Compensation & Songwriting", "03 · Recording & Release", "04 · Creative Use & Credits", "05 · General Terms"]) assert.ok(text.includes(title));
   assert.match(text, /The collaboration details, compensation, royalty splits, ownership and credits outlined above form part of this agreement\./);
-  assert.match(text, /The collaborator hereby assigns their copyright interest in the sound recording to CHXNDLER/);
-  assert.match(text, /CHXNDLER retains exclusive master ownership and authority to edit, distribute, promote, release and license the recording/);
+  assert.match(text, /The collaborator hereby assigns their copyright interest in the master recording to CHXNDLER, excluding songwriting ownership and nonwaivable statutory rights\./);
+  assert.match(text, /CHXNDLER retains exclusive master ownership and control over editing, distribution, promotion, licensing and release, subject to applicable composition rights\./);
+  assert.match(text, /The collaborator may not upload, distribute, release or license the recording without CHXNDLER's written permission\. CHXNDLER decides whether and when the recording is released\./);
   assert.match(text, /New York law governs this agreement\. Electronic signatures are accepted\./);
   assert.doesNotMatch(text, /AI voice cloning|90 days|payment threshold|disputes|within 30 days|cancellation/i);
 });
@@ -60,6 +61,28 @@ test("v7 signed summary includes both legal names and complete independent split
   const text = agreementText("singer_feature", terms);
   assert.match(text, /RECORDING ROYALTY SPLITS[\s\S]*CHXNDLER \(Chandler Pierce\): 75%[\s\S]*ARINES \(Ari Ness\): 20%[\s\S]*Guest Writer LLC \(G\. Writer\): 5%/);
   assert.match(text, /SONGWRITING OWNERSHIP SPLITS[\s\S]*CHXNDLER \(Chandler Pierce\): 70%[\s\S]*ARINES \(Ari Ness\): 20%[\s\S]*GINA \(Gina Writer\): 10%/);
+});
+
+test("compensation split presentation uses artist names while signed text retains legal names", () => {
+  const terms = {
+    ...createAgreementDraft({ type: "singer_feature", request, invite }),
+    template_version: 7,
+    master_owner: "CHXNDLER",
+    master_royalty: 20,
+    master_participants: [{ name: "Master display", artist_name: "MASTER ARTIST", legal_name: "Master Legal Name", share: 5 }],
+    songwriting_status: "co_writer",
+    writer_splits: [
+      { name: "Chandler Pierce", stage_name: "CHXNDLER", share: 75, chxndler: true },
+      { name: "Ari Ness", stage_name: "ARINES", share: 20, collaborator: true },
+      { name: "Gina Writer Legal", stage_name: "GINA WRITER", share: 5 },
+    ],
+  };
+  const presentation = agreementPresentation("singer_feature", terms);
+  assert.deepEqual(presentation.masterSplitRows.map(row => row.name), ["CHXNDLER", "ARINES", "MASTER ARTIST"]);
+  assert.deepEqual(presentation.writerSplitRows.map(row => row.name), ["CHXNDLER", "ARINES", "GINA WRITER"]);
+  const signedText = agreementText("singer_feature", terms);
+  assert.match(signedText, /MASTER ARTIST \(Master Legal Name\): 5%/);
+  assert.match(signedText, /GINA WRITER \(Gina Writer Legal\): 5%/);
 });
 
 test("version 6 retains its historical agreement wording", () => {

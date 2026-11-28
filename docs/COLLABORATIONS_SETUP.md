@@ -19,11 +19,12 @@ Requests, terms history, invite tokens, rate-limit records, and event history ar
 Set these server-only deployment variables:
 
 - `COLLAB_NOTIFICATION_EMAIL` — destination for new request notifications; no address is hardcoded.
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` — existing Nodemailer SMTP integration. `SMTP_FROM` must be authorized by the provider.
-- `COLLAB_REPLY_TO` — verified address for artist replies. If omitted, `SMTP_FROM` is used.
+- `RESEND_API_KEY` and `RESEND_FROM_EMAIL` (or `RESEND_FROM`) — Resend delivery for finalized collaboration agreements. The sender must be verified in Resend.
+- `COLLAB_REPLY_TO` — verified address for collaborator replies. If omitted, the configured Resend sender is used.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` — Nodemailer delivery for collaboration request notifications; agreement delivery does not depend on SMTP.
 - `NEXT_PUBLIC_SITE_URL` — canonical site origin used for email links and artwork.
 
-Emails are attempted after the request is saved. Admin and artist sends are independent. SMTP acceptance, provider message IDs, failures, and retry attempts are recorded on the request. Failed sends can be retried from its admin detail view. Configure SMTP and the notification address in every deployment environment before inviting artists.
+Request notification emails are attempted after a request is saved, with admin and artist sends independent. Agreement email delivery uses Resend and includes the private, version-specific review link. Provider message IDs and delivery failures are recorded in request events. Configure the relevant sender credentials in each deployment environment.
 
 ## Admin workflow
 

@@ -4,6 +4,7 @@ import { getApiUser, isAdminUser, unauthorized, forbidden } from "@/lib/apiAuth"
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { agreementTypes, validateAgreement, type AgreementType } from "@/lib/collaborationAgreements";
 import { canTransitionCollaborationStatus } from "@/lib/collaborationRules.mjs";
+import { sendResendEmail } from "@/lib/resendEmail";
 
 export const runtime = "nodejs";
 const BUCKET = "collaboration-agreements";
@@ -15,10 +16,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   await request.json().catch(() => ({}));
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   const db = getSupabaseAdmin();
-  const { data: row, error } = await db.from("collaboration_requests").select("id,song_id,invite_id,authorized_person_id,artist_name,email,status,agreement_status,agreement_type,agreement_terms,agreement_version,agreement_approved_at,agreement_approved_version,agreement_sent_at,agreement_template_id,agreement_template_version,agreement_path,songs(title)").eq("id", id).maybeSingle();
+  const { data: row, error } = await db.from("collaboration_requests").select("id,song_id,invite_id,artist_name,email,status,agreement_status,agreement_type,agreement_terms,agreement_version,agreement_approved_at,agreement_approved_version,agreement_sent_at,agreement_access_token_hash,agreement_template_id,agreement_template_version,agreement_path,songs(title)").eq("id", id).maybeSingle();
   if (error) { console.error("[admin/collaboration-send-agreement] lookup failed", { id, code: error.code, message: error.message }); return NextResponse.json({ error: "Unable to look up this collaboration request. Refresh the request and try again." }, { status: 500 }); }
   if (!row) return NextResponse.json({ error: `Request ${id} was not found in collaboration_requests. Refresh the list to confirm it is still available.` }, { status: 404 });
-  if (["signed", "sent", "awaiting_signature", "offer_sent", "sending"].includes(String(row.agreement_status)) || row.status === "signed") return NextResponse.json({ error: row.agreement_status === "sending" ? "This agreement is already being sent. Refresh before trying again." : "This agreement has already been sent or signed." }, { status: 409 });
+  if (["signed", "sent", "awaiting_signature", "offer_sent"].includes(String(row.agreement_status)) || row.status === "signed") return NextResponse.json({ error: "This agreement has already been sent or signed." }, { status: 409 });
   if (row.agreement_sent_at) return NextResponse.json({ error: "This agreement version has already been emailed. Create a new draft version before sending another invitation." }, { status: 409 });
   if (["declined", "rejected", "canceled", "cancelled", "archived"].includes(String(row.status)) || ["declined", "rejected", "canceled", "cancelled"].includes(String(row.agreement_status))) return NextResponse.json({ error: "This request was declined or cancelled and cannot be sent an agreement." }, { status: 409 });
   if (row.status !== "approved" && row.status !== "agreement_pending" && !canTransitionCollaborationStatus(row.status, "approved")) return NextResponse.json({ error: "This request cannot be approved from its current status." }, { status: 409 });
@@ -27,15 +28,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const missing = validateAgreement(row.agreement_type as AgreementType, terms, true);
   if (missing.length) return NextResponse.json({ error: `Resolve required agreement terms first: ${missing.join(", ")}.` }, { status: 409 });
   if (!row.email) return NextResponse.json({ error: "This collaborator does not have an email address for delivery." }, { status: 409 });
-  const host = process.env.SMTP_HOST, fromAddress = process.env.SMTP_FROM, replyTo = process.env.COLLAB_REPLY_TO || fromAddress;
-  if (!host || !fromAddress || !replyTo || !process.env.SMTP_USER || !process.env.SMTP_PASS) return NextResponse.json({ error: "Agreement email is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM, and COLLAB_REPLY_TO (or SMTP_FROM)." }, { status: 503 });
   const fileLink = row.agreement_path ? await db.storage.from(BUCKET).createSignedUrl(row.agreement_path, 60 * 60 * 24 * 7) : null;
   if (row.agreement_path && (fileLink?.error || !fileLink?.data?.signedUrl)) return NextResponse.json({ error: "Could not create a secure agreement link." }, { status: 500 });
   const versionSnapshot = await db.from("collaboration_agreement_versions").select("id,structured_terms").eq("request_id", id).eq("version", row.agreement_version).maybeSingle();
   if (versionSnapshot.error) return NextResponse.json({ error: "Could not verify the immutable agreement version before sending." }, { status: 500 });
   if (!versionSnapshot.data) {
     const inserted = await db.from("collaboration_agreement_versions").insert({
-      request_id: id, song_id: row.song_id, invite_id: row.invite_id, authorized_person_id: row.authorized_person_id,
+      request_id: id, song_id: row.song_id, invite_id: row.invite_id,
       agreement_type: row.agreement_type, version: row.agreement_version, agreement_status: "approved",
       structured_terms: terms, agreement_template_id: row.agreement_template_id, agreement_template_version: row.agreement_template_version,
       document_path: row.agreement_path, created_by: auth.user.email || null,
@@ -49,37 +48,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const accessExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
   const base = (process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin).replace(/\/+$/, "");
   const reviewUrl = `${base}/collab/agreement/${accessToken}`;
-  let lockQuery = db.from("collaboration_requests").update({ agreement_access_token_hash: accessTokenHash, agreement_access_expires_at: accessExpiresAt, agreement_access_version: row.agreement_version, agreement_approved_at: new Date().toISOString(), agreement_approved_by: auth.user.email || "admin", agreement_approved_version: row.agreement_version, agreement_status: "sending", ...(row.status === "approved" || row.status === "agreement_pending" ? {} : { status: "approved", reviewed_at: new Date().toISOString() }), updated_at: new Date().toISOString() }).eq("id", id).eq("agreement_version", row.agreement_version);
+  let lockQuery = db.from("collaboration_requests").update({ agreement_access_token_hash: accessTokenHash, agreement_access_expires_at: accessExpiresAt, agreement_access_version: row.agreement_version, agreement_approved_at: new Date().toISOString(), agreement_approved_by: auth.user.email || "admin", agreement_approved_version: row.agreement_version, ...(row.status === "approved" || row.status === "agreement_pending" ? {} : { status: "approved", reviewed_at: new Date().toISOString() }), updated_at: new Date().toISOString() }).eq("id", id).eq("agreement_version", row.agreement_version).is("agreement_sent_at", null);
+  lockQuery = row.agreement_access_token_hash ? lockQuery.eq("agreement_access_token_hash", row.agreement_access_token_hash) : lockQuery.is("agreement_access_token_hash", null);
   lockQuery = row.agreement_status ? lockQuery.eq("agreement_status", row.agreement_status) : lockQuery.is("agreement_status", null);
   const tokenUpdate = await lockQuery.select("id").maybeSingle();
   if (tokenUpdate.error || !tokenUpdate.data) return NextResponse.json({ error: "This agreement changed or another send is already in progress. Refresh and review its status." }, { status: 409 });
-  const releaseLock = async () => { await db.from("collaboration_requests").update({ agreement_status: "draft", agreement_access_token_hash: null, agreement_access_expires_at: null, agreement_access_version: null, updated_at: new Date().toISOString() }).eq("id", id).eq("agreement_version", row.agreement_version).eq("agreement_status", "sending").eq("agreement_access_token_hash", accessTokenHash); };
   const firstName = row.artist_name?.trim().split(/\s+/)[0] || "there";
   const html = `<div style="background:#f7f5f6;color:#18171b;padding:32px;font:16px/1.6 Arial,sans-serif"><div style="max-width:560px;margin:auto;background:#fff;padding:32px;border-radius:16px"><img src="${(process.env.NEXT_PUBLIC_SITE_URL || "https://chxndler.world").replace(/\/$/, "")}/elements/logo.webp" alt="CHXNDLER" width="150" style="display:block;margin-bottom:28px"><p>Hi ${escapeHtml(firstName)},</p><p>Your collaboration agreement for <b>${escapeHtml(title)}</b> is ready to review.</p><p>You can view and sign it securely using the link below.</p><p><a href="${escapeHtml(reviewUrl)}" style="display:inline-block;padding:13px 20px;background:#FD52AF;color:#171018;text-decoration:none;font-weight:bold;border-radius:999px">Review &amp; Sign Agreement</a></p><p>CHXNDLER</p></div></div>`;
-  let transport: import("nodemailer").Transporter;
-  try {
-    const nodemailer = await import("nodemailer");
-    const port = Number(process.env.SMTP_PORT || 587);
-    transport = nodemailer.default.createTransport({ host, port, secure: port === 465, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
-  } catch {
-    await releaseLock();
-    return NextResponse.json({ error: "Unable to initialize agreement email." }, { status: 503 });
-  }
   let messageId: string;
   try {
-    const sent = await transport.sendMail({ from: `CHXNDLER <${fromAddress}>`, to: row.email, replyTo, subject: `Collaboration Agreement — ${title} | CHXNDLER`, text: `Hi ${firstName},\n\nYour collaboration agreement for ${title} is ready to review.\n\nYou can view and sign it securely using the link below.\n\n${reviewUrl}\n\nCHXNDLER`, html });
-    messageId = sent.messageId || "accepted";
+    const sent = await sendResendEmail({ to: row.email, subject: `Collaboration Agreement — ${title} | CHXNDLER`, text: `Hi ${firstName},\n\nYour collaboration agreement for ${title} is ready to review.\n\nYou can view and sign it securely using the link below.\n\n${reviewUrl}\n\nCHXNDLER`, html, idempotencyKey: `collaboration-agreement-${id}-v${row.agreement_version}` });
+    messageId = sent.id;
   } catch (sendError) {
-    try { transport.close(); } catch {}
-    await db.from("collaboration_request_events").insert({ request_id: id, event: "agreement_email_failed", details: { actor: auth.user.email, version: row.agreement_version, error: sendError instanceof Error ? sendError.message.slice(0, 240) : "SMTP delivery failed" } });
-    await releaseLock();
+    await db.from("collaboration_request_events").insert({ request_id: id, event: "agreement_email_failed", details: { actor: auth.user.email, version: row.agreement_version, error: sendError instanceof Error ? sendError.message.slice(0, 240) : "Resend delivery failed" } });
     const detail = sendError instanceof Error ? sendError.message.slice(0, 300) : "Mail server rejected the message.";
-    return NextResponse.json({ error: `Agreement email failed: ${detail}` }, { status: 502 });
+    return NextResponse.json({ error: `Agreement email failed: ${detail}`, reviewUrl, linkGenerated: true, emailSent: false }, { status: 502 });
   }
-  try { transport.close(); } catch {}
   const version = row.agreement_version || 1;
   const sentAt = new Date().toISOString();
-  const update = await db.from("collaboration_requests").update({ agreement_status: "awaiting_signature", agreement_sent_at: sentAt, updated_at: sentAt }).eq("id", id).eq("agreement_version", version).eq("agreement_approved_version", version).eq("agreement_access_token_hash", accessTokenHash).eq("agreement_status", "sending").select("id").maybeSingle();
+  const update = await db.from("collaboration_requests").update({ agreement_status: "awaiting_signature", agreement_sent_at: sentAt, updated_at: sentAt }).eq("id", id).eq("agreement_version", version).eq("agreement_approved_version", version).eq("agreement_access_token_hash", accessTokenHash).is("agreement_sent_at", null).select("id").maybeSingle();
   if (update.error || !update.data) return NextResponse.json({ error: `Email ${messageId} was accepted, but the request status could not be saved for version ${version}. Review the request before retrying.` }, { status: 500 });
   await db.from("collaboration_request_events").insert({ request_id: id, event: "agreement_awaiting_signature", details: { actor: auth.user.email, messageId, version, request_auto_approved: row.status !== "approved" && row.status !== "agreement_pending" } });
   await db.from("collaboration_agreement_versions").update({ agreement_status: "sent" }).eq("request_id", id).eq("version", version);
