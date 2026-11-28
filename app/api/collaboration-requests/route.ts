@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     const songId = clean(body.songId, 80), submissionKey = clean(body.submissionKey, 80), termsVersion = clean(body.termsVersion, 80);
     const submittedEmail = clean(body.email, 320).toLowerCase();
     const firstName = clean(body.firstName, 80), lastName = clean(body.lastName, 80), submittedArtistName = clean(body.artistName, 120);
-    const rawProfile = clean(body.profileLink, 500), profile = normalizeProfileLink(rawProfile), portfolio = clean(body.portfolioUrl, 500), estimatedRate = clean(body.estimatedRate, 120), phone = clean(body.phone, 40), contribution = clean(body.contributionType, 40), message = clean(body.message, 1200), videoProjectId = clean(body.videoProjectId, 80);
+    const rawProfile = clean(body.profileLink, 500), profile = normalizeProfileLink(rawProfile), portfolio = clean(body.portfolioUrl, 500), estimatedRate = clean(body.estimatedRate, 120), phone = clean(body.phone, 40), contribution = clean(body.contributionType, 40), recordingArrangement = clean(body.recordingArrangement, 40), musicVideoParticipation = clean(body.musicVideoParticipation, 40), message = clean(body.message, 1200), videoProjectId = clean(body.videoProjectId, 80);
     const spotifyRaw = clean(body.spotifyArtistProfile, 300), appleRaw = clean(body.appleMusicArtistProfile, 500), youtubeRaw = clean(body.youtubeMusicArtistProfile, 300);
     const spotifyArtistUri = normalizeSpotifyArtist(spotifyRaw), appleMusicArtistUrl = normalizeAppleArtist(appleRaw), youtubeMusicArtistChannelId = normalizeYouTubeMusicArtist(youtubeRaw);
     if (!firstName || !lastName) return NextResponse.json({ error: "First and last name are required." }, { status: 400 });
@@ -71,6 +71,8 @@ export async function POST(request: Request) {
     if (youtubeRaw && !youtubeMusicArtistChannelId) return NextResponse.json({ error: "Enter an official YouTube Music artist profile URL or channel ID. Ordinary YouTube channel URLs are not accepted." }, { status: 400 });
     const invite = await getCollabInviteSession();
     const isVideoApplication = contribution === "Music Video";
+    if (!isVideoApplication && !["chxndler_session", "independent"].includes(recordingArrangement)) return NextResponse.json({ error: "Select a recording arrangement before submitting." }, { status: 400 });
+    if (!["interested", "not_interested"].includes(musicVideoParticipation)) return NextResponse.json({ error: "Select your music video participation preference before submitting." }, { status: 400 });
     const isSonglessIdea = !songId && (contribution === "Songwriting" || contribution === "Other");
     const allowSonglessIdea = isSonglessIdea && invite?.scope === "catalog";
     const publicVideoApplication = !invite && isVideoApplication;
@@ -118,7 +120,7 @@ export async function POST(request: Request) {
       submission_key: submissionKey, submission_ip_hash: ipHash,
       invite_id: invite?.source === "invite" ? invite.id : null,
       song_id: songId || null, music_video_project_id: isVideoApplication && /^[0-9a-f-]{36}$/i.test(videoProjectId) ? videoProjectId : null, agreement_type: invite?.agreement_type || null, portfolio_url: portfolio || profile || null, estimated_rate: estimatedRate || null, artist_name: artistName, first_name: firstName, last_name: lastName, email, profile_link: profile || null, phone: phone || null,
-      contribution_type: contribution, message: message || null, terms_version: terms.version,
+      contribution_type: contribution, recording_arrangement: recordingArrangement || null, music_video_participation: musicVideoParticipation, message: message || null, terms_version: terms.version,
       acknowledged_at: null, submitted_at: submittedAt,
     };
     const linkedRequestValues = invite?.source === "authorized_person"
@@ -143,7 +145,7 @@ export async function POST(request: Request) {
     }
     await db.from("collaboration_request_events").insert({ request_id: row.id, event: "requested" });
     const base = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
-    const deliveries = await sendCollaborationEmails({ id: row.id, artist_name: artistName, email, profile_link: profile || null, portfolio_url: portfolio || profile || null, estimated_rate: estimatedRate || null, phone: phone || null, contribution_type: contribution, message: message || null, submitted_at: submittedAt, songs: song ? { title: song.title, slug: song.slug } : null }, base);
+    const deliveries = await sendCollaborationEmails({ id: row.id, artist_name: artistName, email, profile_link: profile || null, portfolio_url: portfolio || profile || null, estimated_rate: estimatedRate || null, phone: phone || null, contribution_type: contribution, recording_arrangement: recordingArrangement || null, music_video_participation: musicVideoParticipation, message: message || null, submitted_at: submittedAt, songs: song ? { title: song.title, slug: song.slug } : null }, base);
     const emailError = [deliveries.admin, deliveries.artist].filter((delivery) => delivery.status === "failed").map((delivery) => delivery.error).filter(Boolean).join("; ") || null;
     const emailUpdate = await db.from("collaboration_requests").update({ email_admin_status: deliveries.admin.status, email_admin_id: deliveries.admin.messageId, email_artist_status: deliveries.artist.status, email_artist_id: deliveries.artist.messageId, email_error: emailError, last_email_attempt_at: new Date().toISOString() }).eq("id", row.id);
     if (emailUpdate.error) console.error("[collab] email status update failed", emailUpdate.error);

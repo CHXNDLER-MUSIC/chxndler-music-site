@@ -45,7 +45,7 @@ export async function PATCH(request: Request) {
   const auth = await getApiUser(); if (!auth) return unauthorized(); if (!isAdminUser(auth.user)) return forbidden();
   const body = await request.json(), id = String(body.id || ""), db = getSupabaseAdmin();
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
-  const { data: current, error: currentError } = await db.from("collaboration_requests").select("status,agreement_status,agreement_path,signed_agreement_path,signed_agreement_version,agreement_type,agreement_terms,agreement_version,agreement_approved_at,agreement_approved_by,agreement_approved_version,agreement_template_id,agreement_template_version,song_id,music_video_project_id,invite_id,authorized_person_id,contribution_type,artist_name,email,profile_link,portfolio_url,estimated_rate,first_name,last_name,songs(title)").eq("id", id).maybeSingle();
+  const { data: current, error: currentError } = await db.from("collaboration_requests").select("status,agreement_status,agreement_path,signed_agreement_path,signed_agreement_version,agreement_type,agreement_terms,agreement_version,agreement_approved_at,agreement_approved_by,agreement_approved_version,agreement_template_id,agreement_template_version,song_id,music_video_project_id,recording_arrangement,music_video_participation,invite_id,authorized_person_id,contribution_type,artist_name,email,profile_link,portfolio_url,estimated_rate,first_name,last_name,songs(title)").eq("id", id).maybeSingle();
   if (currentError) {
     console.error("[admin/collaboration-requests] lookup failed", { id, code: currentError.code, message: currentError.message });
     return NextResponse.json({ error: "Unable to look up this collaboration request. Refresh the request and try again." }, { status: 500 });
@@ -78,6 +78,12 @@ export async function PATCH(request: Request) {
     const templateId = !changingType ? savedTerms.template_id || current.agreement_template_id || body.agreement.template_id || template.id : template.id;
     const templateVersion = !changingType ? savedTerms.template_version || current.agreement_template_version || body.agreement.template_version || template.version : template.version;
     const terms = { ...body.agreement, agreement_type: requestedType, agreement_version: version, template_id: templateId, template_version: templateVersion } as Record<string, any>;
+    if (typeof current.recording_arrangement === "string" && current.recording_arrangement && !terms.recording_arrangement) {
+      terms.recording_arrangement = current.recording_arrangement;
+    }
+    if (typeof current.music_video_participation === "string" && current.music_video_participation && !terms.music_video_participation) {
+      terms.music_video_participation = current.music_video_participation;
+    }
     if (terms.songwriting_status === "co_writer" && Array.isArray(terms.writer_splits)) {
       const collaboratorShare = terms.writer_splits.find((row: any) => row.collaborator || row.name === terms.collaborator_legal_name || row.stage_name === terms.collaborator_artist_name)?.share;
       terms.songwriting_split = collaboratorShare === "" || collaboratorShare === undefined ? "" : Number(collaboratorShare);

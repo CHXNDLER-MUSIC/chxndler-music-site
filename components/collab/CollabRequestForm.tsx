@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Music2 } from "lucide-react";
+import RecordingArrangementSelect from "@/components/collab/RecordingArrangementSelect";
 
 const defaultVersion = "2026-11-18-v1";
 const defaultTerms = {
@@ -29,6 +30,8 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
   const [hasStreamingProfiles, setHasStreamingProfiles] = useState<"yes" | "no">("no");
   const [streamingProfiles, setStreamingProfiles] = useState({ spotify: "", appleMusic: "", youtubeMusic: "" });
   const [contributionType, setContributionType] = useState(initialContributionType || "");
+  const [recordingArrangement, setRecordingArrangement] = useState("");
+  const [musicVideoParticipation, setMusicVideoParticipation] = useState("");
   const [termsVersion, setTermsVersion] = useState(defaultVersion);
   const [termsText, setTermsText] = useState(defaultTerms);
   const dialogRef = useRef<HTMLElement>(null);
@@ -103,7 +106,8 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
   const visibleContributionOptions = songId
     ? contributionOptions.filter(option => option.value !== "Songwriting")
     : contributionOptions;
-  const canSubmit = validEmail && Boolean(selectedContribution) && !busy;
+  const needsRecordingArrangement = contributionType !== "Music Video";
+  const canSubmit = validEmail && Boolean(selectedContribution) && (!needsRecordingArrangement || Boolean(recordingArrangement)) && Boolean(musicVideoParticipation) && !busy;
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -131,6 +135,8 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
           appleMusicArtistProfile: streamingProfiles.appleMusic,
           youtubeMusicArtistProfile: streamingProfiles.youtubeMusic,
           contributionType,
+          recordingArrangement,
+          musicVideoParticipation,
           message: data.get("message"),
           website: data.get("website"),
         }),
@@ -189,7 +195,6 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
               <label className="text-xs font-semibold text-white/70"><span className="inline-flex items-center gap-1"><Music2 className="h-4 w-4 text-[#1ED760]"/>Spotify <details className="group relative"><summary aria-label="How to find Spotify artist URI" className="cursor-pointer list-none text-[#FD52AF]">ⓘ</summary><span className="absolute left-0 top-5 z-20 hidden w-56 rounded-lg border border-white/10 bg-[#202025] p-3 text-[11px] font-normal leading-5 text-white/75 group-open:block">Open your Spotify artist profile, choose Share, then Copy link. Artist links and Spotify artist URIs are accepted.</span></details></span><input value={streamingProfiles.spotify} onChange={event => setStreamingProfiles(current => ({ ...current, spotify: event.target.value }))} placeholder="Artist URL or spotify:artist:…" className={fieldClass}/></label>
               <label className="text-xs font-semibold text-white/70"><span className="inline-flex items-center gap-1"><Music2 className="h-4 w-4 text-white"/>Apple Music <details className="group relative"><summary aria-label="How to find Apple Music artist URL" className="cursor-pointer list-none text-[#FD52AF]">ⓘ</summary><span className="absolute left-0 top-5 z-20 hidden w-56 rounded-lg border border-white/10 bg-[#202025] p-3 text-[11px] font-normal leading-5 text-white/75 group-open:block">Open your artist page in Apple Music and copy its link.</span></details></span><input value={streamingProfiles.appleMusic} onChange={event => setStreamingProfiles(current => ({ ...current, appleMusic: event.target.value }))} placeholder="Apple Music artist URL" className={fieldClass}/></label>
               <label className="text-xs font-semibold text-white/70"><span className="inline-flex items-center gap-1"><Music2 className="h-4 w-4 text-red-400"/>YouTube Music <details className="group relative"><summary aria-label="How to find YouTube Music artist profile" className="cursor-pointer list-none text-[#FD52AF]">ⓘ</summary><span className="absolute left-0 top-5 z-20 hidden w-56 rounded-lg border border-white/10 bg-[#202025] p-3 text-[11px] font-normal leading-5 text-white/75 group-open:block">Use the profile for your official YouTube Music artist page. Ordinary YouTube channels are not accepted.</span></details></span><input value={streamingProfiles.youtubeMusic} onChange={event => setStreamingProfiles(current => ({ ...current, youtubeMusic: event.target.value }))} placeholder="Official artist profile URL" className={fieldClass}/></label>
-              <p className="text-[11px] leading-5 text-white/45 sm:col-span-3">These links are optional. Sharing them helps match your artist profiles during distribution setup.</p>
             </div>}
           </fieldset>
 
@@ -207,6 +212,15 @@ export default function CollabRequestForm({ songId, title, artwork, invitedName,
               })}
             </div>
             {isPublicVideoApplication && <p className="mt-2 text-[.68rem] text-white/40">This public project is accepting music video ideas.</p>}
+          </fieldset>
+
+          {needsRecordingArrangement && <label htmlFor="collab-recording-arrangement" className="block text-xs font-semibold text-white/75">Recording arrangement <span className="text-[#FD52AF]">*</span>
+            <RecordingArrangementSelect id="collab-recording-arrangement" name="recordingArrangement" value={recordingArrangement} onChange={setRecordingArrangement} className={fieldClass}/>
+          </label>}
+
+          <fieldset>
+            <legend className="mb-2 text-xs font-semibold text-white/75">MUSIC VIDEO PARTICIPATION <span className="text-[#FD52AF]">*</span></legend>
+            <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/75"><label className="inline-flex items-center gap-2"><input type="radio" name="musicVideoParticipation" value="interested" required checked={musicVideoParticipation === "interested"} onChange={() => setMusicVideoParticipation("interested")} className="accent-[#FD52AF]"/>Interested</label><label className="inline-flex items-center gap-2"><input type="radio" name="musicVideoParticipation" value="not_interested" required checked={musicVideoParticipation === "not_interested"} onChange={() => setMusicVideoParticipation("not_interested")} className="accent-[#FD52AF]"/>Not interested</label></div>
           </fieldset>
 
           <label htmlFor="collab-message" className="block text-sm font-semibold uppercase text-white/85">YOUR IDEA <span className="text-xs font-normal text-white/40">OPTIONAL</span>
